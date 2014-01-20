@@ -15,3 +15,6 @@ Dependencies:
 * R v3.0.0
 * Ensembl Perl API
 * BioPerl 1.2.3
+* Cytoscape v3.0.2, with the following Apps:
+  * GeneMANIA (Cytoscape App) + Homo sapiens dataset
+  * Jython Scripting Engine v2.5.2
