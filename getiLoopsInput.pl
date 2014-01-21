@@ -6,6 +6,7 @@ use Bio::EnsEMBL::Registry;
 use Getopt::Long;
 use Bio::SeqIO;
 use File::Copy;
+use File::Path 'remove_tree';
  
 my $expressedTranscripts = $ARGV[0];
 my $candidateTranscripts = $ARGV[1];
@@ -111,7 +112,7 @@ foreach my $line (<CANDIDATES>)  {
 	if($delete){
 		foreach my $rawCandidate (@candidates){
 			my $candidate = (split(/\./, $rawCandidate))[0];
-			remove_tree('Results/iLoops/input/'.$candidate);
+			remove_tree('Results/iLoops/input/'.$candidate) or die "Couldn't delete directory ".$candidate;
 		}
 	}
 }
