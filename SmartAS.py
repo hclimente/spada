@@ -1,10 +1,11 @@
-#!/usr/bin/python
+#!/soft/devel/python-2.7/bin/python
 
 from subprocess import Popen,PIPE
 import sys, getopt
 from shutil import copy, copytree
 import os
 
+#Custom library
 import sh
 
 def main(argv):
@@ -28,13 +29,19 @@ def main(argv):
 	minCandidateExpression = 4
 	minPSI = 0.25
 
-	opts, args = getopt.getopt(argv, "s:wd:")
+	opts, args = getopt.getopt(argv, "s:wd:cp:ce:me:")
 
 	for opt, arg in opts:
 		if opt == "-s":
 			currentStep = int(arg)
-		if opt == "-wd":
+		elif opt == "-wd":
 			wd = arg
+		elif opt == "-cp":
+			minPSI = arg
+		elif opt == "-ce":
+			minCandidateExpression = arg
+		elif opt == "-me":
+			minExpression = arg
 
 	sh.setEnvironment(wd, currentStep)
 	
