@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/soft/devel/python-2.7/bin/python
 
 from subprocess import call
 
