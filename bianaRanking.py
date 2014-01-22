@@ -8,11 +8,11 @@ from biana.utilities import identifier_utilities
 # START BIANA SESSION
 
 biana_session_object = create_new_session(sessionID='session_ID', 
-				dbname='YOUR_BIANA_DB_NAME',
-				dbhost='YOUR_BIANA_DB_HOST',
-				dbuser='YOUR_BIANA_DB_USER',
-				dbpassword='YOUR_BIANA_DB_PASSWORD', 
-				unification_protocol='YOUR_BIANA_UNIFICATION_PROTOCOL_NAME')
+				dbname='BIANA_MARCH_2013',
+				dbhost='ben-yehuda',
+				dbuser='biana_user',
+				dbpassword='biana_password', 
+				unification_protocol='uniprot_geneID_seqtax')
 
 
 # CREATE A LIST WITH ALL THE SEED IDENTIFIERS
@@ -42,7 +42,7 @@ biana_session_object.create_network(user_entity_set_id = 'my_user_entity_set',
 					use_self_relations = True,
 					expansion_attribute_list = [],
 					expansion_relation_type_list = [], 
-					expansion_level = 2, 
+					expansion_level = 1, 
 					attribute_network_attribute_list = [], 
 					group_relation_type_list = [])
 
