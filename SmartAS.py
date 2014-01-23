@@ -56,10 +56,12 @@ def main(argv):
 		getCandidates(minExpression, minCandidateExpression, minPSI)
 		exit()
 	if initialStep <= 3:
-		prepareILoopsInput()
+		bianaInteractions()
 	if initialStep <= 4:
-		launchILoops()
+		prepareILoopsInput()
 	if initialStep <= 5:
+		launchILoops()
+	if initialStep <= 6:
 		exloreILoopsResults()
 	
 	#copytree("Results", "../Dropbox/SmartAS")
@@ -92,6 +94,12 @@ def prepareILoopsInput():
 		getExpressedGenes = 0
 
 	sh.cmd("Pipeline/getiLoopsInput.pl Results/expressedGenes.lst Results/candidateList.lst ", getExpressedGenes)
+
+def bianaInteractions():
+
+	print "* Querying BIANA for known interactions of the candidates."
+	sh.cmd("Pipeline/bianaInteractions.py")
+
 
 def launchILoops():
 
