@@ -6,7 +6,7 @@ from shutil import copy, copytree
 import os
 
 #Custom library
-import sh
+from sh import *
 
 def main(argv):
 
@@ -48,13 +48,12 @@ def main(argv):
 		elif opt == "-me":
 			minExpression = arg
 
-	sh.setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer)
+	setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer)
 	
 	if initialStep <= 1:
 		exploreData()
 	if initialStep <= 2:
 		getCandidates(minExpression, minCandidateExpression, minPSI)
-		exit()
 	if initialStep <= 3:
 		bianaInteractions()
 	if initialStep <= 4:
@@ -70,18 +69,23 @@ def main(argv):
 def exploreData():
 	
 	print "* Reading and summarizing input files: computing PSI values and plotting correlations between replicates."
-	sh.cmd("Pipeline/ExploreData.r")
+	cmd("Pipeline/ExploreData.r")
 	copy("SmartAS.RData", "Results/RWorkspaces/1_ExploreData.RData")
 
 def getCandidates(minExpression, minCandidateExpression, minPSI):
 
 	print "* Extracting transcripts with high variance and high expression."
-	sh.cmd("Pipeline/GetCandidates.r", minExpression, minCandidateExpression, minPSI)
+	cmd("Pipeline/GetCandidates.r", minExpression, minCandidateExpression, minPSI)
 	copy("SmartAS.RData", "Results/RWorkspaces/2_GetCandidates.RData")
 
-	sh.cmd("sort Results/expressedGenes.lst >Results/expressedGenes.tmp.lst")
-	sh.cmd("mv Results/expressedGenes.tmp.lst Results/expressedGenes.lst")
+	cmd("sort Results/expressedGenes.lst >Results/expressedGenes.tmp.lst")
+	cmd("mv Results/expressedGenes.tmp.lst Results/expressedGenes.lst")
 	
+def bianaInteractions():
+
+	print "* Querying BIANA for known interactions of the candidates."
+	cmd("Pipeline/bianaInteractions.py")
+
 def prepareILoopsInput():
 
 	getExpressedGenes = 1
@@ -93,26 +97,20 @@ def prepareILoopsInput():
 	if not diff.stdout.read().strip() and os.path.exists("old/iLoops/input/ExpressedTranscripts.fasta"):
 		getExpressedGenes = 0
 
-	sh.cmd("Pipeline/getiLoopsInput.pl Results/expressedGenes.lst Results/candidateList.lst ", getExpressedGenes)
-
-def bianaInteractions():
-
-	print "* Querying BIANA for known interactions of the candidates."
-	sh.cmd("Pipeline/bianaInteractions.py")
-
+	cmd("Pipeline/getiLoopsInput.pl Results/expressedGenes.lst Results/candidateList.lst ", getExpressedGenes)
 
 def launchILoops():
 
 	print "* Launching iLoops jobs."
 	
-	sh.cmd("scp -r Results/iLoops hectorc@gaudi.imim.es:~/SmartAS/Results")
-	sh.cmd("ssh hectorc@gaudi '~/SmartAS/Pipeline/launchILoops.sh /sbi/users/hectorc/SmartAS/Results/iLoops'")
+	cmd("scp -r Results/iLoops hectorc@gaudi.imim.es:~/SmartAS/Results")
+	cmd("ssh hectorc@gaudi '~/SmartAS/Pipeline/launchILoops.sh /sbi/users/hectorc/SmartAS/Results/iLoops'")
 
 	print "\t* Waiting..."
 
 def exloreILoopsResults():
 
 	print "* Examining iLoops results."
-	sh.cmd("Pipeline/exploreiLoopsOutput.py")
+	cmd("Pipeline/exploreiLoopsOutput.py")
 
 main(sys.argv[1:])
