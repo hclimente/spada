@@ -59,7 +59,7 @@ for (kmer in inputData[["K-mer"]]){
       transcriptIds <- matrix(unlist(strsplit(as.character(sailfishTable$Transcript), split="|", fixed=T)), ncol=7, byrow=T)
       
       #Build the final table
-      isoformExpression[[thisTag]] <- data.frame(transcriptIds[,2], transcriptIds[,1], sailfishTable$TPM, stringsAsFactors=F)
+      isoformExpression[[thisTag]] <- data.frame(unlist(strsplit(transcriptIds[,2], "\\."))[c(TRUE, FALSE)], unlist(strsplit(transcriptIds[,1], "\\."))[c(TRUE, FALSE)], sailfishTable$TPM, stringsAsFactors=F)
       colnames(isoformExpression[[thisTag]]) <- c("Gene","Transcript","TPM")
       
       rm(sailfishTable,transcriptIds)

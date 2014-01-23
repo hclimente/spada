@@ -38,7 +38,7 @@ for (kmer in inputData[["K-mer"]]){
 		#Filter by deltaPSI and expression, based on the FPR
 		psiThreshold <- abs(intraReplicate[[tag]]$deltaPSI) > minPSI
 		expressionThreshold <- intraReplicate[[tag]]$la_tTPM > minCandidateExpression
-	
+			
 		for (aCandidate in unique(intraReplicate[[tag]]$Gene[psiThreshold & expressionThreshold])){
 
 			thisGeneData <- intraReplicate[[tag]]$Gene == aCandidate
@@ -59,7 +59,8 @@ for (kmer in inputData[["K-mer"]]){
 										mindPSI=intraReplicate[[tag]]$Transcript[thisGeneData & minDeltaPsiCond])	)
 		}
 
-		expressedGenes <- intraReplicate[[tag]]$la_tTPM >= minExpression
+		#expressedGenes <- intraReplicate[[tag]]$la_tTPM >= minExpression
+		expressedGenes <-(log(intraReplicate[[tag]]$TPM_ref) + log(intraReplicate[[tag]]$TPM_alt)) / 2 > minExpression
 		allGenes <- unique(c(allGenes, intraReplicate[[tag]]$Transcript[expressedGenes]))
 
 	}

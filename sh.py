@@ -45,6 +45,7 @@ def setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer):
 
 	print "* Preparing the environment"
 	cmd("cd " + wd)
+	cmd("rm -r old2; mv old old2")
 	cmd("mv Results old; mv SmartAS.RData old/SmartAS.old.RData")
 	cmd("mkdir -p Results/iLoops/output")
 	cmd("mkdir Results/iLoops/input")
@@ -54,17 +55,16 @@ def setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer):
 	if initialStep <= 1:
 		setRWorkspace(wd, Conditions, Compartments, Replicates, Kmer)
 	if initialStep > 1:
-		cmd("mkdir Results/RWorkspaces")
-		cmd("cp old/DataExploration Results")
-		cmd("cp old/RWorkspaces/1_ExploreData.RData Results/RWorkspaces")
-		cmd("cp old/RWorkspaces/1_ExploreData.RData SmartAS.RData")
-		cmd("cp old/10C1_30.tsv old/7C1_30.tsv old/10C2_30.tsv old/7C2_30.tsv old/IntraReplicateC1_30.tsv old/IntraReplicateC2_30.tsv Results")
+		cmd("cp -r old/DataExploration Results")
+		cmd("cp -r old/RWorkspaces/1_ExploreData.RData Results/RWorkspaces")
+		cmd("cp -r old/RWorkspaces/1_ExploreData.RData SmartAS.RData")
+		cmd("cp -r old/10C1_30.tsv old/7C1_30.tsv old/10C2_30.tsv old/7C2_30.tsv old/IntraReplicateC1_30.tsv old/IntraReplicateC2_30.tsv Results")
 	if initialStep > 2:
-		cmd("cp old/RWorkspaces/2_GetCandidates.RData Results/RWorkspaces")
-		cmd("cp old/RWorkspaces/2_GetCandidates.RData SmartAS.RData")
-		cmd("cp old/candidateList.lst old/expressedGenes.lst Results")
+		cmd("cp -r old/RWorkspaces/2_GetCandidates.RData Results/RWorkspaces")
+		cmd("cp -r old/RWorkspaces/2_GetCandidates.RData SmartAS.RData")
+		cmd("cp -r old/candidateList.lst old/expressedGenes.lst Results")
 	if initialStep > 3:
-		cmd("cp old/iLoops/input Results/iLoops/")
-		cmd("cp old/candidates.gff Results")
+		cmd("cp -r old/iLoops/input Results/iLoops/")
+		cmd("cp -r old/candidates.gff Results")
 	if initialStep > 5:
-		cmd("cp old/iLoops/output Results/iLoops")
+		cmd("cp -r old/iLoops/output Results/iLoops")

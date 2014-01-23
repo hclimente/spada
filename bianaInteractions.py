@@ -2,21 +2,34 @@
 
 from biana import *
 from biana.utilities import identifier_utilities
-#from rpy2.robjects import r
-#import sets
+from rpy2.robjects import r
+import sys
+
+top = 10
+if(len(sys.argv) == 1):
+	top = sys.argv[1]
 
 # Start Biana Session
 bianaSession = create_new_session(
-											sessionID = 'SmartAS', 
-											dbname = 'BIANA_MARCH_2013',
-											dbhost = 'ben-yehuda',
-											dbuser = 'biana_user',
-											dbpassword = 'biana_password', 
-											unification_protocol = 'uniprot_geneID_seqtax'
-										  )
+									sessionID = 'SmartAS', 
+									dbname = 'BIANA_MARCH_2013',
+									dbhost = 'ben-yehuda',
+									dbuser = 'biana_user',
+									dbpassword = 'biana_password', 
+									unification_protocol = 'uniprot_geneID_seqtax'
+								  )
 
 # Create A List With All The Seed Identifiers
-list_input_identifiers = identifier_utilities.read_identifier_list_from_file(file_name = "ENSTranscripts.lst", id_type = "ensembl")
+
+list_input_identifiers = []
+
+with open("Results/candidateList.lst", "r") as candidates:
+	for line in candidates:
+		elements = line.split("\t")
+		list_input_identifiers.append(("ensembl", elements[1]))
+		list_input_identifiers.append(("ensembl", elements[2]))
+
+#list_input_identifiers = identifier_utilities.read_identifier_list_from_file(file_name = "ENSTranscripts.lst", id_type = "ensembl")
 list_input_restriction_identifiers = []
 list_input_negative_restriction_identifiers = []
 
@@ -48,7 +61,6 @@ bianaSession.create_network(
 bianaSession.output_user_entity_set_details(
 												user_entity_set_id = 'SmartAS_entitySet', 
 												out_method = open('Results/candidatesInteractions.tsv','w').write, 
-												#out_method = open('tumor_ints_All_nodes_details.txt','w').write, 
 												attributes = ["ensembl","uniprotaccession","uniprotentry"], 
 												include_level_info = True,
 												include_degree_info = True,
@@ -63,7 +75,6 @@ bianaSession.output_user_entity_set_details(
 bianaSession.output_user_entity_set_details(	
 												user_entity_set_id = 'SmartAS_entitySet', 
 												out_method = open('Results/candidatesInteractions_extended.tsv','w').write, 
-												#out_method = open('tumor_ints_All_nodes_details_only_unique.txt','w').write, 
 												attributes = ["ensembl","uniprotaccession","uniprotentry"], 
 												include_level_info = True,
 												include_degree_info = True,
@@ -72,14 +83,12 @@ bianaSession.output_user_entity_set_details(
 												output_format = 'tabulated', 
 												include_tags_info = False,
 												include_tags_linkage_degree_info = [], 
-												#output_only_unique_values = True,
 												output_1_value_per_attribute = False
 											)
 
 bianaSession.output_user_entity_set_network(  
 											  user_entity_set_id = 'SmartAS_entitySet', 
 										 	  out_method = open('Results/allInteractions.tsv','w').write, 
-										 	  #out_method = open('tumor_ints_All_nodes_network.txt','w').write, 
 											  node_attributes = ["ensembl","method_id"],
 											  participant_attributes = [],
 											  relation_attributes = ['psimi_name', 'Pubmed'],
@@ -95,22 +104,27 @@ bianaSession.output_user_entity_set_network(
 											  only_selected = False
 											)
 
-#r('load("SmartAS.RData")')
-#r('nodeDetails <- read.delim("~/SmartAS/nodeDetails_onlyUnique.tsv", quote="")')
-#r('mask <- nodeDetails$Level == 0')
-#r('write.table( nodeDetails[mask,], paste(wd, "/Results/nodeDetails.tsv", sep=""), sep="\t", row.names=F)')
+r('load("SmartAS.RData")')
+r('nodeDetails <- read.delim("~/SmartAS/nodeDetails_onlyUnique.tsv", quote="")')
+r('write.table( nodeDetails[ order(-nodeDetails$Degree) ], paste(wd, "/Results/candidatesInteractions.sorted.tsv", sep=""), sep="\t", row.names=F, col.names=F)')
 
-candidates = open("Results/candidateList.lst", "r")
-for line in candidates:
-	elements = line.split("\t", )
-	transcript1 = elements[1]
-	transcript2 = elements[2]
+iLoopsPairs = open("Results/candidateList.top.lst", "w")
+with open("Results/candidateList.lst", "r") as candidates:
+	for line in candidates:
+		elements = line.split("\t")
+		candidate1 = elements[1]
+		candidate2 = elements[2]
 
-	nodes = open("Results/nodeDetails.tsv", "r")
-	for node in nodes:
-		if node.find(transcript1) != -1:
-			print(transcript1 + " " + node)
-			break
-		if node.find(transcript2) != -1:
-			print(transcript2 + " " + node)
-			break
+		hubCandidate = False
+	
+		with open("Results/candidatesInteractions.sorted.tsv", "r") as nodes:
+			for count in range(10):
+				line = nodes.readline()
+				if line.find(candidate1) != -1 or line.find(candidate2) != -1:
+					hubCandidate = True
+					break
+
+		if hubCandidate:
+			iLoopsPairs.write(candidate1 + "\t" + candidate2 + "\n")
+
+iLoopsPairs.close()

@@ -34,6 +34,8 @@ def main(argv):
 	Replicates = ["1", "2"]
 	Kmer = ["30"]
 
+	top = 2
+
 	opts, args = getopt.getopt(argv, "s:wd:cp:ce:me:")
 
 	for opt, arg in opts:
@@ -84,7 +86,7 @@ def getCandidates(minExpression, minCandidateExpression, minPSI):
 def bianaInteractions():
 
 	print "* Querying BIANA for known interactions of the candidates."
-	cmd("Pipeline/bianaInteractions.py")
+	cmd("Pipeline/bianaInteractions.py", top)
 
 def prepareILoopsInput():
 
@@ -97,7 +99,7 @@ def prepareILoopsInput():
 	if not diff.stdout.read().strip() and os.path.exists("old/iLoops/input/ExpressedTranscripts.fasta"):
 		getExpressedGenes = 0
 
-	cmd("Pipeline/getiLoopsInput.pl Results/expressedGenes.lst Results/candidateList.lst ", getExpressedGenes)
+	cmd("Pipeline/getiLoopsInput.pl Results/expressedGenes.lst Results/Results/candidateList.top.lst ", getExpressedGenes)
 
 def launchILoops():
 
