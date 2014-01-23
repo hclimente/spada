@@ -1,12 +1,10 @@
+#!/soft/devel/python-2.7/bin/python
+
 from biana import *
-import sets
-
 from biana.utilities import identifier_utilities
+#import sets
 
-
-
-# START BIANA SESSION
-
+# Start Biana Session
 biana_session_object = create_new_session(sessionID='session_ID', 
 				dbname='BIANA_MARCH_2013',
 				dbhost='ben-yehuda',
@@ -14,26 +12,20 @@ biana_session_object = create_new_session(sessionID='session_ID',
 				dbpassword='biana_password', 
 				unification_protocol='uniprot_geneID_seqtax')
 
-
-# CREATE A LIST WITH ALL THE SEED IDENTIFIERS
-
+# Create A List With All The Seed Identifiers
 list_input_identifiers = []
-list_input_identifiers.extend( identifier_utilities.read_identifier_list_from_file(file_name = "ensgenes.txt", id_type="ensembl")  )
+list_input_identifiers.extend( identifier_utilities.read_identifier_list_from_file(file_name = "Results/candidateList.lst", id_type="ensembl")  )
 list_input_restriction_identifiers = []
 list_input_negative_restriction_identifiers = []
 
-
-# CREATE THE SET
-
+# Create The Set
 user_entity_set_object = biana_session_object.create_new_user_entity_set( identifier_description_list = list_input_identifiers, 
 							attribute_restriction_list = list_input_restriction_identifiers,
 							negative_attribute_restriction_list = list_input_negative_restriction_identifiers,					
 							id_type='embedded', 
 							new_user_entity_set_id="my_user_entity_set")
 
-
-# CREATE NETWORK COMMANDS
-
+# Create Network Commands
 biana_session_object.create_network(user_entity_set_id = 'my_user_entity_set', 
 					level = 1, 
 					include_relations_last_level = False, 
@@ -46,9 +38,7 @@ biana_session_object.create_network(user_entity_set_id = 'my_user_entity_set',
 					attribute_network_attribute_list = [], 
 					group_relation_type_list = [])
 
-
-# OUTPUT COMMANDS
-
+# Output Commands
 biana_session_object.output_user_entity_set_details(user_entity_set_id = 'my_user_entity_set', 
 						out_method = open('tumor_ints_All_nodes_details.txt','w').write, 
 						attributes = ["ensembl","uniprotaccession","uniprotentry"], 
@@ -60,6 +50,7 @@ biana_session_object.output_user_entity_set_details(user_entity_set_id = 'my_use
 						include_tags_info = False,
 						include_tags_linkage_degree_info = [], 
 						output_1_value_per_attribute = False)
+
 biana_session_object.output_user_entity_set_details(user_entity_set_id = 'my_user_entity_set', 
 						out_method = open('tumor_ints_All_nodes_details_only_unique.txt','w').write, 
 						attributes = ["ensembl","uniprotaccession","uniprotentry"], 
@@ -72,6 +63,7 @@ biana_session_object.output_user_entity_set_details(user_entity_set_id = 'my_use
 						include_tags_linkage_degree_info = [], 
 						output_only_unique_values = True,
 						output_1_value_per_attribute = False)
+
 biana_session_object.output_user_entity_set_network(user_entity_set_id = 'my_user_entity_set', 
 		             	        	  out_method = open('tumor_ints_All_nodes_network.txt','w').write, 
 						  node_attributes = ["ensembl","method_id"],
@@ -86,14 +78,4 @@ biana_session_object.output_user_entity_set_network(user_entity_set_id = 'my_use
 						  include_relation_sources = True,
 						  output_1_value_per_attribute = True,
 						  output_format = 'tabulated',
-						  only_selected = False)name => 
-type => 
-tmp_name => 
-error => 4
-size => 0
-
-name => ensgenes.txt
-type => text/plain
-tmp_name => /tmp/phpBNIKil
-error => 0
-size => 1391
+						  only_selected = False)
