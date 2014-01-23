@@ -20,16 +20,14 @@ bianaSession = create_new_session(
 								  )
 
 # Create A List With All The Seed Identifiers
-
 list_input_identifiers = []
 
 with open("Results/candidateList.lst", "r") as candidates:
 	for line in candidates:
 		elements = line.split("\t")
+		list_input_identifiers.append(("ensembl", elements[0]))
 		list_input_identifiers.append(("ensembl", elements[1]))
-		list_input_identifiers.append(("ensembl", elements[2]))
 
-#list_input_identifiers = identifier_utilities.read_identifier_list_from_file(file_name = "ENSTranscripts.lst", id_type = "ensembl")
 list_input_restriction_identifiers = []
 list_input_negative_restriction_identifiers = []
 
@@ -52,7 +50,7 @@ bianaSession.create_network(
 								use_self_relations = True,
 								expansion_attribute_list = [],
 								expansion_relation_type_list = [], 
-								expansion_level = 1, 
+								expansion_level = 2, 
 								attribute_network_attribute_list = [], 
 								group_relation_type_list = []
 							)
@@ -72,48 +70,48 @@ bianaSession.output_user_entity_set_details(
 												output_1_value_per_attribute = False
 											)
 
-bianaSession.output_user_entity_set_details(	
-												user_entity_set_id = 'SmartAS_entitySet', 
-												out_method = open('Results/candidatesInteractions_extended.tsv','w').write, 
-												attributes = ["ensembl","uniprotaccession","uniprotentry"], 
-												include_level_info = True,
-												include_degree_info = True,
-												level = None,
-												only_selected = False, 
-												output_format = 'tabulated', 
-												include_tags_info = False,
-												include_tags_linkage_degree_info = [], 
-												output_1_value_per_attribute = False
-											)
-
-bianaSession.output_user_entity_set_network(  
-											  user_entity_set_id = 'SmartAS_entitySet', 
-										 	  out_method = open('Results/allInteractions.tsv','w').write, 
-											  node_attributes = ["ensembl","method_id"],
-											  participant_attributes = [],
-											  relation_attributes = ['psimi_name', 'Pubmed'],
-											  allowed_relation_types = 'all',
-											  include_participant_tags = False,
-											  include_relation_tags = False,
-											  include_relation_ids = True,
-											  include_participant_ids = True,
-											  include_relation_type = True,
-											  include_relation_sources = True,
-											  output_1_value_per_attribute = True,
-											  output_format = 'tabulated',
-											  only_selected = False
-											)
+#bianaSession.output_user_entity_set_details(	
+#												user_entity_set_id = 'SmartAS_entitySet', 
+#												out_method = open('Results/candidatesInteractions_extended.tsv','w').write, 
+#												attributes = ["ensembl","uniprotaccession","uniprotentry"], 
+#												include_level_info = True,
+#												include_degree_info = True,
+#												level = None,
+#												only_selected = False, 
+#												output_format = 'tabulated', 
+#												include_tags_info = False,
+#												include_tags_linkage_degree_info = [], 
+#												output_1_value_per_attribute = False
+#											)
+#
+#bianaSession.output_user_entity_set_network(  
+#											  user_entity_set_id = 'SmartAS_entitySet', 
+#										 	  out_method = open('Results/allInteractions.tsv','w').write, 
+#											  node_attributes = ["ensembl","method_id"],
+#											  participant_attributes = [],
+#											  relation_attributes = ['psimi_name', 'Pubmed'],
+#											  allowed_relation_types = 'all',
+#											  include_participant_tags = False,
+#											  include_relation_tags = False,
+#											  include_relation_ids = True,
+#											  include_participant_ids = True,
+#											  include_relation_type = True,
+#											  include_relation_sources = True,
+#											  output_1_value_per_attribute = True,
+#											  output_format = 'tabulated',
+#											  only_selected = False
+#											)
 
 r('load("SmartAS.RData")')
-r('nodeDetails <- read.delim("~/SmartAS/nodeDetails_onlyUnique.tsv", quote="")')
-r('write.table( nodeDetails[ order(-nodeDetails$Degree) ], paste(wd, "/Results/candidatesInteractions.sorted.tsv", sep=""), sep="\t", row.names=F, col.names=F)')
+r('nodeDetails <- read.delim("Results/candidatesInteractions.tsv", quote="")')
+r('write.table( nodeDetails[ order(-nodeDetails$Degree) ], paste(wd, "Results/candidatesInteractions.sorted.tsv", sep=""), sep="\t", row.names=F, col.names=F)')
 
 iLoopsPairs = open("Results/candidateList.top.lst", "w")
 with open("Results/candidateList.lst", "r") as candidates:
 	for line in candidates:
 		elements = line.split("\t")
-		candidate1 = elements[1]
-		candidate2 = elements[2]
+		candidate1 = elements[0]
+		candidate2 = elements[1]
 
 		hubCandidate = False
 	
