@@ -24,10 +24,6 @@ do
 	 	pidQueue+=($!)
 
 	done
-	counter="1"
-	if [[ counter -ge 1 ]]; then
-		break
-	fi
 done
 
 for job in ${pidQueue[*]}
