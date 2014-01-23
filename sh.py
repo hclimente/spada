@@ -41,36 +41,30 @@ def setRWorkspace(wd, Conditions, Compartments, Replicates, Kmer):
 	
 	r('save.image("SmartAS.RData")')
 
-def setEnvironment(wd, currentStep, Conditions, Compartments, Replicates, Kmer):
+def setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer):
 
 	print "* Preparing the environment"
 	cmd("cd " + wd)
+	cmd("mv Results old; mv SmartAS.RData old/SmartAS.old.RData")
+	cmd("mkdir -p Results/iLoops/output")
+	cmd("mkdir Results/iLoops/input")
+	cmd("mkdir Results/RWorkspaces")
+	cmd("mkdir Results/DataExploration")
 
-	if currentStep <= 5:
-		cmd("rm -r old/iLoops/output; mkdir -p old/iLoops/output")
-		cmd("mv Results/iLoops/output/* old/iLoops/output")
-		cmd("mkdir -p Results/iLoops/output")
-
-	if currentStep <= 3:
-		cmd("rm -r old/iLoops/input/ENST*; mkdir -p old/iLoops/input")
-		cmd("mv Results/iLoops/input/* old/iLoops/input")
-		cmd("mv Results/candidates.gff old")
-		cmd("mkdir -p Results/iLoops/input")
-		cmd("cp Results/RWorkspaces/2_GetCandidates.RData SmartAS.RData")
-	if currentStep <= 2:
-		cmd("mv Results/expressedGenes.lst old")
-		cmd("mv Results/candidateList.lst old")
-		cmd("mv Results/RWorkspaces/2_GetCandidates.RData old/RWorkspaces")
-		cmd("cp Results/RWorkspaces/1_ExploreData.RData SmartAS.RData")
-	if currentStep <= 1:
-		cmd("rm -r old")
-		cmd("mkdir -p old/DataExploration")
-		cmd("mkdir -p old/RWorkspaces")
-		cmd("mv Results/DataExploration/* old/DataExploration")
-		cmd("mv Results/* old")
-		cmd("mv Results/RWorkspaces/* old/RWorkspaces")
-		cmd("mv SmartAS.RData old/SmartAS.old.RData")
-		cmd("mkdir -p Results/DataExploration")
-		cmd("mkdir -p Results/RWorkspaces")
+	if initialStep <= 1:
 		setRWorkspace(wd, Conditions, Compartments, Replicates, Kmer)
-		#cmd("Pipeline/SetWorkspace.r " + wd)
+	if initialStep > 1:
+		cmd("mkdir Results/RWorkspaces")
+		cmd("cp old/DataExploration Results")
+		cmd("cp old/RWorkspaces/1_ExploreData.RData Results/RWorkspaces")
+		cmd("cp old/RWorkspaces/1_ExploreData.RData SmartAS.RData")
+		cmd("cp old/10C1_30.tsv old/7C1_30.tsv old/10C2_30.tsv old/7C2_30.tsv old/IntraReplicateC1_30.tsv old/IntraReplicateC2_30.tsv Results")
+	if initialStep > 2:
+		cmd("cp old/RWorkspaces/2_GetCandidates.RData Results/RWorkspaces")
+		cmd("cp old/RWorkspaces/2_GetCandidates.RData SmartAS.RData")
+		cmd("cp old/candidateList.lst old/expressedGenes.lst Results")
+	if initialStep > 3:
+		cmd("cp old/iLoops/input Results/iLoops/")
+		cmd("cp old/candidates.gff Results")
+	if initialStep > 5:
+		cmd("cp old/iLoops/output Results/iLoops")
