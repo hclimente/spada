@@ -22,18 +22,23 @@ def main(argv):
 	"""
 
 	#Set variables
-	currentStep = 0
+	initialStep = 0
 	wd = "/home/hector/SmartAS/"
 	gaudiWd = "/sbi/users/hectorc/SmartAS/Results/iLoops"
 	minExpression = 0
 	minCandidateExpression = 4
 	minPSI = 0.25
 
+	Conditions = ["10", "7"]
+	Compartments = ["C"]
+	Replicates = ["1", "2"]
+	Kmer = ["30"]
+
 	opts, args = getopt.getopt(argv, "s:wd:cp:ce:me:")
 
 	for opt, arg in opts:
 		if opt == "-s":
-			currentStep = int(arg)
+			initialStep = int(arg)
 		elif opt == "-wd":
 			wd = arg
 		elif opt == "-cp":
@@ -43,17 +48,18 @@ def main(argv):
 		elif opt == "-me":
 			minExpression = arg
 
-	sh.setEnvironment(wd, currentStep)
+	sh.setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer)
 	
-	if currentStep <= 1:
+	if initialStep <= 1:
 		exploreData()
-	if currentStep <= 2:
+	if initialStep <= 2:
 		getCandidates(minExpression, minCandidateExpression, minPSI)
-	if currentStep <= 3:
+		exit()
+	if initialStep <= 3:
 		prepareILoopsInput()
-	if currentStep <= 4:
+	if initialStep <= 4:
 		launchILoops()
-	if currentStep <= 5:
+	if initialStep <= 5:
 		exloreILoopsResults()
 	
 	#copytree("Results", "../Dropbox/SmartAS")
@@ -62,7 +68,7 @@ def main(argv):
 def exploreData():
 	
 	print "* Reading and summarizing input files: computing PSI values and plotting correlations between replicates."
-	sh.cmd("Pipeline/PSICalculation.r")
+	sh.cmd("Pipeline/ExploreData.r")
 	copy("SmartAS.RData", "Results/RWorkspaces/1_ExploreData.RData")
 
 def getCandidates(minExpression, minCandidateExpression, minPSI):
@@ -92,7 +98,7 @@ def launchILoops():
 	print "* Launching iLoops jobs."
 	
 	sh.cmd("scp -r Results/iLoops hectorc@gaudi.imim.es:~/SmartAS/Results")
-	sh.cmd("ssh hectorc@gaudi.imim.es '~/SmartAS/Pipeline/launchILoops.sh /sbi/users/hectorc/SmartAS/Results/iLoops")
+	sh.cmd("ssh hectorc@gaudi '~/SmartAS/Pipeline/launchILoops.sh /sbi/users/hectorc/SmartAS/Results/iLoops'")
 
 	print "\t* Waiting..."
 
