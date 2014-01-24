@@ -9,7 +9,7 @@ for transcript in `ls input/ | egrep ENST`
 do
 	for configFile in `ls input/$transcript | egrep *net`
 	do
-
+		#Map the loops for the query sequence.
 		/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py \
 		-f input/ExpressedTranscripts.fasta \
 		-q input/$transcript/$configFile \
@@ -19,7 +19,7 @@ do
 		-n 25 \
 		-Q sbi \
 		-c 1,5,6,7,8,9,10,11,12,13,14,15,20,30,40,50 \
-		-v
+		-v \
 		-m &
 
 	 	pidQueue+=($!)
