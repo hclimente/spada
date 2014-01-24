@@ -1,9 +1,9 @@
 #!/soft/devel/python-2.7/bin/python
 
-from subprocess import Popen,PIPE
+#from subprocess import Popen,PIPE
 import sys, getopt
 from shutil import copy, copytree
-import os
+from os import path
 
 #Custom library
 from sh import *
@@ -94,9 +94,11 @@ def prepareILoopsInput():
 
 	print "* Retrieving protein sequences for transcripts and printing to multiFASTA file."
 	
-	diff = Popen('diff old/expressedGenes.lst Results/expressedGenes.lst 2>&1', shell=True, stdout=PIPE)
+	#diff = Popen('diff old/expressedGenes.lst Results/expressedGenes.lst 2>&1', shell=True, stdout=PIPE)
+	diff = cmdOut('diff old/expressedGenes.lst Results/expressedGenes.lst 2>&1')
 
-	if not diff.stdout.read().strip() and os.path.exists("old/iLoops/input/ExpressedTranscripts.fasta"):
+	#if not diff.stdout.read().strip() and os.path.exists("old/iLoops/input/ExpressedTranscripts.fasta"):
+	if not diff and path.exists("old/iLoops/input/ExpressedTranscripts.fasta"):
 		getExpressedGenes = 0
 
 	cmd("Pipeline/getiLoopsInput.pl Results/expressedGenes.lst Results/Results/candidateList.top.lst ", getExpressedGenes)
