@@ -3,6 +3,7 @@
 import sys, os
 from sh import *
 from time import sleep
+from fnmatch import filter
 
 if(len(sys.argv) != 1):
 	print("No arguments passed.")
@@ -12,8 +13,8 @@ os.chdir(sys.argv[1])
 
 pidQueue = []
 
-for transcript in os.listdir("input"): #/ | egrep ENST`
-	for configFile in os.listdir("input/" + transcript): #| egrep *net`
+for transcript in filter(os.listdir("input"), "ENST*"):
+	for configFile in filter(os.listdir("input/" + transcript), "*net"):
 		#Map the loops for the query sequence.
 		cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py",
 			"-f input/ExpressedTranscripts.fasta"
