@@ -1,6 +1,6 @@
 #!/soft/devel/python-2.7/bin/python
 
-from subprocess import call
+from subprocess import call,Popen,PIPE
 from rpy2.robjects import r
 
 def cmd(base, *args):
@@ -8,6 +8,13 @@ def cmd(base, *args):
 	for arg in args:
 		command += " " + str(arg)
 	call(command, shell=True)
+
+def cmdOut(base, *args):
+	command = base
+	for arg in args:
+		command += " " + str(arg)
+	
+	return Popen(command, shell=True, stdout=PIPE)
 
 def setRWorkspace(wd, Conditions, Compartments, Replicates, Kmer):
 
