@@ -3,21 +3,22 @@
 import httplib2, sys
 from shutil import copy
 from sh import *
+from time import sleep
  
 http = httplib2.Http(".cache")
 server = "http://beta.rest.ensembl.org"
 
 expressedTranscripts = sys.argv[1];
 candidateTranscripts = sys.argv[2];
-getExpressedGenes = sys.argv[3];
-
-notFound = []
+getExpressedGenes = bool(int(sys.argv[3]))
 
 if(getExpressedGenes):
 
 	print "\t* Writing the multiFASTA file with all the expressed transcripts."
 
 	expressedMultiFasta = open('Results/iLoops/ExpressedTranscripts.fasta', "w")
+	ensemblQueryRestriction = 0
+
 	with open(expressedTranscripts, "r") as EXPRESSED:
 		for line in EXPRESSED:
 			stableId = line.strip()
@@ -26,15 +27,19 @@ if(getExpressedGenes):
  
 			if not resp.status == 200:
 				print "\t\tCouldn't retrieve", stableId, "(", server + ext, "). Error", resp.status
-				notFound.append(stableId)
 				continue
  
 			expressedMultiFasta.write(">" + stableId + "\n")
 			expressedMultiFasta.write(content + "\n")
 
+			ensemblQueryRestriction += 1
+			if ensemblQueryRestriction == 3:
+				sleep(0.7)
+				ensemblQueryRestriction = 0
+
 	expressedMultiFasta.close()
 else:
-	copy("old/iLoops/input/ExpressedTranscripts.fasta", "esults/iLoops/ExpressedTranscripts.fasta")
+	copy("old/iLoops/ExpressedTranscripts.fasta", "Results/iLoops/ExpressedTranscripts.fasta")
 
 print "\t* Writing the pairs files."
 GFF_TRACK = open('Results/candidates.gff', 'w')
@@ -48,10 +53,10 @@ with open(candidateTranscripts, "r") as CANDIDATES:
 
 			aCandidate = rawCandidate.strip()
 			ext = "/feature/id/" + aCandidate + "?feature=exon"
-			resp, content = http.request(server+ext, method="GET", headers={"text/x-gff3"})
+			resp, content = http.request(server+ext, method="GET", headers={"Content-Type":"text/x-gff3"})
 
 			if not resp.status == 200:
-				print "\t\tCandidate ", stableId, " (", server + ext, ") not valid. Error ", resp.status
+				print "\t\tCandidate ", aCandidate, " (", server + ext, ") not valid. Error ", resp.status
 				delete = True
 				break
 
@@ -64,7 +69,8 @@ with open(candidateTranscripts, "r") as CANDIDATES:
 			with open(expressedTranscripts, "r") as EXPRESSED:
 				PAIRS = open("Results/iLoops/input/" + aCandidate + '/' + aCandidate + '_' + str(fileNumber) + '.net', "w")
 
-				for expressedTranscript in EXPRESSED:
+				for rawExpressed in EXPRESSED:
+					expressedTranscript = rawExpressed.strip()
 					PAIRS.write(aCandidate + "\t" + expressedTranscript + "\n")
 					numberOfCandidates += 1
 
