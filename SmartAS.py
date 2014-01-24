@@ -57,7 +57,7 @@ def main(argv):
 	if initialStep <= 2:
 		getCandidates(minExpression, minCandidateExpression, minPSI)
 	if initialStep <= 3:
-		bianaInteractions()
+		bianaInteractions(top)
 	if initialStep <= 4:
 		prepareILoopsInput()
 	if initialStep <= 5:
@@ -83,7 +83,7 @@ def getCandidates(minExpression, minCandidateExpression, minPSI):
 	cmd("sort Results/expressedGenes.lst >Results/expressedGenes.tmp.lst")
 	cmd("mv Results/expressedGenes.tmp.lst Results/expressedGenes.lst")
 	
-def bianaInteractions():
+def bianaInteractions(top):
 
 	print "* Querying BIANA for known interactions of the candidates."
 	cmd("Pipeline/bianaInteractions.py", top)
