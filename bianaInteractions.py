@@ -7,7 +7,7 @@ import sys
 
 top = 10
 if(len(sys.argv) == 1):
-	top = sys.argv[1]
+	top = int(sys.argv[1])
 
 # Start Biana Session
 bianaSession = create_new_session(

@@ -60,6 +60,7 @@ def main(argv):
 		bianaInteractions(top)
 	if initialStep <= 4:
 		prepareILoopsInput()
+		exit()
 	if initialStep <= 5:
 		launchILoops()
 	if initialStep <= 6:
@@ -96,12 +97,12 @@ def prepareILoopsInput():
 	
 	#diff = Popen('diff old/expressedGenes.lst Results/expressedGenes.lst 2>&1', shell=True, stdout=PIPE)
 	diff = cmdOut('diff old/expressedGenes.lst Results/expressedGenes.lst 2>&1')
-
+	
 	#if not diff.stdout.read().strip() and os.path.exists("old/iLoops/input/ExpressedTranscripts.fasta"):
 	if not diff and path.exists("old/iLoops/input/ExpressedTranscripts.fasta"):
 		getExpressedGenes = 0
 
-	cmd("Pipeline/getiLoopsInput.pl Results/expressedGenes.lst Results/Results/candidateList.top.lst ", getExpressedGenes)
+	cmd("Pipeline/getiLoopsInput.py Results/expressedGenes.lst Results/candidateList.top.lst ", getExpressedGenes)
 
 def launchILoops():
 

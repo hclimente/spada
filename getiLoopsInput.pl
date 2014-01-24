@@ -1,4 +1,6 @@
-#!/usr/bin/perl
+#!/soft/devel/perl-5.18.1/bin/perl
+
+print "Hola2";
 
 use strict;
 use warnings;
@@ -7,6 +9,8 @@ use Getopt::Long;
 use Bio::SeqIO;
 use File::Copy;
 use File::Path 'remove_tree';
+
+print "Hola";
  
 my $expressedTranscripts = $ARGV[0];
 my $candidateTranscripts = $ARGV[1];
@@ -20,8 +24,11 @@ $registry->load_registry_from_db(
 							    );
 $registry->set_reconnect_when_lost();
 
+print $getExpressedGenes;
+
 if($getExpressedGenes){
 	foreach my $line (<EXPRESSED>)  {
+
 		my $stable_id = (split(/\./, $line))[0];
 		my $transcript_adaptor = $registry->get_adaptor( 'Human', 'Core', 'Transcript' );
 		my $transcript = $transcript_adaptor->fetch_by_stable_id($stable_id);
@@ -30,7 +37,7 @@ if($getExpressedGenes){
 		next if !defined $transcript->translate();
 		
 		my $out_seq = Bio::SeqIO->new(
-		                              -file => '>>Results/iLoops/input/ExpressedTranscripts.fasta',
+		                              -file => '>>Results/iLoops/ExpressedTranscripts.fasta',
 		                              -format => 'fasta'
 		                             );
 		
