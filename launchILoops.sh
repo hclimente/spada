@@ -10,7 +10,7 @@ do
 	for configFile in `ls input/$transcript | egrep *net`
 	do
 
-		echo "/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py \
+		/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py \
 		-f input/ExpressedTranscripts.fasta \
 		-q input/$transcript/$configFile \
 		-j output/$configFile \
@@ -19,7 +19,8 @@ do
 		-n 25 \
 		-Q sbi \
 		-c 1,5,6,7,8,9,10,11,12,13,14,15,20,30,40,50 \
-		-v" &
+		-v
+		-m &
 
 	 	pidQueue+=($!)
 
