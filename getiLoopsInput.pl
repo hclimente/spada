@@ -1,7 +1,5 @@
 #!/soft/devel/perl-5.18.1/bin/perl
 
-print "Hola2";
-
 use strict;
 use warnings;
 use Bio::EnsEMBL::Registry;
@@ -9,8 +7,6 @@ use Getopt::Long;
 use Bio::SeqIO;
 use File::Copy;
 use File::Path 'remove_tree';
-
-print "Hola";
  
 my $expressedTranscripts = $ARGV[0];
 my $candidateTranscripts = $ARGV[1];
@@ -23,8 +19,6 @@ $registry->load_registry_from_db(
 								 -user => 'anonymous'
 							    );
 $registry->set_reconnect_when_lost();
-
-print $getExpressedGenes;
 
 if($getExpressedGenes){
 	foreach my $line (<EXPRESSED>)  {
