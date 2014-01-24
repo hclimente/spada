@@ -71,7 +71,8 @@ def setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer):
 		cmd("cp -r old/RWorkspaces/2_GetCandidates.RData SmartAS.RData")
 		cmd("cp -r old/candidateList.lst old/expressedGenes.lst Results")
 	if initialStep > 3:
-		cmd("cp old/allInteractions.tsv old/candidateInteractions.sorted.lst old/candidateInteractions.tsv old/candidateInteractions_extended.tsv old/candidateList.top.lst Results")
+		cmd("cp old/candidateInteractions.tsv old/candidateList.top.lst Results")
+		#old/allInteractions.tsv old/candidateInteractions.sorted.lst old/candidateInteractions_extended.tsv 
 	if initialStep > 4:
 		cmd("cp -r old/iLoops/input Results/iLoops/")
 		cmd("cp -r old/candidates.gff Results")
