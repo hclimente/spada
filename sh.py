@@ -81,9 +81,9 @@ def setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer):
 
 def waitPID(pidQueue):
 	for job in pidQueue:
-	while True:
-		if cmdOut("ps --pid", job, " | grep -v", job, "| wc -l") == "0":
-			break
-		else:
-			print("Awaiting for completion of iLoops jobs.")
-			sleep(900)
+		while True:
+			if cmdOut("ps --pid", job, " | grep -v", job, "| wc -l") == "0":
+				break
+			else:
+				print("Awaiting for completion of iLoops jobs.")
+				sleep(900)
