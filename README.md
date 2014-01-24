@@ -18,5 +18,5 @@ Dependencies:
 * BioPerl 1.2.3
 * Python 2.7 with the following modules:
 	* Biana v1.3.1
-	* RPy2 2.2.2 and R 2.12 - 2.13.
+	* RPy2 2.2.2, with R 2.12-2.13 (this version is the "R" command that must be called from the shell).
 	* Other libraries: subprocess, sys, getopt, shutil, os
