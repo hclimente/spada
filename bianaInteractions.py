@@ -56,23 +56,10 @@ bianaSession.create_network(
 							)
 
 # Output Commands
-bianaSession.output_user_entity_set_details(
-												user_entity_set_id = 'SmartAS_entitySet', 
-												out_method = open('Results/candidatesInteractions.tsv','w').write, 
-												attributes = ["ensembl","uniprotaccession","uniprotentry"], 
-												include_level_info = True,
-												include_degree_info = True,
-												level = None,
-												only_selected = True, 
-												output_format = 'tabulated', 
-												include_tags_info = False,
-												include_tags_linkage_degree_info = [], 
-												output_1_value_per_attribute = False
-											)
 
 #bianaSession.output_user_entity_set_details(	
 #												user_entity_set_id = 'SmartAS_entitySet', 
-#												out_method = open('Results/candidatesInteractions_extended.tsv','w').write, 
+#												out_method = open('Results/candidateInteractions_extended.tsv','w').write, 
 #												attributes = ["ensembl","uniprotaccession","uniprotentry"], 
 #												include_level_info = True,
 #												include_degree_info = True,
@@ -102,9 +89,30 @@ bianaSession.output_user_entity_set_details(
 #											  only_selected = False
 #											)
 
+user_entities_to_print = set(user_entity_set_object.get_user_entity_ids(level=0))
+bianaSession.select_user_entities_from_user_entity_set(
+														user_entity_set_id = 'SmartAS_entitySet', 
+                                                		user_entity_id_list = user_entities_to_print, 
+                                                		clear_previous_selection = True
+                                                	  )
+bianaSession.output_user_entity_set_details(
+												user_entity_set_id = 'SmartAS_entitySet', 
+												out_method = open('Results/candidateInteractions.tsv','w').write, 
+												attributes = ["ensembl","uniprotaccession","uniprotentry"], 
+												include_level_info = True,
+												include_degree_info = True,
+												level = None,
+												only_selected = True, 
+												output_format = 'tabulated', 
+												include_tags_info = False,
+												include_tags_linkage_degree_info = [], 
+												output_1_value_per_attribute = False
+											)
+
+
 r('load("SmartAS.RData")')
-r('nodeDetails <- read.delim("Results/candidatesInteractions.tsv", quote="")')
-r('write.table( nodeDetails[ order(-nodeDetails$Degree) ], paste(wd, "Results/candidatesInteractions.sorted.tsv", sep=""), sep="\t", row.names=F, col.names=F)')
+r('nodeDetails <- read.delim("Results/candidateInteractions.tsv", quote="")')
+r('write.table( nodeDetails[ order(-nodeDetails$Degree), ], paste(wd, "Results/candidateInteractions.sorted.tsv", sep=""), sep="\t", row.names=F, col.names=F)')
 
 iLoopsPairs = open("Results/candidateList.top.lst", "w")
 with open("Results/candidateList.lst", "r") as candidates:
@@ -115,7 +123,7 @@ with open("Results/candidateList.lst", "r") as candidates:
 
 		hubCandidate = False
 	
-		with open("Results/candidatesInteractions.sorted.tsv", "r") as nodes:
+		with open("Results/candidateInteractions.sorted.tsv", "r") as nodes:
 			for count in range(10):
 				line = nodes.readline()
 				if line.find(candidate1) != -1 or line.find(candidate2) != -1:
