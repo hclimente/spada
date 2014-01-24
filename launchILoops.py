@@ -31,10 +31,4 @@ for transcript in filter(os.listdir("input"), "ENST*"):
 		
 	 	pidQueue.append(cmdOut("$!"))
 
-for job in pidQueue:
-	while True:
-		if cmdOut("ps --pid", job, " | grep -v", job, "| wc -l") == "0":
-			break
-		else:
-			print("Awaiting for completion of iLoops jobs.")
-			sleep(900)
+waitPID(pidQueue)
