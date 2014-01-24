@@ -78,3 +78,12 @@ def setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer):
 		cmd("cp -r old/candidates.gff Results")
 	if initialStep > 5:
 		cmd("cp -r old/iLoops/output Results/iLoops")
+
+def waitPID(pidQueue):
+	for job in pidQueue:
+	while True:
+		if cmdOut("ps --pid", job, " | grep -v", job, "| wc -l") == "0":
+			break
+		else:
+			print("Awaiting for completion of iLoops jobs.")
+			sleep(900)
