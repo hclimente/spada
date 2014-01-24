@@ -14,7 +14,7 @@ def cmdOut(base, *args):
 	for arg in args:
 		command += " " + str(arg)
 	
-	return Popen(command, shell=True, stdout=PIPE)
+	return Popen(command, shell=True, stdout=PIPE).stdout.read().strip()
 
 def setRWorkspace(wd, Conditions, Compartments, Replicates, Kmer):
 
