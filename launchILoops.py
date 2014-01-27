@@ -5,8 +5,6 @@ from sh import *
 from time import sleep
 from fnmatch import filter
 
-print(sys.argv)
-
 if(len(sys.argv) != 2):
 	print("No arguments passed.")
 	exit()
@@ -18,8 +16,10 @@ pidQueue = []
 for transcript in filter(os.listdir("input"), "ENST*"):
 	for configFile in filter(os.listdir("input/" + transcript), "*net"):
 		#Map the loops for the query sequence.
+		print transcript
+		print configFile
 		cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py",
-			"-f input/ExpressedTranscripts.fasta"
+			"-f ExpressedTranscripts.fasta",
 			"-q input/" + transcript + "/" + configFile,
 			"-j output/" + configFile,
 			"-x " + configFile + ".xml",
@@ -30,7 +30,7 @@ for transcript in filter(os.listdir("input"), "ENST*"):
 			"-v",
 			"-m &"
 			)
-		
 	 	pidQueue.append(cmdOut("$!"))
+		exit()
 
 waitPID(pidQueue)
