@@ -5,7 +5,9 @@ from sh import *
 from time import sleep
 from fnmatch import filter
 
-if(len(sys.argv) != 1):
+print(sys.argv)
+
+if(len(sys.argv) != 2):
 	print("No arguments passed.")
 	exit()
 
