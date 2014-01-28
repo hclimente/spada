@@ -60,7 +60,6 @@ def main(argv):
 		bianaInteractions(top)
 	if initialStep <= 4:
 		prepareILoopsInput()
-		exit()
 	if initialStep <= 5:
 		launchILoops()
 	if initialStep <= 6:
@@ -95,10 +94,8 @@ def prepareILoopsInput():
 
 	print "* Retrieving protein sequences for transcripts and printing to multiFASTA file."
 	
-	#diff = Popen('diff old/expressedGenes.lst Results/expressedGenes.lst 2>&1', shell=True, stdout=PIPE)
 	diff = cmdOut('diff old/expressedGenes.lst Results/expressedGenes.lst 2>&1')
 	
-	#if not diff.stdout.read().strip() and os.path.exists("old/iLoops/input/ExpressedTranscripts.fasta"):
 	if not diff and path.exists("old/iLoops/ExpressedTranscripts.fasta"):
 		getExpressedGenes = 0
 
@@ -109,7 +106,7 @@ def launchILoops():
 	print "* Launching iLoops jobs."
 	
 	cmd("scp -r Results/iLoops hectorc@gaudi.imim.es:~/SmartAS/Results")
-	cmd("ssh hectorc@gaudi '~/SmartAS/Pipeline/launchILoops.sh /sbi/users/hectorc/SmartAS/Results/iLoops'")
+	cmd("ssh hectorc@gaudi '~/SmartAS/Pipeline/launchILoops.py /sbi/users/hectorc/SmartAS/Results/iLoops'")
 
 	print "\t* Waiting..."
 
