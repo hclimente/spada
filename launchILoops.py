@@ -56,9 +56,8 @@ pidQueue = []
 # waitPID(pidQueue)
 
 myParser = iLoopsParser()
+xmlFile = "output/ENST00000243253_3.net/sge_output/22939.assignation.01.xml"
 
-myParser.parseResults(xml_file					  = "output/ENST00000243253_3.net/sge_output/22939.assignation.01.xml", 
-					  output_interaction_signatures = False,
-					  output_RF_precisions		  = False)
+myParser.parseResults(xml_file=file, output_interaction_signatures = False, output_RF_precisions= False)
 
 
