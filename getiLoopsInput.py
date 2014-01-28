@@ -6,7 +6,7 @@ from sh import *
 from time import sleep
 import json
 
-def getGFFTrack(twoCandidates):
+def getGFF3Track(twoCandidates):
 
 	gffTrack = {}
 	gffTrack["gene"] = {}
@@ -66,15 +66,27 @@ def getGFFTrack(twoCandidates):
 					if feature == "transcript" or feature == "exon":
 						gffTrack[feature][line["ID"]]["Atributes"] += "," + line["Parent"]
 
-	gffReport = "##sequence-region   " + geneName + " " + gffTrack["gene"][ensGene]["start"]  + " " + gffTrack["gene"][ensGene]["end"] + "\n"
+	gff3Report = "##sequence-region   " + geneName + " " + gffTrack["gene"][ensGene]["start"]  + " " + gffTrack["gene"][ensGene]["end"] + "\n"
 
 	for feature in ["gene", "transcript", "exon"]:
 		for geneId in gffTrack[feature]:
 			thisLine = gffTrack[feature][geneId]
-			gffReport += geneName + "\t.\t" + thisLine["type"] + "\t" + thisLine["start"] + "\t" +\
+			gff3Report += geneName + "\t.\t" + thisLine["type"] + "\t" + thisLine["start"] + "\t" +\
 						 thisLine["end"] + "\t.\t" + thisLine["strand"] + "\t.\t" + thisLine["Atributes"] + "\n"
 
-	return False, gffReport
+	gff2nReport = ""
+	gff2tReport = ""
+
+	for feature in ["transcript", "exon"]:
+		for geneId in gffTrack[feature]:
+			type = "exon"
+			if feature == "transcript":
+				type = "mRNA"
+			thisLine = gffTrack[feature][geneId]
+			gff2nReport += thisLine["seqid"] + "\t.\t" + type + "\t" + thisLine["start"] + "\t" +\
+						   thisLine["end"] + "\t.\t" + thisLine["strand"] + "\t.\t" + thisLine["Atributes"] + "\n"
+
+	return False, gff3Report, gff2nReport, gff2tReport
 
 http = httplib2.Http(".cache")
 server = "http://beta.rest.ensembl.org"
@@ -83,58 +95,61 @@ expressedTranscripts = sys.argv[1];
 candidateTranscripts = sys.argv[2];
 getExpressedGenes = bool(int(sys.argv[3]))
 
-if(getExpressedGenes):
+# if(getExpressedGenes):
 
-	print("\t* Writing the multiFASTA file with all the expressed transcripts.")
+# 	print("\t* Writing the multiFASTA file with all the expressed transcripts.")
 
-	expressedMultiFasta = open('Results/iLoops/ExpressedTranscripts.fasta', "w")
-	ensemblQueryRestriction = 0
+# 	expressedMultiFasta = open('Results/iLoops/ExpressedTranscripts.fasta', "w")
+# 	ensemblQueryRestriction = 0
 
-	with open(expressedTranscripts, "r") as EXPRESSED:
-		for line in EXPRESSED:
-			stableId = line.strip()
-			ext = "/sequence/id/" + stableId + "?type=protein"
-			resp, content = http.request(server+ext, method="GET", headers={"Content-Type":"text/plain"})
+# 	with open(expressedTranscripts, "r") as EXPRESSED:
+# 		for line in EXPRESSED:
+# 			stableId = line.strip()
+# 			ext = "/sequence/id/" + stableId + "?type=protein"
+# 			resp, content = http.request(server+ext, method="GET", headers={"Content-Type":"text/plain"})
 
-			if not resp.status == 200:
-				print("\t\tCouldn't retrieve", stableId, "(", server + ext, "). Error", resp.status)
-				continue
+# 			if not resp.status == 200:
+# 				print("\t\tCouldn't retrieve", stableId, "(", server + ext, "). Error", resp.status)
+# 				continue
 
-			expressedMultiFasta.write(">" + stableId + "\n")
-			expressedMultiFasta.write(content + "\n")
+# 			expressedMultiFasta.write(">" + stableId + "\n")
+# 			expressedMultiFasta.write(content + "\n")
 
-			#Ensembl REST API doesn't accept more than 3 queries/second
-			ensemblQueryRestriction += 1
-			if ensemblQueryRestriction == 3:
-				sleep(1)
-				ensemblQueryRestriction = 0
+# 			#Ensembl REST API doesn't accept more than 3 queries/second
+# 			ensemblQueryRestriction += 1
+# 			if ensemblQueryRestriction == 3:
+# 				sleep(1)
+# 				ensemblQueryRestriction = 0
 
-	expressedMultiFasta.close()
-else:
-	copy("old/iLoops/ExpressedTranscripts.fasta", "Results/iLoops/ExpressedTranscripts.fasta")
+# 	expressedMultiFasta.close()
+# else:
+# 	copy("old/iLoops/ExpressedTranscripts.fasta", "Results/iLoops/ExpressedTranscripts.fasta")
 
 print("\t* Writing the pairs files.")
-GFF_TRACK = open('Results/candidates.gff', 'w')
-GFF_TRACK.write("##gff-version 3" + "\n")
+GFF3_TRACK = open('Results/candidates.v3.gff', 'w')
+GFF2n_TRACK = open('Results/candidates_normal.v2.gff', 'w')
+GFF2t_TRACK = open('Results/candidates_tumor.v2.gff', 'w')
+GFF3_TRACK.write("##gff-version 3" + "\n")
 
 with open(candidateTranscripts, "r") as CANDIDATES:
 	for line in CANDIDATES:
 		candidates = line.split("\t")
 		delete = False
 
-		delete, gffRecord = getGFFTrack(candidates)
-		GFF_TRACK.write(gffRecord)
+		delete, gff3Report, gff2nReport, gff2tReport = getGFF3Track(candidates)
+		GFF3_TRACK.write(gffR3ecord)
+		GFF2n_TRACK.write(gff2nReport)
+		GFF2t_TRACK.write(gff2tReport)
 
 		for rawCandidate in candidates:
 
-			aCandidate = rawCandidate.strip()			
-
-			cmd("mkdir Results/iLoops/input/" + aCandidate)
+			aCandidate = rawCandidate.strip()
+			cmd("mkdir Results/iLoops/Input/" + aCandidate)
 			fileNumber = 1
 			numberOfCandidates = 0
 
 			with open(expressedTranscripts, "r") as EXPRESSED:
-				PAIRS = open("Results/iLoops/input/" + aCandidate + '/' + aCandidate + '_' + str(fileNumber) + '.net', "w")
+				PAIRS = open("Results/iLoops/Input/" + aCandidate + '/' + aCandidate + '_' + str(fileNumber) + '.net', "w")
 
 				for rawExpressed in EXPRESSED:
 					expressedTranscript = rawExpressed.strip()
@@ -145,13 +160,15 @@ with open(candidateTranscripts, "r") as CANDIDATES:
 						fileNumber += 1
 						numberOfCandidates = 0
 						PAIRS.close()
-						PAIRS = open("Results/iLoops/input/" + aCandidate + '/' + aCandidate + '_' + str(fileNumber) + '.net', "w")
+						PAIRS = open("Results/iLoops/Input/" + aCandidate + '/' + aCandidate + '_' + str(fileNumber) + '.net', "w")
 
 				PAIRS.close()
 
 		if delete:
 			for rawCandidate in candidates:
 				aCandidate = rawCandidate.strip()
-				cmd("rm -r Results/iLoops/input/" + aCandidate)
+				cmd("rm -r Results/iLoops/Input/" + aCandidate)
 
 GFF_TRACK.close()
+GFF2n_TRACK.close()
+GFF2t_TRACK.close()
