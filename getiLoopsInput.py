@@ -6,7 +6,7 @@ from sh import *
 from time import sleep
 import json
 
-def getGFF3Track(twoCandidates):
+def getGFF3Track(twoCandidates, GFF3_TRACK, GFF2n_TRACK, GFF2t_TRACK):
 
 	gffTrack = {}
 	gffTrack["gene"] = {}
@@ -66,13 +66,13 @@ def getGFF3Track(twoCandidates):
 					if feature == "transcript" or feature == "exon":
 						gffTrack[feature][line["ID"]]["Atributes"] += "," + line["Parent"]
 
-	gff3Report = "##sequence-region   " + geneName + " " + gffTrack["gene"][ensGene]["start"]  + " " + gffTrack["gene"][ensGene]["end"] + "\n"
+	GFF3_TRACK.write("##sequence-region   " + geneName + " " + gffTrack["gene"][ensGene]["start"]  + " " + gffTrack["gene"][ensGene]["end"] + "\n")
 
 	for feature in ["gene", "transcript", "exon"]:
 		for geneId in gffTrack[feature]:
 			thisLine = gffTrack[feature][geneId]
-			gff3Report += geneName + "\t.\t" + thisLine["type"] + "\t" + thisLine["start"] + "\t" +\
-						 thisLine["end"] + "\t.\t" + thisLine["strand"] + "\t.\t" + thisLine["Atributes"] + "\n"
+			GFF3_TRACK.write(geneName + "\t.\t" + thisLine["type"] + "\t" + thisLine["start"] + "\t" +\
+						 thisLine["end"] + "\t.\t" + thisLine["strand"] + "\t.\t" + thisLine["Atributes"] + "\n")
 
 	gff2nReport = ""
 	gff2tReport = ""
@@ -83,10 +83,10 @@ def getGFF3Track(twoCandidates):
 			if feature == "transcript":
 				type = "mRNA"
 			thisLine = gffTrack[feature][geneId]
-			gff2nReport += thisLine["seqid"] + "\t.\t" + type + "\t" + thisLine["start"] + "\t" +\
-						   thisLine["end"] + "\t.\t" + thisLine["strand"] + "\t.\t" + thisLine["Atributes"] + "\n"
+			GFF2n_TRACK.write(thisLine["seqid"] + "\t.\t" + type + "\t" + thisLine["start"] + "\t" +\
+						   thisLine["end"] + "\t.\t" + thisLine["strand"] + "\t.\t" + thisLine["Atributes"] + "\n")
 
-	return False, gff3Report, gff2nReport, gff2tReport
+	return False
 
 http = httplib2.Http(".cache")
 server = "http://beta.rest.ensembl.org"
@@ -136,10 +136,7 @@ with open(candidateTranscripts, "r") as CANDIDATES:
 		candidates = line.split("\t")
 		delete = False
 
-		delete, gff3Report, gff2nReport, gff2tReport = getGFF3Track(candidates)
-		GFF3_TRACK.write(gffR3ecord)
-		GFF2n_TRACK.write(gff2nReport)
-		GFF2t_TRACK.write(gff2tReport)
+		delete = getGFF3Track(candidates, GFF3_TRACK, GFF2n_TRACK, GFF2t_TRACK)
 
 		for rawCandidate in candidates:
 
