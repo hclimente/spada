@@ -14,6 +14,7 @@ def getGFFTrack(twoCandidates):
 	gffTrack["exon"] = {}
 
 	ensGene = ""
+	geneName = ""
 
 	for rawCandidate in twoCandidates:
 		aCandidate = rawCandidate.strip()	
@@ -39,6 +40,7 @@ def getGFFTrack(twoCandidates):
 				elif feature == "gene":
 					if line["ID"] != ensGene:
 						continue
+					geneName = line["external_name"]
 				elif feature == "exon":
 					if line["Parent"] != aCandidate:
 						continue
@@ -58,16 +60,18 @@ def getGFFTrack(twoCandidates):
 	
 					if feature == "transcript" or feature == "exon":
 						gffTrack[feature][line["ID"]]["Atributes"] += ";Parent=" + line["Parent"]
+					else:
+						gffTrack[feature][line["ID"]]["Atributes"] += ";Name=" + line["external_name"]
 				else:
 					if feature == "transcript" or feature == "exon":
 						gffTrack[feature][line["ID"]]["Atributes"] += "," + line["Parent"]
 
-	gffReport = "##sequence-region " + ensGene + " " + gffTrack["gene"][ensGene]["start"]  + " " + gffTrack["gene"][ensGene]["end"] + "\n"
+	gffReport = "##sequence-region   " + geneName + " " + gffTrack["gene"][ensGene]["start"]  + " " + gffTrack["gene"][ensGene]["end"] + "\n"
 
 	for feature in ["gene", "transcript", "exon"]:
 		for geneId in gffTrack[feature]:
 			thisLine = gffTrack[feature][geneId]
-			gffReport += thisLine["seqid"] + "\t.\t" + thisLine["type"] + "\t" + thisLine["start"] + "\t" +\
+			gffReport += geneName + "\t.\t" + thisLine["type"] + "\t" + thisLine["start"] + "\t" +\
 						 thisLine["end"] + "\t.\t" + thisLine["strand"] + "\t.\t" + thisLine["Atributes"] + "\n"
 
 	return False, gffReport
