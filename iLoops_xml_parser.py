@@ -234,8 +234,8 @@ class ILXMLParser(object):
         if   eval(feature_codes_list)[0] in self._loops  : feature_type = LOOP
         elif eval(feature_codes_list)[0] in self._domains: feature_type = DOMAIN
         else: 
-            print self._domains
-            print self._loops
+            print(self._domains)
+            print(self._loops)
             raise ValueError(eval(feature_codes_list)[0])
         
         return [ feature_type, [ self.get_featureID(feature_code, feature_type) for feature_code in eval(feature_codes_list) ]]
