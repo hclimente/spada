@@ -11,23 +11,23 @@ if(len(sys.argv) != 2):
 
 class iLoopsParser(parser.ILXMLParser):
 	def parseResults(self, xmlOutput, **kwds):
-        parsedProteins = [] # to store parsed proteins
-        reportLevel = 1
+		parsedProteins = [] # to store parsed proteins
+		reportLevel = 1
 
-        for resultItem in self.results_parser(xml_file=xmlOutput, report_level=reportLevel, **kwds): 
-            # process the customized result item
-            # if it is a protein, process the object as desired (print to STDOUT the protein and store it in parsedProteins list)
-            if isinstance(resultItem, parser.ILXMLLoop): 
-                parsedProteins.append(resultItem)
-                print resultItem
-                
-            # else, just print it!
-            else: 
-                print resultItem
+		for resultItem in self.results_parser(xml_file=xmlOutput, report_level=reportLevel, **kwds): 
+			# process the customized result item
+			# if it is a protein, process the object as desired (print to STDOUT the protein and store it in parsedProteins list)
+			if isinstance(resultItem, parser.ILXMLLoop): 
+				parsedProteins.append(resultItem)
+				print resultItem
+				
+			# else, just print it!
+			else: 
+				print resultItem
 
-        # demonstrate that the full protein object has been stored into parsedProteins list
-        if len(parsedProteins) > 0: 
-            print "PARSED PROTEINS:", len(parsedProteins), "\t", ", ".join([ x.get_name() for x in parsedProteins ])
+		# demonstrate that the full protein object has been stored into parsedProteins list
+		if len(parsedProteins) > 0: 
+			print "PARSED PROTEINS:", len(parsedProteins), "\t", ", ".join([ x.get_name() for x in parsedProteins ])
 
 os.chdir(sys.argv[1])
 
@@ -57,8 +57,8 @@ pidQueue = []
 
 myParser = iLoopsParser()
 
-myParser.parseResults(xml_file                      = "output/ENST00000243253_3.net/sge_output/22939.assignation.01.xml", 
-                      output_interaction_signatures = False,
-                      output_RF_precisions          = False)
+myParser.parseResults(xml_file					  = "output/ENST00000243253_3.net/sge_output/22939.assignation.01.xml", 
+					  output_interaction_signatures = False,
+					  output_RF_precisions		  = False)
 
 
