@@ -24,7 +24,7 @@ def getGFFTrack(twoCandidates):
 			resp, content = http.request(server+ext, method="GET", headers={"Content-Type":"application/json"})
 			
 			if not resp.status == 200:
-				print "\t\tCandidate", aCandidate, "(", server + ext, ") not valid. Error", resp.status
+				print("\t\tCandidate", aCandidate, "(", server + ext, ") not valid. Error", resp.status)
 				return True, ""
 		
 			gffInfo = json.loads(content)
@@ -85,7 +85,7 @@ getExpressedGenes = bool(int(sys.argv[3]))
 
 if(getExpressedGenes):
 
-	print "\t* Writing the multiFASTA file with all the expressed transcripts."
+	print("\t* Writing the multiFASTA file with all the expressed transcripts.")
 
 	expressedMultiFasta = open('Results/iLoops/ExpressedTranscripts.fasta', "w")
 	ensemblQueryRestriction = 0
@@ -97,7 +97,7 @@ if(getExpressedGenes):
 			resp, content = http.request(server+ext, method="GET", headers={"Content-Type":"text/plain"})
 
 			if not resp.status == 200:
-				print "\t\tCouldn't retrieve", stableId, "(", server + ext, "). Error", resp.status
+				print("\t\tCouldn't retrieve", stableId, "(", server + ext, "). Error", resp.status)
 				continue
 
 			expressedMultiFasta.write(">" + stableId + "\n")
@@ -113,7 +113,7 @@ if(getExpressedGenes):
 else:
 	copy("old/iLoops/ExpressedTranscripts.fasta", "Results/iLoops/ExpressedTranscripts.fasta")
 
-print "\t* Writing the pairs files."
+print("\t* Writing the pairs files.")
 GFF_TRACK = open('Results/candidates.gff', 'w')
 GFF_TRACK.write("##gff-version 3" + "\n")
 
