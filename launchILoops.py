@@ -28,26 +28,28 @@ class iLoopsParser(parser.ILXMLParser):
 				
 		print parsedLoops
 
+		return parsedLoops
+
 os.chdir(sys.argv[1])
 
 pidQueue = []
 
 cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py",
 	"-f ExpressedTranscripts.fasta",
-	"-j Output/" + configFile,
-	"-x " + configFile + ".xml",
-	"-g all",
-	"-n 25",
-	"-Q sbi",
-	"-c 1,5,6,7,8,9,10,11,12,13,14,15,20,30,40,50",
+	"-j Output/Mapping",
+	"-x Mapping.xml",
 	"-v",
 	"-m"
 	)
 
 myParser = iLoopsParser()
-xmlFile = "output/ENST00000243253_3.net/sge_output/22939.assignation.01.xml"
+allLoops = {}
 
-myParser.parseResults(xmlOutput=xmlFile, outputInteraction_signatures=True, outputRFPrecisions=True)
+for xmlFile in filter(os.listdir("Output/Mapping/sge_output"), "*assignation.??.xml"):
+	newLoops = myParser.parseResults(xmlOutput=xmlFile, outputInteraction_signatures=True, outputRFPrecisions=True)
+	allLoops = dict(allLoops.items() + newLoops.items())
+
+print(allLoops)
 
 # for transcript in filter(os.listdir("Input"), "ENST*"):
 # 	for configFile in filter(os.listdir("Input/" + transcript), "*net"):
@@ -57,7 +59,7 @@ myParser.parseResults(xmlOutput=xmlFile, outputInteraction_signatures=True, outp
 # 		cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py",
 # 			"-f ExpressedTranscripts.fasta",
 # 			"-q Input/" + transcript + "/" + configFile,
-# 			"-j output/" + configFile,
+# 			"-j Output/" + configFile,
 # 			"-x " + configFile + ".xml",
 # 			"-g all",
 # 			"-n 25",
