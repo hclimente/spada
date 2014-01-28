@@ -17,17 +17,17 @@ class iLoopsParser(parser.ILXMLParser):
 		for resultItem in self.results_parser(xml_file=xmlOutput, report_level=reportLevel, **kwds): 
 			# process the customized result item
 			# if it is a protein, process the object as desired (print to STDOUT the protein and store it in parsedProteins list)
-			if isinstance(resultItem, parser.ILXMLLoop): 
+			if not isinstance(resultItem, parser.ILXMLProtein):
 				parsedProteins.append(resultItem)
-				print resultItem
+				print(type(resultItem))
 				
 			# else, just print it!
-			else: 
-				print resultItem
+			# else: 
+			# 	print resultItem
 
 		# demonstrate that the full protein object has been stored into parsedProteins list
 		if len(parsedProteins) > 0: 
-			print "PARSED PROTEINS:", len(parsedProteins), "\t", ", ".join([ x.get_name() for x in parsedProteins ])
+			print("PARSED PROTEINS:", len(parsedProteins), "\t", ", ".join([ x.get_name() for x in parsedProteins ]))
 
 os.chdir(sys.argv[1])
 
@@ -58,6 +58,6 @@ pidQueue = []
 myParser = iLoopsParser()
 xmlFile = "output/ENST00000243253_3.net/sge_output/22939.assignation.01.xml"
 
-myParser.parseResults(xml_file=file, output_interaction_signatures = False, output_RF_precisions= False)
+myParser.parseResults(xmlOutput=xmlFile, outputInteraction_signatures=False, outputRFPrecisions=False)
 
 

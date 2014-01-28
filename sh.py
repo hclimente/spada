@@ -50,7 +50,7 @@ def setRWorkspace(wd, Conditions, Compartments, Replicates, Kmer):
 
 def setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer):
 
-	print "* Preparing the environment"
+	print("* Preparing the environment")
 	cmd("cd " + wd)
 	cmd("rm -r old2; mv old old2")
 	cmd("mv Results old; mv SmartAS.RData old/SmartAS.old.RData")
