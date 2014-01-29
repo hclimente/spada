@@ -117,7 +117,7 @@ if(getExpressedGenes):
 			expressedMultiFasta.write(">" + stableId + "\n")
 			expressedMultiFasta.write(content + "\n")
 
-			#Ensembl REST API doesn't accept more than 3 queries/second
+			#Ensembl REST API doesn't accept more than 3 queries/second.
 			ensemblQueryRestriction += 1
 			if ensemblQueryRestriction == 3:
 				sleep(1)
