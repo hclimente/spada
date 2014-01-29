@@ -15,13 +15,13 @@ def getGFF3Track(twoCandidates, GFF3_TRACK, GFF2n_TRACK, GFF2t_TRACK):
 
 	ensGene = ""
 	geneName = ""
-	firstCandidate = ""
+	normalIsof = ""
 
 	for rawCandidate in twoCandidates:
 		aCandidate = rawCandidate.strip()	
 
-		if not firstCandidate:
-			firstCandidate = aCandidate
+		if not normalIsof:
+			normalIsof = aCandidate
 		
 		for feature in ["transcript", "exon", "gene"]:
 			
@@ -80,7 +80,7 @@ def getGFF3Track(twoCandidates, GFF3_TRACK, GFF2n_TRACK, GFF2t_TRACK):
 			GFF3_TRACK.write(geneName + "\t.\t" + thisLine["type"] + "\t" + thisLine["start"] + "\t" +\
 						 thisLine["end"] + "\t.\t" + thisLine["strand"] + "\t.\t" + thisLine["Atributes"] + "\n")
 			if feature == "exon":
-				if thisLine["Group"].find(firstCandidate) != -1:
+				if thisLine["Group"].find(normalIsof) != -1:
 					GFF2n_TRACK.write(thisLine["seqid"] + "\t.\t" + "exon" + "\t" + thisLine["start"] + "\t" +\
 						  		  thisLine["end"] + "\t.\t" + thisLine["strand"] + "\t.\t" + thisLine["Group"] + "\n")
 				else:
@@ -97,35 +97,35 @@ expressedTranscripts = sys.argv[1];
 candidateTranscripts = sys.argv[2];
 getExpressedGenes = bool(int(sys.argv[3]))
 
-# if(getExpressedGenes):
+if(getExpressedGenes):
 
-# 	print("\t* Writing the multiFASTA file with all the expressed transcripts.")
+	print("\t* Writing the multiFASTA file with all the expressed transcripts.")
 
-# 	expressedMultiFasta = open('Results/iLoops/ExpressedTranscripts.fasta', "w")
-# 	ensemblQueryRestriction = 0
+	expressedMultiFasta = open('Results/iLoops/ExpressedTranscripts.fasta', "w")
+	ensemblQueryRestriction = 0
 
-# 	with open(expressedTranscripts, "r") as EXPRESSED:
-# 		for line in EXPRESSED:
-# 			stableId = line.strip()
-# 			ext = "/sequence/id/" + stableId + "?type=protein"
-# 			resp, content = http.request(server+ext, method="GET", headers={"Content-Type":"text/plain"})
+	with open(expressedTranscripts, "r") as EXPRESSED:
+		for line in EXPRESSED:
+			stableId = line.strip()
+			ext = "/sequence/id/" + stableId + "?type=protein"
+			resp, content = http.request(server+ext, method="GET", headers={"Content-Type":"text/plain"})
 
-# 			if not resp.status == 200:
-# 				print("\t\tCouldn't retrieve", stableId, "(", server + ext, "). Error", resp.status)
-# 				continue
+			if not resp.status == 200:
+				print("\t\tCouldn't retrieve", stableId, "(", server + ext, "). Error", resp.status)
+				continue
 
-# 			expressedMultiFasta.write(">" + stableId + "\n")
-# 			expressedMultiFasta.write(content + "\n")
+			expressedMultiFasta.write(">" + stableId + "\n")
+			expressedMultiFasta.write(content + "\n")
 
-# 			#Ensembl REST API doesn't accept more than 3 queries/second
-# 			ensemblQueryRestriction += 1
-# 			if ensemblQueryRestriction == 3:
-# 				sleep(1)
-# 				ensemblQueryRestriction = 0
+			#Ensembl REST API doesn't accept more than 3 queries/second
+			ensemblQueryRestriction += 1
+			if ensemblQueryRestriction == 3:
+				sleep(1)
+				ensemblQueryRestriction = 0
 
-# 	expressedMultiFasta.close()
-# else:
-# 	copy("old/iLoops/ExpressedTranscripts.fasta", "Results/iLoops/ExpressedTranscripts.fasta")
+	expressedMultiFasta.close()
+else:
+	copy("old/iLoops/ExpressedTranscripts.fasta", "Results/iLoops/ExpressedTranscripts.fasta")
 
 print("\t* Writing the pairs files.")
 GFF3_TRACK = open('Results/candidates.v3.gff', 'w')
