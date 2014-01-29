@@ -99,7 +99,7 @@ def prepareILoopsInput():
 	if not diff and path.exists("old/iLoops/ExpressedTranscripts.fasta"):
 		getExpressedGenes = 0
 
-	cmd("Pipeline/getiLoopsInput.py Results/expressedGenes.lst Results/candidateList.top.lst ", getExpressedGenes)
+	cmd("Pipeline/getiLoopsInput.py Results/expressedGenes.lst Results/candidateList.top.lst", getExpressedGenes)
 
 def launchILoops():
 

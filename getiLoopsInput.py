@@ -74,9 +74,6 @@ def getGFF3Track(twoCandidates, GFF3_TRACK, GFF2n_TRACK, GFF2t_TRACK):
 			GFF3_TRACK.write(geneName + "\t.\t" + thisLine["type"] + "\t" + thisLine["start"] + "\t" +\
 						 thisLine["end"] + "\t.\t" + thisLine["strand"] + "\t.\t" + thisLine["Atributes"] + "\n")
 
-	gff2nReport = ""
-	gff2tReport = ""
-
 	for feature in ["transcript", "exon"]:
 		for geneId in gffTrack[feature]:
 			type = "exon"
