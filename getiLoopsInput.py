@@ -6,92 +6,91 @@ from sh import *
 from time import sleep
 import json
 
-def getGFF3Track(twoCandidates, GFF3_TRACK, GFF2n_TRACK, GFF2t_TRACK):
+def getFeature(query, ensemblId, question):
+
+	http = httplib2.Http(".cache")
+	server = "http://beta.rest.ensembl.org"
+
+	ext = "/" + query + "/id/" + ensemblId + "?" + question
+	resp, content = http.request(server+ext, method="GET", headers={"Content-Type":"application/json"})
+			
+	if not resp.status == 200:
+		print("\t\tId " + ensemblId + "(" + server + ext + ") not valid. Error " + str(resp.status))
+		return {}
+		
+	return json.loads(content)
+
+def getGFFTrack(candidate, GFF3_TRACK, GFF2n_TRACK, GFF2t_TRACK):
 
 	gffTrack = {}
-	gffTrack["gene"] = {}
 	gffTrack["transcript"] = {}
 	gffTrack["exon"] = {}
 
-	ensGene = ""
+	ensGene = candidate.pop().strip()
+	normalIso = candidate[0].strip()
+	tumorIso = candidate[1].strip()
 	geneName = ""
-	normalIsof = ""
 
-	for rawCandidate in twoCandidates:
-		aCandidate = rawCandidate.strip()	
+	gffInfo = getFeature("feature", ensGene, "feature=gene")
+	if not gffInfo:
+		return False
 
-		if not normalIsof:
-			normalIsof = aCandidate
+	for line in gffInfo:
+		if line["ID"] == ensGene:
+			geneName = line["external_name"]
+			
+			strand = "+"
+			if line["strand"] == -1:
+				strand = "-"
+			GFF3_TRACK.write("##sequence-region   " + geneName + " " + str(line["start"])  + " " + str(line["end"]) + "\n")
+			GFF3_TRACK.write(geneName + "\t.\t" + line["feature_type"] + "\t" + str(line["start"]) + "\t" +\
+							 str(line["end"]) + "\t.\t" + strand + "\t.\t" + "ID=" + line["ID"] + "\n")
+
+	for rawString in candidate:
+		aCandidate = rawString.strip()	
 		
-		for feature in ["transcript", "exon", "gene"]:
-			
-			ext = "/feature/id/" + aCandidate + "?feature=" + feature
-			resp, content = http.request(server+ext, method="GET", headers={"Content-Type":"application/json"})
-			
-			if not resp.status == 200:
-				print("\t\tCandidate " + aCandidate + "(" + server + ext + ") not valid. Error " + str(resp.status))
-				return True
+		for feature in ["transcript", "exon"]:
+			gffInfo = getFeature("feature", aCandidate, "feature=" + feature)
+			if not gffInfo:
+				return False
 		
-			gffInfo = json.loads(content)
-			
 			for line in gffInfo:
-
-				if feature == "gene":
-					if line["ID"] != ensGene:
-						continue
-					geneName = line["external_name"]
-				elif feature == "exon":
-					if line["Parent"] != aCandidate:
-						continue
-				elif feature == "transcript":
-					if line["ID"] != aCandidate:
-						continue
-						
-					if not ensGene and line["ID"] == aCandidate:
-						ensGene = line["Parent"]
+				if feature == "exon" and line["Parent"] != aCandidate:
+					continue
+				elif feature == "transcript" and line["ID"] != aCandidate:
+					continue
 
 				if not line["ID"] in gffTrack[feature]:
-					gffTrack[feature][line["ID"]] = {}
-
-					gffTrack[feature][line["ID"]]["seqid"] = "chr" + line["seq_region_name"]
-					gffTrack[feature][line["ID"]]["type"] = line["feature_type"]
-					gffTrack[feature][line["ID"]]["start"] = str(line["start"])
-					gffTrack[feature][line["ID"]]["end"] = str(line["end"])
-					gffTrack[feature][line["ID"]]["strand"] = "+"
-					gffTrack[feature][line["ID"]]["Atributes"] = "ID=" + line["ID"]
-					gffTrack[feature][line["ID"]]["Group"] = "Transcript " + aCandidate
+					gffTrack[feature][line["ID"]] = {
+						"seqid": "chr" + line["seq_region_name"],
+						"type": line["feature_type"],
+						"start": str(line["start"]),
+						"end": str(line["end"]),
+						"strand": "+",
+						"Atributes": "ID=" + line["ID"] + ";Parent=" + line["Parent"],
+						"Group": [aCandidate]
+					}
 	
 					if line["strand"] == -1:
 						gffTrack[feature][line["ID"]]["strand"] = "-"
-	
-					if feature == "transcript" or feature == "exon":
-						gffTrack[feature][line["ID"]]["Atributes"] += ";Parent=" + line["Parent"]
-					else:
-						gffTrack[feature][line["ID"]]["Atributes"] += ";Name=" + line["external_name"]
 				else:
-					if feature == "transcript" or feature == "exon":
-						gffTrack[feature][line["ID"]]["Atributes"] += "," + line["Parent"]
+					gffTrack[feature][line["ID"]]["Atributes"] += "," + line["Parent"]
+					gffTrack[feature][line["ID"]]["Group"].append(line["Parent"])
 
-	GFF3_TRACK.write("##sequence-region   " + geneName + " " + gffTrack["gene"][ensGene]["start"]  + " " + gffTrack["gene"][ensGene]["end"] + "\n")
-
-	for feature in ["gene", "transcript", "exon"]:
+	for feature in ["transcript", "exon"]:
 		for geneId in gffTrack[feature]:
 			thisLine = gffTrack[feature][geneId]
 			GFF3_TRACK.write(geneName + "\t.\t" + thisLine["type"] + "\t" + thisLine["start"] + "\t" +\
 						 thisLine["end"] + "\t.\t" + thisLine["strand"] + "\t.\t" + thisLine["Atributes"] + "\n")
 			if feature == "exon":
-				if thisLine["Group"].find(normalIsof) != -1:
+				if normalIso in thisLine["Group"]:
 					GFF2n_TRACK.write(thisLine["seqid"] + "\t.\t" + "exon" + "\t" + thisLine["start"] + "\t" +\
-						  		  thisLine["end"] + "\t.\t" + thisLine["strand"] + "\t.\t" + thisLine["Group"] + "\n")
-				else:
+						  			  thisLine["end"] + "\t.\t" + thisLine["strand"] + "\t.\t" + "Transcript " + normalIso + "\n")
+				if tumorIso in thisLine["Group"]:
 					GFF2t_TRACK.write(thisLine["seqid"] + "\t.\t" + "exon" + "\t" + thisLine["start"] + "\t" +\
-						  		  thisLine["end"] + "\t.\t" + thisLine["strand"] + "\t.\t" + thisLine["Group"] + "\n")
+						  			  thisLine["end"] + "\t.\t" + thisLine["strand"] + "\t.\t" + "Transcript " + tumorIso + "\n")
 
-
-	return False
-
-http = httplib2.Http(".cache")
-server = "http://beta.rest.ensembl.org"
+	return True
 
 expressedTranscripts = sys.argv[1];
 candidateTranscripts = sys.argv[2];
@@ -107,15 +106,13 @@ if(getExpressedGenes):
 	with open(expressedTranscripts, "r") as EXPRESSED:
 		for line in EXPRESSED:
 			stableId = line.strip()
-			ext = "/sequence/id/" + stableId + "?type=protein"
-			resp, content = http.request(server+ext, method="GET", headers={"Content-Type":"text/plain"})
 
-			if not resp.status == 200:
-				print("\t\tCouldn't retrieve", stableId, "(", server + ext, "). Error", resp.status)
+			sequence = (getFeature("sequence", stableId, "type=protein"))["seq"]
+			if not sequence:
 				continue
 
 			expressedMultiFasta.write(">" + stableId + "\n")
-			expressedMultiFasta.write(content + "\n")
+			expressedMultiFasta.write(sequence + "\n")
 
 			#Ensembl REST API doesn't accept more than 3 queries/second.
 			ensemblQueryRestriction += 1
@@ -136,34 +133,31 @@ GFF3_TRACK.write("##gff-version 3" + "\n")
 with open(candidateTranscripts, "r") as CANDIDATES:
 	for line in CANDIDATES:
 		candidates = line.split("\t")
-		delete = False
-
-		delete = getGFF3Track(candidates, GFF3_TRACK, GFF2n_TRACK, GFF2t_TRACK)
-
-		for rawCandidate in candidates:
-
-			aCandidate = rawCandidate.strip()
-			cmd("mkdir Results/iLoops/Input/" + aCandidate)
-			fileNumber = 1
-			numberOfCandidates = 0
-
-			with open(expressedTranscripts, "r") as EXPRESSED:
-				PAIRS = open("Results/iLoops/Input/" + aCandidate + '/' + aCandidate + '_' + str(fileNumber) + '.net', "w")
-
-				for rawExpressed in EXPRESSED:
-					expressedTranscript = rawExpressed.strip()
-					PAIRS.write(aCandidate + "\t" + expressedTranscript + "\n")
-					numberOfCandidates += 1
-
-					if(numberOfCandidates >= 10000):
-						fileNumber += 1
-						numberOfCandidates = 0
-						PAIRS.close()
-						PAIRS = open("Results/iLoops/Input/" + aCandidate + '/' + aCandidate + '_' + str(fileNumber) + '.net', "w")
-
-				PAIRS.close()
-
-		if delete:
+		
+		if getGFFTrack(candidates, GFF3_TRACK, GFF2n_TRACK, GFF2t_TRACK):
+			for rawCandidate in candidates:
+	
+				aCandidate = rawCandidate.strip()
+				cmd("mkdir Results/iLoops/Input/" + aCandidate)
+				fileNumber = 1
+				numberOfCandidates = 0
+	
+				with open(expressedTranscripts, "r") as EXPRESSED:
+					PAIRS = open("Results/iLoops/Input/" + aCandidate + '/' + aCandidate + '_' + str(fileNumber) + '.net', "w")
+	
+					for rawExpressed in EXPRESSED:
+						expressedTranscript = rawExpressed.strip()
+						PAIRS.write(aCandidate + "\t" + expressedTranscript + "\n")
+						numberOfCandidates += 1
+	
+						if(numberOfCandidates >= 10000):
+							fileNumber += 1
+							numberOfCandidates = 0
+							PAIRS.close()
+							PAIRS = open("Results/iLoops/Input/" + aCandidate + '/' + aCandidate + '_' + str(fileNumber) + '.net', "w")
+	
+					PAIRS.close()
+		else:
 			for rawCandidate in candidates:
 				aCandidate = rawCandidate.strip()
 				cmd("rm -r Results/iLoops/Input/" + aCandidate)
