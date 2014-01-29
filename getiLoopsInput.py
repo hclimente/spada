@@ -15,35 +15,40 @@ def getGFF3Track(twoCandidates, GFF3_TRACK, GFF2n_TRACK, GFF2t_TRACK):
 
 	ensGene = ""
 	geneName = ""
+	firstCandidate = ""
 
 	for rawCandidate in twoCandidates:
 		aCandidate = rawCandidate.strip()	
+
+		if not firstCandidate:
+			firstCandidate = aCandidate
+		
 		for feature in ["transcript", "exon", "gene"]:
 			
 			ext = "/feature/id/" + aCandidate + "?feature=" + feature
 			resp, content = http.request(server+ext, method="GET", headers={"Content-Type":"application/json"})
 			
 			if not resp.status == 200:
-				print("\t\tCandidate", aCandidate, "(", server + ext, ") not valid. Error", resp.status)
-				return True, ""
+				print("\t\tCandidate " + aCandidate + "(" + server + ext + ") not valid. Error " + str(resp.status))
+				return True
 		
 			gffInfo = json.loads(content)
 			
 			for line in gffInfo:
 
-				if feature == "transcript":
-					if not ensGene and line["ID"] == aCandidate:
-						ensGene = line["Parent"]
-					
-					if line["ID"] != aCandidate:
-						continue
-				elif feature == "gene":
+				if feature == "gene":
 					if line["ID"] != ensGene:
 						continue
 					geneName = line["external_name"]
 				elif feature == "exon":
 					if line["Parent"] != aCandidate:
 						continue
+				elif feature == "transcript":
+					if line["ID"] != aCandidate:
+						continue
+						
+					if not ensGene and line["ID"] == aCandidate:
+						ensGene = line["Parent"]
 
 				if not line["ID"] in gffTrack[feature]:
 					gffTrack[feature][line["ID"]] = {}
@@ -54,6 +59,7 @@ def getGFF3Track(twoCandidates, GFF3_TRACK, GFF2n_TRACK, GFF2t_TRACK):
 					gffTrack[feature][line["ID"]]["end"] = str(line["end"])
 					gffTrack[feature][line["ID"]]["strand"] = "+"
 					gffTrack[feature][line["ID"]]["Atributes"] = "ID=" + line["ID"]
+					gffTrack[feature][line["ID"]]["Group"] = "Transcript " + aCandidate
 	
 					if line["strand"] == -1:
 						gffTrack[feature][line["ID"]]["strand"] = "-"
@@ -73,15 +79,16 @@ def getGFF3Track(twoCandidates, GFF3_TRACK, GFF2n_TRACK, GFF2t_TRACK):
 			thisLine = gffTrack[feature][geneId]
 			GFF3_TRACK.write(geneName + "\t.\t" + thisLine["type"] + "\t" + thisLine["start"] + "\t" +\
 						 thisLine["end"] + "\t.\t" + thisLine["strand"] + "\t.\t" + thisLine["Atributes"] + "\n")
+			if feature == "exon":
+				if thisLine["Group"].find(firstCandidate) != -1:
+					print "N", thisLine["Group"], firstCandidate
+					GFF2n_TRACK.write(thisLine["seqid"] + "\t.\t" + "exon" + "\t" + thisLine["start"] + "\t" +\
+						  		  thisLine["end"] + "\t.\t" + thisLine["strand"] + "\t.\t" + thisLine["Group"] + "\n")
+				else:
+					print "T", thisLine["Group"], firstCandidate
+					GFF2t_TRACK.write(thisLine["seqid"] + "\t.\t" + "exon" + "\t" + thisLine["start"] + "\t" +\
+						  		  thisLine["end"] + "\t.\t" + thisLine["strand"] + "\t.\t" + thisLine["Group"] + "\n")
 
-	for feature in ["transcript", "exon"]:
-		for geneId in gffTrack[feature]:
-			type = "exon"
-			if feature == "transcript":
-				type = "mRNA"
-			thisLine = gffTrack[feature][geneId]
-			GFF2n_TRACK.write(thisLine["seqid"] + "\t.\t" + type + "\t" + thisLine["start"] + "\t" +\
-						   thisLine["end"] + "\t.\t" + thisLine["strand"] + "\t.\t" + thisLine["Atributes"] + "\n")
 
 	return False
 
@@ -138,12 +145,12 @@ with open(candidateTranscripts, "r") as CANDIDATES:
 		for rawCandidate in candidates:
 
 			aCandidate = rawCandidate.strip()
-			cmd("mkdir Results/iLoops/Input/" + aCandidate)
+			cmd("mkdir Results/iLoops/input/" + aCandidate)
 			fileNumber = 1
 			numberOfCandidates = 0
 
 			with open(expressedTranscripts, "r") as EXPRESSED:
-				PAIRS = open("Results/iLoops/Input/" + aCandidate + '/' + aCandidate + '_' + str(fileNumber) + '.net', "w")
+				PAIRS = open("Results/iLoops/input/" + aCandidate + '/' + aCandidate + '_' + str(fileNumber) + '.net', "w")
 
 				for rawExpressed in EXPRESSED:
 					expressedTranscript = rawExpressed.strip()
@@ -154,15 +161,15 @@ with open(candidateTranscripts, "r") as CANDIDATES:
 						fileNumber += 1
 						numberOfCandidates = 0
 						PAIRS.close()
-						PAIRS = open("Results/iLoops/Input/" + aCandidate + '/' + aCandidate + '_' + str(fileNumber) + '.net', "w")
+						PAIRS = open("Results/iLoops/input/" + aCandidate + '/' + aCandidate + '_' + str(fileNumber) + '.net', "w")
 
 				PAIRS.close()
 
 		if delete:
 			for rawCandidate in candidates:
 				aCandidate = rawCandidate.strip()
-				cmd("rm -r Results/iLoops/Input/" + aCandidate)
+				cmd("rm -r Results/iLoops/input/" + aCandidate)
 
-GFF_TRACK.close()
+GFF3_TRACK.close()
 GFF2n_TRACK.close()
 GFF2t_TRACK.close()
