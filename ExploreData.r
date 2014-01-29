@@ -48,7 +48,7 @@ for (kmer in inputData[["K-mer"]]){
     for (sample in inputData[["Conditions"]]){
 
       thisTag <- paste0(sample, tag)
-      inputFile=paste0(wd, "/Data/30-kmer-length/", thisTag, "/quant_bias_corrected.sf")
+      inputFile=paste0(wd, "/Data/", kmer, "-kmer-length/", thisTag, "/quant_bias_corrected.sf")
       outputFile=paste0(wd, "/Results/", thisTag, ".tsv")
       
       #Read Sailfish table !!Add arg to enter the name
@@ -58,13 +58,13 @@ for (kmer in inputData[["K-mer"]]){
       #Get the genes ids
       transcriptIds <- matrix(unlist(strsplit(as.character(sailfishTable$Transcript), split="|", fixed=T)), ncol=7, byrow=T)
       
-      #Build the final table
+      #Build the final table. Warning: MAGIC BELOW. DON'T TOUCH
       isoformExpression[[thisTag]] <- data.frame(unlist(strsplit(transcriptIds[,2], "\\."))[c(TRUE, FALSE)], unlist(strsplit(transcriptIds[,1], "\\."))[c(TRUE, FALSE)], sailfishTable$TPM, stringsAsFactors=F)
       colnames(isoformExpression[[thisTag]]) <- c("Gene","Transcript","TPM")
       
       rm(sailfishTable,transcriptIds)
       
-      #Calculate the PSI for each transcript
+      #Calculate the PSI for each transcript and the total expression of the gene
       vPSI <- as.numeric()
       vtTPM <- as.numeric()
       
@@ -92,6 +92,7 @@ for (kmer in inputData[["K-mer"]]){
     intraReplicate[[tag]]$deltaPSI <- intraReplicate[[tag]]$PSI_ref - intraReplicate[[tag]]$PSI_alt
     intraReplicate[[tag]]$la_tTPM <- 0.5 * (log(intraReplicate[[tag]]$tTPM_ref) + log(intraReplicate[[tag]]$tTPM_alt))
     
+    #Plot stuff
     printLogFreqHist(intraReplicate[[tag]]$deltaPSI, "deltaPSI", paste0("deltaPSI_", tag))
     printTPMHist(intraReplicate[[tag]]$TPM_ref, "log10(TPM10+0.0001)", paste0("TPM10_",tag))
     printLogFreqHist(intraReplicate[[tag]]$PSI_ref, "PSI10", paste0("PSI10_",tag))
@@ -101,10 +102,8 @@ for (kmer in inputData[["K-mer"]]){
     write.table(intraReplicate[[tag]], file=paste0(wd,"/Results/IntraReplicate",tag,".tsv"), sep="\t", row.names=F)
 
   }
-}
 
-for (kmer in inputData[["K-mer"]]){
-
+  #Plot more stuff
   tag <- paste0(compartment, kmer)
   tag1 <- paste0(compartment, inputData[["Replicates"]][1], "_", kmer)
   tag2 <- paste0(compartment, inputData[["Replicates"]][2], "_", kmer)
@@ -133,9 +132,9 @@ for (kmer in inputData[["K-mer"]]){
              "deltaPSI", paste0(wd,"/Results/DataExploration/latTPM_PSI_interreplicate10_",tag,".png"))
   simplePlot(interReplicate[["Alt"]]$la_tTPM, interReplicate[["Alt"]]$deltaPSI, paste0(tag, "_7"), "0.5·(log(sum tTPM_1) + log(sum tTPM_2) )", 
              "deltaPSI", paste0(wd,"/Results/DataExploration/latTPM_PSI_interreplicate7_",tag,".png"))
-  
 }
 
+#Estimate the False Positive Rate
 FPR <- as.numeric()
 psiRange <- as.numeric()
 for (psiValue in seq(0, 1, by=0.05)){
