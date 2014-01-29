@@ -76,7 +76,7 @@ def setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer):
 	if initialStep > 4:
 		cmd("cp -r old/iLoops/Input Results/iLoops/")
 		cmd("cp -r old/iLoops/ExpressedTranscripts.fasta Results/iLoops/")
-		cmd("cp -r old/candidates.gff Results")
+		cmd("cp -r old/candidates.v3.gff old/candidates_normal.v2.gff old/candidates_tumor.v2.gff Results")
 	if initialStep > 5:
 		cmd("cp -r old/iLoops/Output Results/iLoops")
 
