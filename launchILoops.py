@@ -72,3 +72,5 @@ print(allLoops)
 # 		exit()
 
 # waitPID(pidQueue)
+
+cmd("scp -r Results/iLoops/Output hectorc@gaudi.imim.es:~/SmartAS/Results/iLoops")
