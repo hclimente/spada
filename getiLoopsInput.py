@@ -81,11 +81,9 @@ def getGFF3Track(twoCandidates, GFF3_TRACK, GFF2n_TRACK, GFF2t_TRACK):
 						 thisLine["end"] + "\t.\t" + thisLine["strand"] + "\t.\t" + thisLine["Atributes"] + "\n")
 			if feature == "exon":
 				if thisLine["Group"].find(firstCandidate) != -1:
-					print "N", thisLine["Group"], firstCandidate
 					GFF2n_TRACK.write(thisLine["seqid"] + "\t.\t" + "exon" + "\t" + thisLine["start"] + "\t" +\
 						  		  thisLine["end"] + "\t.\t" + thisLine["strand"] + "\t.\t" + thisLine["Group"] + "\n")
 				else:
-					print "T", thisLine["Group"], firstCandidate
 					GFF2t_TRACK.write(thisLine["seqid"] + "\t.\t" + "exon" + "\t" + thisLine["start"] + "\t" +\
 						  		  thisLine["end"] + "\t.\t" + thisLine["strand"] + "\t.\t" + thisLine["Group"] + "\n")
 
