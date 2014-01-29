@@ -143,12 +143,12 @@ with open(candidateTranscripts, "r") as CANDIDATES:
 		for rawCandidate in candidates:
 
 			aCandidate = rawCandidate.strip()
-			cmd("mkdir Results/iLoops/input/" + aCandidate)
+			cmd("mkdir Results/iLoops/Input/" + aCandidate)
 			fileNumber = 1
 			numberOfCandidates = 0
 
 			with open(expressedTranscripts, "r") as EXPRESSED:
-				PAIRS = open("Results/iLoops/input/" + aCandidate + '/' + aCandidate + '_' + str(fileNumber) + '.net', "w")
+				PAIRS = open("Results/iLoops/Input/" + aCandidate + '/' + aCandidate + '_' + str(fileNumber) + '.net', "w")
 
 				for rawExpressed in EXPRESSED:
 					expressedTranscript = rawExpressed.strip()
@@ -159,14 +159,14 @@ with open(candidateTranscripts, "r") as CANDIDATES:
 						fileNumber += 1
 						numberOfCandidates = 0
 						PAIRS.close()
-						PAIRS = open("Results/iLoops/input/" + aCandidate + '/' + aCandidate + '_' + str(fileNumber) + '.net', "w")
+						PAIRS = open("Results/iLoops/Input/" + aCandidate + '/' + aCandidate + '_' + str(fileNumber) + '.net', "w")
 
 				PAIRS.close()
 
 		if delete:
 			for rawCandidate in candidates:
 				aCandidate = rawCandidate.strip()
-				cmd("rm -r Results/iLoops/input/" + aCandidate)
+				cmd("rm -r Results/iLoops/Input/" + aCandidate)
 
 GFF3_TRACK.close()
 GFF2n_TRACK.close()
