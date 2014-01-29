@@ -131,6 +131,6 @@ with open("Results/candidateList.lst", "r") as candidates:
 					break
 
 		if hubCandidate:
-			iLoopsPairs.write(candidate1 + "\t" + candidate2 + "\n")
+			iLoopsPairs.write(candidate1 + "\t" + candidate2 + "\t" + gene + "\n")
 
 iLoopsPairs.close()
