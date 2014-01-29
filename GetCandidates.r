@@ -50,6 +50,9 @@ for (kmer in inputData[["K-mer"]]){
 			minDeltaPsi <- min(intraReplicate[[tag]]$deltaPSI[thisGeneData & negPSI], na.rm=T)
 			maxSwitch <- maxDeltaPsi - minDeltaPsi
 
+			#deltaPSI = PSI_ref - PSI_alt
+			#	MaxDeltaPsiCond: predominant transcript in the normal
+			#	MinDeltaPsiCond: predominant transcript in the tumor
 			maxDeltaPsiCond <- intraReplicate[[tag]]$deltaPSI == maxDeltaPsi
 			minDeltaPsiCond <- intraReplicate[[tag]]$deltaPSI == minDeltaPsi
 
@@ -59,7 +62,7 @@ for (kmer in inputData[["K-mer"]]){
 										mindPSI=intraReplicate[[tag]]$Transcript[thisGeneData & minDeltaPsiCond])	)
 		}
 
-		#expressedGenes <- intraReplicate[[tag]]$la_tTPM >= minExpression
+		#Expressed genes: transcript whose expression is above the threshold
 		expressedGenes <-(log(intraReplicate[[tag]]$TPM_ref) + log(intraReplicate[[tag]]$TPM_alt)) / 2 > minExpression
 		allGenes <- unique(c(allGenes, intraReplicate[[tag]]$Transcript[expressedGenes]))
 
