@@ -41,13 +41,13 @@ def main(argv):
 	for opt, arg in opts:
 		if opt == "-s":
 			initialStep = int(arg)
-		elif opt == "-wd":
+		elif opt == "-w":
 			wd = arg
-		elif opt == "-cp":
+		elif opt == "-p":
 			minPSI = arg
-		elif opt == "-ce":
+		elif opt == "-e":
 			minCandidateExpression = arg
-		elif opt == "-me":
+		elif opt == "-m":
 			minExpression = arg
 
 	setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer)
@@ -78,6 +78,7 @@ def getCandidates(minExpression, minCandidateExpression, minPSI):
 
 	print("* Extracting transcripts with high variance and high expression.")
 	cmd("Pipeline/GetCandidates.r", minExpression, minCandidateExpression, minPSI)
+	cmd("Pipeline/getGenenames.py", "Results/candidateList.lst")
 	copy("SmartAS.RData", "Results/RWorkspaces/2_GetCandidates.RData")
 
 	cmd("sort Results/expressedGenes.lst >Results/expressedGenes.tmp.lst")
@@ -105,6 +106,7 @@ def launchILoops():
 
 	print("* Launching iLoops jobs.")
 	
+	cmd("ssh hectorc@gaudi 'mv ~/SmartAS/Results ~/SmartAS/old; rm -r ~/SmartAS/old'")
 	cmd("scp -r Results/iLoops hectorc@gaudi.imim.es:~/SmartAS/Results")
 	cmd("ssh hectorc@gaudi '~/SmartAS/Pipeline/launchILoops.py /sbi/users/hectorc/SmartAS/Results/iLoops'")
 
