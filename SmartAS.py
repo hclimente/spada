@@ -51,13 +51,14 @@ def main(argv):
 			minExpression = arg
 
 	setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer)
+	printParam(initialStep, wd, gaudiWd, minExpression, minCandidateExpression, minPSI, Conditions, Compartments, Replicates, Kmer, top)
 	
 	if initialStep <= 1:
 		exploreData()
 	if initialStep <= 2:
 		getCandidates(minExpression, minCandidateExpression, minPSI)
 	if initialStep <= 3:
-		bianaInteractions(top)
+		candidatePrioritization(top)
 	if initialStep <= 4:
 		prepareILoopsInput()
 	if initialStep <= 5:
@@ -84,10 +85,10 @@ def getCandidates(minExpression, minCandidateExpression, minPSI):
 	cmd("sort Results/expressedGenes.lst >Results/expressedGenes.tmp.lst")
 	cmd("mv Results/expressedGenes.tmp.lst Results/expressedGenes.lst")
 	
-def bianaInteractions(top):
+def candidatePrioritization(top):
 
 	print("* Querying BIANA for known interactions of the candidates.")
-	cmd("Pipeline/bianaInteractions.py", top)
+	cmd("Pipeline/CandidatePrioritization.py", top)
 
 def prepareILoopsInput():
 
