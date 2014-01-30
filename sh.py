@@ -5,6 +5,7 @@ from rpy2.robjects import r
 import httplib2
 import json
 from time import sleep
+import urllib2
 
 def cmd(base, *args):
 	command = base
@@ -64,6 +65,7 @@ def setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer):
 
 	if initialStep <= 1:
 		setRWorkspace(wd, Conditions, Compartments, Replicates, Kmer)
+		getDB()
 	if initialStep > 1:
 		cmd("cp -r old/DataExploration Results")
 		cmd("cp -r old/RWorkspaces/1_ExploreData.RData Results/RWorkspaces")
@@ -90,6 +92,34 @@ def setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer):
 		cmd("cp old/candidates.top.v3.gff old/candidates_normal.top.v2.gff old/candidates_tumor.top.v2.gff Results")
 	if initialStep > 5:
 		cmd("cp -r old/iLoops/Output Results/iLoops")
+
+def getDB():
+	with open("Data/Intogen.tsv", "w") as Intogen:
+	
+		query="""
+		DEFINE
+			intogen='/data/project/gene',
+			genes='https://bitbucket.org/intogen/intogen-sources.git?ensembl/hsa/genes',
+			projects='/data/projects'
+		ON
+			'https://bitbucket.org/intogen/intogen-mutations.git'
+		SELECT
+			genes (GENE_ID, SYMBOL),
+			projects (PROJECT_NAME),
+			intogen (SAMPLE_PROP, FM_QVALUE, CLUST_QVALUE)
+		FROM
+			intogen
+		WHERE
+			(
+				intogen.FM_QVALUE < '0.05'
+				OR
+				intogen.CLUST_QVALUE < '0.05'
+			)
+			"""
+			
+		req = urllib2.Request("http://www.intogen.org/oql")
+		res = urllib2.urlopen(req, query)
+		Intogen.write(res.read())
 
 def waitPID(pidQueue):
 	for job in pidQueue:
