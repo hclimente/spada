@@ -25,11 +25,11 @@ bianaSession = create_new_session(
 # Create A List With All The Seed Identifiers
 list_input_identifiers = []
 
-with open("Results/candidateList.lst", "r") as candidates:
+with open("Results/candidateList.tsv", "r") as candidates:
 	for line in candidates:
 		elements = line.split("\t")
-		list_input_identifiers.append(("ensembl", elements[0]))
-		list_input_identifiers.append(("ensembl", elements[1]))
+		list_input_identifiers.append(("ensembl", elements[2]))
+		list_input_identifiers.append(("ensembl", elements[3].strip()))
 
 list_input_restriction_identifiers = []
 list_input_negative_restriction_identifiers = []
@@ -124,19 +124,20 @@ with open('Data/Intogen.tsv','r') as Intogen:
 	for row in Intogen:
 		intogenDrivers.add(row[0])
 
-with open("Results/candidateList.top.lst", "w") as iLoopsPairs:
-	with open("Results/candidateList.lst", "r") as candidates:
+with open("Results/candidateList.top.tsv", "w") as iLoopsPairs:
+	with open("Results/candidateList.tsv", "r") as candidates:
 		for line in candidates:
 			elements = line.split("\t")
-			candidate1 = elements[0].strip()
-			candidate2 = elements[1].strip()
-			gene = elements[2].strip()
+			name = elements[0]
+			gene = elements[1]
+			candidate1 = elements[2]
+			candidate2 = elements[3].strip()
 			
 			with open("Results/candidateInteractions.sorted.tsv", "r") as nodes:
 				for line in nodes:
 					if line.find(candidate1) != -1 or line.find(candidate2) != -1:
-						iLoopsPairs.write(candidate1 + "\t" + candidate2 + "\t" + gene + "\t" + "Hub" + "\n")
+						iLoopsPairs.write(name + "\t" + gene + "\t" + candidate1 + "\t" + candidate2 + "\t" + "Hub" + "\n")
 						break
 			
-			if candidate in intogenDrivers:	
-				iLoopsPairs.write(candidate1 + "\t" + candidate2 + "\t" + gene + "\t" + "Driver gene" + "\n")
+			if gene in intogenDrivers:	
+				iLoopsPairs.write(name + "\t" + gene + "\t" + candidate1 + "\t" + candidate2 + "\t" + "Driver gene" + "\n")

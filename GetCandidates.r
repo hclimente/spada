@@ -81,6 +81,8 @@ for (aCondition in candidates){
   
 }
 
+candidateList <- unique(candidateList)
+
 write.table(candidateList, file=paste0(wd, "/Results/candidateList.lst"), sep="\t", row.names=F, col.names=F, quote=F)
 write(allGenes, paste0(wd, "/Results/expressedGenes.lst"), sep="\n")
 

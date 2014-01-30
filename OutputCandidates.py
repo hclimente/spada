@@ -11,8 +11,8 @@ GFF2t_TRACK = open('Results/candidates_tumor.v2.gff', 'w')
 GFF3_TRACK.write("##gff-version 3" + "\n")
 
 with open(candidates, "r") as CANDIDATES:
-	with open ("Results/candidateList_withGenenames.tsv", "w") as GENENAMES:
-		GENENAMES.write("Genename\tEnsembl Id\tNormal isoform\tTumor isoform\n")
+	with open ("Results/candidateList", "w") as GENENAMES:
+		#GENENAMES.write("Genename\tEnsembl Id\tNormal isoform\tTumor isoform\n")
 		for line in CANDIDATES:
 			ids = line.split("\t")
 			ensGene = ids[2].strip()
@@ -24,7 +24,8 @@ with open(candidates, "r") as CANDIDATES:
 			
 			getGFFTrack(ids, GFF3_TRACK, GFF2n_TRACK, GFF2t_TRACK)
 
-
 GFF3_TRACK.close()
 GFF2n_TRACK.close()
 GFF2t_TRACK.close()
+
+cmd("rm Results/candidateList.lst")

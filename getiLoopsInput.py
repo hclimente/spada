@@ -3,78 +3,7 @@
 import sys
 from shutil import copy
 from sh import *
-
-def getGFFTrack(candidate, GFF3_TRACK, GFF2n_TRACK, GFF2t_TRACK):
-
-	gffTrack = {}
-	gffTrack["transcript"] = {}
-	gffTrack["exon"] = {}
-
-	ensGene = candidate.pop().strip()
-	normalIso = candidate[0].strip()
-	tumorIso = candidate[1].strip()
-	geneName = ""
-
-	gffInfo = getFeature("feature", ensGene, "feature=gene")
-	if not gffInfo:
-		return False
-
-	for line in gffInfo:
-		if line["ID"] == ensGene:
-			geneName = line["external_name"]
-			
-			strand = "+"
-			if line["strand"] == -1:
-				strand = "-"
-			GFF3_TRACK.write("##sequence-region   " + geneName + " " + str(line["start"])  + " " + str(line["end"]) + "\n")
-			GFF3_TRACK.write(geneName + "\t.\t" + line["feature_type"] + "\t" + str(line["start"]) + "\t" +\
-							 str(line["end"]) + "\t.\t" + strand + "\t.\t" + "ID=" + line["ID"] + "\n")
-
-	for rawString in candidate:
-		aCandidate = rawString.strip()	
-		
-		for feature in ["transcript", "exon"]:
-			gffInfo = getFeature("feature", aCandidate, "feature=" + feature)
-			if not gffInfo:
-				return False
-		
-			for line in gffInfo:
-				if feature == "exon" and line["Parent"] != aCandidate:
-					continue
-				elif feature == "transcript" and line["ID"] != aCandidate:
-					continue
-
-				if not line["ID"] in gffTrack[feature]:
-					gffTrack[feature][line["ID"]] = {
-						"seqid": "chr" + line["seq_region_name"],
-						"type": line["feature_type"],
-						"start": str(line["start"]),
-						"end": str(line["end"]),
-						"strand": "+",
-						"Atributes": "ID=" + line["ID"] + ";Parent=" + line["Parent"],
-						"Group": [aCandidate]
-					}
-	
-					if line["strand"] == -1:
-						gffTrack[feature][line["ID"]]["strand"] = "-"
-				else:
-					gffTrack[feature][line["ID"]]["Atributes"] += "," + line["Parent"]
-					gffTrack[feature][line["ID"]]["Group"].append(line["Parent"])
-
-	for feature in ["transcript", "exon"]:
-		for geneId in gffTrack[feature]:
-			thisLine = gffTrack[feature][geneId]
-			GFF3_TRACK.write(geneName + "\t.\t" + thisLine["type"] + "\t" + thisLine["start"] + "\t" +\
-						 thisLine["end"] + "\t.\t" + thisLine["strand"] + "\t.\t" + thisLine["Atributes"] + "\n")
-			if feature == "exon":
-				if normalIso in thisLine["Group"]:
-					GFF2n_TRACK.write(thisLine["seqid"] + "\t.\t" + "exon" + "\t" + thisLine["start"] + "\t" +\
-						  			  thisLine["end"] + "\t.\t" + thisLine["strand"] + "\t.\t" + "Transcript " + normalIso + "\n")
-				if tumorIso in thisLine["Group"]:
-					GFF2t_TRACK.write(thisLine["seqid"] + "\t.\t" + "exon" + "\t" + thisLine["start"] + "\t" +\
-						  			  thisLine["end"] + "\t.\t" + thisLine["strand"] + "\t.\t" + "Transcript " + tumorIso + "\n")
-
-	return True
+import os
 
 expressedTranscripts = sys.argv[1];
 candidateTranscripts = sys.argv[2];
@@ -89,28 +18,28 @@ if(getExpressedGenes):
 			for line in EXPRESSED:
 				stableId = line.strip()
 	
-				sequence = (getFeature("sequence", stableId, "type=protein"))["seq"]
-				if sequence:
+				proteinFeat = getFeature("sequence", stableId, "type=protein")
+				if proteinFeat:
 					MULTIFASTA.write(">" + stableId + "\n")
-					MULTIFASTA.write(sequence + "\n")
+					MULTIFASTA.write(proteinFeat["seq"] + "\n")
 
 else:
 	copy("old/iLoops/ExpressedTranscripts.fasta", "Results/iLoops/ExpressedTranscripts.fasta")
 
 print("\t* Writing the pairs files.")
-GFF3_TRACK = open('Results/candidates.v3.gff', 'w')
-GFF2n_TRACK = open('Results/candidates_normal.v2.gff', 'w')
-GFF2t_TRACK = open('Results/candidates_tumor.v2.gff', 'w')
+GFF3_TRACK = open('Results/candidates.top.v3.gff', 'w')
+GFF2n_TRACK = open('Results/candidates_normal.top.v2.gff', 'w')
+GFF2t_TRACK = open('Results/candidates_tumor.top.v2.gff', 'w')
 GFF3_TRACK.write("##gff-version 3" + "\n")
 
 with open(candidateTranscripts, "r") as CANDIDATES:
 	for line in CANDIDATES:
-		candidates = line.split("\t")
+		elements = line.split("\t")
+		candidates = [elements[2], elements[3]]
 		
-		if getGFFTrack(candidates, GFF3_TRACK, GFF2n_TRACK, GFF2t_TRACK):
-			for rawCandidate in candidates:
+		if getGFFTrack(candidates + [elements[1]], GFF3_TRACK, GFF2n_TRACK, GFF2t_TRACK):
+			for aCandidate in candidates:
 	
-				aCandidate = rawCandidate.strip()
 				cmd("mkdir Results/iLoops/Input/" + aCandidate)
 				fileNumber = 1
 				numberOfCandidates = 0
@@ -131,9 +60,10 @@ with open(candidateTranscripts, "r") as CANDIDATES:
 	
 					PAIRS.close()
 		else:
-			for rawCandidate in candidates:
-				aCandidate = rawCandidate.strip()
-				cmd("rm -r Results/iLoops/Input/" + aCandidate)
+			for aCandidate in candidates:
+				delFile = "Results/iLoops/Input/" + aCandidate
+				if os.path.exists(delFile):
+					cmd("rm -r", delFile)
 
 GFF3_TRACK.close()
 GFF2n_TRACK.close()

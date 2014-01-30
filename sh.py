@@ -82,7 +82,7 @@ def setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer):
 	if initialStep > 2:
 		cmd("cp -r old/RWorkspaces/2_GetCandidates.RData Results/RWorkspaces")
 		cmd("cp -r old/RWorkspaces/2_GetCandidates.RData SmartAS.RData")
-		cmd("cp old/candidateList.lst old/candidateList_withGenenames.tsv old/expressedGenes.lst Results")
+		cmd("cp old/candidateList.tsv old/expressedGenes.lst Results")
 		cmd("cp old/candidates.v3.gff old/candidates_normal.v2.gff old/candidates_tumor.v2.gff Results")
 	if initialStep > 3:
 		cmd("cp old/candidateInteractions.tsv old/candidateList.top.lst Results")

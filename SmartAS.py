@@ -61,6 +61,7 @@ def main(argv):
 		candidatePrioritization(top)
 	if initialStep <= 4:
 		prepareILoopsInput()
+		exit()
 	if initialStep <= 5:
 		launchILoops()
 	if initialStep <= 6:
@@ -88,7 +89,7 @@ def getCandidates(minExpression, minCandidateExpression, minPSI):
 	
 def candidatePrioritization(top):
 
-	print("* Querying BIANA for known interactions of the candidates.")
+	print("* Prioritizing candidates.")
 	cmd("Pipeline/CandidatePrioritization.py", top)
 
 def prepareILoopsInput():
@@ -102,14 +103,14 @@ def prepareILoopsInput():
 	if not diff and path.exists("old/iLoops/ExpressedTranscripts.fasta"):
 		getExpressedGenes = 0
 
-	cmd("Pipeline/getiLoopsInput.py Results/expressedGenes.lst Results/candidateList.top.lst", getExpressedGenes)
+	cmd("Pipeline/getiLoopsInput.py Results/expressedGenes.lst Results/candidateList.top.tsv", getExpressedGenes)
 
 def launchILoops():
 
 	print("* Launching iLoops jobs.")
 	
-	cmd("ssh hectorc@gaudi 'mv ~/SmartAS/Results ~/SmartAS/old; rm -r ~/SmartAS/old'")
-	cmd("scp -r Results/iLoops hectorc@gaudi.imim.es:~/SmartAS/Results")
+	cmd("ssh hectorc@gaudi 'mv ~/SmartAS/Results/iLoops ~/SmartAS/old; rm -r ~/SmartAS/old'")
+	cmd("scp -r Results/iLoops hectorc@gaudi.imim.es:~/SmartAS/Results/iLoops")
 	cmd("ssh hectorc@gaudi '~/SmartAS/Pipeline/launchILoops.py /sbi/users/hectorc/SmartAS/Results/iLoops'")
 
 	print("\t* Waiting...")
