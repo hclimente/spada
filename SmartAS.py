@@ -79,11 +79,12 @@ def getCandidates(minExpression, minCandidateExpression, minPSI):
 
 	print("* Extracting transcripts with high variance and high expression.")
 	cmd("Pipeline/GetCandidates.r", minExpression, minCandidateExpression, minPSI)
-	cmd("Pipeline/getGenenames.py", "Results/candidateList.lst")
-	copy("SmartAS.RData", "Results/RWorkspaces/2_GetCandidates.RData")
 
+	copy("SmartAS.RData", "Results/RWorkspaces/2_GetCandidates.RData")
 	cmd("sort Results/expressedGenes.lst >Results/expressedGenes.tmp.lst")
 	cmd("mv Results/expressedGenes.tmp.lst Results/expressedGenes.lst")
+
+	cmd("Pipeline/OutputCandidates.py", "Results/candidateList.lst")
 	
 def candidatePrioritization(top):
 
