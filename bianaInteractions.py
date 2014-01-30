@@ -118,8 +118,9 @@ iLoopsPairs = open("Results/candidateList.top.lst", "w")
 with open("Results/candidateList.lst", "r") as candidates:
 	for line in candidates:
 		elements = line.split("\t")
-		candidate1 = elements[0]
-		candidate2 = elements[1]
+		candidate1 = elements[0].strip()
+		candidate2 = elements[1].strip()
+		gene = elements[2].strip()
 
 		hubCandidate = False
 	
