@@ -4,10 +4,13 @@ from biana import *
 from biana.utilities import identifier_utilities
 from rpy2.robjects import r
 import sys
+import csv
 
 top = 10
 if(len(sys.argv) == 1):
 	top = int(sys.argv[1])
+
+print("\t* Prioritizing by known interactions of the genes (BIANA).")
 
 # Start Biana Session
 bianaSession = create_new_session(
@@ -112,26 +115,28 @@ bianaSession.output_user_entity_set_details(
 
 r('load("SmartAS.RData")')
 r('nodeDetails <- read.delim("Results/candidateInteractions.tsv", quote="")')
-r('write.table( nodeDetails[ order(-nodeDetails$Degree), ], paste(wd, "Results/candidateInteractions.sorted.tsv", sep=""), sep="\t", row.names=F, col.names=F)')
+r('write.table( nodeDetails[ order(-nodeDetails$Degree), ][1:10,], paste(wd, "Results/candidateInteractions.sorted.tsv", sep=""), sep="\t", row.names=F, col.names=F)')
 
-iLoopsPairs = open("Results/candidateList.top.lst", "w")
-with open("Results/candidateList.lst", "r") as candidates:
-	for line in candidates:
-		elements = line.split("\t")
-		candidate1 = elements[0].strip()
-		candidate2 = elements[1].strip()
-		gene = elements[2].strip()
+print("\t* Prioritizing by known driver genes (IntOGen).")
+intogenDrivers = set()
+with open('Data/Intogen.tsv','r') as Intogen:
+	Intogen = csv.reader(Intogen, delimiter='\t')
+	for row in Intogen:
+		intogenDrivers.add(row[0])
 
-		hubCandidate = False
-	
-		with open("Results/candidateInteractions.sorted.tsv", "r") as nodes:
-			for count in range(10):
-				line = nodes.readline()
-				if line.find(candidate1) != -1 or line.find(candidate2) != -1:
-					hubCandidate = True
-					break
-
-		if hubCandidate:
-			iLoopsPairs.write(candidate1 + "\t" + candidate2 + "\t" + gene + "\n")
-
-iLoopsPairs.close()
+with open("Results/candidateList.top.lst", "w") as iLoopsPairs:
+	with open("Results/candidateList.lst", "r") as candidates:
+		for line in candidates:
+			elements = line.split("\t")
+			candidate1 = elements[0].strip()
+			candidate2 = elements[1].strip()
+			gene = elements[2].strip()
+			
+			with open("Results/candidateInteractions.sorted.tsv", "r") as nodes:
+				for line in nodes:
+					if line.find(candidate1) != -1 or line.find(candidate2) != -1:
+						iLoopsPairs.write(candidate1 + "\t" + candidate2 + "\t" + gene + "\t" + "Hub" + "\n")
+						break
+			
+			if candidate in intogenDrivers:	
+				iLoopsPairs.write(candidate1 + "\t" + candidate2 + "\t" + gene + "\t" + "Driver gene" + "\n")
