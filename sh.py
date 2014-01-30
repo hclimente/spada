@@ -2,6 +2,9 @@
 
 from subprocess import call,Popen,PIPE
 from rpy2.robjects import r
+import httplib2
+import json
+from time import sleep
 
 def cmd(base, *args):
 	command = base
@@ -69,10 +72,9 @@ def setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer):
 	if initialStep > 2:
 		cmd("cp -r old/RWorkspaces/2_GetCandidates.RData Results/RWorkspaces")
 		cmd("cp -r old/RWorkspaces/2_GetCandidates.RData SmartAS.RData")
-		cmd("cp -r old/candidateList.lst old/expressedGenes.lst Results")
+		cmd("cp -r old/candidateList.lst old/candidateList_withGenenames.tsv old/expressedGenes.lst Results")
 	if initialStep > 3:
 		cmd("cp old/candidateInteractions.tsv old/candidateList.top.lst Results")
-		#old/allInteractions.tsv old/candidateInteractions.sorted.lst old/candidateInteractions_extended.tsv 
 	if initialStep > 4:
 		cmd("cp -r old/iLoops/Input Results/iLoops/")
 		cmd("cp -r old/iLoops/ExpressedTranscripts.fasta Results/iLoops/")
@@ -88,3 +90,20 @@ def waitPID(pidQueue):
 			else:
 				print("Awaiting for completion of iLoops jobs.")
 				sleep(900)
+
+def getFeature(query, ensemblId, question):
+
+	http = httplib2.Http(".cache")
+	server = "http://beta.rest.ensembl.org"
+
+	ext = "/" + query + "/id/" + ensemblId + "?" + question
+	resp, content = http.request(server+ext, method="GET", headers={"Content-Type":"application/json"})
+			
+	if not resp.status == 200:
+		print("\t\tId " + ensemblId + "(" + server + ext + ") not valid. Error " + str(resp.status))
+		return {}
+	
+	#Ensembl REST API doesn't accept more than 3 queries/second.
+	sleep(0.33)
+
+	return json.loads(content)
