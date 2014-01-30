@@ -69,6 +69,14 @@ def setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer):
 		cmd("cp -r old/RWorkspaces/1_ExploreData.RData Results/RWorkspaces")
 		cmd("cp -r old/RWorkspaces/1_ExploreData.RData SmartAS.RData")
 		cmd("cp -r old/10C1_30.tsv old/7C1_30.tsv old/10C2_30.tsv old/7C2_30.tsv old/IntraReplicateC1_30.tsv old/IntraReplicateC2_30.tsv Results")
+		
+		#If any kind of data is recycled, check that the parameters didn't change between runs.
+		diff = cmdOut('diff Results/Parameters.cfg old/Parameters.cfg 2>&1')
+	
+		if diff:
+			print("WARNING: parameter files don't match.")
+			with open("Results/Parameters.cfg", "w") as paramFile:
+				paramFile.write("\nDID NOT MATCH")
 	if initialStep > 2:
 		cmd("cp -r old/RWorkspaces/2_GetCandidates.RData Results/RWorkspaces")
 		cmd("cp -r old/RWorkspaces/2_GetCandidates.RData SmartAS.RData")
@@ -82,12 +90,6 @@ def setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer):
 		cmd("cp old/candidates.top.v3.gff old/candidates_normal.top.v2.gff old/candidates_tumor.top.v2.gff Results")
 	if initialStep > 5:
 		cmd("cp -r old/iLoops/Output Results/iLoops")
-
-	diff = cmdOut('diff Results/Parameters.cfg old/Parameters.cfg 2>&1')
-	
-	if diff:
-		print("WARNING: parameter files don't match.")
-
 
 def waitPID(pidQueue):
 	for job in pidQueue:
@@ -191,14 +193,14 @@ def getGFFTrack(candidate, GFF3_TRACK, GFF2n_TRACK, GFF2t_TRACK):
 
 def printParam(initialStep, wd, gaudiWd, minExpression, minCandidateExpression, minPSI, Conditions, Compartments, Replicates, Kmer, top):
 	with open("Results/Parameters.cfg", "w") as paramFile:
-		paramFile.write("initialStep=" + initialStep + "\n")
+		paramFile.write("initialStep=" + str(initialStep) + "\n")
 		paramFile.write("wd=" + wd + "\n")
 		paramFile.write("gaudiWd=" + gaudiWd + "\n")
-		paramFile.write("minExpression=" + minExpression + "\n")
-		paramFile.write("minCandidateExpression=" + minCandidateExpression + "\n")
-		paramFile.write("minPSI=" + minPSI + "\n")
-		paramFile.write("Conditions=" + Conditions + "\n")
-		paramFile.write("Compartments=" + Compartments + "\n")
-		paramFile.write("Replicates=" + Replicates + "\n")
-		paramFile.write("Kmer=" + Kmer + "\n")
-		paramFile.write("top=" + top + "\n")
+		paramFile.write("minExpression=" + str(minExpression) + "\n")
+		paramFile.write("minCandidateExpression=" + str(minCandidateExpression) + "\n")
+		paramFile.write("minPSI=" + str(minPSI) + "\n")
+		paramFile.write("Conditions=" + str(Conditions) + "\n")
+		paramFile.write("Compartments=" + str(Compartments) + "\n")
+		paramFile.write("Replicates=" + str(Replicates) + "\n")
+		paramFile.write("Kmer=" + str(Kmer) + "\n")
+		paramFile.write("top=" + str(top) + "\n")
