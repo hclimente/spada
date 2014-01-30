@@ -100,7 +100,8 @@ def getFeature(query, ensemblId, question):
 	resp, content = http.request(server+ext, method="GET", headers={"Content-Type":"application/json"})
 			
 	if not resp.status == 200:
-		print("\t\tId " + ensemblId + " (" + server + ext + ") not valid. Error " + str(resp.status))
+		errorCode = {400: "Bad Request (id not found)", 404: "Not Found (incorrect format)", 429: "Too Many Requests", 503: "Service Unavailable"}
+		print("\t\tError with " + ensemblId + " (" + server + ext + "): " + errorCode[resp.status])
 		return {}
 	
 	#Ensembl REST API doesn't accept more than 3 queries/second.
