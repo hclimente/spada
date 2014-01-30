@@ -1,24 +1,8 @@
 #!/soft/devel/python-2.7/bin/python
 
-import httplib2, sys
+import sys
 from shutil import copy
 from sh import *
-from time import sleep
-import json
-
-def getFeature(query, ensemblId, question):
-
-	http = httplib2.Http(".cache")
-	server = "http://beta.rest.ensembl.org"
-
-	ext = "/" + query + "/id/" + ensemblId + "?" + question
-	resp, content = http.request(server+ext, method="GET", headers={"Content-Type":"application/json"})
-			
-	if not resp.status == 200:
-		print("\t\tId " + ensemblId + "(" + server + ext + ") not valid. Error " + str(resp.status))
-		return {}
-		
-	return json.loads(content)
 
 def getGFFTrack(candidate, GFF3_TRACK, GFF2n_TRACK, GFF2t_TRACK):
 
@@ -100,27 +84,16 @@ if(getExpressedGenes):
 
 	print("\t* Writing the multiFASTA file with all the expressed transcripts.")
 
-	expressedMultiFasta = open('Results/iLoops/ExpressedTranscripts.fasta', "w")
-	ensemblQueryRestriction = 0
+	with open('Results/iLoops/ExpressedTranscripts.fasta', "w") as MULTIFASTA:
+		with open(expressedTranscripts, "r") as EXPRESSED:
+			for line in EXPRESSED:
+				stableId = line.strip()
+	
+				sequence = (getFeature("sequence", stableId, "type=protein"))["seq"]
+				if sequence:
+					MULTIFASTA.write(">" + stableId + "\n")
+					MULTIFASTA.write(sequence + "\n")
 
-	with open(expressedTranscripts, "r") as EXPRESSED:
-		for line in EXPRESSED:
-			stableId = line.strip()
-
-			sequence = (getFeature("sequence", stableId, "type=protein"))["seq"]
-			if not sequence:
-				continue
-
-			expressedMultiFasta.write(">" + stableId + "\n")
-			expressedMultiFasta.write(sequence + "\n")
-
-			#Ensembl REST API doesn't accept more than 3 queries/second.
-			ensemblQueryRestriction += 1
-			if ensemblQueryRestriction == 3:
-				sleep(1)
-				ensemblQueryRestriction = 0
-
-	expressedMultiFasta.close()
 else:
 	copy("old/iLoops/ExpressedTranscripts.fasta", "Results/iLoops/ExpressedTranscripts.fasta")
 
