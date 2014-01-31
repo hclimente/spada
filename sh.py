@@ -78,14 +78,14 @@ def setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer):
 		if diff:
 			print("WARNING: parameter files don't match.")
 			with open("Results/Parameters.cfg", "w") as paramFile:
-				paramFile.write("\nDID NOT MATCH")
+				paramFile.write("\n***Did not match previous run***")
 	if initialStep > 2:
 		cmd("cp -r old/RWorkspaces/2_GetCandidates.RData Results/RWorkspaces")
 		cmd("cp -r old/RWorkspaces/2_GetCandidates.RData SmartAS.RData")
 		cmd("cp old/candidateList.tsv old/expressedGenes.lst Results")
 		cmd("cp old/candidates.v3.gff old/candidates_normal.v2.gff old/candidates_tumor.v2.gff Results")
 	if initialStep > 3:
-		cmd("cp old/candidateInteractions.tsv old/candidateList.top.lst Results")
+		cmd("cp old/candidateInteractions.tsv old/candidateList.top.tsv Results")
 	if initialStep > 4:
 		cmd("cp -r old/iLoops/Input Results/iLoops/")
 		cmd("cp -r old/iLoops/ExpressedTranscripts.fasta Results/iLoops/")

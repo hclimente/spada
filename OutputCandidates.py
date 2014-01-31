@@ -11,7 +11,7 @@ GFF2t_TRACK = open('Results/candidates_tumor.v2.gff', 'w')
 GFF3_TRACK.write("##gff-version 3" + "\n")
 
 with open(candidates, "r") as CANDIDATES:
-	with open ("Results/candidateList", "w") as GENENAMES:
+	with open ("Results/candidateList.tsv", "w") as GENENAMES:
 		#GENENAMES.write("Genename\tEnsembl Id\tNormal isoform\tTumor isoform\n")
 		for line in CANDIDATES:
 			ids = line.split("\t")
