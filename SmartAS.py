@@ -32,7 +32,7 @@ def main(argv):
 	Conditions = ["10", "7"]
 	Compartments = ["C"]
 	Replicates = ["1", "2"]
-	Kmer = ["30"]
+	Kmer = ["20"]
 
 	top = 2
 
@@ -52,7 +52,7 @@ def main(argv):
 
 	setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer)
 	printParam(initialStep, wd, gaudiWd, minExpression, minCandidateExpression, minPSI, Conditions, Compartments, Replicates, Kmer, top)
-	
+
 	if initialStep <= 1:
 		exploreData()
 	if initialStep <= 2:

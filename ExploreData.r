@@ -42,16 +42,31 @@ simplePlot <- function(x, y, title, xLab, yLab, pngName){
   dev.off()
 }
 
+createRow <- function(rawValue){
+  newRow <- as.character()
+  for (field in strsplit(as.character(rawValue), split="|", fixed=T)){
+    newRow <- c(newRow,field)
+  }
+  if(length(newRow) < 10){
+    for (i in seq(length(newRow), 9)){
+      newRow <- c(newRow,NA)
+    }
+  }
+  
+  return(newRow)
+}
+
 for (kmer in inputData[["K-mer"]]){
   for (replicate in inputData[["Replicates"]]){
     tag <- paste0(compartment, replicate, "_", kmer)
     for (sample in inputData[["Conditions"]]){
 
       thisTag <- paste0(sample, tag)
+      print(thisTag)
       inputFile=paste0(wd, "/Data/", kmer, "-kmer-length/", thisTag, "/quant_bias_corrected.sf")
       outputFile=paste0(wd, "/Results/", thisTag, ".tsv")
       
-      #Read Sailfish table !!Add arg to enter the name
+      #Read Sailfish table
       sailfishTable <- read.table(inputFile, header=F, sep="\t", stringsAsFactors=F)
       colnames(sailfishTable) <- c("Transcript","Length","TPM","RPKM","KPKM","EstimatedNumReads")
       
@@ -59,8 +74,22 @@ for (kmer in inputData[["K-mer"]]){
       transcriptIds <- matrix(unlist(strsplit(as.character(sailfishTable$Transcript), split="|", fixed=T)), ncol=7, byrow=T)
       
       #Build the final table. Warning: MAGIC BELOW. DON'T TOUCH
-      isoformExpression[[thisTag]] <- data.frame(unlist(strsplit(transcriptIds[,2], "\\."))[c(TRUE, FALSE)], unlist(strsplit(transcriptIds[,1], "\\."))[c(TRUE, FALSE)], sailfishTable$TPM, stringsAsFactors=F)
-      colnames(isoformExpression[[thisTag]]) <- c("Gene","Transcript","TPM")
+      #isoformExpression[[thisTag]] <- data.frame(unlist(strsplit(transcriptIds[,2], "\\."))[c(TRUE, FALSE)], unlist(strsplit(transcriptIds[,1], "\\."))[c(TRUE, FALSE)], 
+      #                                           sailfishTable$TPM, sailfishTable$Transcript, stringsAsFactors=F)
+      transcriptIdentifiers <- data.frame(ENSGene=as.character(),ENSTnt=as.character(),
+                                          HavGene=as.character(), HavTnt=as.character(),
+                                          HGNCTnt=as.character(),HGNCGene=as.character(),
+                                          sth1=as.character(),codingInfo1=as.character(),
+                                          codingInfo2=as.character(),codingInfo3=as.character(),
+                                          stringsAsFactors=FALSE)
+
+      for (i in seq(1, length(sailfishTable$Transcript))){
+        newRow <- createRow(sailfishTable$Transcript[i])
+        transcriptIdentifiers[i+1,] <- newRow
+      }
+      isoformExpression[[thisTag]] <- data.frame(transcriptIdentifiers$ENSGene[c(TRUE, FALSE)], transcriptIdentifiers$ENSTnt[c(TRUE, FALSE)], 
+                                                 transcriptIdentifiers$HGNCGene, sailfishTable$TPM, stringsAsFactors=F)#sailfishTable$Transcript, stringsAsFactors=F)
+      colnames(isoformExpression[[thisTag]]) <- c("Gene","Transcript","Genename", "TPM")#,"GENCODE")
       
       rm(sailfishTable,transcriptIds)
       
@@ -88,7 +117,8 @@ for (kmer in inputData[["K-mer"]]){
     refTag <- paste0(reference, tag)
     altTag <- paste0(alterated, tag)
     
-    intraReplicate[[tag]] <- merge(isoformExpression[[refTag]], isoformExpression[[altTag]], by=c("Gene", "Transcript"), suffixes=c("_ref","_alt"), all=T)
+    intraReplicate[[tag]] <- merge(isoformExpression[[refTag]], isoformExpression[[altTag]], by=c("Gene", "Transcript", "Genename"), suffixes=c("_ref","_alt"), all=T)
+    #intraReplicate[[tag]] <- merge(isoformExpression[[refTag]], isoformExpression[[altTag]], by=c("Gene","Transcript","GENCODE"), suffixes=c("_ref","_alt"), all=T)
     intraReplicate[[tag]]$deltaPSI <- intraReplicate[[tag]]$PSI_ref - intraReplicate[[tag]]$PSI_alt
     intraReplicate[[tag]]$la_tTPM <- 0.5 * (log(intraReplicate[[tag]]$tTPM_ref) + log(intraReplicate[[tag]]$tTPM_alt))
     
@@ -114,12 +144,14 @@ for (kmer in inputData[["K-mer"]]){
   plotCorrelations(intraReplicate[[tag1]]$PSI_ref, intraReplicate[[tag2]]$PSI_ref, "PSI_10", paste0("PSI10_cor_", tag))
   plotCorrelations(intraReplicate[[tag1]]$PSI_alt, intraReplicate[[tag2]]$PSI_alt, "PSI_10", paste0("PSI7_cor_", tag))
   
-  interReplicate[["Ref"]] <- merge(intraReplicate[[tag1]], intraReplicate[[tag2]], by=c("Gene", "Transcript"), suffixes=c("_1","_2"), all=T)
+  interReplicate[["Ref"]] <- merge(intraReplicate[[tag1]], intraReplicate[[tag2]], by=c("Gene", "Transcript", "Genename"), suffixes=c("_1","_2"), all=T)
+  #interReplicate[["Ref"]] <- merge(intraReplicate[[tag1]], intraReplicate[[tag2]], by=c("Gene","Transcript","GENCODE"), suffixes=c("_1","_2"), all=T)
   interReplicate[["Ref"]] <- subset(interReplicate[["Ref"]], select=-c(TPM_alt_1, tTPM_alt_1, PSI_alt_1, TPM_alt_2, tTPM_alt_2, PSI_alt_2))
   interReplicate[["Ref"]]$deltaPSI <- interReplicate[["Ref"]]$PSI_ref_1 - interReplicate[["Ref"]]$PSI_ref_2
   interReplicate[["Ref"]]$la_tTPM <- 0.5 * (log(interReplicate[["Ref"]]$tTPM_ref_1) + log(interReplicate[["Ref"]]$tTPM_ref_2))
   
-  interReplicate[["Alt"]] <- merge(intraReplicate[[tag1]], intraReplicate[[tag2]], by=c("Gene", "Transcript"), suffixes=c("_1","_2"), all=T)
+  interReplicate[["Alt"]] <- merge(intraReplicate[[tag1]], intraReplicate[[tag2]], by=c("Gene", "Transcript", "Genename"), suffixes=c("_1","_2"), all=T)
+  #interReplicate[["Alt"]] <- merge(intraReplicate[[tag1]], intraReplicate[[tag2]], by=c("Gene","Transcript","GENCODE"), suffixes=c("_1","_2"), all=T)
   interReplicate[["Alt"]] <- subset(interReplicate[["Alt"]], select=-c(TPM_ref_1, tTPM_ref_1, PSI_ref_1, TPM_ref_2, tTPM_ref_2, PSI_ref_2))
   interReplicate[["Alt"]]$deltaPSI <- interReplicate[["Alt"]]$PSI_alt_1 - interReplicate[["Alt"]]$PSI_alt_2
   interReplicate[["Alt"]]$la_tTPM <- 0.5 * (log(interReplicate[["Alt"]]$tTPM_alt_1) + log(interReplicate[["Alt"]]$tTPM_alt_2))

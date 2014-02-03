@@ -9,22 +9,33 @@ expressedTranscripts = sys.argv[1];
 candidateTranscripts = sys.argv[2];
 getExpressedGenes = bool(int(sys.argv[3]))
 
-if(getExpressedGenes):
+# if(getExpressedGenes):
 
-	print("\t* Writing the multiFASTA file with all the expressed transcripts.")
+# 	print("\t* Writing the multiFASTA file with all the expressed transcripts.")
 
-	with open('Results/iLoops/ExpressedTranscripts.fasta', "w") as MULTIFASTA:
-		with open(expressedTranscripts, "r") as EXPRESSED:
-			for line in EXPRESSED:
-				stableId = line.strip()
+# 	with open('Results/iLoops/ExpressedTranscripts.fasta', "w") as MULTIFASTA:
+# 		with open(expressedTranscripts, "r") as EXPRESSED:
+# 			for line in EXPRESSED:
+# 				stableId = line.strip()
 	
-				proteinFeat = getFeature("sequence", stableId, "type=protein")
-				if proteinFeat:
-					MULTIFASTA.write(">" + stableId + "\n")
-					MULTIFASTA.write(proteinFeat["seq"] + "\n")
+# 				proteinFeat = getFeature("sequence", stableId, "type=protein")
+# 				if proteinFeat:
+# 					MULTIFASTA.write(">" + stableId + "\n")
+# 					MULTIFASTA.write(proteinFeat["seq"] + "\n")
 
-else:
-	copy("old/iLoops/ExpressedTranscripts.fasta", "Results/iLoops/ExpressedTranscripts.fasta")
+# else:
+# 	copy("old/iLoops/ExpressedTranscripts.fasta", "Results/iLoops/ExpressedTranscripts.fasta")
+
+with open("Data/proteins.fa", "r") as gcMULTIFASTA:
+	with open('Results/iLoops/ExpressedTranscripts.fasta', "w") as MULTIFASTA:
+		for line in gcMULTIFASTA:
+			if line.find(">") != -1:
+				identifiers = ((line.split("|"))[0].split("."))[0]
+				MULTIFASTA.write(identifiers + "\n")
+			else:
+				MULTIFASTA.write(line)
+
+#copy("Data/proteins.fa", "Results/iLoops/ExpressedTranscripts.fasta")
 
 print("\t* Writing the pairs files.")
 GFF3_TRACK = open('Results/candidates.top.v3.gff', 'w')

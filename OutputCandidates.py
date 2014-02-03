@@ -3,6 +3,8 @@
 from sh import *
 import sys
 
+exit()
+
 candidates = sys.argv[1];
 
 GFF3_TRACK = open('Results/candidates.v3.gff', 'w')

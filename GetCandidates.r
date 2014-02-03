@@ -33,7 +33,10 @@ for (kmer in inputData[["K-mer"]]){
 	for (replicate in inputData[["Replicates"]]){
 
 		tag <- paste0(inputData[["Compartments"]][1], replicate, "_", kmer)
-		candidates[[tag]] <- data.frame(Gene=as.character(), Entropy_Ref=as.numeric(), Entropy_Alt=as.numeric(), Switch=as.numeric(), maxdPSI=as.character(), mindPSI=as.character())
+		#candidates[[tag]] <- data.frame(Gene=as.character(), Entropy_Ref=as.numeric(), Entropy_Alt=as.numeric(), Switch=as.numeric(), maxdPSI=as.character(), 
+		#								GENCODEmaxdPSI=as.character(), mindPSI=as.character(), GENCODEminPSI=as.character())
+		candidates[[tag]] <- data.frame(Gene=as.character(), Genename=as.character(), Entropy_Ref=as.numeric(), Entropy_Alt=as.numeric(), 
+										Switch=as.numeric(), maxdPSI=as.character(), mindPSI=as.character())
 
 		#Filter by deltaPSI and expression, based on the FPR
 		psiThreshold <- abs(intraReplicate[[tag]]$deltaPSI) > minPSI
@@ -59,7 +62,8 @@ for (kmer in inputData[["K-mer"]]){
 			candidates[[tag]] <- rbind( candidates[[tag]], data.frame(Gene=aCandidate, Entropy_Ref=calculateEntropy(intraReplicate[[tag]]$PSI_ref[thisGeneData]), 
 										Entropy_Alt=calculateEntropy(intraReplicate[[tag]]$PSI_alt[thisGeneData]), Switch=maxSwitch, 
 										maxdPSI=intraReplicate[[tag]]$Transcript[thisGeneData & maxDeltaPsiCond], 
-										mindPSI=intraReplicate[[tag]]$Transcript[thisGeneData & minDeltaPsiCond])	)
+										Genename=intraReplicate[[tag]]$Genename[thisGeneData & maxDeltaPsiCond], 
+										mindPSI=intraReplicate[[tag]]$Transcript[thisGeneData & minDeltaPsiCond]))
 		}
 
 		#Expressed genes: transcript whose expression is above the threshold
@@ -77,7 +81,7 @@ for (aCondition in candidates){
   entropyCutAlt <- aCondition$Entropy_Alt < median(aCondition$Entropy_Alt)
   switchCut <- aCondition$Switch > median(aCondition$Switch)
   
-  candidateList <- rbind(candidateList, aCondition[entropyCutRef & entropyCutAlt & switchCut, c("maxdPSI","mindPSI", "Gene")])
+  candidateList <- rbind(candidateList, aCondition[entropyCutRef & entropyCutAlt & switchCut, c("Genename", "Gene", "maxdPSI","mindPSI")])
   
 }
 
