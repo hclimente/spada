@@ -85,7 +85,7 @@ def getCandidates(minExpression, minCandidateExpression, minPSI):
 	cmd("sort Results/expressedGenes.lst >Results/expressedGenes.tmp.lst")
 	cmd("mv Results/expressedGenes.tmp.lst Results/expressedGenes.lst")
 
-	cmd("Pipeline/OutputCandidates.py", "Results/candidateList.lst")
+	cmd("Pipeline/OutputCandidates.py", "Results/candidateList.tsv")
 	
 def candidatePrioritization(top):
 

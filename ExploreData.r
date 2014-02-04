@@ -62,36 +62,13 @@ for (kmer in inputData[["K-mer"]]){
     for (sample in inputData[["Conditions"]]){
 
       thisTag <- paste0(sample, tag)
-      print(thisTag)
-      inputFile=paste0(wd, "/Data/", kmer, "-kmer-length/", thisTag, "/quant_bias_corrected.sf")
+      cat("\t* Exploring file",thisTag, "\n")
+      inputFile=paste0(wd, "/Data/", thisTag, ".filtered.sf")
       outputFile=paste0(wd, "/Results/", thisTag, ".tsv")
       
       #Read Sailfish table
-      sailfishTable <- read.table(inputFile, header=F, sep="\t", stringsAsFactors=F)
-      colnames(sailfishTable) <- c("Transcript","Length","TPM","RPKM","KPKM","EstimatedNumReads")
-      
-      #Get the genes ids
-      transcriptIds <- matrix(unlist(strsplit(as.character(sailfishTable$Transcript), split="|", fixed=T)), ncol=7, byrow=T)
-      
-      #Build the final table. Warning: MAGIC BELOW. DON'T TOUCH
-      #isoformExpression[[thisTag]] <- data.frame(unlist(strsplit(transcriptIds[,2], "\\."))[c(TRUE, FALSE)], unlist(strsplit(transcriptIds[,1], "\\."))[c(TRUE, FALSE)], 
-      #                                           sailfishTable$TPM, sailfishTable$Transcript, stringsAsFactors=F)
-      transcriptIdentifiers <- data.frame(ENSGene=as.character(),ENSTnt=as.character(),
-                                          HavGene=as.character(), HavTnt=as.character(),
-                                          HGNCTnt=as.character(),HGNCGene=as.character(),
-                                          sth1=as.character(),codingInfo1=as.character(),
-                                          codingInfo2=as.character(),codingInfo3=as.character(),
-                                          stringsAsFactors=FALSE)
-
-      for (i in seq(1, length(sailfishTable$Transcript))){
-        newRow <- createRow(sailfishTable$Transcript[i])
-        transcriptIdentifiers[i+1,] <- newRow
-      }
-      isoformExpression[[thisTag]] <- data.frame(transcriptIdentifiers$ENSGene[c(TRUE, FALSE)], transcriptIdentifiers$ENSTnt[c(TRUE, FALSE)], 
-                                                 transcriptIdentifiers$HGNCGene, sailfishTable$TPM, stringsAsFactors=F)#sailfishTable$Transcript, stringsAsFactors=F)
-      colnames(isoformExpression[[thisTag]]) <- c("Gene","Transcript","Genename", "TPM")#,"GENCODE")
-      
-      rm(sailfishTable,transcriptIds)
+      isoformExpression[[thisTag]] <- read.table(inputFile, header=F, sep="\t", stringsAsFactors=F)
+      colnames(isoformExpression[[thisTag]]) <- c("Gene", "Transcript","Genename","TPM")
       
       #Calculate the PSI for each transcript and the total expression of the gene
       vPSI <- as.numeric()

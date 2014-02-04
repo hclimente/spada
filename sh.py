@@ -66,6 +66,16 @@ def setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer):
 	if initialStep <= 1:
 		setRWorkspace(wd, Conditions, Compartments, Replicates, Kmer)
 		getDB()
+		for kmer in Kmer:
+  			for replicate in Replicates:
+  				for condition in Conditions:
+					tag = condition + "C" + replicate + "_" + kmer
+					with open("Data/" + kmer + "-kmer-length/" + tag + "/quant_bias_corrected.sf", "r") as FILE, open("Data/" + tag + ".filtered.sf", "w") as FILTERED:
+						for line in FILE:
+							if line.find("#") == -1:
+								tableValues=line.split("\t")
+								splitIds=tableValues[0].split("|")
+								FILTERED.write(splitIds[1].split(".")[0] + "\t" + splitIds[0].split(".")[0] + "\t" + splitIds[5] + "\t" + tableValues[2] + "\n")
 	if initialStep > 1:
 		cmd("cp -r old/DataExploration Results")
 		cmd("cp -r old/RWorkspaces/1_ExploreData.RData Results/RWorkspaces")
@@ -129,97 +139,6 @@ def waitPID(pidQueue):
 			else:
 				print("Awaiting for completion of iLoops jobs.")
 				sleep(900)
-
-def getFeature(query, ensemblId, question):
-
-	http = httplib2.Http(".cache")
-	server = "http://beta.rest.ensembl.org"
-
-	ext = "/" + query + "/id/" + ensemblId + "?" + question
-	resp, content = http.request(server+ext, method="GET", headers={"Content-Type":"application/json"})
-			
-	if not resp.status == 200:
-		#errorCode = {400: "Bad Request (id not found)", 404: "Not Found (incorrect format)", 429: "Too Many Requests", 503: "Service Unavailable"}
-		#print("\t\tError with " + ensemblId + " (" + server + ext + "): " + errorCode[resp.status])
-		print("\t\tError with " + ensemblId + " (" + server + ext + "): " + str(resp.status))
-		return {}
-	
-	#Ensembl REST API doesn't accept more than 3 queries/second.
-	sleep(0.33)
-
-	return json.loads(content)
-
-def getGFFTrack(candidate, GFF3_TRACK, GFF2n_TRACK, GFF2t_TRACK):
-
-	gffTrack = {}
-	gffTrack["transcript"] = {}
-	gffTrack["exon"] = {}
-
-	ensGene = candidate.pop().strip()
-	normalIso = candidate[0].strip()
-	tumorIso = candidate[1].strip()
-	geneName = ""
-
-	gffInfo = getFeature("feature", ensGene, "feature=gene")
-	if not gffInfo:
-		return False
-
-	for line in gffInfo:
-		if line["ID"] == ensGene:
-			geneName = line["external_name"]
-			
-			strand = "+"
-			if line["strand"] == -1:
-				strand = "-"
-			GFF3_TRACK.write("##sequence-region   " + geneName + " " + str(line["start"])  + " " + str(line["end"]) + "\n")
-			GFF3_TRACK.write(geneName + "\t.\t" + line["feature_type"] + "\t" + str(line["start"]) + "\t" +\
-							 str(line["end"]) + "\t.\t" + strand + "\t.\t" + "ID=" + line["ID"] + "\n")
-
-	for rawString in candidate:
-		aCandidate = rawString.strip()	
-		
-		for feature in ["transcript", "exon"]:
-			gffInfo = getFeature("feature", aCandidate, "feature=" + feature)
-			if not gffInfo:
-				return False
-		
-			for line in gffInfo:
-				if feature == "exon" and line["Parent"] != aCandidate:
-					continue
-				elif feature == "transcript" and line["ID"] != aCandidate:
-					continue
-
-				if not line["ID"] in gffTrack[feature]:
-					gffTrack[feature][line["ID"]] = {
-						"seqid": "chr" + line["seq_region_name"],
-						"type": line["feature_type"],
-						"start": str(line["start"]),
-						"end": str(line["end"]),
-						"strand": "+",
-						"Atributes": "ID=" + line["ID"] + ";Parent=" + line["Parent"],
-						"Group": [aCandidate]
-					}
-	
-					if line["strand"] == -1:
-						gffTrack[feature][line["ID"]]["strand"] = "-"
-				else:
-					gffTrack[feature][line["ID"]]["Atributes"] += "," + line["Parent"]
-					gffTrack[feature][line["ID"]]["Group"].append(line["Parent"])
-
-	for feature in ["transcript", "exon"]:
-		for geneId in gffTrack[feature]:
-			thisLine = gffTrack[feature][geneId]
-			GFF3_TRACK.write(geneName + "\t.\t" + thisLine["type"] + "\t" + thisLine["start"] + "\t" +\
-						 thisLine["end"] + "\t.\t" + thisLine["strand"] + "\t.\t" + thisLine["Atributes"] + "\n")
-			if feature == "exon":
-				if normalIso in thisLine["Group"]:
-					GFF2n_TRACK.write(thisLine["seqid"] + "\t.\t" + "exon" + "\t" + thisLine["start"] + "\t" +\
-						  			  thisLine["end"] + "\t.\t" + thisLine["strand"] + "\t.\t" + "Transcript " + normalIso + "\n")
-				if tumorIso in thisLine["Group"]:
-					GFF2t_TRACK.write(thisLine["seqid"] + "\t.\t" + "exon" + "\t" + thisLine["start"] + "\t" +\
-						  			  thisLine["end"] + "\t.\t" + thisLine["strand"] + "\t.\t" + "Transcript " + tumorIso + "\n")
-
-	return True
 
 def printParam(initialStep, wd, gaudiWd, minExpression, minCandidateExpression, minPSI, Conditions, Compartments, Replicates, Kmer, top):
 	with open("Results/Parameters.cfg", "w") as paramFile:
