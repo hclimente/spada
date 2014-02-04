@@ -2,8 +2,6 @@
 
 from subprocess import call,Popen,PIPE
 from rpy2.robjects import r
-import httplib2
-import json
 from time import sleep
 import urllib2
 
