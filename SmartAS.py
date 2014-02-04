@@ -91,6 +91,7 @@ def candidatePrioritization(top):
 
 	print("* Prioritizing candidates.")
 	cmd("Pipeline/CandidatePrioritization.py", top)
+	cmd("Pipeline/OutputCandidates.py", "Results/candidateList.top.tsv")
 
 def prepareILoopsInput():
 
