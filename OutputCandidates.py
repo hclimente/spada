@@ -4,14 +4,18 @@ from sh import *
 import sys
 
 candidates = sys.argv[1];
+particle = ""
+if candidates.find("top") != -1:
+	particle = ".top"
 
-with open(candidates, "r") as CANDIDATES, open('Results/candidates_normal.gff', 'w') as GFF2n_TRACK, open('Results/candidates_tumor.gff', 'w') as GFF2t_TRACK:
-	with open("Data/annotation.gtf", "r") as ALLTRANSCRIPTS:
+with open(candidates, "r") as CANDIDATES, \
+	 open('Results/candidates_normal' + particle + '.gff', 'w') as GFF2n_TRACK, \
+	 open('Results/candidates_tumor' + particle + '.gff', 'w') as GFF2t_TRACK, \
+	 open("Data/annotation.gtf", "r") as ALLTRANSCRIPTS:
 		candTnt = []
 		for line in CANDIDATES:
-			ids = line.split("\t")
-			pair = [ids[0], ids[1]]
-			candTnt.append(pair)
+			ids = line.strip().split("\t")
+			candTnt.append([ids[2], ids[3]])
 		
 		for line in ALLTRANSCRIPTS:
 			for pair in candTnt:

@@ -1,9 +1,8 @@
 #!/soft/devel/python-2.7/bin/python
 
-#from subprocess import Popen,PIPE
 import sys, getopt
 from shutil import copy, copytree
-from os import path
+from os import path, chdir
 
 #Custom library
 from sh import *
@@ -67,6 +66,7 @@ def main(argv):
 	if initialStep <= 6:
 		exloreILoopsResults()
 	
+	finish()
 	#copytree("Results", "../Dropbox/SmartAS")
 	#copy("SmartAS.RData", "../Dropbox/SmartAS")
 
@@ -91,7 +91,7 @@ def candidatePrioritization(top):
 
 	print("* Prioritizing candidates.")
 	cmd("Pipeline/CandidatePrioritization.py", top)
-	cmd("Pipeline/OutputCandidates.py", "Results/candidateList.top.tsv")
+	#cmd("Pipeline/OutputCandidates.py", "Results/candidateList.top.tsv")
 
 def prepareILoopsInput():
 
