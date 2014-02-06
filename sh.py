@@ -79,6 +79,20 @@ def setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer, 
 									splitIds=tableValues[0].split("|")
 									FILTERED.write(splitIds[1].split(".")[0] + "\t" + splitIds[0].split(".")[0] + "\t" + splitIds[5] + "\t" + tableValues[2] + "\n")
 		elif(inputType == "TCGA"):
+			tag = "kk"
+			with open("Data/TCGA/Rawdata/" + kmer + "-kmer-length/" + tag + "/quant_bias_corrected.sf", "r") as FILE, \
+				 open("Data/TCGA/Filtered/" + tag + ".filtered.sf", "w") as FILTERED, \
+				 open("/projects/rg/TCGA/download/annotation/GAF3.0/transcript.gene.v3_0.gaf", "r") as kk:
+				aDict = {}
+				for line in kk:
+					splitted = line.split("\t")
+					aDict[splitted[1]] = splitted[6]
+
+				for line in FILE:
+					splitted = line.split("\t")
+					splitted2 = aDict[splitted[0]].split("|")
+					name = splitted2[0]
+					FILTERED.write( aDict[splitted[0]] + "\t" + splitted[0] + "\t" + name + "\t" + splitted[1])
 
 	if initialStep > 1:
 		cmd("cp -r old/DataExploration Results")
@@ -165,6 +179,7 @@ def printParam(initialStep, wd, gaudiWd, minExpression, minCandidateExpression, 
 
 def finish():
 	
+	print("* Moving files to the Results directory and creating a summary tar file.")
 	minExpresion = ""
 	minPSI = ""
 
@@ -180,7 +195,10 @@ def finish():
 	resultsDir="/home/hector/Results/GENECODE19"
 	outFolder="e" + minExpresion + "p" + minPSI
 
-	cmd("mkdir -p", resultsDir + "/" + outFolder)
+	if not cmdOut("mkdir", resultsDir + "/" + outFolder):
+		overwrite = raw_input("\tDirectory exists. Do you want to overwrite it? (y/n)")
+		if overwrite == "n":
+			return
 
 	cmd("cp", "Results/candidates_normal.gff", resultsDir + "/" + outFolder + "/" + "candidates_normal." + outFolder + ".gff")
 	cmd("cp", "Results/candidates_tumor.gff", resultsDir + "/" + outFolder + "/" + "candidates_tumor." + outFolder + ".gff")
