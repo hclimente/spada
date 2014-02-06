@@ -97,7 +97,7 @@ with open("Data/Databases/compilationTable.tsv", "r") as compilationTable:
 		else:
 			articleCompilation[splitted[1]] = []
 			for i in range(1,12):
-				articleCompilation[splitted[1]].append("")
+				articleCompilation[splitted[1]].append("-")
 			articleCompilation[splitted[1]].append(splitted[14])
 
 
