@@ -63,7 +63,7 @@ for (kmer in inputData[["K-mer"]]){
 
       thisTag <- paste0(sample, tag)
       cat("\t* Exploring file",thisTag, "\n")
-      inputFile=paste0(wd, "/Data/", thisTag, ".filtered.sf")
+      inputFile=paste0(wd, "/Data/GENCODE/", thisTag, ".filtered.sf")
       outputFile=paste0(wd, "/Results/", thisTag, ".tsv")
       
       #Read Sailfish table

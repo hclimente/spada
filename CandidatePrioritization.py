@@ -83,12 +83,12 @@ bianaSession.output_user_entity_set_details(
 intogenDrivers = set()
 articleCompilation = {}
 
-with open('Data/Intogen.tsv','r') as Intogen_r:
+with open('Data/Databases/Intogen.tsv','r') as Intogen_r:
 	print("\t* Reading known driver genes from IntOGen.")
 	Intogen = csv.reader(Intogen_r, delimiter='\t')
 	for row in Intogen:
 		intogenDrivers.add(row[0])
-with open("Data/compilationTable.tsv", "r") as compilationTable:
+with open("Data/Databases/compilationTable.tsv", "r") as compilationTable:
 	print("\t* Reading information available in bibliography.")
 	for line in compilationTable:
 		splitted = line.strip().split("\t")

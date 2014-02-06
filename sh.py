@@ -51,7 +51,7 @@ def setRWorkspace(wd, Conditions, Compartments, Replicates, Kmer):
 	
 	r('save.image("SmartAS.RData")')
 
-def setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer):
+def setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer, inputType):
 
 	print("* Preparing the environment")
 	cmd("cd " + wd)
@@ -65,16 +65,21 @@ def setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer):
 	if initialStep <= 1:
 		setRWorkspace(wd, Conditions, Compartments, Replicates, Kmer)
 		getDB()
-		for kmer in Kmer:
-  			for replicate in Replicates:
-  				for condition in Conditions:
-					tag = condition + "C" + replicate + "_" + kmer
-					with open("Data/" + kmer + "-kmer-length/" + tag + "/quant_bias_corrected.sf", "r") as FILE, open("Data/" + tag + ".filtered.sf", "w") as FILTERED:
-						for line in FILE:
-							if line.find("#") == -1:
-								tableValues=line.split("\t")
-								splitIds=tableValues[0].split("|")
-								FILTERED.write(splitIds[1].split(".")[0] + "\t" + splitIds[0].split(".")[0] + "\t" + splitIds[5] + "\t" + tableValues[2] + "\n")
+
+		if(inputType == "GENCODE"):
+			for kmer in Kmer:
+  				for replicate in Replicates:
+  					for condition in Conditions:
+						tag = condition + "C" + replicate + "_" + kmer
+						with open("Data/GENCODE/Rawdata/" + kmer + "-kmer-length/" + tag + "/quant_bias_corrected.sf", "r") as FILE, \
+							 open("Data/GENCODE/Filtered/" + tag + ".filtered.sf", "w") as FILTERED:
+							for line in FILE:
+								if line.find("#") == -1:
+									tableValues=line.split("\t")
+									splitIds=tableValues[0].split("|")
+									FILTERED.write(splitIds[1].split(".")[0] + "\t" + splitIds[0].split(".")[0] + "\t" + splitIds[5] + "\t" + tableValues[2] + "\n")
+		elif(inputType == "TCGA"):
+
 	if initialStep > 1:
 		cmd("cp -r old/DataExploration Results")
 		cmd("cp -r old/RWorkspaces/1_ExploreData.RData Results/RWorkspaces")
@@ -108,7 +113,7 @@ def setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer):
 		cmd("cp -r old/iLoops/Output Results/iLoops")
 
 def getDB():
-	with open("Data/Intogen.tsv", "w") as Intogen:
+	with open("Data/Databases/Intogen.tsv", "w") as Intogen:
 	
 		query="""
 		DEFINE

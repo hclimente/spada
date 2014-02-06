@@ -27,6 +27,7 @@ def main(argv):
 	minExpression = 0
 	minCandidateExpression = 4
 	minPSI = 0.25
+	inputType = "GENCODE"
 
 	Conditions = ["10", "7"]
 	Compartments = ["C"]
@@ -35,7 +36,7 @@ def main(argv):
 
 	top = 2
 
-	opts, args = getopt.getopt(argv, "s:wd:cp:ce:me:")
+	opts, args = getopt.getopt(argv, "s:wd:cp:ce:me:t:")
 
 	for opt, arg in opts:
 		if opt == "-s":
@@ -48,8 +49,10 @@ def main(argv):
 			minCandidateExpression = arg
 		elif opt == "-m":
 			minExpression = arg
+		elif opt == "-t":
+			inputType = arg
 
-	setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer)
+	setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer, inputType)
 	printParam(initialStep, wd, gaudiWd, minExpression, minCandidateExpression, minPSI, Conditions, Compartments, Replicates, Kmer, top)
 
 	if initialStep <= 1:
@@ -91,7 +94,6 @@ def candidatePrioritization(top):
 
 	print("* Prioritizing candidates.")
 	cmd("Pipeline/CandidatePrioritization.py", top)
-	#cmd("Pipeline/OutputCandidates.py", "Results/candidateList.top.tsv")
 
 def prepareILoopsInput():
 

@@ -9,7 +9,7 @@ expressedTranscripts = sys.argv[1];
 candidateTranscripts = sys.argv[2];
 getExpressedGenes = bool(int(sys.argv[3]))
 
-with open("Data/proteins.fa", "r") as gcMULTIFASTA:
+with open("Data/GENCODE/proteins.fa", "r") as gcMULTIFASTA:
 	with open('Results/iLoops/ExpressedTranscripts.fasta', "w") as MULTIFASTA:
 		for line in gcMULTIFASTA:
 			if line.find(">") != -1:

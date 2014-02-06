@@ -11,7 +11,7 @@ if candidates.find("top") != -1:
 with open(candidates, "r") as CANDIDATES, \
 	 open('Results/candidates_normal' + particle + '.gff', 'w') as GFF2n_TRACK, \
 	 open('Results/candidates_tumor' + particle + '.gff', 'w') as GFF2t_TRACK, \
-	 open("Data/annotation.gtf", "r") as ALLTRANSCRIPTS:
+	 open("Data/GENCODE/annotation.gtf", "r") as ALLTRANSCRIPTS:
 		candTnt = []
 		for line in CANDIDATES:
 			ids = line.strip().split("\t")
