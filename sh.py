@@ -4,6 +4,7 @@ from subprocess import call,Popen,PIPE
 from rpy2.robjects import r
 from time import sleep
 import urllib2
+from os import chdir
 
 def cmd(base, *args):
 	command = base
@@ -78,7 +79,12 @@ def setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer):
 		cmd("cp -r old/DataExploration Results")
 		cmd("cp -r old/RWorkspaces/1_ExploreData.RData Results/RWorkspaces")
 		cmd("cp -r old/RWorkspaces/1_ExploreData.RData SmartAS.RData")
-		cmd("cp -r old/10C1_30.tsv old/7C1_30.tsv old/10C2_30.tsv old/7C2_30.tsv old/IntraReplicateC1_30.tsv old/IntraReplicateC2_30.tsv Results")
+		for comp in Compartments:
+			for rep in Replicates:
+				for kmer in Kmer:
+					for cond in Conditions:
+						cmd("cp -r old/" + cond + comp + rep + "_" + kmer + ".tsv Results")
+					cmd("cp -r old/IntraReplicate" + comp + rep + "_" + kmer + ".tsv Results")
 		
 		#If any kind of data is recycled, check that the parameters didn't change between runs.
 		diff = cmdOut('diff Results/Parameters.cfg old/Parameters.cfg 2>&1')
@@ -151,3 +157,33 @@ def printParam(initialStep, wd, gaudiWd, minExpression, minCandidateExpression, 
 		paramFile.write("Replicates=" + str(Replicates) + "\n")
 		paramFile.write("Kmer=" + str(Kmer) + "\n")
 		paramFile.write("top=" + str(top) + "\n")
+
+def finish():
+	
+	minExpresion = ""
+	minPSI = ""
+
+	with open("Results/Parameters.cfg", "r") as paramFile:
+		for line in paramFile:
+			elements = line.split("=")
+
+			if elements[0] == "minCandidateExpression":
+				minExpresion = elements[1].strip()
+			elif elements[0] == "minPSI":
+				minPSI = elements[1].strip()
+	    
+	resultsDir="/home/hector/Results/GENECODE19"
+	outFolder="e" + minExpresion + "p" + minPSI
+
+	cmd("mkdir -p", resultsDir + "/" + outFolder)
+
+	cmd("cp", "Results/candidates_normal.gff", resultsDir + "/" + outFolder + "/" + "candidates_normal." + outFolder + ".gff")
+	cmd("cp", "Results/candidates_tumor.gff", resultsDir + "/" + outFolder + "/" + "candidates_tumor." + outFolder + ".gff")
+	cmd("cp", "Results/candidateList.top.tsv", resultsDir + "/" + outFolder + "/" + "candidateList." + outFolder + ".tsv")
+
+	chdir(resultsDir + "/" + outFolder)
+	cmd("cp -r ~/SmartAS/Results/* .")
+
+	cmd("tar -czvf", outFolder + ".tar.gz candidates_normal." + outFolder + ".gff candidates_tumor." + outFolder + ".gff candidateList." + outFolder + ".tsv")
+	cmd("rm", "*" + outFolder + "*gff", "*" + outFolder + "*tsv")
+	chdir("/home/hector/SmartAS")
