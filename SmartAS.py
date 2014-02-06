@@ -63,11 +63,12 @@ def main(argv):
 		candidatePrioritization(top)
 	if initialStep <= 4:
 		prepareILoopsInput()
-		exit()
 	if initialStep <= 5:
-		launchILoops()
+		pass
+		#launchILoops()
 	if initialStep <= 6:
-		exloreILoopsResults()
+		pass
+		#exloreILoopsResults()
 	
 	finish()
 	#copytree("Results", "../Dropbox/SmartAS")
