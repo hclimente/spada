@@ -59,39 +59,6 @@ bianaSession.create_network(
 							)
 
 # Output Commands
-
-#bianaSession.output_user_entity_set_details(	
-#												user_entity_set_id = 'SmartAS_entitySet', 
-#												out_method = open('Results/candidateInteractions_extended.tsv','w').write, 
-#												attributes = ["ensembl","uniprotaccession","uniprotentry"], 
-#												include_level_info = True,
-#												include_degree_info = True,
-#												level = None,
-#												only_selected = False, 
-#												output_format = 'tabulated', 
-#												include_tags_info = False,
-#												include_tags_linkage_degree_info = [], 
-#												output_1_value_per_attribute = False
-#											)
-#
-#bianaSession.output_user_entity_set_network(  
-#											  user_entity_set_id = 'SmartAS_entitySet', 
-#										 	  out_method = open('Results/allInteractions.tsv','w').write, 
-#											  node_attributes = ["ensembl","method_id"],
-#											  participant_attributes = [],
-#											  relation_attributes = ['psimi_name', 'Pubmed'],
-#											  allowed_relation_types = 'all',
-#											  include_participant_tags = False,
-#											  include_relation_tags = False,
-#											  include_relation_ids = True,
-#											  include_participant_ids = True,
-#											  include_relation_type = True,
-#											  include_relation_sources = True,
-#											  output_1_value_per_attribute = True,
-#											  output_format = 'tabulated',
-#											  only_selected = False
-#											)
-
 user_entities_to_print = set(user_entity_set_object.get_user_entity_ids(level=0))
 bianaSession.select_user_entities_from_user_entity_set(
 														user_entity_set_id = 'SmartAS_entitySet', 
@@ -113,31 +80,62 @@ bianaSession.output_user_entity_set_details(
 											)
 
 
-r('load("SmartAS.RData")')
-r('nodeDetails <- read.delim("Results/candidateInteractions.tsv", quote="")')
-r('write.table( nodeDetails[ order(-nodeDetails$Degree), ][1:10,], paste(wd, "Results/candidateInteractions.sorted.tsv", sep=""), sep="\t", row.names=F, col.names=F)')
-
-print("\t* Prioritizing by known driver genes (IntOGen).")
 intogenDrivers = set()
-with open('Data/Intogen.tsv','r') as Intogen:
-	Intogen = csv.reader(Intogen, delimiter='\t')
+articleCompilation = {}
+
+with open('Data/Intogen.tsv','r') as Intogen_r:
+	print("\t* Reading known driver genes from IntOGen.")
+	Intogen = csv.reader(Intogen_r, delimiter='\t')
 	for row in Intogen:
 		intogenDrivers.add(row[0])
+with open("Data/compilationTable.tsv", "r") as compilationTable:
+	print("\t* Reading information available in bibliography.")
+	for line in compilationTable:
+		splitted = line.strip().split("\t")
+		if line.find("yes") != -1:
+			articleCompilation[splitted[1]] = splitted[3:15]
+		else:
+			articleCompilation[splitted[1]] = []
+			for i in range(1,12):
+				articleCompilation[splitted[1]].append("")
+			articleCompilation[splitted[1]].append(splitted[14])
 
-with open("Results/candidateList.top.tsv", "w") as iLoopsPairs:
-	with open("Results/candidateList.tsv", "r") as candidates:
-		for line in candidates:
-			elements = line.split("\t")
-			name = elements[0]
-			gene = elements[1]
-			candidate1 = elements[2]
-			candidate2 = elements[3].strip()
-			
-			with open("Results/candidateInteractions.sorted.tsv", "r") as nodes:
-				for line in nodes:
-					if line.find(candidate1) != -1 or line.find(candidate2) != -1:
-						iLoopsPairs.write(name + "\t" + gene + "\t" + candidate1 + "\t" + candidate2 + "\t" + "Hub" + "\n")
-						break
-			
-			if gene in intogenDrivers:	
-				iLoopsPairs.write(name + "\t" + gene + "\t" + candidate1 + "\t" + candidate2 + "\t" + "Driver gene" + "\n")
+
+candidateList = []
+with open("Results/candidateList.tsv", "r") as candidates:
+	print("\t* Checking coincidences.")
+	for line in candidates:
+		aCandidate = {}
+		aCandidate["Basic"] = line.strip()
+		aCandidate["Hub"] = "na"
+		aCandidate["IntOGen"] = "no"
+		aCandidate["Articles"] = []
+		
+		splitted = aCandidate["Basic"].split("\t")
+		name = splitted[0]
+		gene = splitted[1]
+		candidate1 = splitted[2]
+		candidate2 = splitted[3]
+		
+		with open("Results/candidateInteractions.tsv", "r") as nodes:
+			for line in nodes:
+				if line.find(candidate1) != -1 or line.find(candidate2) != -1:
+					aCandidate["Hub"] = (line.split("\t"))[2]
+					break
+		
+		if gene in intogenDrivers:
+			aCandidate["IntOGen"] = "yes"
+		if name in articleCompilation.keys():
+			for info in articleCompilation[name]:
+				aCandidate["Articles"].append(info)
+
+		candidateList.append(aCandidate)
+
+with open("Results/candidateList.top.tsv", "w") as candidates:
+	candidates.write("hugo_id\tENSG\tENST_normal\tENST_tumor\tKnown PPI\tIntOGen\t")
+	candidates.write("baltz_a\tcastello_a\tkwon_a\tgonzalez_a\tbrosseau_a\tvogelstein_a\than_a\tjuan_ap\tjuan_pr\tbiomart_a\tcosmic_a\treactome\n")
+	for aCandidate in candidateList:
+		candidates.write(aCandidate["Basic"] + "\t" + aCandidate["Hub"] + "\t" + aCandidate["IntOGen"])
+		for info in aCandidate["Articles"]:
+			candidates.write("\t" + info)
+		candidates.write("\n")
