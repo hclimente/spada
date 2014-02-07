@@ -73,8 +73,8 @@ def setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer, 
 					sampleCounts = 1
 					for sample in filter(listdir("Data/GENCODE/Rawdata/" + kmer + "-kmer-length/"), condition + "C*_*"):
   						conditionsDict = {}
-  						conditionsDict["7"] = "N"
-  						conditionsDict["10"] = "T"
+  						conditionsDict["10"] = "N"
+  						conditionsDict["7"] = "T"
 
 						with open("Data/GENCODE/Rawdata/" + kmer + "-kmer-length/" + sample + "/quant_bias_corrected.sf", "r") as FILE, \
 							 open("Data/Input/" + str(sampleCounts) + "_" + conditionsDict[condition] + ".tsv", "w") as FILTERED:
