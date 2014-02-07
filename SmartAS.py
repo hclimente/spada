@@ -29,10 +29,9 @@ def main(argv):
 	minPSI = 0.25
 	inputType = "GENCODE"
 
-	Conditions = ["10", "7"]
+	Conditions = ["N", "T"]
 	Compartments = ["C"]
-	Replicates = ["1", "2"]
-	Kmer = ["20"]
+	kmer = "20"
 
 	top = 2
 
@@ -52,8 +51,8 @@ def main(argv):
 		elif opt == "-t":
 			inputType = arg
 
-	setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer, inputType)
-	printParam(initialStep, wd, gaudiWd, minExpression, minCandidateExpression, minPSI, Conditions, Compartments, Replicates, Kmer, top)
+	setEnvironment(wd, initialStep, kmer, inputType)
+	printParam(initialStep, wd, gaudiWd, minExpression, minCandidateExpression, minPSI, Conditions, Compartments, kmer, top)
 
 	if initialStep <= 1:
 		exploreData()

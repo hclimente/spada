@@ -43,9 +43,9 @@ simplePlot <- function(x, y, title, xLab, yLab, pngName){
 }
 
 for (replicate in inputData[["Replicates"]]){
-  for (sample in c("N", "T")){
+  for (sample in inputData[["Conditions"]]){
 
-    tag <- paste0(replicate, "_", sample)
+    tag <- paste0(replicate, sample)
     cat("\t* Exploring replicate",replicate,", sample ",sample,"\n")
     inputFile=paste0(wd, "/Data/Input/", tag, ".tsv")
     outputFile=paste0(wd, "/Results/", tag, ".tsv")
@@ -75,10 +75,10 @@ for (replicate in inputData[["Replicates"]]){
     write.table(isoformExpression[[tag]], file=outputFile, sep="\t", row.names=F)
   }
    
-  refTag <- paste0(replicate, "N")
-  altTag <- paste0(replicate, "T")
+  nTag <- paste0(replicate, "N")
+  tTag <- paste0(replicate, "T")
     
-  intraReplicate[[replicate]] <- merge(isoformExpression[[refTag]], isoformExpression[[altTag]], by=c("Gene", "Transcript", "Genename"), suffixes=c("_N","_T"), all=T)
+  intraReplicate[[replicate]] <- merge(isoformExpression[[nTag]], isoformExpression[[tTag]], by=c("Gene", "Transcript", "Genename"), suffixes=c("_N","_T"), all=T)
   intraReplicate[[replicate]]$deltaPSI <- intraReplicate[[replicate]]$PSI_N - intraReplicate[[replicate]]$PSI_T
   intraReplicate[[replicate]]$la_tTPM <- 0.5 * (log(intraReplicate[[replicate]]$tTPM_N) + log(intraReplicate[[replicate]]$tTPM_T))
     
@@ -89,7 +89,7 @@ for (replicate in inputData[["Replicates"]]){
   printTPMHist(intraReplicate[[replicate]]$TPM_T, "log10(TPM_T+0.0001)", paste0("TPM_T_",replicate))
   printLogFreqHist(intraReplicate[[replicate]]$PSI_N, "PSI_T", paste0("PSI_T_",replicate))
     
-  write.table(intraReplicate[[replicate]], file=paste0(wd,"/Results/IntraReplicate",replicate,".tsv"), sep="\t", row.names=F)
+  write.table(intraReplicate[[replicate]], file=paste0(wd,"/Results/IntraReplicate_",replicate,".tsv"), sep="\t", row.names=F)
 
 }
 

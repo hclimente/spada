@@ -20,39 +20,24 @@ def cmdOut(base, *args):
 	
 	return Popen(command, shell=True, stdout=PIPE).stdout.read().strip()
 
-def setRWorkspace(wd, Conditions, Compartments, Replicates, Kmer):
+def setRWorkspace(wd, Replicates):
 
 	r("wd <- \"" + wd + "\"")
 	r("inputData <- list()")
 	
-	condStat = 'inputData[["Conditions"]] <- c('
-	for condition in Conditions:
-		condStat = condStat + "\"" + condition + "\","
-	condStat = condStat[:-1] + ")"
-	
-	compStat = 'inputData[["Compartments"]] <- c('
-	for compartment in Compartments:
-		compStat = compStat + "\"" + compartment + "\","
-	compStat = compStat[:-1] + ")"
+	condStat = 'inputData[["Conditions"]] <- c("N", "T")'
 	
 	replStat = 'inputData[["Replicates"]] <- c('
 	for replicate in Replicates:
 		replStat = replStat + "\"" + replicate + "\","
 	replStat = replStat[:-1] + ")"
 	
-	kmerStat = 'inputData[["K-mer"]] <- c('
-	for kmer in Kmer:
-		kmerStat = kmerStat + "\"" + kmer + "\","
-	kmerStat = kmerStat[:-1] + ")"
-	
 	r(condStat)
-	r(compStat)
 	r(replStat)
-	r(kmerStat)
 	
 	r('save.image("SmartAS.RData")')
 
-def setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer, inputType):
+def setEnvironment(wd, initialStep, kmer, inputType):
 
 	print("* Preparing the environment")
 	cmd("cd " + wd)
@@ -64,26 +49,23 @@ def setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer, 
 	cmd("mkdir Results/DataExploration")
 
 	if initialStep <= 1:
-		setRWorkspace(wd, Conditions, Compartments, Replicates, Kmer)
-		getDB()
+		Replicates = []
 
 		if(inputType == "GENCODE"):
-			for kmer in Kmer:
-				for condition in Conditions:
-					sampleCounts = 1
-					for sample in filter(listdir("Data/GENCODE/Rawdata/" + kmer + "-kmer-length/"), condition + "C*_*"):
-  						conditionsDict = {}
-  						conditionsDict["10"] = "N"
-  						conditionsDict["7"] = "T"
+			Conditions = {"10": "N", "7": "T"}
+			for condition in Conditions.keys():
+				replicateCounter = 1
+				for sample in filter(listdir("Data/GENCODE/Rawdata/" + kmer + "-kmer-length/"), condition + "C*_*"):
+					with open("Data/GENCODE/Rawdata/" + kmer + "-kmer-length/" + sample + "/quant_bias_corrected.sf", "r") as FILE, \
+						 open("Data/Input/" + str(replicateCounter) + "_" + conditionsDict[condition] + ".tsv", "w") as FILTERED:
+						for line in FILE:
+							if line.find("#") == -1:
+								tableValues=line.split("\t")
+								splitIds=tableValues[0].split("|")
+								FILTERED.write(splitIds[1].split(".")[0] + "\t" + splitIds[0].split(".")[0] + "\t" + splitIds[5] + "\t" + tableValues[2] + "\n")
 
-						with open("Data/GENCODE/Rawdata/" + kmer + "-kmer-length/" + sample + "/quant_bias_corrected.sf", "r") as FILE, \
-							 open("Data/Input/" + str(sampleCounts) + "_" + conditionsDict[condition] + ".tsv", "w") as FILTERED:
-							for line in FILE:
-								if line.find("#") == -1:
-									tableValues=line.split("\t")
-									splitIds=tableValues[0].split("|")
-									FILTERED.write(splitIds[1].split(".")[0] + "\t" + splitIds[0].split(".")[0] + "\t" + splitIds[5] + "\t" + tableValues[2] + "\n")
-						sampleCounts += 1
+					Replicates.append(str(replicateCounter))
+					replicateCounter += 1
 
 		elif(inputType == "TCGA"):
 			patients = []
@@ -91,10 +73,11 @@ def setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer, 
 			with open("Data/TCGA/Rawdata/ucec_iso_tpm_paired.txt", "r") as FILE:
 				firstLine = FILE.readline().strip().split("\t")
 				for sampleType in ["N", "T"]:
-					sampleCounts = 1
+					replicateCounter = 1
 					for patient in range(0, len(firstLine)/2):
-						patients.append(open("Data/Input/" + str(sampleCounts) + "_" + sampleType + ".tsv", "w"))
-						sampleCounts += 1
+						patients.append(open("Data/Input/" + str(replicateCounter) + "_" + sampleType + ".tsv", "w"))
+						Replicates.append(str(replicateCounter))
+						replicateCounter += 1
 				
 				for line in FILE:
 								
@@ -113,16 +96,17 @@ def setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer, 
 			for patient in patients:
 				patient.close()
 
+		setRWorkspace(wd, Replicates)
+		getDB()
+
 	if initialStep > 1:
 		cmd("cp -r old/DataExploration Results")
 		cmd("cp -r old/RWorkspaces/1_ExploreData.RData Results/RWorkspaces")
 		cmd("cp -r old/RWorkspaces/1_ExploreData.RData SmartAS.RData")
-		for comp in Compartments:
-			for rep in Replicates:
-				for kmer in Kmer:
-					for cond in Conditions:
-						cmd("cp -r old/" + cond + comp + rep + "_" + kmer + ".tsv Results")
-					cmd("cp -r old/IntraReplicate" + comp + rep + "_" + kmer + ".tsv Results")
+		for rep in Replicates:
+			for cond in ["N", "T"]:
+				cmd("cp -r old/" + rep + "_" + cond + ".tsv Results")
+				cmd("cp -r old/IntraReplicate_" + rep + ".tsv Results")
 		
 		#If any kind of data is recycled, check that the parameters didn't change between runs.
 		diff = cmdOut('diff Results/Parameters.cfg old/Parameters.cfg 2>&1')
