@@ -5,6 +5,7 @@ from rpy2.robjects import r
 from time import sleep
 import urllib2
 from os import chdir, listdir
+from fnmatch import filter
 
 def cmd(base, *args):
 	command = base
