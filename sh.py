@@ -57,7 +57,7 @@ def setEnvironment(wd, initialStep, kmer, inputType):
 				replicateCounter = 1
 				for sample in filter(listdir("Data/GENCODE/Rawdata/" + kmer + "-kmer-length/"), condition + "C*_*"):
 					with open("Data/GENCODE/Rawdata/" + kmer + "-kmer-length/" + sample + "/quant_bias_corrected.sf", "r") as FILE, \
-						 open("Data/Input/" + str(replicateCounter) + "_" + conditionsDict[condition] + ".tsv", "w") as FILTERED:
+						 open("Data/Input/" + str(replicateCounter) + "_" + Conditions[condition] + ".tsv", "w") as FILTERED:
 						for line in FILE:
 							if line.find("#") == -1:
 								tableValues=line.split("\t")
