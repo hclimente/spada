@@ -42,7 +42,7 @@ simplePlot <- function(x, y, title, xLab, yLab, pngName){
   dev.off()
 }
 
-for (replicate in inputData[["Replicates"]]){
+for (replicate in range(1..inputData[["Replicates"]])){
   for (sample in inputData[["Conditions"]]){
 
     tag <- paste0(replicate, sample)
@@ -95,7 +95,7 @@ for (replicate in inputData[["Replicates"]]){
 
 save(isoformExpression, intraReplicate, interReplicate, inputData, wd, file="SmartAS.RData")
 
-for (r1 in inputData[["Replicates"]]){
+for (r1 in range(1..inputData[["Replicates"]])){
 
   if (!exists("interReplicate[[\"Normal\"]]"))){
     interReplicate[["Normal"]] <- intraReplicate[[r1]]

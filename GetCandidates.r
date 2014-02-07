@@ -29,7 +29,7 @@ minExpression <- as.numeric(args[1])
 minCandidateExpression <- as.numeric(args[2])
 minPSI <- as.numeric(args[3])
 
-for (replicate in inputData[["Replicates"]]){
+for (replicate in range(1..inputData[["Replicates"]])){
 
 	candidates[[replicate]] <- data.frame(Gene=as.character(), Genename=as.character(), Entropy_Ref=as.numeric(), Entropy_Alt=as.numeric(), 
 										  Switch=as.numeric(), maxdPSI=as.character(), mindPSI=as.character())

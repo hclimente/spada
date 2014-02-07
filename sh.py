@@ -23,18 +23,9 @@ def cmdOut(base, *args):
 def setRWorkspace(wd, Replicates):
 
 	r("wd <- \"" + wd + "\"")
-	r("inputData <- list()")
-	
-	condStat = 'inputData[["Conditions"]] <- c("N", "T")'
-	
-	replStat = 'inputData[["Replicates"]] <- c('
-	for replicate in Replicates:
-		replStat = replStat + "\"" + replicate + "\","
-	replStat = replStat[:-1] + ")"
-	
-	r(condStat)
-	r(replStat)
-	
+	r("inputData <- list()")	
+	r('inputData[["Conditions"]] <- c("N", "T")')
+	r('inputData[["Replicates"]] <- ' + Replicates)
 	r('save.image("SmartAS.RData")')
 
 def setEnvironment(wd, initialStep, kmer, inputType, gaudiWd, minExpression, minCandidateExpression, minPSI, top):
@@ -48,9 +39,10 @@ def setEnvironment(wd, initialStep, kmer, inputType, gaudiWd, minExpression, min
 	cmd("mkdir Results/RWorkspaces")
 	cmd("mkdir Results/DataExploration")
 
-	if initialStep <= 1:
-		Replicates = []
+	Replicates = ""
+	reps = []
 
+	if initialStep <= 1:
 		if(inputType == "GENCODE"):
 			Conditions = {"10": "N", "7": "T"}
 			for condition in Conditions.keys():
@@ -64,7 +56,7 @@ def setEnvironment(wd, initialStep, kmer, inputType, gaudiWd, minExpression, min
 								splitIds=tableValues[0].split("|")
 								FILTERED.write(splitIds[1].split(".")[0] + "\t" + splitIds[0].split(".")[0] + "\t" + splitIds[5] + "\t" + tableValues[2] + "\n")
 
-					Replicates.append(str(replicateCounter))
+					reps.append(str(replicateCounter))
 					replicateCounter += 1
 
 		elif(inputType == "TCGA"):
@@ -76,7 +68,7 @@ def setEnvironment(wd, initialStep, kmer, inputType, gaudiWd, minExpression, min
 					replicateCounter = 1
 					for patient in range(0, len(firstLine)/2):
 						patients.append(open("Data/Input/" + str(replicateCounter) + "_" + sampleType + ".tsv", "w"))
-						Replicates.append(str(replicateCounter))
+						reps.append(str(replicateCounter))
 						replicateCounter += 1
 				
 				for line in FILE:
@@ -96,6 +88,8 @@ def setEnvironment(wd, initialStep, kmer, inputType, gaudiWd, minExpression, min
 			for patient in patients:
 				patient.close()
 
+		Replicates = str(max(reps))
+
 		printParam(initialStep, wd, gaudiWd, minExpression, minCandidateExpression, minPSI, Replicates, kmer, top)
 		setRWorkspace(wd, Replicates)
 		getDB()
@@ -104,6 +98,13 @@ def setEnvironment(wd, initialStep, kmer, inputType, gaudiWd, minExpression, min
 		cmd("cp -r old/DataExploration Results")
 		cmd("cp -r old/RWorkspaces/1_ExploreData.RData Results/RWorkspaces")
 		cmd("cp -r old/RWorkspaces/1_ExploreData.RData SmartAS.RData")
+
+		with open("old/Parameters.cfg", "r") as PARAMETERS:
+			for line in PARAMETERS:
+				elements = line.split("\t")
+				if elements[0] = "Replicates":
+					Replicates = elements[1]
+
 		for rep in Replicates:
 			for cond in ["N", "T"]:
 				cmd("cp -r old/" + rep + "_" + cond + ".tsv Results")
@@ -129,6 +130,8 @@ def setEnvironment(wd, initialStep, kmer, inputType, gaudiWd, minExpression, min
 		cmd("cp old/candidates_normal.top.gff old/candidates_tumor.top.gff Results")
 	if initialStep > 5:
 		cmd("cp -r old/iLoops/Output Results/iLoops")
+
+	return Replicates
 
 def getDB():
 	with open("Data/Databases/Intogen.tsv", "w") as Intogen:
@@ -175,7 +178,7 @@ def printParam(initialStep, wd, gaudiWd, minExpression, minCandidateExpression, 
 		paramFile.write("minExpression=" + str(minExpression) + "\n")
 		paramFile.write("minCandidateExpression=" + str(minCandidateExpression) + "\n")
 		paramFile.write("minPSI=" + str(minPSI) + "\n")
-		paramFile.write("Replicates=" + str(Replicates) + "\n")
+		paramFile.write("Replicates=" + Replicates + "\n")
 		paramFile.write("Kmer=" + kmer + "\n")
 		paramFile.write("top=" + str(top) + "\n")
 
