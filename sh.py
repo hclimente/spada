@@ -37,7 +37,7 @@ def setRWorkspace(wd, Replicates):
 	
 	r('save.image("SmartAS.RData")')
 
-def setEnvironment(wd, initialStep, kmer, inputType):
+def setEnvironment(wd, initialStep, kmer, inputType, gaudiWd, minExpression, minCandidateExpression, minPSI, Replicates, top):
 
 	print("* Preparing the environment")
 	cmd("cd " + wd)
@@ -96,6 +96,7 @@ def setEnvironment(wd, initialStep, kmer, inputType):
 			for patient in patients:
 				patient.close()
 
+		def printParam(initialStep, wd, gaudiWd, minExpression, minCandidateExpression, minPSI, Replicates, kmer, top):
 		setRWorkspace(wd, Replicates)
 		getDB()
 
@@ -166,7 +167,7 @@ def waitPID(pidQueue):
 				print("Awaiting for completion of iLoops jobs.")
 				sleep(900)
 
-def printParam(initialStep, wd, gaudiWd, minExpression, minCandidateExpression, minPSI, Conditions, Compartments, Replicates, Kmer, top):
+def printParam(initialStep, wd, gaudiWd, minExpression, minCandidateExpression, minPSI, Replicates, kmer, top):
 	with open("Results/Parameters.cfg", "w") as paramFile:
 		paramFile.write("initialStep=" + str(initialStep) + "\n")
 		paramFile.write("wd=" + wd + "\n")
@@ -174,10 +175,8 @@ def printParam(initialStep, wd, gaudiWd, minExpression, minCandidateExpression, 
 		paramFile.write("minExpression=" + str(minExpression) + "\n")
 		paramFile.write("minCandidateExpression=" + str(minCandidateExpression) + "\n")
 		paramFile.write("minPSI=" + str(minPSI) + "\n")
-		paramFile.write("Conditions=" + str(Conditions) + "\n")
-		paramFile.write("Compartments=" + str(Compartments) + "\n")
 		paramFile.write("Replicates=" + str(Replicates) + "\n")
-		paramFile.write("Kmer=" + str(Kmer) + "\n")
+		paramFile.write("Kmer=" + kmer + "\n")
 		paramFile.write("top=" + str(top) + "\n")
 
 def finish():

@@ -51,8 +51,7 @@ def main(argv):
 		elif opt == "-t":
 			inputType = arg
 
-	setEnvironment(wd, initialStep, kmer, inputType)
-	printParam(initialStep, wd, gaudiWd, minExpression, minCandidateExpression, minPSI, Conditions, Compartments, kmer, top)
+	setEnvironment(wd, initialStep, kmer, inputType, gaudiWd, minExpression, minCandidateExpression, minPSI, Replicates, top):
 
 	if initialStep <= 1:
 		exploreData()
