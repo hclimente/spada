@@ -102,7 +102,7 @@ def setEnvironment(wd, initialStep, kmer, inputType, gaudiWd, minExpression, min
 		with open("old/Parameters.cfg", "r") as PARAMETERS:
 			for line in PARAMETERS:
 				elements = line.split("\t")
-				if elements[0] = "Replicates":
+				if elements[0] == "Replicates":
 					Replicates = elements[1]
 
 		for rep in Replicates:
