@@ -202,7 +202,7 @@ def finish():
 
 	if not cmdOut("mkdir", resultsDir + "/" + outFolder):
 		overwrite = raw_input("\tDirectory exists. Do you want to overwrite it? (y/n)")
-		if overwrite == "n":
+		if not overwrite == "y":
 			return
 
 	cmd("cp", "Results/candidates_normal.gff", resultsDir + "/" + outFolder + "/" + "candidates_normal." + outFolder + ".gff")

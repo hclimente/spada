@@ -1,5 +1,7 @@
 #!/soft/R/R-3.0.0/bin/Rscript
 
+library(limma)
+
 load("SmartAS.RData")
 setwd(wd)
 
@@ -87,3 +89,16 @@ write.table(candidateList, file=paste0(wd, "/Results/candidateList.tsv"), sep="\
 write(allGenes, paste0(wd, "/Results/expressedGenes.lst"), sep="\n")
 
 save(isoformExpression, intraReplicate, interReplicate, candidates, candidateList, inputData, wd, file="SmartAS.RData")
+
+## Experimental VennDiagram
+Counts <- matrix(0, nrow=length(candidateList), ncol=inputData[["Replicates"]])
+
+for (i in 1:length(candidateList)) {
+	for (replicate in seq(1,inputData[["Replicates"]])){
+   		Counts[i,replicate] <- universe[i] %in% candidates[[replicate]]
+	}
+}
+
+png(paste0(wd,"/Results/VennDiagram.png"), width=960, height=960)
+vennDiagram(vennCounts(Counts))
+dev.off()
