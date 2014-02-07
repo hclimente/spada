@@ -83,12 +83,10 @@ def setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer, 
 
 			with open("Data/TCGA/Rawdata/ucec_iso_tpm_paired.txt", "r") as FILE:
 				firstLine = FILE.readline().strip().split("\t")
-				sampleCounts = 1
 				for sampleType in ["N", "T"]:
-					for patient in range(0, len(firstLine))/2:
-						fileHandlers = []
-						fileHandlers.append(open("Data/TCGA/Filtered/" + str(sampleCounts) + "_" + sampleType + ".filtered.sf", "w"))
-						patients.append(fileHandlers)
+					sampleCounts = 1
+					for patient in range(0, len(firstLine)/2):
+						patients.append(open("Data/TCGA/Filtered/" + str(sampleCounts) + "_" + sampleType + ".filtered.sf", "w"))
 						sampleCounts += 1
 				
 				for line in FILE:
@@ -102,7 +100,8 @@ def setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer, 
 					
 					currentCol = 1
 					for patient in patients:
-						patient.write( gene + "\t" + transcript + "\t" + name + "\t" + splitted[i] + "\n")
+						patient.write( gene + "\t" + transcript + "\t" + name + "\t" + splitted[currentCol] + "\n")
+						currentCol += 1
 
 			for patient in patients:
 				patient.close()
