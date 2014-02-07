@@ -4,7 +4,7 @@ from subprocess import call,Popen,PIPE
 from rpy2.robjects import r
 from time import sleep
 import urllib2
-from os import chdir
+from os import chdir, listdir
 
 def cmd(base, *args):
 	command = base
@@ -70,7 +70,7 @@ def setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer, 
 			for kmer in Kmer:
 				for condition in Conditions:
 					sampleCounts = 1
-					for sample in filter(os.listdir("Data/GENCODE/Rawdata/" + kmer + "-kmer-length/"), condition + "C*_*"):
+					for sample in filter(listdir("Data/GENCODE/Rawdata/" + kmer + "-kmer-length/"), condition + "C*_*"):
   						conditionsDict = {}
   						conditionsDict["7"] = "N"
   						conditionsDict["10"] = "T"
