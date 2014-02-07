@@ -79,20 +79,41 @@ def setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer, 
 									splitIds=tableValues[0].split("|")
 									FILTERED.write(splitIds[1].split(".")[0] + "\t" + splitIds[0].split(".")[0] + "\t" + splitIds[5] + "\t" + tableValues[2] + "\n")
 		elif(inputType == "TCGA"):
-			tag = "kk"
-			with open("Data/TCGA/Rawdata/" + kmer + "-kmer-length/" + tag + "/quant_bias_corrected.sf", "r") as FILE, \
-				 open("Data/TCGA/Filtered/" + tag + ".filtered.sf", "w") as FILTERED, \
-				 open("/projects/rg/TCGA/download/annotation/GAF3.0/transcript.gene.v3_0.gaf", "r") as kk:
-				aDict = {}
-				for line in kk:
-					splitted = line.split("\t")
-					aDict[splitted[1]] = splitted[6]
+			patients = []
+
+			with open("Data/TCGA/Rawdata/ucec_iso_tpm_paired.txt", "r") as FILE:
+				firstLine = FILE.readline().split("\t")
+				for patient in firstLine:
+					patients.append(patient[0:len(patient) - 1])
+				
+				with open("Data/TCGA/Filtered/" + tag + ".filtered.sf", "w") as FILTERED:
+				FILTERED.write( gene + "\t" + transcript + "\t" + name + "\t" + splitted[1] + "\n")
 
 				for line in FILE:
+					transcriptInfo = {}
+					
 					splitted = line.split("\t")
-					splitted2 = aDict[splitted[0]].split("|")
-					name = splitted2[0]
-					FILTERED.write( aDict[splitted[0]] + "\t" + splitted[0] + "\t" + name + "\t" + splitted[1])
+					seqTags = splitted[1].split(",")
+					
+					transcriptInfo["Gene"] = seqTags[0]
+					transcriptInfo["Transcript"] = seqTags[1]
+					transcriptInfo["Name"] = gene.split("|")[0]
+					transcriptInfo["TPMs"] = {}
+					
+					currentCol = 1
+
+					for oneCondition in ["N", "T"]:
+						transcriptInfo["TPMs"][oneCondition] = {}
+						for patient in patients:
+							transcriptInfo["TPMs"][oneCondition][str(i)] = splitted[i]
+							currentCol += 1
+
+			for oneCondition in ["N", "T"]:
+				for patient in patients:										
+					tag = patient + "_" + oneCondition
+
+			with open("Data/TCGA/Filtered/" + tag + ".filtered.sf", "w") as FILTERED:
+				FILTERED.write( gene + "\t" + transcript + "\t" + name + "\t" + splitted[1] + "\n")
 
 	if initialStep > 1:
 		cmd("cp -r old/DataExploration Results")
