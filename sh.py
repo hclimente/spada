@@ -37,7 +37,7 @@ def setRWorkspace(wd, Replicates):
 	
 	r('save.image("SmartAS.RData")')
 
-def setEnvironment(wd, initialStep, kmer, inputType, gaudiWd, minExpression, minCandidateExpression, minPSI, Replicates, top):
+def setEnvironment(wd, initialStep, kmer, inputType, gaudiWd, minExpression, minCandidateExpression, minPSI, top):
 
 	print("* Preparing the environment")
 	cmd("cd " + wd)
@@ -96,7 +96,7 @@ def setEnvironment(wd, initialStep, kmer, inputType, gaudiWd, minExpression, min
 			for patient in patients:
 				patient.close()
 
-		def printParam(initialStep, wd, gaudiWd, minExpression, minCandidateExpression, minPSI, Replicates, kmer, top):
+		printParam(initialStep, wd, gaudiWd, minExpression, minCandidateExpression, minPSI, Replicates, kmer, top)
 		setRWorkspace(wd, Replicates)
 		getDB()
 

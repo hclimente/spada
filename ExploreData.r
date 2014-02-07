@@ -47,8 +47,8 @@ for (replicate in inputData[["Replicates"]]){
 
     tag <- paste0(replicate, sample)
     cat("\t* Exploring replicate",replicate,", sample ",sample,"\n")
-    inputFile=paste0(wd, "/Data/Input/", tag, ".tsv")
-    outputFile=paste0(wd, "/Results/", tag, ".tsv")
+    inputFile=paste0(wd, "/Data/Input/",  paste0(replicate, "_", sample), ".tsv")
+    outputFile=paste0(wd, "/Results/", paste0(replicate, "_", sample), ".tsv")
       
     #Read Sailfish table
     isoformExpression[[tag]] <- read.table(inputFile, header=F, sep="\t", stringsAsFactors=F)

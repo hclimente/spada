@@ -30,7 +30,7 @@ def main(argv):
 	inputType = "GENCODE"
 
 	Conditions = ["N", "T"]
-	Compartments = ["C"]
+	compartment = "C"
 	kmer = "20"
 
 	top = 2
@@ -51,7 +51,7 @@ def main(argv):
 		elif opt == "-t":
 			inputType = arg
 
-	setEnvironment(wd, initialStep, kmer, inputType, gaudiWd, minExpression, minCandidateExpression, minPSI, Replicates, top):
+	setEnvironment(wd, initialStep, kmer, inputType, gaudiWd, minExpression, minCandidateExpression, minPSI, top)
 
 	if initialStep <= 1:
 		exploreData()
