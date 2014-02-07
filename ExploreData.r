@@ -42,51 +42,37 @@ simplePlot <- function(x, y, title, xLab, yLab, pngName){
   dev.off()
 }
 
-createRow <- function(rawValue){
-  newRow <- as.character()
-  for (field in strsplit(as.character(rawValue), split="|", fixed=T)){
-    newRow <- c(newRow,field)
-  }
-  if(length(newRow) < 10){
-    for (i in seq(length(newRow), 9)){
-      newRow <- c(newRow,NA)
-    }
-  }
-  
-  return(newRow)
-}
-
 for (replicate in inputData[["Replicates"]]){
   for (sample in c("N", "T")){
 
-    thisTag <- paste0(replicate, "_", sample)
-    cat("\t* Exploring file",thisTag, "\n")
-    inputFile=paste0(wd, "/Data/Input/", thisTag, ".tsv")
-    outputFile=paste0(wd, "/Results/", thisTag, ".tsv")
+    tag <- paste0(replicate, "_", sample)
+    cat("\t* Exploring replicate",replicate,", sample ",sample,"\n")
+    inputFile=paste0(wd, "/Data/Input/", tag, ".tsv")
+    outputFile=paste0(wd, "/Results/", tag, ".tsv")
       
     #Read Sailfish table
-    isoformExpression[[thisTag]] <- read.table(inputFile, header=F, sep="\t", stringsAsFactors=F)
-    colnames(isoformExpression[[thisTag]]) <- c("Gene", "Transcript","Genename","TPM")
+    isoformExpression[[tag]] <- read.table(inputFile, header=F, sep="\t", stringsAsFactors=F)
+    colnames(isoformExpression[[tag]]) <- c("Gene", "Transcript","Genename","TPM")
       
     #Calculate the PSI for each transcript and the total expression of the gene
     vPSI <- as.numeric()
     vtTPM <- as.numeric()
       
-    for (thisTranscript in 1:nrow(isoformExpression[[thisTag]])){
-      mask <- isoformExpression[[thisTag]]$Gene==isoformExpression[[thisTag]]$Gene[thisTranscript]
-      total <- sum(isoformExpression[[thisTag]]$TPM[mask])
+    for (thisTranscript in 1:nrow(isoformExpression[[tag]])){
+      mask <- isoformExpression[[tag]]$Gene==isoformExpression[[tag]]$Gene[thisTranscript]
+      total <- sum(isoformExpression[[tag]]$TPM[mask])
       vtTPM <- c(vtTPM, total)
       if(total!=0){
-        vPSI <- c(vPSI, isoformExpression[[thisTag]]$TPM[thisTranscript]/total)
+        vPSI <- c(vPSI, isoformExpression[[tag]]$TPM[thisTranscript]/total)
       } else {
         vPSI <- c(vPSI, NA)
       }
     }
       
-    isoformExpression[[thisTag]]$tTPM <- vtTPM
-    isoformExpression[[thisTag]]$PSI <- vPSI
+    isoformExpression[[tag]]$tTPM <- vtTPM
+    isoformExpression[[tag]]$PSI <- vPSI
       
-    write.table(isoformExpression[[thisTag]], file=outputFile, sep="\t", row.names=F)
+    write.table(isoformExpression[[tag]], file=outputFile, sep="\t", row.names=F)
   }
    
   refTag <- paste0(replicate, "N")
@@ -106,6 +92,8 @@ for (replicate in inputData[["Replicates"]]){
   write.table(intraReplicate[[replicate]], file=paste0(wd,"/Results/IntraReplicate",replicate,".tsv"), sep="\t", row.names=F)
 
 }
+
+save(isoformExpression, intraReplicate, interReplicate, inputData, wd, file="SmartAS.RData")
 
 for (r1 in inputData[["Replicates"]]){
 
@@ -147,7 +135,7 @@ for (r1 in inputData[["Replicates"]]){
   # }
   simplePlot(intraReplicate[[r1]]$la_tTPM, intraReplicate[[r1]]$deltaPSI, r1, "0.5·(log(sum tTPM_N) + log(sum tTPM_T) )", 
              "deltaPSI", paste0(wd,"/Results/DataExploration/latTPM_PSI_intrarreplicate",r1,".png"))
-  simplePlot(interReplicate[["Normal"]]$la_tTPM, interReplicate[["Normal"]]$deltaPSI, paste0(tag, "__N"), "0.5·(log(sum tTPM_1) + log(sum tTPM_2) )", 
+  simplePlot(interReplicate[["Normal"]]$la_tTPM, interReplicate[["Normal"]]$deltaPSI, paste0(tag, "_N"), "0.5·(log(sum tTPM_1) + log(sum tTPM_2) )", 
             "deltaPSI", paste0(wd,"/Results/DataExploration/latTPM_PSI_interreplicate_N_",tag,".png"))
 }
 
