@@ -82,38 +82,30 @@ def setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer, 
 			patients = []
 
 			with open("Data/TCGA/Rawdata/ucec_iso_tpm_paired.txt", "r") as FILE:
-				firstLine = FILE.readline().split("\t")
-				for patient in firstLine:
-					patients.append(patient[0:len(patient) - 1])
+				firstLine = FILE.readline().strip().split("\t")
+				sampleCounts = 1
+				for sampleType in ["N", "T"]:
+					for patient in range(0, len(firstLine))/2:
+						fileHandlers = []
+						fileHandlers.append(open("Data/TCGA/Filtered/" + str(sampleCounts) + "_" + sampleType + ".filtered.sf", "w"))
+						patients.append(fileHandlers)
+						sampleCounts += 1
 				
-				with open("Data/TCGA/Filtered/" + tag + ".filtered.sf", "w") as FILTERED:
-				FILTERED.write( gene + "\t" + transcript + "\t" + name + "\t" + splitted[1] + "\n")
-
 				for line in FILE:
-					transcriptInfo = {}
-					
+								
 					splitted = line.split("\t")
-					seqTags = splitted[1].split(",")
+					seqTags = splitted[0].split(",")
 					
-					transcriptInfo["Gene"] = seqTags[0]
-					transcriptInfo["Transcript"] = seqTags[1]
-					transcriptInfo["Name"] = gene.split("|")[0]
-					transcriptInfo["TPMs"] = {}
+					gene = seqTags[0]
+					transcript = seqTags[1]
+					name = gene.split("|")[0]
 					
 					currentCol = 1
+					for patient in patients:
+						patient.write( gene + "\t" + transcript + "\t" + name + "\t" + splitted[i] + "\n")
 
-					for oneCondition in ["N", "T"]:
-						transcriptInfo["TPMs"][oneCondition] = {}
-						for patient in patients:
-							transcriptInfo["TPMs"][oneCondition][str(i)] = splitted[i]
-							currentCol += 1
-
-			for oneCondition in ["N", "T"]:
-				for patient in patients:										
-					tag = patient + "_" + oneCondition
-
-			with open("Data/TCGA/Filtered/" + tag + ".filtered.sf", "w") as FILTERED:
-				FILTERED.write( gene + "\t" + transcript + "\t" + name + "\t" + splitted[1] + "\n")
+			for patient in patients:
+				patient.close()
 
 	if initialStep > 1:
 		cmd("cp -r old/DataExploration Results")
