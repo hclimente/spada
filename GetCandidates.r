@@ -64,7 +64,7 @@ for (replicate in seq(1,inputData[["Replicates"]])){
 	}
 
 	#Expressed genes: transcript whose expression is above the threshold
-	expressedGenes <-(log(intraReplicate[[replicate]]$TPM_ref) + log(intraReplicate[[replicate]]$TPM_alt)) / 2 > minExpression
+	expressedGenes <-(log(as.numeric(intraReplicate[[replicate]]$TPM_ref)) + log(as.numeric(intraReplicate[[replicate]]$TPM_alt))) / 2 > minExpression
 	allGenes <- unique(c(allGenes, intraReplicate[[replicate]]$Transcript[expressedGenes]))
 
 	entropyCutRef <- candidates[[replicate]]$Entropy_Ref < median(candidates[[replicate]]$Entropy_Ref)  
