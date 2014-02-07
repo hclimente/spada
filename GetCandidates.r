@@ -71,7 +71,7 @@ for (replicate in seq(1,inputData[["Replicates"]])){
  	entropyCutAlt <- candidates[[replicate]]$Entropy_Alt < median(candidates[[replicate]]$Entropy_Alt)
 	switchCut <- candidates[[replicate]]$Switch > median(candidates[[replicate]]$Switch)
 
-	candidates[[replicate]] <- candidates[[replicate]] [entropyCutRef & entropyCutAlt & switchCut, c("Genename", "Gene", "maxdPSI","mindPSI")])
+	candidates[[replicate]] <- candidates[[replicate]] [entropyCutRef & entropyCutAlt & switchCut, c("Genename", "Gene", "maxdPSI","mindPSI")]
 
 }
 

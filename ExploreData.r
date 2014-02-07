@@ -97,7 +97,7 @@ save(isoformExpression, intraReplicate, interReplicate, inputData, wd, file="Sma
 
 for (r1 in set(1,inputData[["Replicates"]])){
 
-  if (!exists("interReplicate[[\"Normal\"]]"))){
+  if (!exists("interReplicate[[\"Normal\"]]")){
     interReplicate[["Normal"]] <- intraReplicate[[r1]]
     interReplicate[["Normal"]] <- subset(interReplicate[["Normal"]], select=-c(paste0("TPM_T_", r1), (paste0"tTPM_T_", r1), paste0("PSI_T_", r1)))
     colnames(interReplicate[["Normal"]]) <- c("Gene", "Transcript", "Genename", paste0("TPM_N_", r1), (paste0"tTPM_N_", r1), paste0("PSI_N_", r1)))
