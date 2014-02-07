@@ -68,16 +68,22 @@ def setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer, 
 
 		if(inputType == "GENCODE"):
 			for kmer in Kmer:
-  				for replicate in Replicates:
-  					for condition in Conditions:
-						tag = condition + "C" + replicate + "_" + kmer
+				for condition in Conditions:
+					sampleCounts = 1
+					for sample in filter(os.listdir("Data/GENCODE/Rawdata/" + kmer + "-kmer-length/"), condition + "C*_*"):
+  						conditionsDict = {}
+  						conditionsDict["7"] = "N"
+  						conditionsDict["10"] = "T"
+
 						with open("Data/GENCODE/Rawdata/" + kmer + "-kmer-length/" + tag + "/quant_bias_corrected.sf", "r") as FILE, \
-							 open("Data/GENCODE/Filtered/" + tag + ".filtered.sf", "w") as FILTERED:
+							 open("Data/Input/" + str(sampleCounts) + "_" + conditionsDict[condition] + ".tsv", "w") as FILTERED:
 							for line in FILE:
 								if line.find("#") == -1:
 									tableValues=line.split("\t")
 									splitIds=tableValues[0].split("|")
 									FILTERED.write(splitIds[1].split(".")[0] + "\t" + splitIds[0].split(".")[0] + "\t" + splitIds[5] + "\t" + tableValues[2] + "\n")
+						sampleCounts += 1
+
 		elif(inputType == "TCGA"):
 			patients = []
 
@@ -86,7 +92,7 @@ def setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer, 
 				for sampleType in ["N", "T"]:
 					sampleCounts = 1
 					for patient in range(0, len(firstLine)/2):
-						patients.append(open("Data/TCGA/Filtered/" + str(sampleCounts) + "_" + sampleType + ".filtered.sf", "w"))
+						patients.append(open("Data/Input/" + str(sampleCounts) + "_" + sampleType + ".tsv", "w"))
 						sampleCounts += 1
 				
 				for line in FILE:
