@@ -76,7 +76,7 @@ def setEnvironment(wd, initialStep, Conditions, Compartments, Replicates, Kmer, 
   						conditionsDict["7"] = "N"
   						conditionsDict["10"] = "T"
 
-						with open("Data/GENCODE/Rawdata/" + kmer + "-kmer-length/" + tag + "/quant_bias_corrected.sf", "r") as FILE, \
+						with open("Data/GENCODE/Rawdata/" + kmer + "-kmer-length/" + sample + "/quant_bias_corrected.sf", "r") as FILE, \
 							 open("Data/Input/" + str(sampleCounts) + "_" + conditionsDict[condition] + ".tsv", "w") as FILTERED:
 							for line in FILE:
 								if line.find("#") == -1:
