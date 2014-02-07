@@ -105,10 +105,10 @@ def setEnvironment(wd, initialStep, kmer, inputType, gaudiWd, minExpression, min
 				if elements[0] == "Replicates":
 					Replicates = elements[1]
 
-		for rep in Replicates:
+		for rep in range(1, int(Replicates) + 1):
 			for cond in ["N", "T"]:
-				cmd("cp -r old/" + rep + "_" + cond + ".tsv Results")
-				cmd("cp -r old/IntraReplicate_" + rep + ".tsv Results")
+				cmd("cp -r old/" + str(rep) + "_" + cond + ".tsv Results")
+				cmd("cp -r old/IntraReplicate_" + str(rep) + ".tsv Results")
 		
 		#If any kind of data is recycled, check that the parameters didn't change between runs.
 		diff = cmdOut('diff Results/Parameters.cfg old/Parameters.cfg 2>&1')
