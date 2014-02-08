@@ -95,7 +95,7 @@ Counts <- matrix(0, nrow=length(candidateList), ncol=inputData[["Replicates"]])
 
 for (i in 1:length(candidateList)) {
 	for (replicate in seq(1,inputData[["Replicates"]])){
-   		Counts[i,replicate] <- universe[i] %in% candidates[[replicate]]
+   		Counts[i,replicate] <- candidateList[i] %in% candidates[[replicate]]
 	}
 }
 
