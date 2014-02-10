@@ -12,7 +12,7 @@ reference <- inputData[["Conditions"]][1]
 alterated <- inputData[["Conditions"]][2]
 
 printTPMHist <- function(x, xLab, pngName){
-  png(paste0(wd,"/Results/DataExploration/", pngName, ".png"), width=960, height=960)
+  png(paste0(wd,"/Results/", out, "/DataExploration/", pngName, ".png"), width=960, height=960)
   histogram <- hist(log10(x + 0.0001), 10000)
   histogram$counts <- log10(histogram$counts)
   plot(histogram$mids, histogram$counts, type="h", main=pngName, xlab=xLab, ylab="log10(Frequency)")
@@ -20,7 +20,7 @@ printTPMHist <- function(x, xLab, pngName){
 }
 
 printLogFreqHist <- function(x, xLab, pngName){
-  png(paste0(wd,"/Results/DataExploration/", pngName,".png"), width=960, height=960)
+  png(paste0(wd,"/Results/", out, "/DataExploration/", pngName,".png"), width=960, height=960)
   histogram <- hist(x, 10000)
   histogram$counts <- log10(histogram$counts)
   plot(histogram$mids, histogram$counts, type="h", main=tag, xlab=xLab, ylab="log10(Frequency)")
@@ -30,7 +30,7 @@ printLogFreqHist <- function(x, xLab, pngName){
 plotCorrelations <- function(x, y, lab, pngName){
   xLab=paste0(lab, " Replicate 1")
   yLab=paste0(lab, " Replicate 2")
-  png(paste0(wd,"/Results/DataExploration/", pngName, ".png"), width=960, height=960)
+  png(paste0(wd,"/Results/", out, "/DataExploration/", pngName, ".png"), width=960, height=960)
   plot(x, y, xlab=xLab, ylab=yLab)
   dev.off()
   cor(x, y, use="complete.obs")
@@ -89,7 +89,7 @@ for (replicate in seq(1, inputData[["Replicates"]])){
   printTPMHist(intraReplicate[[replicate]]$TPM_T, "log10(TPM_T+0.0001)", paste0("TPM_T_",replicate))
   printLogFreqHist(intraReplicate[[replicate]]$PSI_N, "PSI_T", paste0("PSI_T_",replicate))
     
-  write.table(intraReplicate[[replicate]], file=paste0(wd,"/Results/IntraReplicate_",replicate,".tsv"), sep="\t", row.names=F)
+  write.table(intraReplicate[[replicate]], file=paste0(wd,"/Results/", out, "/IntraReplicate_",replicate,".tsv"), sep="\t", row.names=F)
 
 }
 
@@ -137,9 +137,9 @@ for (r1 in set(1,inputData[["Replicates"]])){
   #   interReplicate[["Tumor"]]$la_tTPM <- 0.5 * (log(interReplicate[["Tumor"]][,paste0("tTPM_T_", r2)]) + log(interReplicate[["Tumor"]][,paste0("tTPM_T_", r2)]))
   # }
   simplePlot(intraReplicate[[r1]]$la_tTPM, intraReplicate[[r1]]$deltaPSI, r1, "0.5·(log(sum tTPM_N) + log(sum tTPM_T) )", 
-             "deltaPSI", paste0(wd,"/Results/DataExploration/latTPM_PSI_intrarreplicate",r1,".png"))
+             "deltaPSI", paste0(wd,"/Results/", out, "/DataExploration/latTPM_PSI_intrarreplicate",r1,".png"))
   simplePlot(interReplicate[["Normal"]]$la_tTPM, interReplicate[["Normal"]]$deltaPSI, paste0(tag, "_N"), "0.5·(log(sum tTPM_1) + log(sum tTPM_2) )", 
-            "deltaPSI", paste0(wd,"/Results/DataExploration/latTPM_PSI_interreplicate_N_",tag,".png"))
+            "deltaPSI", paste0(wd,"/Results/", out, "/DataExploration/latTPM_PSI_interreplicate_N_",tag,".png"))
 }
 
 #Estimate the False Positive Rate
@@ -158,7 +158,7 @@ FPRstudy <- matrix(data=FPR, nrow=length(expressionRange), ncol=length(psiRange)
 rownames(FPRstudy) <- expressionRange
 colnames(FPRstudy) <- psiRange
 
-png(paste0(wd,"/Results/DataExploration/FPR.png"), width=960, height=960)
+png(paste0(wd,"/Results/", out, "/DataExploration/FPR.png"), width=960, height=960)
 heatmap(FPRstudy, Rowv=NA, Colv=NA, scale="none", col = heat.colors(256), xlab="|deltaPSI|", ylab="Expression", main="FPR")
 dev.off()
 
