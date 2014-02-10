@@ -132,7 +132,7 @@ def parseParam(cfgFile):
 
 	opt = { "initialStep" : 0, "wd" : "/home/hector/SmartAS/", "gaudiWd" : "/sbi/users/hectorc/SmartAS/Results/iLoops",
 		    "minExpression" : 0, "minCandidateExpression" : 4, "minPSI" : 0.25, "inputType" : "GENCODE" , "Conditions" : ["N", "T"],
-		    "compartment" : "C", "kmer" : "20", "top" : 2, "Replicates" : ""
+		    "compartment" : "C", "kmer" : "20", "Replicates" : ""
 	}
 
 	with open(cfgFile, "r") as PARAMETERS:
@@ -156,8 +156,6 @@ def parseParam(cfgFile):
 				opt["Replicates"] = elements[1]
 			elif elements[0] == "Kmer":
 				opt["kmer"] = elements[1]
-			elif elements[0] == "top":
-				opt["top"] = elements[1]
 			elif elements[0] == "inputType":
 				opt["inputType"] = elements[1]
 			else:

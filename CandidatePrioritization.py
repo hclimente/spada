@@ -2,13 +2,7 @@
 
 from biana import *
 from biana.utilities import identifier_utilities
-from rpy2.robjects import r
-import sys
 import csv
-
-top = 10
-if(len(sys.argv) == 1):
-	top = int(sys.argv[1])
 
 print("\t* Prioritizing by known interactions of the genes (BIANA).")
 

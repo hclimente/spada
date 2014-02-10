@@ -32,34 +32,34 @@ def main(argv):
 	opt = setEnvironment(cfgFile)
 
 	if opt["initialStep"] <= 1:
-		exploreData()
+		exploreData(opt)
 	if opt["initialStep"] <= 2:
-		getCandidates(opt["minExpression"], opt["minCandidateExpression"], opt["minPSI"])
+		getCandidates(opt)
 	if opt["initialStep"] <= 3:
-		candidatePrioritization(opt["top"])
+		candidatePrioritization(opt)
 	if opt["initialStep"] <= 4:
-		prepareILoopsInput()
+		prepareILoopsInput(opt)
 	if opt["initialStep"] <= 5:
 		pass
-		#launchILoops()
+		#launchILoops(opt)
 	if opt["initialStep"] <= 6:
 		pass
-		#exloreILoopsResults()
+		#exloreILoopsResults(opt)
 	
 	finish(opt)
 	#copytree("Results", "../Dropbox/SmartAS")
 	#copy("SmartAS.RData", "../Dropbox/SmartAS")
 
-def exploreData():
+def exploreData(opt):
 	
 	print("* Reading and summarizing input files: computing PSI values and plotting correlations between replicates.")
 	cmd("Pipeline/ExploreData.r")
 	copy("SmartAS.RData", opt["out"] + "/RWorkspaces/1_ExploreData.RData")
 
-def getCandidates(minExpression, minCandidateExpression, minPSI):
+def getCandidates(opt):
 
 	print("* Extracting transcripts with high variance and high expression.")
-	cmd("Pipeline/GetCandidates.r", minExpression, minCandidateExpression, minPSI)
+	cmd("Pipeline/GetCandidates.r", opt["minExpression"], opt["minCandidateExpression"], opt["minPSI"])
 
 	copy("SmartAS.RData", "Results/RWorkspaces/2_GetCandidates.RData")
 	cmd("sort", opt["out"] + "/expressedGenes.lst", ">" + opt["out"] + "/expressedGenes.tmp.lst")
@@ -67,12 +67,12 @@ def getCandidates(minExpression, minCandidateExpression, minPSI):
 
 	cmd("Pipeline/OutputCandidates.py", opt["out"] + "/candidateList.tsv")
 	
-def candidatePrioritization(top):
+def candidatePrioritization(opt):
 
 	print("* Prioritizing candidates.")
-	cmd("Pipeline/CandidatePrioritization.py", top)
+	cmd("Pipeline/CandidatePrioritization.py")
 
-def prepareILoopsInput():
+def prepareILoopsInput(opt):
 
 	getExpressedGenes = 1
 
@@ -85,7 +85,7 @@ def prepareILoopsInput():
 
 	cmd("Pipeline/getiLoopsInput.py", opt["out"] + "/expressedGenes.lst", opt["out"] + "/candidateList.top.tsv", getExpressedGenes)
 
-def launchILoops():
+def launchILoops(opt):
 
 	print("* Launching iLoops jobs.")
 	
@@ -95,7 +95,7 @@ def launchILoops():
 
 	print("\t* Waiting...")
 
-def exloreILoopsResults():
+def exloreILoopsResults(opt):
 
 	print("* Examining iLoops results.")
 	cmd("Pipeline/exploreiLoopsOutput.py")
