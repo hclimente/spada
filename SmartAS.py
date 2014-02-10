@@ -21,54 +21,32 @@ def main(argv):
 	""")
 
 	#Set variables
-	initialStep = 0
-	wd = "/home/hector/SmartAS/"
-	gaudiWd = "/sbi/users/hectorc/SmartAS/Results/iLoops"
-	minExpression = 0
-	minCandidateExpression = 4
-	minPSI = 0.25
-	inputType = "GENCODE"
+	opts, args = getopt.getopt(argv, "f:")
 
-	Conditions = ["N", "T"]
-	compartment = "C"
-	kmer = "20"
-
-	top = 2
-
-	opts, args = getopt.getopt(argv, "s:wd:cp:ce:me:t:")
+	cfgFile = ""
 
 	for opt, arg in opts:
-		if opt == "-s":
-			initialStep = int(arg)
-		elif opt == "-w":
-			wd = arg
-		elif opt == "-p":
-			minPSI = arg
-		elif opt == "-e":
-			minCandidateExpression = arg
-		elif opt == "-m":
-			minExpression = arg
-		elif opt == "-t":
-			inputType = arg
+		if opt == "-f":
+			cfgFile = arg
+		
+	opt = setEnvironment(cfgFile)
 
-	setEnvironment(wd, initialStep, kmer, inputType, gaudiWd, minExpression, minCandidateExpression, minPSI, top)
-
-	if initialStep <= 1:
+	if opt["initialStep"] <= 1:
 		exploreData()
-	if initialStep <= 2:
-		getCandidates(minExpression, minCandidateExpression, minPSI)
-	if initialStep <= 3:
-		candidatePrioritization(top)
-	if initialStep <= 4:
+	if opt["initialStep"] <= 2:
+		getCandidates(opt["minExpression"], opt["minCandidateExpression"], opt["minPSI"])
+	if opt["initialStep"] <= 3:
+		candidatePrioritization(opt["top"])
+	if opt["initialStep"] <= 4:
 		prepareILoopsInput()
-	if initialStep <= 5:
+	if opt["initialStep"] <= 5:
 		pass
 		#launchILoops()
-	if initialStep <= 6:
+	if opt["initialStep"] <= 6:
 		pass
 		#exloreILoopsResults()
 	
-	finish()
+	finish(opt)
 	#copytree("Results", "../Dropbox/SmartAS")
 	#copy("SmartAS.RData", "../Dropbox/SmartAS")
 
@@ -76,7 +54,7 @@ def exploreData():
 	
 	print("* Reading and summarizing input files: computing PSI values and plotting correlations between replicates.")
 	cmd("Pipeline/ExploreData.r")
-	copy("SmartAS.RData", "Results/RWorkspaces/1_ExploreData.RData")
+	copy("SmartAS.RData", opt["out"] + "/RWorkspaces/1_ExploreData.RData")
 
 def getCandidates(minExpression, minCandidateExpression, minPSI):
 
@@ -84,10 +62,10 @@ def getCandidates(minExpression, minCandidateExpression, minPSI):
 	cmd("Pipeline/GetCandidates.r", minExpression, minCandidateExpression, minPSI)
 
 	copy("SmartAS.RData", "Results/RWorkspaces/2_GetCandidates.RData")
-	cmd("sort Results/expressedGenes.lst >Results/expressedGenes.tmp.lst")
-	cmd("mv Results/expressedGenes.tmp.lst Results/expressedGenes.lst")
+	cmd("sort", opt["out"] + "/expressedGenes.lst", ">" + opt["out"] + "/expressedGenes.tmp.lst")
+	cmd("mv", opt["out"] + "/expressedGenes.tmp.lst", opt["out"] + "/expressedGenes.lst")
 
-	cmd("Pipeline/OutputCandidates.py", "Results/candidateList.tsv")
+	cmd("Pipeline/OutputCandidates.py", opt["out"] + "/candidateList.tsv")
 	
 def candidatePrioritization(top):
 
@@ -100,20 +78,20 @@ def prepareILoopsInput():
 
 	print("* Retrieving protein sequences for transcripts and printing to multiFASTA file.")
 	
-	diff = cmdOut('diff old/expressedGenes.lst Results/expressedGenes.lst 2>&1')
+	diff = cmdOut("diff old/expressedGenes.lst", opt["out"] + "/expressedGenes.lst 2>&1")
 	
 	if not diff and path.exists("old/iLoops/ExpressedTranscripts.fasta"):
 		getExpressedGenes = 0
 
-	cmd("Pipeline/getiLoopsInput.py Results/expressedGenes.lst Results/candidateList.top.tsv", getExpressedGenes)
+	cmd("Pipeline/getiLoopsInput.py", opt["out"] + "/expressedGenes.lst", opt["out"] + "/candidateList.top.tsv", getExpressedGenes)
 
 def launchILoops():
 
 	print("* Launching iLoops jobs.")
 	
-	cmd("ssh hectorc@gaudi 'mv ~/SmartAS/Results/iLoops ~/SmartAS/old; rm -r ~/SmartAS/old'")
-	cmd("scp -r Results/iLoops hectorc@gaudi.imim.es:~/SmartAS/Results/iLoops")
-	cmd("ssh hectorc@gaudi '~/SmartAS/Pipeline/launchILoops.py /sbi/users/hectorc/SmartAS/Results/iLoops'")
+	cmd("ssh hectorc@gaudi 'mv" + opt["out"] + "/iLoops ~/SmartAS/old; rm -r ~/SmartAS/old'")
+	cmd("scp -r " + opt["out"] + "/iLoops hectorc@gaudi.imim.es:" + opt["gOut"])
+	cmd("ssh hectorc@gaudi '" + opt["gaudiWd"] + "/Pipeline/launchILoops.py " + opt["gOut"] + "/iLoops'")
 
 	print("\t* Waiting...")
 

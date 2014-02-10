@@ -47,7 +47,7 @@ for (replicate in seq(1, inputData[["Replicates"]])){
 
     tag <- paste0(replicate, sample)
     cat("\t* Exploring replicate",replicate,"sample",sample,"\n")
-    inputFile=paste0(wd, "/Data/Input/",  paste0(replicate, "_", sample), ".tsv")
+    inputFile=paste0(wd, "/Results/", out, "/Input/", paste0(replicate, "_", sample), ".tsv")
     outputFile=paste0(wd, "/Results/", paste0(replicate, "_", sample), ".tsv")
       
     #Read Sailfish table
@@ -94,6 +94,7 @@ for (replicate in seq(1, inputData[["Replicates"]])){
 }
 
 save(isoformExpression, intraReplicate, interReplicate, inputData, wd, file="SmartAS.RData")
+q()
 
 for (r1 in set(1,inputData[["Replicates"]])){
 

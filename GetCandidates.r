@@ -57,8 +57,8 @@ for (replicate in seq(1,inputData[["Replicates"]])){
 		maxDeltaPsiCond <- intraReplicate[[replicate]]$deltaPSI == maxDeltaPsi
 		minDeltaPsiCond <- intraReplicate[[replicate]]$deltaPSI == minDeltaPsi
 
-		candidates[[replicate]] <- rbind( candidates[[replicate]], data.frame(Gene=aCandidate, Entropy_Ref=calculateEntropy(intraReplicate[[replicate]]$PSI_ref[thisGeneData]), 
-										  Entropy_Alt=calculateEntropy(intraReplicate[[replicate]]$PSI_alt[thisGeneData]), Switch=maxSwitch, 
+		candidates[[replicate]] <- rbind( candidates[[replicate]], data.frame(Gene=aCandidate, Entropy_Ref=calculateEntropy(intraReplicate[[replicate]]$PSI_N[thisGeneData]), 
+										  Entropy_Alt=calculateEntropy(intraReplicate[[replicate]]$PSI_T[thisGeneData]), Switch=maxSwitch, 
 										  maxdPSI=intraReplicate[[replicate]]$Transcript[thisGeneData & maxDeltaPsiCond], 
 										  Genename=intraReplicate[[replicate]]$Genename[thisGeneData & maxDeltaPsiCond], 
 										  mindPSI=intraReplicate[[replicate]]$Transcript[thisGeneData & minDeltaPsiCond])
@@ -66,7 +66,7 @@ for (replicate in seq(1,inputData[["Replicates"]])){
 	}
 
 	#Expressed genes: transcript whose expression is above the threshold
-	expressedGenes <-(log(as.numeric(intraReplicate[[replicate]]$TPM_ref)) + log(as.numeric(intraReplicate[[replicate]]$TPM_alt))) / 2 > minExpression
+	expressedGenes <-(log(as.numeric(intraReplicate[[replicate]]$TPM_N)) + log(as.numeric(intraReplicate[[replicate]]$TPM_T))) / 2 > minExpression
 	allGenes <- unique(c(allGenes, intraReplicate[[replicate]]$Transcript[expressedGenes]))
 
 	entropyCutRef <- candidates[[replicate]]$Entropy_Ref < median(candidates[[replicate]]$Entropy_Ref)  
@@ -80,7 +80,8 @@ for (replicate in seq(1,inputData[["Replicates"]])){
 candidateList <- data.frame(maxdPSI=as.character(), mindPSI=as.character())
 
 for (aCondition in candidates){
-	candidateList <- rbind(candidateList, aCondition[entropyCutRef & entropyCutAlt & switchCut, c("Genename", "Gene", "maxdPSI","mindPSI")])
+  candidateList <- rbind(candidateList, aCondition)
+  #candidateList <- rbind(candidateList, aCondition[entropyCutRef & entropyCutAlt & switchCut, c("Genename", "Gene", "maxdPSI","mindPSI")])
 }
 
 candidateList <- unique(candidateList)
@@ -91,11 +92,12 @@ write(allGenes, paste0(wd, "/Results/expressedGenes.lst"), sep="\n")
 save(isoformExpression, intraReplicate, interReplicate, candidates, candidateList, inputData, wd, file="SmartAS.RData")
 
 ## Experimental VennDiagram
-Counts <- matrix(0, nrow=length(candidateList), ncol=inputData[["Replicates"]])
+Counts <- matrix(0, nrow=nrow(candidateList), ncol=inputData[["Replicates"]])
+colnames(Counts) <- seq(1,inputData[["Replicates"]])
 
-for (i in 1:length(candidateList)) {
+for (i in 1:nrow(candidateList)) {
 	for (replicate in seq(1,inputData[["Replicates"]])){
-   		Counts[i,replicate] <- candidateList[i] %in% candidates[[replicate]]
+    Counts[i,replicate] <- candidateList$Gene[i] %in% candidates[[replicate]]$Gene
 	}
 }
 
