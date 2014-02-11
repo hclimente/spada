@@ -54,8 +54,10 @@ def setEnvironment(cfgFile):
 
 	if opt["initialStep"] > 1:
 
+		print opt
 		currentInitialState = opt["initialStep"]
 		opt = parseParam("old/" + opt["out"] + "/Parameters.cfg")
+		print opt
 		opt["initialStep"] = currentInitialState
 
 		cmd("cp -r", "old/" + opt["out"] + "/DataExploration", "Results/" + opt["out"])
@@ -130,7 +132,7 @@ def parseParam(cfgFile):
 
 	opt = { "initialStep" : 0, "wd" : "/home/hector/SmartAS/", "gaudiWd" : "/sbi/users/hectorc/SmartAS",
 		    "minExpression" : 0, "minCandidateExpression" : 4, "minPSI" : 0.25, "inputType" : "GENCODE" , "Conditions" : ["N", "T"],
-		    "compartment" : "C", "kmer" : "20", "Replicates" : ""
+		    "compartment" : "C", "kmer" : "20", "Replicates" : 0
 	}
 
 	with open(cfgFile, "r") as PARAMETERS:
@@ -150,10 +152,6 @@ def parseParam(cfgFile):
 				opt["minCandidateExpression"] = float(elements[1])
 			elif elements[0] == "minPSI":
 				opt["minPSI"] = float(elements[1])
-			elif elements[0] == "Replicates":
-				opt["Replicates"] = elements[1]
-			elif elements[0] == "Kmer":
-				opt["kmer"] = elements[1]
 			elif elements[0] == "inputType":
 				opt["inputType"] = elements[1]
 			elif elements[0] == "kmer":
