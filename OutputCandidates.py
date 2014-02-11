@@ -3,14 +3,12 @@
 from sh import *
 import sys
 
-candidates = sys.argv[1];
-particle = ""
-if candidates.find("top") != -1:
-	particle = ".top"
+candidates = sys.argv[1]
+out = sys.argv[2]
 
 with open(candidates, "r") as CANDIDATES, \
-	 open('Results/candidates_normal' + particle + '.gff', 'w') as GFF2n_TRACK, \
-	 open('Results/candidates_tumor' + particle + '.gff', 'w') as GFF2t_TRACK, \
+	 open('Results/' + out + "/candidates_normal.gff", 'w') as GFF2n_TRACK, \
+	 open("Results/" + out + "/candidates_tumor.gff", 'w') as GFF2t_TRACK, \
 	 open("Data/GENCODE/annotation.gtf", "r") as ALLTRANSCRIPTS:
 		candTnt = []
 		for line in CANDIDATES:
