@@ -64,7 +64,7 @@ def getCandidates(opt):
 	cmd("sort", "Results/" + opt["out"] + "/expressedGenes.lst", ">" + "Results/" + opt["out"] + "/expressedGenes.tmp.lst")
 	cmd("mv", "Results/" + opt["out"] + "/expressedGenes.tmp.lst", "Results/" + opt["out"] + "/expressedGenes.lst")
 
-	cmd("Pipeline/OutputCandidates.py", "Results/" + opt["out"] + "/candidateList.tsv")
+	cmd("Pipeline/OutputCandidates.py", "Results/" + opt["out"] + "/candidateList.tsv", opt["out"])
 	
 def candidatePrioritization(opt):
 
