@@ -5,7 +5,6 @@ from shutil import copy
 from libsmartas import *
 import os
 
-
 expressedTranscripts = "Results/" + out + sys.argv[1];
 candidateTranscripts = "Results/" + out + sys.argv[2];
 out = sys.argv[3];

@@ -60,6 +60,7 @@ def setEnvironment(cfgFile):
 		print opt
 		opt["initialStep"] = currentInitialState
 
+		cmd("cp", "old/" + opt["out"] + "/Parameters.cfg", "Results/" + opt["out"])
 		cmd("cp -r", "old/" + opt["out"] + "/DataExploration", "Results/" + opt["out"])
 		cmd("cp -r", "old/" + opt["out"] + "/RWorkspaces/1_ExploreData.RData", "Results/" + opt["out"] + "/RWorkspaces")
 		cmd("cp -r", "old/" + opt["out"] + "/RWorkspaces/1_ExploreData.RData SmartAS.RData")
