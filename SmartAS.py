@@ -61,7 +61,7 @@ def getCandidates(opt):
 	print("* Extracting transcripts with high variance and high expression.")
 	cmd("Pipeline/GetCandidates.r", opt["minExpression"], opt["minCandidateExpression"], opt["minPSI"])
 
-	copy("SmartAS.RData", "Results/RWorkspaces/2_GetCandidates.RData")
+	copy("SmartAS.RData", "Results/" + opt["out"] + "/RWorkspaces/2_GetCandidates.RData")
 	cmd("sort", "Results/" + opt["out"] + "/expressedGenes.lst", ">" + "Results/" + opt["out"] + "/expressedGenes.tmp.lst")
 	cmd("mv", "Results/" + opt["out"] + "/expressedGenes.tmp.lst", "Results/" + opt["out"] + "/expressedGenes.lst")
 
@@ -70,7 +70,7 @@ def getCandidates(opt):
 def candidatePrioritization(opt):
 
 	print("* Prioritizing candidates.")
-	cmd("Pipeline/CandidatePrioritization.py")
+	cmd("Pipeline/CandidatePrioritization.py " + opt["out"])
 
 def prepareILoopsInput(opt):
 
@@ -83,7 +83,7 @@ def prepareILoopsInput(opt):
 	if not diff and path.exists("old/iLoops/ExpressedTranscripts.fasta"):
 		getExpressedGenes = 0
 
-	cmd("Pipeline/getiLoopsInput.py", "Results/" + opt["out"] + "/expressedGenes.lst", "Results/" + opt["out"] + "/candidateList.top.tsv", getExpressedGenes)
+	cmd("Pipeline/getiLoopsInput.py", "/expressedGenes.lst", "/candidateList.top.tsv", getExpressedGenes, opt["out"])
 
 def launchILoops(opt):
 

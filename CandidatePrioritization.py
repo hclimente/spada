@@ -3,6 +3,9 @@
 from biana import *
 from biana.utilities import identifier_utilities
 import csv
+import sys
+
+out = sys.argv[1]
 
 print("\t* Prioritizing by known interactions of the genes (BIANA).")
 
@@ -19,7 +22,7 @@ bianaSession = create_new_session(
 # Create A List With All The Seed Identifiers
 list_input_identifiers = []
 
-with open("Results/candidateList.tsv", "r") as candidates:
+with open("Results/" + out + "/candidateList.tsv", "r") as candidates:
 	for line in candidates:
 		elements = line.split("\t")
 		list_input_identifiers.append(("ensembl", elements[2]))
@@ -61,7 +64,7 @@ bianaSession.select_user_entities_from_user_entity_set(
                                                 	  )
 bianaSession.output_user_entity_set_details(
 												user_entity_set_id = 'SmartAS_entitySet', 
-												out_method = open('Results/candidateInteractions.tsv','w').write, 
+												out_method = open("Results/" + out + "/candidateInteractions.tsv",'w').write, 
 												attributes = ["ensembl","uniprotaccession","uniprotentry"], 
 												include_level_info = True,
 												include_degree_info = True,
@@ -96,7 +99,7 @@ with open("Data/Databases/compilationTable.tsv", "r") as compilationTable:
 
 
 candidateList = []
-with open("Results/candidateList.tsv", "r") as candidates:
+with open("Results/" + out + "/candidateList.tsv", "r") as candidates:
 	print("\t* Checking coincidences.")
 	for line in candidates:
 		aCandidate = {}
@@ -111,7 +114,7 @@ with open("Results/candidateList.tsv", "r") as candidates:
 		candidate1 = splitted[2]
 		candidate2 = splitted[3]
 		
-		with open("Results/candidateInteractions.tsv", "r") as nodes:
+		with open("Results/" + out + "/candidateInteractions.tsv", "r") as nodes:
 			for line in nodes:
 				if line.find(candidate1) != -1 or line.find(candidate2) != -1:
 					aCandidate["Hub"] = (line.split("\t"))[2]
@@ -125,7 +128,7 @@ with open("Results/candidateList.tsv", "r") as candidates:
 
 		candidateList.append(aCandidate)
 
-with open("Results/candidateList.top.tsv", "w") as candidates:
+with open("Results/" + out + "/candidateList.top.tsv", "w") as candidates:
 	candidates.write("hugo_id\tENSG\tENST_normal\tENST_tumor\tKnown PPI\tIntOGen\t")
 	candidates.write("baltz_a\tcastello_a\tkwon_a\tgonzalez_a\tbrosseau_a\tvogelstein_a\than_a\tjuan_ap\tjuan_pr\tbiomart_a\tcosmic_a\treactome\n")
 	for aCandidate in candidateList:

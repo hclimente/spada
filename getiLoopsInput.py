@@ -5,12 +5,13 @@ from shutil import copy
 from sh import *
 import os
 
-expressedTranscripts = sys.argv[1];
-candidateTranscripts = sys.argv[2];
+out = sys.argv[4];
+expressedTranscripts = "Results/" + out + sys.argv[1];
+candidateTranscripts = "Results/" + out + sys.argv[2];
 getExpressedGenes = bool(int(sys.argv[3]))
 
 with open("Data/GENCODE/proteins.fa", "r") as gcMULTIFASTA:
-	with open('Results/iLoops/ExpressedTranscripts.fasta', "w") as MULTIFASTA:
+	with open("Results/" + out + "/iLoops/ExpressedTranscripts.fasta", "w") as MULTIFASTA:
 		for line in gcMULTIFASTA:
 			if line.find(">") != -1:
 				identifiers = ((line.split("|"))[0].split("."))[0]
@@ -30,11 +31,11 @@ with open(candidateTranscripts, "r") as CANDIDATES:
 		
 		for aCandidate in candidates:
 	
-			cmd("mkdir Results/iLoops/Input/" + aCandidate)
+			cmd("mkdir Results/" + out + "/iLoops/Input/" + aCandidate)
 			fileNumber = 1
 			numberOfCandidates = 0
 			with open(expressedTranscripts, "r") as EXPRESSED:
-				PAIRS = open("Results/iLoops/Input/" + aCandidate + '/' + aCandidate + '_' + str(fileNumber) + '.net', "w")
+				PAIRS = open("Results/" + out + "/iLoops/Input/" + aCandidate + '/' + aCandidate + '_' + str(fileNumber) + '.net', "w")
 				for rawExpressed in EXPRESSED:
 					expressedTranscript = rawExpressed.strip()
 					PAIRS.write(aCandidate + "\t" + expressedTranscript + "\n")
@@ -43,5 +44,5 @@ with open(candidateTranscripts, "r") as CANDIDATES:
 						fileNumber += 1
 						numberOfCandidates = 0
 						PAIRS.close()
-						PAIRS = open("Results/iLoops/Input/" + aCandidate + '/' + aCandidate + '_' + str(fileNumber) + '.net', "w")
+						PAIRS = open("Results/" + out + "/iLoops/Input/" + aCandidate + '/' + aCandidate + '_' + str(fileNumber) + '.net', "w")
 				PAIRS.close()
