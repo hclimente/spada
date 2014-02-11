@@ -4,6 +4,7 @@ import sys, os
 from sh import *
 from fnmatch import filter
 import iLoopsXMLParser as parser
+from Bio import SeqIO
 
 if(len(sys.argv) != 2):
 	print("No arguments passed.")
@@ -43,13 +44,32 @@ cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py",
 	)
 
 myParser = iLoopsParser()
-allLoops = {}
+allTranscripts = {}
 
 for xmlFile in filter(os.listdir("Output/Mapping/sge_output"), "*assignation.??.xml"):
 	newLoops = myParser.parseResults(xmlOutput=xmlFile, outputInteraction_signatures=True, outputRFPrecisions=True)
-	allLoops = dict(allLoops.items() + newLoops.items())
+	allTranscripts = dict(allTranscripts.items() + newLoops.items())
 
-print(allLoops)
+print(allTranscripts)
+
+loopPatterns = []
+loopFamilies = {}
+
+for transcript, loops in sorted(allTranscripts.iteritems()):
+	if loops in loopPatterns:
+		loopFamilies[aTranscript].append(aTranscript)
+	else:
+		loopPatterns.append(loops)
+		loopFamilies[aTranscript] = []
+
+isoformSeq = SeqIO.parse(open("ExpressedTranscripts.fasta"),'fasta')
+
+with open("ExpressedTranscripts.loopFiltered.fasta", "w") as FILTERED:
+	for fasta in isoformSeq:
+		for representative in loopPatterns.keys():
+			if representative != fasta.id:
+				break
+			FILTERED.write(">" + fasta.id + "\n" + fasta.seq.tostring() + "\n")
 
 # for transcript in filter(os.listdir("Input"), "ENST*"):
 # 	for configFile in filter(os.listdir("Input/" + transcript), "*net"):
