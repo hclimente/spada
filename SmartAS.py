@@ -73,16 +73,8 @@ def candidatePrioritization(opt):
 
 def prepareILoopsInput(opt):
 
-	getExpressedGenes = 1
-
 	print("* Retrieving protein sequences for transcripts and printing to multiFASTA file.")
-	
-	diff = cmdOut("diff old/expressedGenes.lst", "Results/" + opt["out"] + "/expressedGenes.lst 2>&1")
-	
-	if not diff and path.exists("old/iLoops/ExpressedTranscripts.fasta"):
-		getExpressedGenes = 0
-
-	cmd("Pipeline/GetiLoopsInput.py", "/expressedGenes.lst", "/candidateList.top.tsv", getExpressedGenes, opt["out"])
+	cmd("Pipeline/GetiLoopsInput.py", "/expressedGenes.lst", "/candidateList.top.tsv", opt["out"])
 
 def launchILoops(opt):
 

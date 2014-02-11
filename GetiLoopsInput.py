@@ -5,10 +5,10 @@ from shutil import copy
 from sh import *
 import os
 
-out = sys.argv[4];
+
 expressedTranscripts = "Results/" + out + sys.argv[1];
 candidateTranscripts = "Results/" + out + sys.argv[2];
-getExpressedGenes = bool(int(sys.argv[3]))
+out = sys.argv[3];
 
 with open("Data/GENCODE/proteins.fa", "r") as gcMULTIFASTA:
 	with open("Results/" + out + "/iLoops/ExpressedTranscripts.fasta", "w") as MULTIFASTA:
