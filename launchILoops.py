@@ -1,7 +1,7 @@
 #!/soft/devel/python-2.7/bin/python
 
 import sys, os
-from sh import *
+from libsmartas import *
 from fnmatch import filter
 import iLoopsXMLParser as parser
 from Bio import SeqIO

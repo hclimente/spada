@@ -3,9 +3,7 @@
 import sys, getopt
 from shutil import copy, copytree
 from os import path, chdir
-
-#Custom library
-from sh import *
+from libsmartas import *
 
 def main(argv):
 

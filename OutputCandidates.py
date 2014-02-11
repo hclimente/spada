@@ -1,6 +1,6 @@
 #!/soft/devel/python-2.7/bin/python
 
-from sh import *
+from libsmartas import *
 import sys
 
 candidates = sys.argv[1]

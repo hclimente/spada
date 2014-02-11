@@ -2,7 +2,7 @@
 
 import sys
 from shutil import copy
-from sh import *
+from libsmartas import *
 import os
 
 
