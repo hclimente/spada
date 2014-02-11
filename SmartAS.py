@@ -54,7 +54,7 @@ def exploreData(opt):
 	
 	print("* Reading and summarizing input files: computing PSI values and plotting correlations between replicates.")
 	cmd("Pipeline/ExploreData.r")
-	copy("SmartAS.RData", opt["out"] + "/RWorkspaces/1_ExploreData.RData")
+	copy("SmartAS.RData", "Results/" + opt["out"] + "/RWorkspaces/1_ExploreData.RData")
 
 def getCandidates(opt):
 
@@ -62,10 +62,10 @@ def getCandidates(opt):
 	cmd("Pipeline/GetCandidates.r", opt["minExpression"], opt["minCandidateExpression"], opt["minPSI"])
 
 	copy("SmartAS.RData", "Results/RWorkspaces/2_GetCandidates.RData")
-	cmd("sort", opt["out"] + "/expressedGenes.lst", ">" + opt["out"] + "/expressedGenes.tmp.lst")
-	cmd("mv", opt["out"] + "/expressedGenes.tmp.lst", opt["out"] + "/expressedGenes.lst")
+	cmd("sort", "Results/" + opt["out"] + "/expressedGenes.lst", ">" + "Results/" + opt["out"] + "/expressedGenes.tmp.lst")
+	cmd("mv", "Results/" + opt["out"] + "/expressedGenes.tmp.lst", "Results/" + opt["out"] + "/expressedGenes.lst")
 
-	cmd("Pipeline/OutputCandidates.py", opt["out"] + "/candidateList.tsv")
+	cmd("Pipeline/OutputCandidates.py", "Results/" + opt["out"] + "/candidateList.tsv")
 	
 def candidatePrioritization(opt):
 
@@ -78,19 +78,19 @@ def prepareILoopsInput(opt):
 
 	print("* Retrieving protein sequences for transcripts and printing to multiFASTA file.")
 	
-	diff = cmdOut("diff old/expressedGenes.lst", opt["out"] + "/expressedGenes.lst 2>&1")
+	diff = cmdOut("diff old/expressedGenes.lst", "Results/" + opt["out"] + "/expressedGenes.lst 2>&1")
 	
 	if not diff and path.exists("old/iLoops/ExpressedTranscripts.fasta"):
 		getExpressedGenes = 0
 
-	cmd("Pipeline/getiLoopsInput.py", opt["out"] + "/expressedGenes.lst", opt["out"] + "/candidateList.top.tsv", getExpressedGenes)
+	cmd("Pipeline/getiLoopsInput.py", "Results/" + opt["out"] + "/expressedGenes.lst", "Results/" + opt["out"] + "/candidateList.top.tsv", getExpressedGenes)
 
 def launchILoops(opt):
 
 	print("* Launching iLoops jobs.")
 	
-	cmd("ssh hectorc@gaudi 'mv" + opt["out"] + "/iLoops ~/SmartAS/old; rm -r ~/SmartAS/old'")
-	cmd("scp -r " + opt["out"] + "/iLoops hectorc@gaudi.imim.es:" + opt["gOut"])
+	cmd("ssh hectorc@gaudi 'mv" + "Results/" + opt["out"] + "/iLoops ~/SmartAS/old; rm -r ~/SmartAS/old'")
+	cmd("scp -r " + "Results/" + opt["out"] + "/iLoops hectorc@gaudi.imim.es:" + opt["gOut"])
 	cmd("ssh hectorc@gaudi '" + opt["gaudiWd"] + "/Pipeline/launchILoops.py " + opt["gOut"] + "/iLoops'")
 
 	print("\t* Waiting...")
