@@ -40,8 +40,7 @@ def main(argv):
 	if opt["initialStep"] <= 4:
 		prepareILoopsInput(opt)
 	if opt["initialStep"] <= 5:
-		pass
-		#launchILoops(opt)
+		launchILoops(opt)
 	if opt["initialStep"] <= 6:
 		pass
 		#exloreILoopsResults(opt)
@@ -89,11 +88,9 @@ def launchILoops(opt):
 
 	print("* Launching iLoops jobs.")
 	
-	cmd("ssh hectorc@gaudi 'mv" + "Results/" + opt["out"] + "/iLoops ~/SmartAS/old; rm -r ~/SmartAS/old'")
+	cmd("ssh hectorc@gaudi 'rm -r", opt["gOut"] + "/iLoops")
 	cmd("scp -r " + "Results/" + opt["out"] + "/iLoops hectorc@gaudi.imim.es:" + opt["gOut"])
-	cmd("ssh hectorc@gaudi '" + opt["gaudiWd"] + "/Pipeline/launchILoops.py " + opt["gOut"] + "/iLoops'")
-
-	print("\t* Waiting...")
+	cmd("ssh hectorc@gaudi '" + opt["gaudiWd"] + "/Pipeline/launchILoops.py", opt["gOut"] + "/iLoops'")
 
 def exloreILoopsResults(opt):
 

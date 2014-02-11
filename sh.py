@@ -11,6 +11,7 @@ def cmd(base, *args):
 	command = base
 	for arg in args:
 		command += " " + str(arg)
+
 	call(command, shell=True)
 
 def cmdOut(base, *args):
@@ -23,7 +24,7 @@ def cmdOut(base, *args):
 def setRWorkspace(wd, out, Replicates):
 
 	r("wd <- \"" + wd + "\"")
-	r("out <- \"" + out + "\"")
+	r("out <- \"Results/" + out + "/\"")
 	r("inputData <- list()")	
 	r('inputData[["Conditions"]] <- c("N", "T")')
 	r('inputData[["Replicates"]] <- ' + Replicates)
@@ -37,9 +38,8 @@ def setEnvironment(cfgFile):
 	opt["gOut"] = opt["gaudiWd"] + "/Results/" + opt["out"]
 
 	print("* Preparing the environment")
-	cmd("cd " + opt["wd"])
 	cmd("rm -r old2/" + opt["out"] + "; mv", "old/" + opt["out"], "old2/"  + opt["out"])
-	cmd("mkdir old/" + opt["inputType"] + "; mv", "Results/" + opt["out"], "old/" + opt["out"] + "; mv SmartAS.RData ", "old/" + opt["out"] + "/SmartAS.old.RData")
+	cmd("mv", "Results/" + opt["out"], "old/" + opt["out"] + "; mv SmartAS.RData ", "old/" + opt["out"] + "/SmartAS.old.RData")
 	cmd("mkdir -p", "Results/" + opt["out"] + "/iLoops/Output/Mapping")
 	cmd("mkdir", "Results/" + opt["out"] + "/iLoops/Input")
 	cmd("mkdir", "Results/" + opt["out"] + "/RWorkspaces")
@@ -53,17 +53,14 @@ def setEnvironment(cfgFile):
 		getDB()
 
 	if opt["initialStep"] > 1:
+
+		currentInitialState = opt["initialStep"]
+		opt = parseParam("old/" + opt["out"] + "/Parameters.cfg")
+		opt["initialStep"] = currentInitialState
+
 		cmd("cp -r", "old/" + opt["out"] + "/DataExploration", "Results/" + opt["out"])
 		cmd("cp -r", "old/" + opt["out"] + "/RWorkspaces/1_ExploreData.RData", "Results/" + opt["out"] + "/RWorkspaces")
 		cmd("cp -r", "old/" + opt["out"] + "/RWorkspaces/1_ExploreData.RData SmartAS.RData")
-
-		#If any kind of data is recycled, check that the parameters didn't change between runs.
-		diff = cmdOut("diff", "Results/" + opt["out"] + "/Parameters.cfg", "old/" + opt["out"] + "/Parameters.cfg 2>&1")
-	
-		if diff:
-			print("WARNING: parameter files don't match.")
-			with open("Results/" + opt["out"] + "/Parameters.cfg", "w") as paramFile:
-				paramFile.write("\n***Did not match previous run***")
 
 		for rep in range(1, int(opt["Replicates"]) + 1):
 			for cond in opt["Conditions"]:
@@ -126,11 +123,12 @@ def waitPID(pidQueue):
 def printParam(opt):
 	with open("Results/" + opt["out"] + "/Parameters.cfg", "w") as paramFile:
 		for aKey in opt.keys():
-			paramFile.write(aKey + "=" + str(opt[aKey]) + "\n")
+			if not aKey == "Conditions":
+				paramFile.write(aKey + "=" + str(opt[aKey]) + "\n")
 
 def parseParam(cfgFile):
 
-	opt = { "initialStep" : 0, "wd" : "/home/hector/SmartAS/", "gaudiWd" : "/sbi/users/hectorc/SmartAS/Results/iLoops",
+	opt = { "initialStep" : 0, "wd" : "/home/hector/SmartAS/", "gaudiWd" : "/sbi/users/hectorc/SmartAS",
 		    "minExpression" : 0, "minCandidateExpression" : 4, "minPSI" : 0.25, "inputType" : "GENCODE" , "Conditions" : ["N", "T"],
 		    "compartment" : "C", "kmer" : "20", "Replicates" : ""
 	}
@@ -158,6 +156,14 @@ def parseParam(cfgFile):
 				opt["kmer"] = elements[1]
 			elif elements[0] == "inputType":
 				opt["inputType"] = elements[1]
+			elif elements[0] == "kmer":
+				opt["kmer"] = elements[1]
+			elif elements[0] == "out":
+				opt["out"] = elements[1]
+			elif elements[0] == "gOut":
+				opt["gOut"] = elements[1]
+			elif elements[0] == "compartment":
+				opt["compartment"] = elements[1]
 			else:
 				print("Unrecognized option:" + line)
 
@@ -176,7 +182,7 @@ def standarizeInput(opt):
 					 open("Results/" + opt["out"] + "/Input/" + str(replicateCounter) + "_" + Conditions[condition] + ".tsv", "w") as FILTERED:
 					for line in FILE:
 						if line.find("#") == -1:
-							tableValues=line.split("\t")
+							tableValues=line.strip().split("\t")
 							splitIds=tableValues[0].split("|")
 							FILTERED.write(splitIds[1].split(".")[0] + "\t" + splitIds[0].split(".")[0] + "\t" + splitIds[5] + "\t" + tableValues[2] + "\n")
 				reps.append(str(replicateCounter))
@@ -195,7 +201,7 @@ def standarizeInput(opt):
 			
 			for line in FILE:
 							
-				splitted = line.split("\t")
+				splitted = line.strip().split("\t")
 				seqTags = splitted[0].split(",")
 				
 				gene = seqTags[0]
@@ -217,7 +223,7 @@ def finish(opt):
 	minExpresion = ""
 	minPSI = ""
 
-	with open("Results/" + opt["out"] + "Parameters.cfg", "r") as paramFile:
+	with open("Results/" + opt["out"] + "/Parameters.cfg", "r") as paramFile:
 		for line in paramFile:
 			elements = line.split("=")
 
@@ -226,21 +232,20 @@ def finish(opt):
 			elif elements[0] == "minPSI":
 				minPSI = elements[1].strip()
 	    
-	resultsDir="/home/hector/Results/GENECODE19"
-	outFolder="e" + minExpresion + "p" + minPSI
+	outFolder = "/home/hector/Results/" + opt["inputType"] + "/" + opt["out"]
 
-	if not cmdOut("mkdir", resultsDir + "/" + outFolder):
+	if not cmdOut("mkdir -p", outFolder):
 		overwrite = raw_input("\tDirectory exists. Do you want to overwrite it? (y/n)")
 		if not overwrite == "y":
 			return
 
-	cmd("cp", "Results/" + opt["out"] + "/candidates_normal.gff", resultsDir + "/" + outFolder + "/" + "candidates_normal." + outFolder + ".gff")
-	cmd("cp", "Results/" + opt["out"] + "/candidates_tumor.gff", resultsDir + "/" + outFolder + "/" + "candidates_tumor." + outFolder + ".gff")
-	cmd("cp", "Results/" + opt["out"] + "/candidateList.top.tsv", resultsDir + "/" + outFolder + "/" + "candidateList." + outFolder + ".tsv")
+	cmd("cp", "Results/" + opt["out"] + "/candidates_normal.gff", outFolder + "/" + "candidates_normal." + opt["out"] + ".gff")
+	cmd("cp", "Results/" + opt["out"] + "/candidates_tumor.gff", outFolder + "/" + "candidates_tumor." + opt["out"] + ".gff")
+	cmd("cp", "Results/" + opt["out"] + "/candidateList.top.tsv", outFolder + "/" + "candidateList." + opt["out"] + ".tsv")
 
-	chdir(resultsDir + "/" + outFolder)
-	cmd("cp -r", "Results/" + opt["out"] + "/* .")
+	chdir(outFolder)
+	cmd("cp -r", "../SmartAS/Results/" + opt["out"] + "/* .")
 
-	cmd("tar -czvf", outFolder + ".tar.gz candidates_normal." + outFolder + ".gff candidates_tumor." + outFolder + ".gff candidateList." + outFolder + ".tsv")
-	cmd("rm", "*" + outFolder + "*gff", "*" + outFolder + "*tsv")
+	cmd("tar -czvf", opt["out"] + ".tar.gz candidates_normal." + opt["out"] + ".gff candidates_tumor." + opt["out"] + ".gff candidateList." + opt["out"] + ".tsv")
+	cmd("rm", "*" + opt["out"] + "*gff", "*" + opt["out"] + "*tsv")
 	chdir("/home/hector/SmartAS")

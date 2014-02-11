@@ -86,8 +86,8 @@ for (aCondition in candidates){
 
 candidateList <- unique(candidateList)
 
-write.table(candidateList, file=paste0(wd, "/Results/", out, "/candidateList.tsv"), sep="\t", row.names=F, col.names=F, quote=F)
-write(allGenes, paste0(wd, "/Results/", out, "/expressedGenes.lst"), sep="\n")
+write.table(candidateList, file=paste0(out, "candidateList.tsv"), sep="\t", row.names=F, col.names=F, quote=F)
+write(allGenes, paste0(out, "expressedGenes.lst"), sep="\n")
 
 ## VennDiagram
 Counts <- matrix(0, nrow=nrow(candidateList), ncol=inputData[["Replicates"]])
@@ -99,9 +99,8 @@ for (i in 1:nrow(candidateList)) {
 	}
 }
 
-png(paste0(wd,"/Results/", out, "/VennDiagram.png"), width=960, height=960)
+png(paste0(out, "VennDiagram.png"), width=960, height=960)
 vennDiagram(vennCounts(Counts))
 dev.off()
 
 save(isoformExpression, intraReplicate, interReplicate, candidates, candidateList, inputData, wd, out, file="SmartAS.RData")
-
