@@ -1,6 +1,6 @@
 #!/soft/R/R-3.0.0/bin/Rscript
 
-library(limma)
+library(plyr)
 
 load("SmartAS.RData")
 setwd(wd)
@@ -77,30 +77,16 @@ for (replicate in seq(1,inputData[["Replicates"]])){
 
 }
 
-candidateList <- data.frame(maxdPSI=as.character(), mindPSI=as.character())
+candidateList <- data.frame(Genename=as.character(), Gene=as.character(), maxdPSI=as.character(), mindPSI=as.character())
 
 for (aCondition in candidates){
   candidateList <- rbind(candidateList, aCondition)
-  #candidateList <- rbind(candidateList, aCondition[entropyCutRef & entropyCutAlt & switchCut, c("Genename", "Gene", "maxdPSI","mindPSI")])
 }
 
-candidateList <- unique(candidateList)
+candidateList <- ddply(candidateList,.(Genename,Gene,maxdPSI,mindPSI), summarise, Replicated=length(Genename))
+#candidateList <- unique(candidateList)
 
 write.table(candidateList, file=paste0(out, "candidateList.tsv"), sep="\t", row.names=F, col.names=F, quote=F)
 write(allGenes, paste0(out, "expressedGenes.lst"), sep="\n")
-
-## VennDiagram
-Counts <- matrix(0, nrow=nrow(candidateList), ncol=inputData[["Replicates"]])
-colnames(Counts) <- seq(1,inputData[["Replicates"]])
-
-for (i in 1:nrow(candidateList)) {
-	for (replicate in seq(1,inputData[["Replicates"]])){
-    Counts[i,replicate] <- candidateList$Gene[i] %in% candidates[[replicate]]$Gene
-	}
-}
-
-png(paste0(out, "VennDiagram.png"), width=960, height=960)
-vennDiagram(vennCounts(Counts))
-dev.off()
 
 save(isoformExpression, intraReplicate, interReplicate, candidates, candidateList, inputData, wd, out, file="SmartAS.RData")
