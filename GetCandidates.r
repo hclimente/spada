@@ -89,9 +89,7 @@ candidateList <- unique(candidateList)
 write.table(candidateList, file=paste0(wd, "/Results/", out, "/candidateList.tsv"), sep="\t", row.names=F, col.names=F, quote=F)
 write(allGenes, paste0(wd, "/Results/", out, "/expressedGenes.lst"), sep="\n")
 
-save(isoformExpression, intraReplicate, interReplicate, candidates, candidateList, inputData, wd, file="SmartAS.RData")
-
-## Experimental VennDiagram
+## VennDiagram
 Counts <- matrix(0, nrow=nrow(candidateList), ncol=inputData[["Replicates"]])
 colnames(Counts) <- seq(1,inputData[["Replicates"]])
 
@@ -104,3 +102,6 @@ for (i in 1:nrow(candidateList)) {
 png(paste0(wd,"/Results/", out, "/VennDiagram.png"), width=960, height=960)
 vennDiagram(vennCounts(Counts))
 dev.off()
+
+save(isoformExpression, intraReplicate, interReplicate, candidates, candidateList, inputData, wd, out, file="SmartAS.RData")
+

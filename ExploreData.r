@@ -162,4 +162,4 @@ png(paste0(wd,"/Results/", out, "/DataExploration/FPR.png"), width=960, height=9
 heatmap(FPRstudy, Rowv=NA, Colv=NA, scale="none", col = heat.colors(256), xlab="|deltaPSI|", ylab="Expression", main="FPR")
 dev.off()
 
-save(isoformExpression, intraReplicate, interReplicate, inputData, wd, file="SmartAS.RData")
+save(isoformExpression, intraReplicate, interReplicate, inputData, wd, out, file="SmartAS.RData")
