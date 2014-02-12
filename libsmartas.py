@@ -54,10 +54,8 @@ def setEnvironment(cfgFile):
 
 	if opt["initialStep"] > 1:
 
-		print opt
 		currentInitialState = opt["initialStep"]
 		opt = parseParam("old/" + opt["out"] + "/Parameters.cfg")
-		print opt
 		opt["initialStep"] = currentInitialState
 
 		cmd("cp", "old/" + opt["out"] + "/Parameters.cfg", "Results/" + opt["out"])

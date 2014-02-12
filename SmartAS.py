@@ -78,8 +78,8 @@ def launchILoops(opt):
 
 	print("* Launching iLoops jobs.")
 	
-	cmd("ssh hectorc@gaudi 'rm -r", opt["gOut"] + "/iLoops'")
-	cmd("scp -r " + "Results/" + opt["out"] + "/iLoops hectorc@gaudi.imim.es:" + opt["gOut"])
+	cmd("ssh hectorc@gaudi 'rm -r", opt["gOut"] + "/iLoops; mkdir -p", opt["gaudiWd"] + "/Results/" + opt["inputType"] + "'")
+	cmd("scp -r " + "Results/" + opt["out"] + "/iLoops hectorc@gaudi.imim.es:" + opt["gaudiWd"] + "/Results/" + opt["inputType"])
 	cmd("ssh hectorc@gaudi '" + opt["gaudiWd"] + "/Pipeline/launchILoops.py", opt["gOut"] + "/iLoops'")
 
 def exloreILoopsResults(opt):
