@@ -21,6 +21,7 @@ with open("Data/GENCODE/proteins.fa", "r") as gcMULTIFASTA:
 print("\t* Writing the pairs files.")
 
 with open(candidateTranscripts, "r") as CANDIDATES:
+	CANDIDATES.readline()
 	for line in CANDIDATES:
 		elements = line.split("\t")
 		if len(elements) == 4:
