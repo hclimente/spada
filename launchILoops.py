@@ -40,7 +40,8 @@ cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py",
 	"-j Output/Mapping",
 	"-x Mapping.xml",
 	"-v",
-	"-m"
+	"-m",
+	"-n 10"
 	)
 
 myParser = iLoopsParser()
