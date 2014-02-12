@@ -72,7 +72,7 @@ def candidatePrioritization(opt):
 def prepareILoopsInput(opt):
 
 	print("* Retrieving protein sequences for transcripts and printing to multiFASTA file.")
-	cmd("Pipeline/GetiLoopsInput.py", "/expressedGenes.lst", "/candidateList.top.tsv", opt["out"])
+	cmd("Pipeline/GetiLoopsInput.py", opt["out"], "/expressedGenes.lst", "/candidateList.top.tsv")
 
 def launchILoops(opt):
 

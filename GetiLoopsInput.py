@@ -5,9 +5,9 @@ from shutil import copy
 from libsmartas import *
 import os
 
-expressedTranscripts = "Results/" + out + sys.argv[1];
-candidateTranscripts = "Results/" + out + sys.argv[2];
-out = sys.argv[3];
+out = sys.argv[1]
+expressedTranscripts = "Results/" + out + sys.argv[2]
+candidateTranscripts = "Results/" + out + sys.argv[3]
 
 with open("Data/GENCODE/proteins.fa", "r") as gcMULTIFASTA:
 	with open("Results/" + out + "/iLoops/ExpressedTranscripts.fasta", "w") as MULTIFASTA:
