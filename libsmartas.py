@@ -34,7 +34,7 @@ def setEnvironment(cfgFile):
 
 	opt = parseParam(cfgFile)
 
-	opt["out"] = opt["inputType"] + "/mE" + str(opt["minExpression"]) + "_mCE" + str(opt["minCandidateExpression"]) + "_mP" + str(opt["minPSI"])
+	opt["out"] = opt["inputType"] + "/" + opt["tag1"] + "_mE" + str(opt["minExpression"]) + "_mCE" + str(opt["minCandidateExpression"])
 	opt["gOut"] = opt["gaudiWd"] + "/Results/" + opt["out"]
 
 	print("* Preparing the environment")
@@ -130,8 +130,8 @@ def printParam(opt):
 def parseParam(cfgFile):
 
 	opt = { "initialStep" : 0, "wd" : "/home/hector/SmartAS/", "gaudiWd" : "/sbi/users/hectorc/SmartAS",
-		    "minExpression" : 0, "minCandidateExpression" : 4, "minPSI" : 0.25, "inputType" : "GENCODE" , "Conditions" : ["N", "T"],
-		    "compartment" : "C", "kmer" : "20", "Replicates" : 0
+		    "minExpression" : 0, "minCandidateExpression" : 4, "inputType" : "GENCODE" , "Conditions" : ["N", "T"],
+		    "tag1" : "20", "Replicates" : 0
 	}
 
 	with open(cfgFile, "r") as PARAMETERS:
@@ -149,18 +149,14 @@ def parseParam(cfgFile):
 				opt["minExpression"] = float(elements[1])
 			elif elements[0] == "minCandidateExpression":
 				opt["minCandidateExpression"] = float(elements[1])
-			elif elements[0] == "minPSI":
-				opt["minPSI"] = float(elements[1])
 			elif elements[0] == "inputType":
 				opt["inputType"] = elements[1]
-			elif elements[0] == "kmer":
-				opt["kmer"] = elements[1]
+			elif elements[0] == "tag1":
+				opt["tag1"] = elements[1]
 			elif elements[0] == "out":
 				opt["out"] = elements[1]
 			elif elements[0] == "gOut":
 				opt["gOut"] = elements[1]
-			elif elements[0] == "compartment":
-				opt["compartment"] = elements[1]
 			else:
 				print("Unrecognized option:" + line)
 
@@ -174,8 +170,8 @@ def standarizeInput(opt):
 		Conditions = {"10": "N", "7": "T"}
 		for condition in Conditions.keys():
 			replicateCounter = 1
-			for sample in filter(listdir("Data/GENCODE/Rawdata/" + opt["kmer"] + "-kmer-length/"), condition + "C*_*"):
-				with open("Data/GENCODE/Rawdata/" + opt["kmer"] + "-kmer-length/" + sample + "/quant_bias_corrected.sf", "r") as FILE, \
+			for sample in filter(listdir("Data/GENCODE/Rawdata/" + opt["tag1"] + "-kmer-length/"), condition + "C*_*"):
+				with open("Data/GENCODE/Rawdata/" + opt["tag1"] + "-kmer-length/" + sample + "/quant_bias_corrected.sf", "r") as FILE, \
 					 open("Results/" + opt["out"] + "/Input/" + str(replicateCounter) + "_" + Conditions[condition] + ".tsv", "w") as FILTERED:
 					for line in FILE:
 						if line.find("#") == -1:
@@ -187,7 +183,7 @@ def standarizeInput(opt):
 	
 	elif(opt["inputType"] == "TCGA"):
 		patients = []
-		with open("Data/TCGA/Rawdata/ucec_iso_tpm_paired.txt", "r") as FILE:
+		with open("Data/TCGA/Rawdata/"+ opt["tag1"] + "_iso_tpm_paired.txt", "r") as FILE:
 			firstLine = FILE.readline().strip().split("\t")
 			for sampleType in opt["Conditions"]:
 				replicateCounter = 1

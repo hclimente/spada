@@ -55,22 +55,10 @@ for (replicate in seq(1, inputData[["Replicates"]])){
     colnames(isoformExpression[[tag]]) <- c("Gene", "Transcript","Genename","TPM")
       
     #Calculate the PSI for each transcript and the total expression of the gene
-    vPSI <- as.numeric()
-    vtTPM <- as.numeric()
-      
-    for (thisTranscript in 1:nrow(isoformExpression[[tag]])){
-      mask <- isoformExpression[[tag]]$Gene==isoformExpression[[tag]]$Gene[thisTranscript]
-      total <- sum(isoformExpression[[tag]]$TPM[mask])
-      vtTPM <- c(vtTPM, total)
-      if(total!=0){
-        vPSI <- c(vPSI, isoformExpression[[tag]]$TPM[thisTranscript]/total)
-      } else {
-        vPSI <- c(vPSI, NA)
-      }
-    }
-      
-    isoformExpression[[tag]]$tTPM <- vtTPM
-    isoformExpression[[tag]]$PSI <- vPSI
+    vtTPM <- aggregate(TPM ~ Gene, data = isoformExpression[[tag]], FUN = "sum")
+    colnames(vtTPM) <- c("Gene", "tTPM")
+    isoformExpression[[tag]] <- merge(isoformExpression[[tag]], vtTPM)
+    isoformExpression[[tag]] <- transform(isoformExpression[[tag]], PSI = TPM / tTPM)
       
     write.table(isoformExpression[[tag]], file=outputFile, sep="\t", row.names=F)
   }
