@@ -32,7 +32,7 @@ minCandidateExpression <- as.numeric(args[2])
 
 for (replicate in seq(1,inputData[["Replicates"]])){
   
-	cat("\t* Candidate", replicate)
+	cat("\t* Replicate", replicate)
 
   candidates[[replicate]] <- data.frame(Gene=as.character(), Genename=as.character(), Entropy_Ref=as.numeric(), Entropy_Alt=as.numeric(), 
                                         Switch=as.numeric(), maxdPSI=as.character(), mindPSI=as.character())
