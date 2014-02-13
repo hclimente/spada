@@ -4,7 +4,6 @@ load("SmartAS.RData")
 setwd(wd)
 
 intraReplicate <- list()
-interReplicate <- list()
 isoformExpression <- list()
 
 compartment <- inputData[["Compartments"]][1]

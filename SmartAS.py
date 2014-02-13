@@ -56,7 +56,8 @@ def exploreData(opt):
 def getCandidates(opt):
 
 	print("* Extracting transcripts with high variance and high expression.")
-	cmd("Pipeline/GetCandidates.r", opt["minExpression"], opt["minCandidateExpression"], opt["minPSI"])
+	cmd("Pipeline/GetCandidates.r", opt["minExpression"], opt["minCandidateExpression"])
+	exit()
 
 	copy("SmartAS.RData", "Results/" + opt["out"] + "/RWorkspaces/2_GetCandidates.RData")
 	cmd("sort", "Results/" + opt["out"] + "/expressedGenes.lst", ">" + "Results/" + opt["out"] + "/expressedGenes.tmp.lst")
