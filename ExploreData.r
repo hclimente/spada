@@ -94,73 +94,35 @@ for (replicate in seq(1, inputData[["Replicates"]])){
 
 }
 
-save(isoformExpression, intraReplicate, interReplicate, inputData, wd, out, file="SmartAS.RData")
-q()
-
-for (r1 in set(1,inputData[["Replicates"]])){
+psiCols <- as.character()
+for (r1 in seq(1,inputData[["Replicates"]])){
 
   r1_c <- as.character(r1)
-
-  if (!exists("interReplicate[[\"Normal\"]]")){
-    interReplicate[["Normal"]] <- intraReplicate[[r1]]
-    interReplicate[["Normal"]] <- subset(interReplicate[["Normal"]], select=-c(paste0("TPM_T_", r1_c), (paste0"tTPM_T_", r1_c), paste0("PSI_T_", r1_c)))
-    colnames(interReplicate[["Normal"]]) <- c("Gene", "Transcript", "Genename", paste0("TPM_N_", r1_c), (paste0"tTPM_N_", r1_c), paste0("PSI_N_", r1_c)))
+  delete <- c("TPM_T","tTPM_T", "PSI_T", "deltaPSI", "la_tTPM")
     
-  }
-  else {
-    interReplicate[["Normal"]] <- merge(interReplicate[["Normal"]], intraReplicate[[r2]], by=c("Gene", "Transcript", "Genename"),
-                                        suffixes=c("",paste0("_", r2)), all=T)
-    interReplicate[["Normal"]] <- subset(interReplicate[["Normal"]], select=-c(paste0("TPM_T_", r1_c), (paste0"tTPM_T_", r1_c), paste0("PSI_T_", r1_c)))
+  if(!exists("interReplicate")){
+    interReplicate <- intraReplicate[[r1]]
+    interReplicate <- interReplicate[,!(colnames(interReplicate) %in% delete), drop=FALSE]
     
+    columns <- c("Gene", "Transcript", "Genename", paste0("TPM_N_", r1_c), paste0("tTPM_N_", r1_c), paste0("PSI_N_", r1_c))
+    
+  } else {
+    interReplicate <- merge(interReplicate, intraReplicate[[r1]], by=c("Gene", "Transcript", "Genename"), suffixes=c("",paste0("_", r1_c)), all=T)
+    interReplicate <- interReplicate[,!(colnames(interReplicate) %in% delete), drop=FALSE]
+    
+    columns <- c(columns, paste0("TPM_N_", r1_c), paste0("tTPM_N_", r1_c), paste0("PSI_N_", r1_c))
   }
+  colnames(interReplicate) <- columns
+  psiCols <- c(psiCols, paste0("PSI_N_", r1))
 
-  #   thisComp <- paste0(r1, "_", r2)
-
-  #   plotCorrelations(intraReplicate[[r1]]$TPM_N, intraReplicate[[r2]]$TPM_N, "TPM_N", paste0("TPM_N_cor_", thisComp))
-  #   plotCorrelations(intraReplicate[[r1]]$TPM_T, intraReplicate[[r2]]$TPM_T, "TPM_T", paste0("TPM_T_cor_", thisComp))
-  #   plotCorrelations(intraReplicate[[r1]]$deltaPSI, intraReplicate[[r2]]$deltaPSI, "deltaPSI", paste0("deltaPSI_cor_", thisComp))
-  #   plotCorrelations(intraReplicate[[r1]]$PSI_N, intraReplicate[[r2]]$PSI_N, "PSI_N", paste0("PSI_N_cor_", thisComp))
-  #   plotCorrelations(intraReplicate[[r1]]$PSI_T, intraReplicate[[r2]]$PSI_T, "PSI_T", paste0("PSI_T_cor_", thisComp))
-      
-  #   interReplicate[["Normal"]] <- merge(intraReplicate[[r1]], intraReplicate[[r2]], by=c("Gene", "Transcript", "Genename"),
-  #                                       suffixes=c(paste0("_", r1),paste0("_", r2)), all=T)
-  #   interReplicate[["Normal"]] <- subset(interReplicate[["Normal"]], select=-c(paste0("TPM_T_", r1), (paste0"tTPM_T_", r1), paste0("PSI_T_", r1), 
-  #                                                                              paste0("TPM_T_", r2), paste0("tTPM_T_", r2), paste0("PSI_T_", r2)))
-  #   interReplicate[["Normal"]]$deltaPSI <- interReplicate[["Normal"]]$PSI_N_1 - interReplicate[["Normal"]]$PSI_N_2
-  #   interReplicate[["Normal"]]$la_tTPM <- 0.5 * (log(interReplicate[["Normal"]]$tTPM_N_1) + log(interReplicate[["Normal"]]$tTPM_N_2))
-      
-  #   interReplicate[["Tumor"]] <- merge(intraReplicate[[r1]], intraReplicate[[r2]], by=c("Gene", "Transcript", "Genename"), 
-  #                                      suffixes=c(paste0("_", r1),paste0("_", r2)), all=T)
-  #   interReplicate[["Tumor"]] <- subset(interReplicate[["Tumor"]], select=-c(TPM_N_1, tTPM_N_1, PSI_N_1, TPM_N_2, tTPM_N_2, PSI_N_2))
-  #   interReplicate[["Tumor"]] <- subset(interReplicate[["Tumor"]], select=-c(paste0("TPM_N_", r1), (paste0"tTPM_N_", r1), paste0("PSI_N_", r1), 
-  #                                                                            paste0("TPM_N_", r2), paste0("tTPM_N_", r2), paste0("PSI_N_", r2)))
-  #   interReplicate[["Tumor"]]$deltaPSI <- interReplicate[["Tumor"]][,paste0("PSI_T_", r1)] - interReplicate[["Tumor"]][,paste0("PSI_T_", r2)]
-  #   interReplicate[["Tumor"]]$la_tTPM <- 0.5 * (log(interReplicate[["Tumor"]][,paste0("tTPM_T_", r2)]) + log(interReplicate[["Tumor"]][,paste0("tTPM_T_", r2)]))
-  # }
   simplePlot(intraReplicate[[r1]]$la_tTPM, intraReplicate[[r1]]$deltaPSI, r1, "0.5·(log(sum tTPM_N) + log(sum tTPM_T) )", 
              "deltaPSI", paste0(out, "DataExploration/latTPM_PSI_intrarreplicate",r1,".png"))
-  simplePlot(interReplicate[["Normal"]]$la_tTPM, interReplicate[["Normal"]]$deltaPSI, paste0(tag, "_N"), "0.5·(log(sum tTPM_1) + log(sum tTPM_2) )", 
-            "deltaPSI", paste0(out, "DataExploration/latTPM_PSI_interreplicate_N_",tag,".png"))
+
 }
 
-#Estimate the False Positive Rate
-FPR <- as.numeric()
-psiRange <- as.numeric()
-for (psiValue in seq(0, 1, by=0.05)){
-  expressionRange <- as.numeric()
-  for (expValue in seq(-5, 8, by=0.25)){
-    FPR <- c(FPR, sum((abs(interReplicate[["Normal"]]$deltaPSI)>=psiValue & interReplicate[["Normal"]]$la_tTPM>=expValue), na.rm=TRUE)/nrow(interReplicate[["Normal"]]))
-    expressionRange <- c(expressionRange,expValue)
-  }
-  psiRange <- c(psiRange,psiValue)
-}
+interReplicate$MedianPSI <- apply(interReplicate[,psiCols], 1, median)
+interReplicate$MAD <- apply(interReplicate[,psiCols], 1, mad)
 
-FPRstudy <- matrix(data=FPR, nrow=length(expressionRange), ncol=length(psiRange))
-rownames(FPRstudy) <- expressionRange
-colnames(FPRstudy) <- psiRange
-
-png(paste0(out, "DataExploration/FPR.png"), width=960, height=960)
-heatmap(FPRstudy, Rowv=NA, Colv=NA, scale="none", col = heat.colors(256), xlab="|deltaPSI|", ylab="Expression", main="FPR")
-dev.off()
+simplePlot(interReplicate$MedianPSI, interReplicate$MAD, paste0("InterReplicate"), "Median PSI", "MAD", paste0(out, "DataExploration/Interreplicate_mean_MAD.png"))
 
 save(isoformExpression, intraReplicate, interReplicate, inputData, wd, out, file="SmartAS.RData")
