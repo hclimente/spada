@@ -49,16 +49,14 @@ def main(argv):
 
 def exploreData(opt):
 	
-	print("* Reading and summarizing input files: computing PSI values and plotting correlations between replicates.")
-	cmd("Pipeline/ExploreData.r")
-	copy("SmartAS.RData", "Results/" + opt["out"] + "/RWorkspaces/1_ExploreData.RData")
+	print("* Reading and summarizing input files: computing PSI values and intereplicate agreement.")
+	cmd("Pipeline/ExploreData.r", opt["out"], "Data/Input/" + opt["inputType"] + "/" + opt["tag1"] + "/")
 
 def getCandidates(opt):
 
 	print("* Extracting transcripts with high variance and high expression.")
-	cmd("Pipeline/GetCandidates.r", opt["minExpression"], opt["minCandidateExpression"])
+	cmd("Pipeline/GetCandidates.r", opt["minExpression"], opt["minCandidateExpression"], opt["out"])
 
-	copy("SmartAS.RData", "Results/" + opt["out"] + "/RWorkspaces/2_GetCandidates.RData")
 	cmd("sort", "Results/" + opt["out"] + "/expressedGenes.lst", ">" + "Results/" + opt["out"] + "/expressedGenes.tmp.lst")
 	cmd("mv", "Results/" + opt["out"] + "/expressedGenes.tmp.lst", "Results/" + opt["out"] + "/expressedGenes.lst")
 
@@ -67,7 +65,7 @@ def getCandidates(opt):
 def candidatePrioritization(opt):
 
 	print("* Prioritizing candidates.")
-	cmd("Pipeline/CandidatePrioritization.py " + opt["out"])
+	cmd("Pipeline/CandidatePrioritization.py", opt["out"], opt["inputType"])
 
 def prepareILoopsInput(opt):
 
