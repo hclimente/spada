@@ -6,6 +6,11 @@ import csv
 import sys
 
 out = sys.argv[1]
+inputType = ""
+if sys.argv[2] == "GENCODE":
+	inputType = "ensembl"
+elif sys.argv[2] == "TCGA":
+	inputType = "geneid"
 
 print("\t* Prioritizing by known interactions of the genes (BIANA).")
 
@@ -24,9 +29,14 @@ list_input_identifiers = []
 
 with open("Results/" + out + "/candidateList.tsv", "r") as candidates:
 	for line in candidates:
-		elements = line.split("\t")
-		list_input_identifiers.append(("ensembl", elements[2]))
-		list_input_identifiers.append(("ensembl", elements[3].strip()))
+		fields = line.strip().split("\t")
+		if inputType == "ensembl":
+			list_input_identifiers.append(("ensembl", fields[2]))
+			list_input_identifiers.append(("ensembl", fields[3]))
+		elif inputType == "geneid":
+			nameComponents = fields[1].split("|")
+			if len(nameComponents) == 2:
+				list_input_identifiers.append(("geneid", nameComponents[1] ))
 
 list_input_restriction_identifiers = []
 list_input_negative_restriction_identifiers = []
@@ -65,7 +75,7 @@ bianaSession.select_user_entities_from_user_entity_set(
 bianaSession.output_user_entity_set_details(
 												user_entity_set_id = 'SmartAS_entitySet', 
 												out_method = open("Results/" + out + "/candidateInteractions.tsv",'w').write, 
-												attributes = ["ensembl","uniprotaccession","uniprotentry"], 
+												attributes = [inputType,"uniprotaccession","uniprotentry"], 
 												include_level_info = True,
 												include_degree_info = True,
 												level = None,
@@ -84,7 +94,10 @@ with open('Data/Databases/Intogen.tsv','r') as Intogen_r:
 	print("\t* Reading known driver genes from IntOGen.")
 	Intogen = csv.reader(Intogen_r, delimiter='\t')
 	for row in Intogen:
-		intogenDrivers.add(row[0])
+		if inputType == "ensembl":
+			intogenDrivers.add(row[0])
+		elif inputType == "geneid":
+			intogenDrivers.add(row[1])
 with open("Data/Databases/compilationTable.tsv", "r") as compilationTable:
 	print("\t* Reading information available in bibliography.")
 	for line in compilationTable:
@@ -96,7 +109,6 @@ with open("Data/Databases/compilationTable.tsv", "r") as compilationTable:
 			for i in range(1,12):
 				articleCompilation[splitted[1]].append("-")
 			articleCompilation[splitted[1]].append(splitted[14])
-
 
 candidateList = []
 with open("Results/" + out + "/candidateList.tsv", "r") as candidates:
@@ -116,11 +128,17 @@ with open("Results/" + out + "/candidateList.tsv", "r") as candidates:
 		
 		with open("Results/" + out + "/candidateInteractions.tsv", "r") as nodes:
 			for line in nodes:
-				if line.find(candidate1) != -1 or line.find(candidate2) != -1:
+				ids = set(line.split("\t")[3].split())
+				if inputType == "ensembl" and (candidate1 in ids or candidate2 in ids): 
 					aCandidate["Hub"] = (line.split("\t"))[2]
 					break
+				elif inputType == "geneid":
+					nameComponents = gene.split("|")
+					if len(nameComponents) == 2 and nameComponents[1] in ids:
+						aCandidate["Hub"] = (line.split("\t"))[2]
+						break
 		
-		if gene in intogenDrivers:
+		if (inputType == "ensembl" and gene in intogenDrivers) or (inputType == "geneid" and name in intogenDrivers):
 			aCandidate["IntOGen"] = "yes"
 		if name in articleCompilation.keys():
 			for info in articleCompilation[name]:
@@ -129,7 +147,7 @@ with open("Results/" + out + "/candidateList.tsv", "r") as candidates:
 		candidateList.append(aCandidate)
 
 with open("Results/" + out + "/candidateList.top.tsv", "w") as candidates:
-	candidates.write("hugo_id\tENSG\tENST_normal\tENST_tumor\tKnown PPI\tIntOGen\t")
+	candidates.write("hugo_id\tGene\tTranscript_normal\tTranscript_tumor\tReplicates\tKnown PPI\tIntOGen\t")
 	candidates.write("baltz_a\tcastello_a\tkwon_a\tgonzalez_a\tbrosseau_a\tvogelstein_a\than_a\tjuan_ap\tjuan_pr\tbiomart_a\tcosmic_a\treactome\n")
 	for aCandidate in candidateList:
 		candidates.write(aCandidate["Basic"] + "\t" + aCandidate["Hub"] + "\t" + aCandidate["IntOGen"])
