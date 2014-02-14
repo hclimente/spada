@@ -9,13 +9,25 @@ out = sys.argv[1]
 expressedTranscripts = "Results/" + out + sys.argv[2]
 candidateTranscripts = "Results/" + out + sys.argv[3]
 
+expressedTranscriptsSet = set()
+with open(expressedTranscripts, "r") as EXPRESSED:
+	for line in EXPRESSED:
+		expressedTranscriptsSet.add(line.strip())
+
+wannaWrite = False
+expressedTranscriptsCounter = len(expressedTranscriptsSet)
+
 with open("Data/GENCODE/proteins.fa", "r") as gcMULTIFASTA:
 	with open("Results/" + out + "/iLoops/ExpressedTranscripts.fasta", "w") as MULTIFASTA:
 		for line in gcMULTIFASTA:
 			if line.find(">") != -1:
 				identifiers = ((line.split("|"))[0].split("."))[0]
-				MULTIFASTA.write(identifiers + "\n")
-			else:
+				if identifiers in expressedTranscriptsSet:
+					MULTIFASTA.write(identifiers + "\n")
+					wannaWrite = True
+				else:
+					wannaWrite = False
+			elif wannaWrite:
 				MULTIFASTA.write(line)
 
 print("\t* Writing the pairs files.")
@@ -26,10 +38,8 @@ with open(candidateTranscripts, "r") as CANDIDATES:
 		elements = line.split("\t")
 		if len(elements) == 4:
 			break
-			
-		candidates = [elements[2], elements[3]]
 		
-		for aCandidate in candidates:
+		for aCandidate in [elements[2], elements[3]]:
 	
 			cmd("mkdir Results/" + out + "/iLoops/Input/" + aCandidate)
 			fileNumber = 1
