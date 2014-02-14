@@ -37,7 +37,7 @@ for (replicate in seq(1,inputData[["Replicates"]])){
   
   #Filter by deltaPSI and expression, based on the FPR
   #psiThreshold <- abs(intraReplicate[[replicate]]$deltaPSI) > 0.15
-  psiThreshold <- abs(intraReplicate[[replicate]]$deltaPSI) > 2 * interReplicate$MAD
+  psiThreshold <- abs(intraReplicate[[replicate]]$deltaPSI) > 4 * interReplicate$MAD
   psiThreshold[is.na(psiThreshold)] <- FALSE
   expressionThreshold <- intraReplicate[[replicate]]$la_tTPM > minCandidateExpression
   
