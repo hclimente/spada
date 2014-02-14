@@ -1,9 +1,8 @@
 #!/soft/devel/python-2.7/bin/python
 
 import sys, getopt
-from shutil import copy, copytree
 from os import path, chdir
-from libsmartas import *
+from libsmartas import cmd, setEnvironment, finish, outputCandidates
 
 def main(argv):
 
@@ -35,6 +34,7 @@ def main(argv):
 		getCandidates(opt)
 	if opt["initialStep"] <= 3:
 		candidatePrioritization(opt)
+		exit()
 	if opt["initialStep"] <= 4:
 		prepareILoopsInput(opt)
 	if opt["initialStep"] <= 5:
@@ -44,8 +44,6 @@ def main(argv):
 		#exloreILoopsResults(opt)
 	
 	finish(opt)
-	#copytree("Results", "../Dropbox/SmartAS")
-	#copy("SmartAS.RData", "../Dropbox/SmartAS")
 
 def exploreData(opt):
 	
@@ -60,7 +58,7 @@ def getCandidates(opt):
 	cmd("sort", "Results/" + opt["out"] + "/expressedGenes.lst", ">" + "Results/" + opt["out"] + "/expressedGenes.tmp.lst")
 	cmd("mv", "Results/" + opt["out"] + "/expressedGenes.tmp.lst", "Results/" + opt["out"] + "/expressedGenes.lst")
 
-	cmd("Pipeline/OutputCandidates.py", "Results/" + opt["out"] + "/candidateList.tsv", opt["out"])
+	outputCandidates(opt["out"])
 	
 def candidatePrioritization(opt):
 
