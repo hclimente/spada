@@ -4,8 +4,6 @@ from subprocess import call,Popen,PIPE
 from rpy2.robjects import r
 from time import sleep
 import urllib2
-from os import chdir, listdir
-from fnmatch import filter
 
 def cmd(base, *args):
 	command = base
@@ -186,3 +184,20 @@ def finish(opt):
 	cmd("tar -czvf", opt["out"] + ".tar.gz candidates_normal." + opt["out"] + ".gff candidates_tumor." + opt["out"] + ".gff candidateList." + opt["out"] + ".tsv")
 	cmd("rm", "*" + opt["out"] + "*gff", "*" + opt["out"] + "*tsv")
 	chdir("/home/hector/SmartAS")
+
+def outputCandidates(out):
+	with open('Results/' + out + "/candidateList.tsv", "r") as CANDIDATES, \
+		 open('Results/' + out + "/candidates_normal.gff", 'w') as GFF2n_TRACK, \
+		 open("Results/" + out + "/candidates_tumor.gff", 'w') as GFF2t_TRACK, \
+		 open("Data/GENCODE/annotation.gtf", "r") as ALLTRANSCRIPTS:
+			candTnt = []
+			for line in CANDIDATES:
+				ids = line.strip().split("\t")
+				candTnt.append([ids[2], ids[3]])
+			
+			for line in ALLTRANSCRIPTS:
+				for pair in candTnt:
+					if line.find(pair[0]) != -1:
+						GFF2n_TRACK.write(line)
+					elif line.find(pair[1]) != -1:
+						GFF2t_TRACK.write(line)
