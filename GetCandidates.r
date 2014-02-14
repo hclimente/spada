@@ -2,8 +2,10 @@
 
 library(plyr)
 
-load("SmartAS.RData")
-setwd(wd)
+args <- commandArgs(trailingOnly = TRUE)
+minExpression <- as.numeric(args[1])
+minCandidateExpression <- as.numeric(args[2])
+load(paste0("Results/", args[3], "/RWorkspaces/1_ExploreData.RData"))
 
 calculateEntropy <- function(x){
   H <- 0
@@ -26,10 +28,6 @@ calculateEntropy <- function(x){
 candidates <- list()
 allGenes <- as.character()
 
-args <- commandArgs(trailingOnly = TRUE)
-minExpression <- as.numeric(args[1])
-minCandidateExpression <- as.numeric(args[2])
-
 for (replicate in seq(1,inputData[["Replicates"]])){
   
 	cat("\t* Replicate", replicate)
@@ -40,6 +38,7 @@ for (replicate in seq(1,inputData[["Replicates"]])){
   #Filter by deltaPSI and expression, based on the FPR
   #psiThreshold <- abs(intraReplicate[[replicate]]$deltaPSI) > 0.15
   psiThreshold <- abs(intraReplicate[[replicate]]$deltaPSI) > 2 * interReplicate$MAD
+  psiThreshold[is.na(psiThreshold)] <- FALSE
   expressionThreshold <- intraReplicate[[replicate]]$la_tTPM > minCandidateExpression
   
   for (aCandidate in unique(intraReplicate[[replicate]]$Gene[psiThreshold & expressionThreshold])){
@@ -93,4 +92,4 @@ candidateList <- ddply(candidateList,.(Genename,Gene,maxdPSI,mindPSI), summarise
 write.table(candidateList, file=paste0(out, "candidateList.tsv"), sep="\t", row.names=F, col.names=F, quote=F)
 write(allGenes, paste0(out, "expressedGenes.lst"), sep="\n")
 
-save(isoformExpression, intraReplicate, interReplicate, candidates, candidateList, inputData, wd, out, file="SmartAS.RData")
+save(isoformExpression, intraReplicate, interReplicate, candidates, candidateList, inputData, wd, out, file=paste0(out, "RWorkspaces/2_GetCandidates.RData"))
