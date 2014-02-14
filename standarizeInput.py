@@ -36,7 +36,7 @@ if(inputType == "GENCODE"):
 
 elif(inputType == "TCGA"):
 	patients = []
-	with open("Data/TCGA/Rawdata/"+ tag1 + "_iso_tpm_paired.txt", "r") as FILE:
+	with open("Data/TCGA/Rawdata/" + tag1 + "_iso_tpm_paired.txt", "r") as FILE:
 		firstLine = FILE.readline().strip().split("\t")
 		for sampleType in ["N", "T"]:
 			replicateCounter = 1
@@ -61,4 +61,8 @@ elif(inputType == "TCGA"):
 	for patient in patients:
 		patient.close()
 
-print str(max(reps))
+cmd("cp Data/config.cfg", outDir)
+with open(outDir + "config.cfg", "a") as CONFIG:
+	CONFIG.write("\ntag1=" + tag1)
+	CONFIG.write("\nReplicates=" + str(max(reps)))
+	CONFIG.write("\ninputType=" + inputType)
