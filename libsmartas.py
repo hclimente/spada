@@ -27,8 +27,8 @@ def setRWorkspace(wd, out, Replicates):
 	r("out <- \"Results/" + out + "/\"")
 	r("inputData <- list()")	
 	r('inputData[["Conditions"]] <- c("N", "T")')
-	r('inputData[["Replicates"]] <- ' + Replicates)
-	r('save.image("SmartAS.RData")')
+	r('inputData[["Replicates"]] <- ' + str(Replicates))
+	r('save.image("Results/' + out + '/RWorkspaces/0_InitialEnvironment.RData")')
 
 def setEnvironment(cfgFile):
 
@@ -39,7 +39,7 @@ def setEnvironment(cfgFile):
 
 	print("* Preparing the environment")
 	cmd("rm -r old2/" + opt["out"] + "; mv", "old/" + opt["out"], "old2/"  + opt["out"])
-	cmd("mv", "Results/" + opt["out"], "old/" + opt["out"] + "; mv SmartAS.RData ", "old/" + opt["out"] + "/SmartAS.old.RData")
+	cmd("mv", "Results/" + opt["out"], "old/" + opt["out"])
 	cmd("mkdir -p", "Results/" + opt["out"] + "/iLoops/Output/Mapping")
 	cmd("mkdir", "Results/" + opt["out"] + "/iLoops/Input")
 	cmd("mkdir", "Results/" + opt["out"] + "/RWorkspaces")
@@ -47,7 +47,6 @@ def setEnvironment(cfgFile):
 	cmd("mkdir", "Results/" + opt["out"] + "/Input")
 
 	if opt["initialStep"] <= 1:
-		opt["Replicates"] = standarizeInput(opt)
 		printParam(opt)
 		setRWorkspace(opt["wd"], opt["out"], opt["Replicates"])
 		getDB()
@@ -61,16 +60,9 @@ def setEnvironment(cfgFile):
 		cmd("cp", "old/" + opt["out"] + "/Parameters.cfg", "Results/" + opt["out"])
 		cmd("cp -r", "old/" + opt["out"] + "/DataExploration", "Results/" + opt["out"])
 		cmd("cp -r", "old/" + opt["out"] + "/RWorkspaces/1_ExploreData.RData", "Results/" + opt["out"] + "/RWorkspaces")
-		cmd("cp -r", "old/" + opt["out"] + "/RWorkspaces/1_ExploreData.RData SmartAS.RData")
-
-		for rep in range(1, int(opt["Replicates"]) + 1):
-			for cond in opt["Conditions"]:
-				cmd("cp -r", "old/" + opt["out"] + "/" + str(rep) + "_" + cond + ".tsv", "Results/" + opt["out"])
-				cmd("cp -r", "old/" + opt["out"] + "/IntraReplicate_" + str(rep) + ".tsv", "Results/" + opt["out"])
 
 	if opt["initialStep"] > 2:
 		cmd("cp -r", "old/" + opt["out"] + "/RWorkspaces/2_GetCandidates.RData", "Results/" + opt["out"] + "/RWorkspaces")
-		cmd("cp -r", "old/" + opt["out"] + "/RWorkspaces/2_GetCandidates.RData SmartAS.RData")
 		cmd("cp", "old/" + opt["out"] + "/candidateList.tsv", "old/" + opt["out"] + "/expressedGenes.lst", "Results/" + opt["out"])
 		cmd("cp", "old/" + opt["out"] + "/candidates_normal.gff", "old/" + opt["out"] + "/candidates_tumor.gff", "Results/" + opt["out"])
 	if opt["initialStep"] > 3:
@@ -138,7 +130,7 @@ def parseParam(cfgFile):
 		for line in PARAMETERS:
 			elements = line.strip().split("=")
 			if elements[0] == "Replicates":
-				Replicates = int(elements[1])
+				opt["Replicates"] = int(elements[1])
 			elif elements[0] == "initialStep":
 				opt["initialStep"] = int(elements[1])
 			elif elements[0] == "wd":
@@ -161,54 +153,6 @@ def parseParam(cfgFile):
 				print("Unrecognized option:" + line)
 
 	return opt
-
-def standarizeInput(opt):
-
-	reps = []
-
-	if(opt["inputType"] == "GENCODE"):
-		Conditions = {"10": "N", "7": "T"}
-		for condition in Conditions.keys():
-			replicateCounter = 1
-			for sample in filter(listdir("Data/GENCODE/Rawdata/" + opt["tag1"] + "-kmer-length/"), condition + "C*_*"):
-				with open("Data/GENCODE/Rawdata/" + opt["tag1"] + "-kmer-length/" + sample + "/quant_bias_corrected.sf", "r") as FILE, \
-					 open("Results/" + opt["out"] + "/Input/" + str(replicateCounter) + "_" + Conditions[condition] + ".tsv", "w") as FILTERED:
-					for line in FILE:
-						if line.find("#") == -1:
-							tableValues=line.strip().split("\t")
-							splitIds=tableValues[0].split("|")
-							FILTERED.write(splitIds[1].split(".")[0] + "\t" + splitIds[0].split(".")[0] + "\t" + splitIds[5] + "\t" + tableValues[2] + "\n")
-				reps.append(str(replicateCounter))
-				replicateCounter += 1
-	
-	elif(opt["inputType"] == "TCGA"):
-		patients = []
-		with open("Data/TCGA/Rawdata/"+ opt["tag1"] + "_iso_tpm_paired.txt", "r") as FILE:
-			firstLine = FILE.readline().strip().split("\t")
-			for sampleType in opt["Conditions"]:
-				replicateCounter = 1
-				for patient in range(0, len(firstLine)/2):
-					patients.append(open("Results/" + opt["out"] + "/Input/" + str(replicateCounter) + "_" + sampleType + ".tsv", "w"))
-					reps.append(str(replicateCounter))
-					replicateCounter += 1
-			
-			for line in FILE:
-							
-				splitted = line.strip().split("\t")
-				seqTags = splitted[0].split(",")
-				
-				gene = seqTags[0]
-				transcript = seqTags[1]
-				name = gene.split("|")[0]
-				
-				currentCol = 1
-				for patient in patients:
-					patient.write( gene + "\t" + transcript + "\t" + name + "\t" + splitted[currentCol] + "\n")
-					currentCol += 1
-		for patient in patients:
-			patient.close()
-	
-	return str(max(reps))
 
 def finish(opt):
 	
