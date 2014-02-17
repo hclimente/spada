@@ -39,13 +39,19 @@ for (replicate in seq(1,inputData[["Replicates"]])){
   #psiThreshold <- abs(intraReplicate[[replicate]]$deltaPSI) > 0.15
   psiThreshold <- abs(intraReplicate[[replicate]]$deltaPSI) > 4 * interReplicate$MAD
   psiThreshold[is.na(psiThreshold)] <- FALSE
+  posPSI <- intraReplicate[[replicate]]$deltaPSI > 0 & psiThreshold
+  negPSI <- intraReplicate[[replicate]]$deltaPSI < 0 & psiThreshold
   expressionThreshold <- intraReplicate[[replicate]]$la_tTPM > minCandidateExpression
   
+  replicateCandidates <- vector('list', length(unique(intraReplicate[[replicate]]$Gene[psiThreshold & expressionThreshold])))
+
   for (aCandidate in unique(intraReplicate[[replicate]]$Gene[psiThreshold & expressionThreshold])){
     
     thisGeneData <- intraReplicate[[replicate]]$Gene == aCandidate
-    posPSI <- intraReplicate[[replicate]]$deltaPSI > 0
-    negPSI <- intraReplicate[[replicate]]$deltaPSI < 0
+
+    if(length(intraReplicate[[replicate]]$deltaPSI[thisGeneData & posPSI]) == 0 || length(intraReplicate[[replicate]]$deltaPSI[thisGeneData & negPSI]) == 0){
+      next
+    }
     
     #Calculate max difference between the transcripts
     maxDeltaPsi <- max(intraReplicate[[replicate]]$deltaPSI[thisGeneData & posPSI], na.rm=T)
@@ -57,14 +63,16 @@ for (replicate in seq(1,inputData[["Replicates"]])){
     #	MinDeltaPsiCond: predominant transcript in the tumor sample
     maxDeltaPsiCond <- intraReplicate[[replicate]]$deltaPSI == maxDeltaPsi
     minDeltaPsiCond <- intraReplicate[[replicate]]$deltaPSI == minDeltaPsi
-    
-    candidates[[replicate]] <- rbind( candidates[[replicate]], data.frame(Gene=aCandidate, Entropy_Ref=calculateEntropy(intraReplicate[[replicate]]$PSI_N[thisGeneData]), 
-                                                                          Entropy_Alt=calculateEntropy(intraReplicate[[replicate]]$PSI_T[thisGeneData]), Switch=maxSwitch, 
-                                                                          maxdPSI=intraReplicate[[replicate]]$Transcript[thisGeneData & maxDeltaPsiCond], 
-                                                                          Genename=intraReplicate[[replicate]]$Genename[thisGeneData & maxDeltaPsiCond], 
-                                                                          mindPSI=intraReplicate[[replicate]]$Transcript[thisGeneData & minDeltaPsiCond])
-    )
+
+    replicateCandidates[[aCandidate]] <- data.frame(Gene=aCandidate, Entropy_Ref=calculateEntropy(intraReplicate[[replicate]]$PSI_N[thisGeneData]), 
+                                                    Entropy_Alt=calculateEntropy(intraReplicate[[replicate]]$PSI_T[thisGeneData]), Switch=maxSwitch, 
+                                                    maxdPSI=intraReplicate[[replicate]]$Transcript[thisGeneData & maxDeltaPsiCond], 
+                                                    Genename=intraReplicate[[replicate]]$Genename[thisGeneData & maxDeltaPsiCond], 
+                                                    mindPSI=intraReplicate[[replicate]]$Transcript[thisGeneData & minDeltaPsiCond]
+                                                   )
   }
+
+  candidates[[replicate]] <- do.call('rbind', replicateCandidates)
   
   #Expressed genes: transcript whose expression is above the threshold
   expressedGenes <-(log(as.numeric(intraReplicate[[replicate]]$TPM_N)) + log(as.numeric(intraReplicate[[replicate]]$TPM_T))) / 2 > minExpression
