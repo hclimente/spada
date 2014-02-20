@@ -45,10 +45,11 @@ for (replicate in seq(1,inputData[["Replicates"]])){
     maxDeltaPsiCond <- intraReplicate[[replicate]]$deltaPSI == maxDeltaPsi
     minDeltaPsiCond <- intraReplicate[[replicate]]$deltaPSI == minDeltaPsi
 
-    replicateCandidates[[aCandidate]] <- data.frame(Gene=aCandidate, Switch=maxSwitch, 
+    replicateCandidates[[aCandidate]] <- data.frame(Genename=intraReplicate[[replicate]]$Genename[thisGeneData & maxDeltaPsiCond], 
+                                                    Gene=aCandidate,
                                                     maxdPSI=intraReplicate[[replicate]]$Transcript[thisGeneData & maxDeltaPsiCond], 
-                                                    Genename=intraReplicate[[replicate]]$Genename[thisGeneData & maxDeltaPsiCond], 
-                                                    mindPSI=intraReplicate[[replicate]]$Transcript[thisGeneData & minDeltaPsiCond]
+                                                    mindPSI=intraReplicate[[replicate]]$Transcript[thisGeneData & minDeltaPsiCond],
+                                                    Switch=maxSwitch
                                                    )
   }
 
@@ -60,22 +61,41 @@ for (replicate in seq(1,inputData[["Replicates"]])){
   
   switchCut <- candidates[[replicate]]$Switch > 0.2
   
-  candidates[[replicate]] <- candidates[[replicate]] [switchCut, c("Genename", "Gene", "maxdPSI","mindPSI")]
+  candidates[[replicate]] <- candidates[[replicate]] [switchCut, c("Genename", "Gene", "maxdPSI","mindPSI", "Switch")]
 
   cat(":", nrow(candidates[[replicate]]), "candidates found\n")
   
 }
 
-candidateList <- data.frame(Genename=as.character(), Gene=as.character(), maxdPSI=as.character(), mindPSI=as.character())
-
-for (aCondition in candidates){
-  candidateList <- rbind(candidateList, aCondition)
-}
-
+candidateList <- do.call("rbind", candidates)
 candidateList <- ddply(candidateList,.(Genename,Gene,maxdPSI,mindPSI), summarise, Replicated=length(Genename))
-#candidateList <- unique(candidateList)
+candidateList <- candidateList[with(candidateList, order(-Replicated)), ]
 
 write.table(candidateList, file=paste0(out, "candidateList.tsv"), sep="\t", row.names=F, col.names=F, quote=F)
 write(allGenes, paste0(out, "expressedGenes.lst"), sep="\n")
+
+library(gplots)
+
+top <- 30
+
+topCandidates <- head(candidateList, n=top)
+fig <- data.frame(matrix(nrow=top, ncol=inputData[["Replicates"]]))
+rownames(fig) <- topCandidates$Genename
+colnames(fig) <- seq(1,inputData[["Replicates"]])
+
+for (replicate in seq(1,inputData[["Replicates"]])){
+  for (gene in topCandidates$Genename){
+    if (gene %in% candidates[[replicate]]$Genename) {
+      fig[gene, replicate] <- candidates[[replicate]]$Switch[candidates[[replicate]]$Genename == gene]
+    } else {
+      fig[gene, replicate] <- NA
+    }
+  }
+}
+
+heatmap.2(as.matrix(fig), trace="none", scale="none", Rowv=NULL, Colv=NULL, 
+          dendrogram="none", col=colorpanel(20, "white", "blue"), na.col="grey", 
+          breaks=seq(0, max(fig, na.rm=T), length.out=21), main="PSI Switch"
+         )
 
 save(isoformExpression, intraReplicate, interReplicate, candidates, candidateList, inputData, wd, out, file=paste0(out, "RWorkspaces/2_GetCandidates.RData"))
