@@ -75,10 +75,14 @@ write.table(candidateList, file=paste0(out, "candidateList.tsv"), sep="\t", row.
 write(allGenes, paste0(out, "expressedGenes.lst"), sep="\n")
 
 library(gplots)
+library(RColorBrewer)
 
 top <- 30
 
-topCandidates <- head(candidateList, n=top)
+topCandidates <- ddply(candidateList,.(Genename), summarise, Replicated=sum(Replicated))
+topCandidates <- topCandidates[with(topCandidates, order(-Replicated)), ]
+topCandidates <- head(topCandidates, n=top)
+
 fig <- data.frame(matrix(nrow=top, ncol=inputData[["Replicates"]]))
 rownames(fig) <- topCandidates$Genename
 colnames(fig) <- seq(1,inputData[["Replicates"]])
@@ -93,9 +97,11 @@ for (replicate in seq(1,inputData[["Replicates"]])){
   }
 }
 
-heatmap.2(as.matrix(fig), trace="none", scale="none", Rowv=NULL, Colv=NULL, 
-          dendrogram="none", col=colorpanel(20, "white", "blue"), na.col="grey", 
-          breaks=seq(0, max(fig, na.rm=T), length.out=21), main="PSI Switch"
+png(paste0(out, "DataExploration/topCandidateSwitch.png"), width=960, height=960)
+myPalette <- colorRampPalette(c("white", "firebrick2"))(n = 14)
+heatmap.2(as.matrix(fig), trace="none", scale="none", col=myPalette, na.col="grey", 
+          breaks=seq(0, max(fig, na.rm=T), length.out=15), main="PSI Switch"
          )
+dev.off()
 
 save(isoformExpression, intraReplicate, interReplicate, candidates, candidateList, inputData, wd, out, file=paste0(out, "RWorkspaces/2_GetCandidates.RData"))
