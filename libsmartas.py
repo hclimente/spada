@@ -155,17 +155,6 @@ def parseParam(cfgFile):
 def finish(opt):
 	
 	print("* Moving files to the Results directory and creating a summary tar file.")
-	minExpresion = ""
-	minPSI = ""
-
-	with open("Results/" + opt["out"] + "/Parameters.cfg", "r") as paramFile:
-		for line in paramFile:
-			elements = line.split("=")
-
-			if elements[0] == "minCandidateExpression":
-				minExpresion = elements[1].strip()
-			elif elements[0] == "minPSI":
-				minPSI = elements[1].strip()
 	    
 	outFolder = "/home/hector/Results/" + opt["inputType"] + "/" + opt["out"]
 

@@ -7,24 +7,6 @@ minExpression <- as.numeric(args[1])
 minCandidateExpression <- as.numeric(args[2])
 load(paste0("Results/", args[3], "/RWorkspaces/1_ExploreData.RData"))
 
-calculateEntropy <- function(x){
-  H <- 0
-  for (p in x){
-    if(p == 0 || is.na(p))
-      next
-    H <- H + p * log(p, base=10)
-  }
-  
-  maxH <- log(length(x[x!=0]), base=10)
-  if( maxH == 0 & length(x) > 1 ) {
-    return(0)
-  } else if(maxH == 0){
-    return(9999)
-  } else {
-    return(-H/maxH)
-  }
-}
-
 candidates <- list()
 allGenes <- as.character()
 
@@ -32,8 +14,7 @@ for (replicate in seq(1,inputData[["Replicates"]])){
   
 	cat("\t* Replicate", replicate)
 
-  candidates[[replicate]] <- data.frame(Gene=as.character(), Genename=as.character(), Entropy_Ref=as.numeric(), Entropy_Alt=as.numeric(), 
-                                        Switch=as.numeric(), maxdPSI=as.character(), mindPSI=as.character())
+  candidates[[replicate]] <- data.frame(Gene=as.character(), Genename=as.character(), Switch=as.numeric(), maxdPSI=as.character(), mindPSI=as.character())
   
   #Filter by deltaPSI and expression, based on the FPR
   #psiThreshold <- abs(intraReplicate[[replicate]]$deltaPSI) > 0.15
@@ -64,8 +45,7 @@ for (replicate in seq(1,inputData[["Replicates"]])){
     maxDeltaPsiCond <- intraReplicate[[replicate]]$deltaPSI == maxDeltaPsi
     minDeltaPsiCond <- intraReplicate[[replicate]]$deltaPSI == minDeltaPsi
 
-    replicateCandidates[[aCandidate]] <- data.frame(Gene=aCandidate, Entropy_Ref=calculateEntropy(intraReplicate[[replicate]]$PSI_N[thisGeneData]), 
-                                                    Entropy_Alt=calculateEntropy(intraReplicate[[replicate]]$PSI_T[thisGeneData]), Switch=maxSwitch, 
+    replicateCandidates[[aCandidate]] <- data.frame(Gene=aCandidate, Switch=maxSwitch, 
                                                     maxdPSI=intraReplicate[[replicate]]$Transcript[thisGeneData & maxDeltaPsiCond], 
                                                     Genename=intraReplicate[[replicate]]$Genename[thisGeneData & maxDeltaPsiCond], 
                                                     mindPSI=intraReplicate[[replicate]]$Transcript[thisGeneData & minDeltaPsiCond]
@@ -78,11 +58,9 @@ for (replicate in seq(1,inputData[["Replicates"]])){
   expressedGenes <-(log(as.numeric(intraReplicate[[replicate]]$TPM_N)) + log(as.numeric(intraReplicate[[replicate]]$TPM_T))) / 2 > minExpression
   allGenes <- unique(c(allGenes, intraReplicate[[replicate]]$Transcript[expressedGenes]))
   
-  entropyCutRef <- candidates[[replicate]]$Entropy_Ref < median(candidates[[replicate]]$Entropy_Ref)  
-  entropyCutAlt <- candidates[[replicate]]$Entropy_Alt < median(candidates[[replicate]]$Entropy_Alt)
-  switchCut <- candidates[[replicate]]$Switch > median(candidates[[replicate]]$Switch)
+  switchCut <- candidates[[replicate]]$Switch > 0.2
   
-  candidates[[replicate]] <- candidates[[replicate]] [entropyCutRef & entropyCutAlt & switchCut, c("Genename", "Gene", "maxdPSI","mindPSI")]
+  candidates[[replicate]] <- candidates[[replicate]] [switchCut, c("Genename", "Gene", "maxdPSI","mindPSI")]
 
   cat(":", nrow(candidates[[replicate]]), "candidates found\n")
   

@@ -34,14 +34,13 @@ def main(argv):
 		getCandidates(opt)
 	if opt["initialStep"] <= 3:
 		candidatePrioritization(opt)
-		exit()
 	if opt["initialStep"] <= 4:
 		prepareILoopsInput(opt)
+		exit()
 	if opt["initialStep"] <= 5:
 		launchILoops(opt)
 	if opt["initialStep"] <= 6:
-		pass
-		#exloreILoopsResults(opt)
+		exloreILoopsResults(opt)
 	
 	finish(opt)
 

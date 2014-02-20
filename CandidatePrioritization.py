@@ -140,9 +140,12 @@ with open("Results/" + out + "/candidateList.tsv", "r") as candidates:
 		
 		if (inputType == "ensembl" and gene in intogenDrivers) or (inputType == "geneid" and name in intogenDrivers):
 			aCandidate["IntOGen"] = "yes"
+		
 		if name in articleCompilation.keys():
 			for info in articleCompilation[name]:
 				aCandidate["Articles"].append(info)
+		else:
+			aCandidate["Articles"] = ["-","-","-","-","-","-","-","-","-","-","-","NA"]
 
 		candidateList.append(aCandidate)
 
