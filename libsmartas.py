@@ -103,13 +103,18 @@ def getDB():
 		Intogen.write(res.read())
 
 def waitPID(pidQueue):
-	for job in pidQueue:
-		while True:
+	while True:
+		pidFinish = False
+		for job in pidQueue:
 			if cmdOut("ps --pid", job, " | grep -v", job, "| wc -l") == "0":
-				break
+				pidFinish = True
 			else:
 				print("Awaiting for completion of iLoops jobs.")
-				sleep(900)
+			
+		if pidFinish:
+			break
+		else:
+			sleep(900)
 
 def printParam(opt):
 	with open("Results/" + opt["out"] + "/Parameters.cfg", "w") as paramFile:
