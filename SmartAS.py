@@ -35,14 +35,16 @@ def main(argv):
 	if opt["initialStep"] <= 3:
 		candidatePrioritization(opt)
 	if opt["initialStep"] <= 4:
-		prepareILoopsInput(opt)
-		exit()
+		#prepareILoopsInput(opt)
+		pass
 	if opt["initialStep"] <= 5:
-		launchILoops(opt)
+		#launchILoops(opt)
+		pass
 	if opt["initialStep"] <= 6:
-		exloreILoopsResults(opt)
+		#exloreILoopsResults(opt)
+		pass
 	
-	finish(opt)
+	#finish(opt)
 
 def exploreData(opt):
 	
