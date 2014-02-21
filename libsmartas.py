@@ -4,6 +4,7 @@ from subprocess import call,Popen,PIPE
 from rpy2.robjects import r
 from time import sleep
 import urllib2
+from os import chdir
 
 def cmd(base, *args):
 	command = base
@@ -17,7 +18,7 @@ def cmdOut(base, *args):
 	for arg in args:
 		command += " " + str(arg)
 	
-	return Popen(command, shell=True, stdout=PIPE).stdout.read().strip()
+	return Popen(command, shell=True, stdout=PIPE)
 
 def setRWorkspace(wd, out, Replicates):
 
@@ -103,16 +104,19 @@ def getDB():
 		Intogen.write(res.read())
 
 def waitPID(pidQueue):
+	newPidQueue = pidQueue
 	while True:
-		pidFinish = False
-		for job in pidQueue:
-			if cmdOut("ps --pid", job, " | grep -v", job, "| wc -l") == "0":
-				pidFinish = True
+		pidFinish = ""
+		for job in newPidQueue:
+			if cmdOut("ps --pid", job, " | grep ", job, "| wc -l").stdout.read().strip() == "0":
+				print(job + " finished.")
+				pidFinish = job
+				newPidQueue.remove(job)
 			else:
-				print("Awaiting for completion of iLoops jobs.")
+				print("Awaiting for completion of one of those jobs:" + str(pidQueue))
 			
 		if pidFinish:
-			break
+			return newPidQueue
 		else:
 			sleep(900)
 
@@ -161,21 +165,22 @@ def finish(opt):
 	
 	print("* Moving files to the Results directory and creating a summary tar file.")
 	    
-	outFolder = "/home/hector/Results/" + opt["inputType"] + "/" + opt["out"]
+	outFolder = "/home/hector/Results/" + opt["out"]
+	outTag = opt["tag1"] + "_mCE" + str(opt["minCandidateExpression"]) + "_mE" + str(opt["minExpression"])
 
-	if not cmdOut("mkdir -p", outFolder):
+	if not cmdOut("mkdir -p", outFolder).stdout.read().strip():
 		overwrite = raw_input("\tDirectory exists. Do you want to overwrite it? (y/n)")
 		if not overwrite == "y":
 			return
 
-	cmd("cp", "Results/" + opt["out"] + "/candidates_normal.gff", outFolder + "/" + "candidates_normal." + opt["out"] + ".gff")
-	cmd("cp", "Results/" + opt["out"] + "/candidates_tumor.gff", outFolder + "/" + "candidates_tumor." + opt["out"] + ".gff")
-	cmd("cp", "Results/" + opt["out"] + "/candidateList.top.tsv", outFolder + "/" + "candidateList." + opt["out"] + ".tsv")
+	cmd("cp", "Results/" + opt["out"] + "/candidates_normal.gff", outFolder + "/" + "candidates_normal." + outTag + ".gff")
+	cmd("cp", "Results/" + opt["out"] + "/candidates_tumor.gff", outFolder + "/" + "candidates_tumor." + outTag + ".gff")
+	cmd("cp", "Results/" + opt["out"] + "/candidateList.top.tsv", outFolder + "/" + "candidateList." + outTag + ".tsv")
 
 	chdir(outFolder)
 	cmd("cp -r", "../SmartAS/Results/" + opt["out"] + "/* .")
 
-	cmd("tar -czvf", opt["out"] + ".tar.gz candidates_normal." + opt["out"] + ".gff candidates_tumor." + opt["out"] + ".gff candidateList." + opt["out"] + ".tsv")
+	cmd("tar -czvf", outTag + ".tar.gz candidates_normal." + outTag + ".gff candidates_tumor." + outTag + ".gff candidateList." + outTag + ".tsv")
 	cmd("rm", "*" + opt["out"] + "*gff", "*" + opt["out"] + "*tsv")
 	chdir("/home/hector/SmartAS")
 
