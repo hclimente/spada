@@ -74,6 +74,8 @@ candidateList <- candidateList[with(candidateList, order(-Replicated)), ]
 write.table(candidateList, file=paste0(out, "candidateList.tsv"), sep="\t", row.names=F, col.names=F, quote=F)
 write(allGenes, paste0(out, "expressedGenes.lst"), sep="\n")
 
+save(isoformExpression, intraReplicate, interReplicate, candidates, candidateList, inputData, wd, out, file=paste0(out, "RWorkspaces/2_GetCandidates.RData"))
+
 library(gplots)
 library(RColorBrewer)
 
@@ -90,7 +92,7 @@ colnames(fig) <- seq(1,inputData[["Replicates"]])
 for (replicate in seq(1,inputData[["Replicates"]])){
   for (gene in topCandidates$Genename){
     if (gene %in% candidates[[replicate]]$Genename) {
-      fig[gene, replicate] <- candidates[[replicate]]$Switch[candidates[[replicate]]$Genename == gene]
+      fig[gene, replicate] <- head(candidates[[replicate]]$Switch[candidates[[replicate]]$Genename == gene],1)
     } else {
       fig[gene, replicate] <- NA
     }
@@ -104,4 +106,4 @@ heatmap.2(as.matrix(fig), trace="none", scale="none", col=myPalette, na.col="gre
          )
 dev.off()
 
-save(isoformExpression, intraReplicate, interReplicate, candidates, candidateList, inputData, wd, out, file=paste0(out, "RWorkspaces/2_GetCandidates.RData"))
+save(isoformExpression, intraReplicate, interReplicate, candidates, candidateList, inputData, wd, out, fig, file=paste0(out, "RWorkspaces/2_GetCandidates.RData"))
