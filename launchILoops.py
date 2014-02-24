@@ -5,6 +5,7 @@ from libsmartas import *
 from fnmatch import filter
 import iLoopsXMLParser as parser
 from Bio import SeqIO
+from Bio.SeqRecord import SeqRecord
 
 if(len(sys.argv) != 2):
 	print("No arguments passed.")
