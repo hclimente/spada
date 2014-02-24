@@ -8,6 +8,7 @@ import os
 out = sys.argv[1]
 expressedTranscripts = "Results/" + out + sys.argv[2]
 candidateTranscripts = "Results/" + out + sys.argv[3]
+inputType = sys.argv[4]
 
 expressedTranscriptsSet = set()
 with open(expressedTranscripts, "r") as EXPRESSED:
@@ -17,18 +18,30 @@ with open(expressedTranscripts, "r") as EXPRESSED:
 wannaWrite = False
 expressedTranscriptsCounter = len(expressedTranscriptsSet)
 
-with open("Data/GENCODE/proteins.fa", "r") as gcMULTIFASTA:
-	with open("Results/" + out + "/iLoops/ExpressedTranscripts.fasta", "w") as MULTIFASTA:
-		for line in gcMULTIFASTA:
-			if line.find(">") != -1:
-				identifiers = ((line.split("|"))[0].split("."))[0]
-				if identifiers in expressedTranscriptsSet:
-					MULTIFASTA.write(identifiers + "\n")
-					wannaWrite = True
-				else:
-					wannaWrite = False
-			elif wannaWrite:
-				MULTIFASTA.write(line)
+fileCounter = 1
+transcriptCounter = 0
+
+MULTIFASTA = open("Results/" + out + "/iLoops/ExpressedTranscripts_" + str(fileCounter) + ".fasta", "w")
+
+with open("Data/" + inputType + "/proteins.fa", "r") as gcMULTIFASTA:
+	for line in gcMULTIFASTA:
+		if line.find(">") != -1:
+
+			if transcriptCounter >= 10000:
+				fileCounter += 1
+				MULTIFASTA.close()
+				MULTIFASTA = open("Results/" + out + "/iLoops/ExpressedTranscripts_" + str(fileCounter) + ".fasta", "w")
+				transcriptCounter = 0
+
+			identifiers = ((line[1:].split("|"))[0].split("."))[0]
+			if identifiers in expressedTranscriptsSet:
+				MULTIFASTA.write(">" + identifiers + "\n")
+				wannaWrite = True
+				transcriptCounter += 1
+			else:
+				wannaWrite = False
+		elif wannaWrite:
+			MULTIFASTA.write(line)
 
 print("\t* Writing the pairs files.")
 
