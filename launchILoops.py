@@ -35,16 +35,19 @@ os.chdir(sys.argv[1])
 
 pidQueue = []
 
+isoformSeq = SeqRecord()
+
 for expressedFasta in filter(os.listdir("."), "ExpressedTranscripts_*.fasta"):
+	isoformSeq += SeqIO.parse(open(expressedFasta),'fasta')
 	assignationBatch = expressedFasta.split("_")[1].split(".")[0]
-	cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py",
-		"-f " + expressedFasta,
-		"-j Output/Mapping_" + assignationBatch,
-		"-x Mapping_" + assignationBatch + ".xml",
-		"-v",
-		"-m",
-		"-n 25"
-		)
+	# cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py",
+	# 	"-f " + expressedFasta,
+	# 	"-j Output/Mapping_" + assignationBatch,
+	# 	"-x Mapping_" + assignationBatch + ".xml",
+	# 	"-v",
+	# 	"-m",
+	# 	"-n 25"
+	# 	)
 
 myParser = iLoopsParser()
 allTranscripts = {}
@@ -65,8 +68,6 @@ for transcript, loops in sorted(allTranscripts.iteritems()):
 	else:
 		loopPatterns.append(loops)
 		loopFamilies[aTranscript] = []
-
-isoformSeq = SeqIO.parse(open("ExpressedTranscripts.fasta"),'fasta')
 
 with open("ExpressedTranscripts.loopFiltered.fasta", "w") as FILTERED:
 	for fasta in isoformSeq:
