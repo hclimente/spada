@@ -43,13 +43,13 @@ for expressedFasta in filter(os.listdir("."), "ExpressedTranscripts_*.fasta"):
 		"-x Mapping_" + assignationBatch + ".xml",
 		"-v",
 		"-m",
-		"-n 25"
+		"-n 1"
 		)
 
 myParser = iLoopsParser()
 allTranscripts = {}
 
-for mappingBatch in filter(os.listdir("Output/", "Mapping_*"):
+for mappingBatch in filter(os.listdir("Output/"), "Mapping_*"):
 	for xmlFile in filter(os.listdir("Output/" + mappingBatch + "/sge_output"), "*assignation.??.xml"):
 		newLoops = myParser.parseResults(xmlOutput=xmlFile, outputInteraction_signatures=True, outputRFPrecisions=True)
 		allTranscripts = dict(allTranscripts.items() + newLoops.items())
