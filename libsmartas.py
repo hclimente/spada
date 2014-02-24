@@ -184,11 +184,11 @@ def finish(opt):
 	cmd("rm", "*" + opt["out"] + "*gff", "*" + opt["out"] + "*tsv")
 	chdir("/home/hector/SmartAS")
 
-def outputCandidates(out):
+def outputCandidates(out, inputType):
 	with open('Results/' + out + "/candidateList.tsv", "r") as CANDIDATES, \
 		 open('Results/' + out + "/candidates_normal.gff", 'w') as GFF2n_TRACK, \
 		 open("Results/" + out + "/candidates_tumor.gff", 'w') as GFF2t_TRACK, \
-		 open("Data/GENCODE/annotation.gtf", "r") as ALLTRANSCRIPTS:
+		 open("Data/" + inputType + "/annotation.gtf", "r") as ALLTRANSCRIPTS:
 			candTnt = []
 			for line in CANDIDATES:
 				ids = line.strip().split("\t")
