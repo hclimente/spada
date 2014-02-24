@@ -35,10 +35,19 @@ os.chdir(sys.argv[1])
 
 pidQueue = []
 
-isoformSeq = SeqRecord()
+isoformSeq = {}
 
 for expressedFasta in filter(os.listdir("."), "ExpressedTranscripts_*.fasta"):
-	isoformSeq += SeqIO.parse(open(expressedFasta),'fasta')
+	with open(expressedFasta, "r") as expFasta:
+		currentTranscript = ""
+		for line in expFasta:
+			trueLine = line.strip()
+			if trueline.find(">"):
+				currentTranscript = trueline[1:]
+				isoformSeq[currentTranscript] = ""
+			else:
+				isoformSeq[currentTranscript] += trueLine
+	
 	assignationBatch = expressedFasta.split("_")[1].split(".")[0]
 	# cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py",
 	# 	"-f " + expressedFasta,
