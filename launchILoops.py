@@ -35,21 +35,24 @@ os.chdir(sys.argv[1])
 
 pidQueue = []
 
-cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py",
-	"-f ExpressedTranscripts.fasta",
-	"-j Output/Mapping",
-	"-x Mapping.xml",
-	"-v",
-	"-m",
-	"-n 10"
-	)
+for expressedFasta in filter(os.listdir("."), "ExpressedTranscripts_*.fasta"):
+	assignationBatch = expressedFasta.split("_")[1].split(".")[0]
+	cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py",
+		"-f " + expressedFasta,
+		"-j Output/Mapping_" + assignationBatch,
+		"-x Mapping_" + assignationBatch + ".xml",
+		"-v",
+		"-m",
+		"-n 25"
+		)
 
 myParser = iLoopsParser()
 allTranscripts = {}
 
-for xmlFile in filter(os.listdir("Output/Mapping/sge_output"), "*assignation.??.xml"):
-	newLoops = myParser.parseResults(xmlOutput=xmlFile, outputInteraction_signatures=True, outputRFPrecisions=True)
-	allTranscripts = dict(allTranscripts.items() + newLoops.items())
+for mappingBatch in filter(os.listdir("Output/", "Mapping_*"):
+	for xmlFile in filter(os.listdir("Output/" + mappingBatch + "/sge_output"), "*assignation.??.xml"):
+		newLoops = myParser.parseResults(xmlOutput=xmlFile, outputInteraction_signatures=True, outputRFPrecisions=True)
+		allTranscripts = dict(allTranscripts.items() + newLoops.items())
 
 print(allTranscripts)
 
