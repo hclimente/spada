@@ -38,8 +38,8 @@ for expressedFasta in filter(os.listdir("."), "ExpressedTranscripts_*.fasta"):
 		currentTranscript = ""
 		for line in expFasta:
 			trueLine = line.strip()
-			if trueline.find(">"):
-				currentTranscript = trueline[1:]
+			if trueLine.find(">"):
+				currentTranscript = trueLine[1:]
 				isoformSeq[currentTranscript] = ""
 			else:
 				isoformSeq[currentTranscript] += trueLine
