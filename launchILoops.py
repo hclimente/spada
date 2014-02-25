@@ -5,10 +5,6 @@ from libsmartas import *
 from fnmatch import filter
 import iLoopsXMLParser as parser
 
-if(len(sys.argv) != 2):
-	print("No arguments passed.")
-	exit()
-
 class iLoopsParser(parser.ILXMLParser):
 	def custom_protein_output(self, protein_object, **kwds): 
 		return protein_object
@@ -30,9 +26,11 @@ class iLoopsParser(parser.ILXMLParser):
 
 		return parsedLoops
 
-os.chdir(sys.argv[1])
+if(len(sys.argv) != 2):
+	print("No arguments passed.")
+	exit()
 
-pidQueue = []
+os.chdir(sys.argv[1])
 
 isoformSeq = {}
 for expressedFasta in filter(os.listdir("."), "ExpressedTranscripts_*.fasta"):
@@ -47,14 +45,14 @@ for expressedFasta in filter(os.listdir("."), "ExpressedTranscripts_*.fasta"):
 				isoformSeq[currentTranscript] += trueLine
 	
 	assignationBatch = expressedFasta.split("_")[1].split(".")[0]
-	# cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py",
-	# 	"-f " + expressedFasta,
-	# 	"-j Output/Mapping_" + assignationBatch,
-	# 	"-x Mapping_" + assignationBatch + ".xml",
-	# 	"-v",
-	# 	"-m",
-	# 	"-n 25"
-	# 	)
+	cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py",
+		"-f " + expressedFasta,
+		"-j Output/Mapping_" + assignationBatch,
+		"-x Mapping_" + assignationBatch + ".xml",
+		"-v",
+		"-m",
+		"-n 25"
+		)
 
 myParser = iLoopsParser()
 allTranscripts = {}
