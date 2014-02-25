@@ -5,13 +5,9 @@ from libsmartas import *
 from fnmatch import filter
 import iLoopsXMLParser as parser
 
-print "k"
-
 if(len(sys.argv) != 2):
 	print("No arguments passed.")
 	exit()
-
-print "kk"
 
 class iLoopsParser(parser.ILXMLParser):
 	def custom_protein_output(self, protein_object, **kwds): 
@@ -39,8 +35,6 @@ os.chdir(sys.argv[1])
 pidQueue = []
 
 isoformSeq = {}
-print "Hola"
-
 for expressedFasta in filter(os.listdir("."), "ExpressedTranscripts_*.fasta"):
 	with open(expressedFasta, "r") as expFasta:
 		currentTranscript = ""
@@ -65,10 +59,10 @@ for expressedFasta in filter(os.listdir("."), "ExpressedTranscripts_*.fasta"):
 myParser = iLoopsParser()
 allTranscripts = {}
 
-print("k tal")
-
 for mappingBatch in filter(os.listdir("Output/"), "Mapping_*"):
+	print mappingBatch
 	for xmlFile in filter(os.listdir("Output/" + mappingBatch + "/sge_output"), "*assignation.??.xml"):
+		print xmlFile
 		newLoops = myParser.parseResults(xmlOutput=xmlFile, outputInteraction_signatures=True, outputRFPrecisions=True)
 		allTranscripts = dict(allTranscripts.items() + newLoops.items())
 
