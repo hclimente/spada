@@ -12,7 +12,7 @@ class iLoopsParser(parser.ILXMLParser):
 	def parseResults(self, xmlOutput, **kwds):
 		parsedLoops = {}
 
-		for resultItem in self.results_parser(xml_file=xmlOutput, report_level=1, **kwds): 
+		for resultItem in self.results_parser(xml_file=xmlOutput, report_level=0, **kwds): 
 			if isinstance(resultItem, parser.ILXMLProtein):
 				print(resultItem.get_name())
 				loopList = []
@@ -60,7 +60,16 @@ for mappingBatch in filter(os.listdir("Output/"), "Mapping_*"):
 	for xmlFile in filter(os.listdir("Output/" + mappingBatch + "/sge_output"), "*assignation.??.xml"):
 		print xmlFile
 		filePath = "Output/" + mappingBatch + "/sge_output/" + xmlFile
-		newLoops = myParser.parseResults(xmlOutput=filePath, outputInteraction_signatures=True, outputRFPrecisions=True)
+		newLoops = myParser.parseResults(xmlOutput=filePath, 
+										 output_proteins               = True, 
+                                         output_alignments             = False,
+                                         output_domain_mappings        = False,
+                                         output_protein_features       = True,
+                                         output_domain_assignations    = False,
+                                         output_interactions           = False,
+                                         output_interaction_signatures = False,
+                                         output_RF_results             = False,
+                                         output_RF_precisions          = False)
 		allTranscripts = dict(allTranscripts.items() + newLoops.items())
 
 print(allTranscripts)
