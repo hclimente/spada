@@ -9,23 +9,25 @@ class iLoopsParser(parser.ILXMLParser):
 	def custom_protein_output(self, protein_object, **kwds): 
 		return protein_object
 	
-	def parseResults(self, xmlOutput, **kwds):
+	def parseLoops(self, xmlOutput, **kwds):
 		parsedLoops = {}
 
+		for resultItem in self.results_parser(xml_file=xmlOutput, report_level=0, **kwds): 
+			if isinstance(resultItem, parser.ILXMLProtein):
+				if resultItem.get_loops():
+					loopList = []
+					for aLoop in resultItem.get_loops():
+						loopList.append(aLoop.get_code())
+					loopList.sort()
+					parsedLoops[resultItem.get_name()] = ";".join(loopList)
+
+		return parsedLoops
+
+	def parseNoLoops(self, xmlOutput, **kwds):
 		with open("noLoops.li", "w") as noLoops:
 			for resultItem in self.results_parser(xml_file=xmlOutput, report_level=0, **kwds): 
 				if isinstance(resultItem, parser.ILXMLProtein):
-					print resultItem.get_name()
-					if resultItem.get_loops():
-						loopList = []
-						for aLoop in resultItem.get_loops():
-							loopList.append(aLoop.get_code())
-						loopList.sort()
-						parsedLoops[resultItem.get_name()] = ";".join(loopList)
-					else:
-						noLoops.write(resultItem.get_name() + "\n")
-
-		return parsedLoops
+					noLoops.write(resultItem.get_name() + "\n")
 
 if(len(sys.argv) != 2):
 	print("No arguments passed.")
@@ -57,24 +59,35 @@ for expressedFasta in filter(os.listdir("."), "ExpressedTranscripts_*.fasta"):
 
 myParser = iLoopsParser()
 allTranscripts = {}
+noLoops = []
 
 for mappingBatch in filter(os.listdir("Output/"), "Mapping_*"):
-	for xmlFile in filter(os.listdir("Output/" + mappingBatch + "/sge_output"), "*assignation.??.xml"):
-		filePath = "Output/" + mappingBatch + "/sge_output/" + xmlFile
-		print xmlFile
-		newLoops = myParser.parseResults(xmlOutput=filePath, 
-					 output_proteins               = True, 
-                                         output_alignments             = False,
-                                         output_domain_mappings        = False,
-                                         output_protein_features       = True,
-                                         output_domain_assignations    = False,
-                                         output_interactions           = False,
-                                         output_interaction_signatures = False,
-                                         output_RF_results             = False,
-                                         output_RF_precisions          = False)
-		allTranscripts = dict(allTranscripts.items() + newLoops.items())
-		print len(newLoops)
-		print len(allTranscripts)
+	xmlFile = "Output/" + mappingBatch + "/" mappingBatch + ".xml"
+	errFile = "Output/" + mappingBatch + "/" mappingBatch + ".err.xml"
+
+	newLoops = myParser.parseResults(xmlOutput					   = xmlFile
+									 output_proteins               = True, 
+									 output_alignments             = False,
+									 output_domain_mappings        = False,
+									 output_protein_features       = True,
+									 output_domain_assignations    = False,
+									 output_interactions           = False,
+									 output_interaction_signatures = False,
+									 output_RF_results             = False,
+									 output_RF_precisions          = False
+									)
+	allTranscripts = dict(allTranscripts.items() + newLoops.items())
+	myParser.parseNoLoops(xmlOutput                     = xmlFile
+						  output_proteins               = True, 
+						  output_alignments             = False,
+						  output_domain_mappings        = False,
+						  output_protein_features       = True,
+						  output_domain_assignations    = False,
+						  output_interactions           = False,
+						  output_interaction_signatures = False,
+						  output_RF_results             = False,
+						  output_RF_precisions          = False
+						 )
 
 loopFamilies = {}
 
@@ -83,13 +96,6 @@ for aTranscript, loops in sorted(allTranscripts.iteritems()):
 		loopFamilies[loops] = []
 
 	loopFamilies[loops].append(aTranscript)
-
-a = 0
-for loop in loopFamilies.keys():
-	a += len(loopFamilies[loop])
-#	print str(loopFamilies[loop])
-
-print a
 
 with open("ExpressedTranscripts.loopFiltered.fasta", "w") as FILTERED:
 	for representative in loopFamilies.keys():
