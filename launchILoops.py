@@ -24,14 +24,10 @@ class iLoopsParser(parser.ILXMLParser):
 		return parsedLoops
 
 	def parseNoLoops(self, xmlOutput, **kwds):
-		with open("noLoops.li", "w") as noLoops:
+		with open("noLoops.li", "a") as noLoops:
 			for resultItem in self.results_parser(xml_file=xmlOutput, report_level=0, **kwds): 
 				if isinstance(resultItem, parser.ILXMLProtein):
 					noLoops.write(resultItem.get_name() + "\n")
-
-if(len(sys.argv) != 2):
-	print("No arguments passed.")
-	exit()
 
 os.chdir(sys.argv[1])
 
@@ -62,10 +58,10 @@ allTranscripts = {}
 noLoops = []
 
 for mappingBatch in filter(os.listdir("Output/"), "Mapping_*"):
-	xmlFile = "Output/" + mappingBatch + "/" mappingBatch + ".xml"
-	errFile = "Output/" + mappingBatch + "/" mappingBatch + ".err.xml"
+	xmlFile = "Output/" + mappingBatch + "/" + mappingBatch + ".xml"
+	errFile = "Output/" + mappingBatch + "/" + mappingBatch + ".err.xml"
 
-	newLoops = myParser.parseResults(xmlOutput					   = xmlFile
+	newLoops = myParser.parseLoops(xmlOutput					   = xmlFile,
 									 output_proteins               = True, 
 									 output_alignments             = False,
 									 output_domain_mappings        = False,
@@ -77,11 +73,11 @@ for mappingBatch in filter(os.listdir("Output/"), "Mapping_*"):
 									 output_RF_precisions          = False
 									)
 	allTranscripts = dict(allTranscripts.items() + newLoops.items())
-	myParser.parseNoLoops(xmlOutput                     = xmlFile
+	myParser.parseNoLoops(xmlOutput                     = errFile,
 						  output_proteins               = True, 
 						  output_alignments             = False,
 						  output_domain_mappings        = False,
-						  output_protein_features       = True,
+						  output_protein_features       = False,
 						  output_domain_assignations    = False,
 						  output_interactions           = False,
 						  output_interaction_signatures = False,
@@ -123,4 +119,4 @@ with open("ExpressedTranscripts.loopFiltered.fasta", "w") as FILTERED:
 
 # waitPID(pidQueue)
 
-cmd("scp -r Results/iLoops/Output hectorc@gaudi.imim.es:~/SmartAS/Results/iLoops")
+cmd("scp -r Output hector@feynman.imim.es:" + sys.argv[2] )
