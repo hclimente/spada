@@ -19,10 +19,9 @@ class iLoopsParser(parser.ILXMLParser):
 				for aLoop in resultItem.get_loops():
 					loopList.append(aLoop.get_code())
 
+				print loopList
 				if loopList:
 					parsedLoops[resultItem.get_name()] = ";".join(loopList.sort())
-				
-		print parsedLoops
 
 		return parsedLoops
 
@@ -38,30 +37,30 @@ for expressedFasta in filter(os.listdir("."), "ExpressedTranscripts_*.fasta"):
 		currentTranscript = ""
 		for line in expFasta:
 			trueLine = line.strip()
-			if trueLine.find(">"):
+			if trueLine.find(">") != -1:
 				currentTranscript = trueLine[1:]
 				isoformSeq[currentTranscript] = ""
 			else:
 				isoformSeq[currentTranscript] += trueLine
 	
 	assignationBatch = expressedFasta.split("_")[1].split(".")[0]
-	cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py",
-		"-f " + expressedFasta,
-		"-j Output/Mapping_" + assignationBatch,
-		"-x Mapping_" + assignationBatch + ".xml",
-		"-v",
-		"-m",
-		"-n 25"
-		)
+#	cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py",
+#		"-f " + expressedFasta,
+#		"-j Output/Mapping_" + assignationBatch,
+#		"-x Mapping_" + assignationBatch + ".xml",
+#		"-v",
+#		"-m",
+#		"-n 25"
+#	   )
 
 myParser = iLoopsParser()
 allTranscripts = {}
 
 for mappingBatch in filter(os.listdir("Output/"), "Mapping_*"):
-	print mappingBatch
 	for xmlFile in filter(os.listdir("Output/" + mappingBatch + "/sge_output"), "*assignation.??.xml"):
 		print xmlFile
-		newLoops = myParser.parseResults(xmlOutput=xmlFile, outputInteraction_signatures=True, outputRFPrecisions=True)
+		filePath = "Output/" + mappingBatch + "/sge_output/" + xmlFile
+		newLoops = myParser.parseResults(xmlOutput=filePath, outputInteraction_signatures=True, outputRFPrecisions=True)
 		allTranscripts = dict(allTranscripts.items() + newLoops.items())
 
 print(allTranscripts)
@@ -77,11 +76,8 @@ for transcript, loops in sorted(allTranscripts.iteritems()):
 		loopFamilies[aTranscript] = []
 
 with open("ExpressedTranscripts.loopFiltered.fasta", "w") as FILTERED:
-	for fasta in isoformSeq:
-		for representative in loopPatterns.keys():
-			if representative != fasta.id:
-				break
-			FILTERED.write(">" + fasta.id + "\n" + fasta.seq.tostring() + "\n")
+	for representative in loopFamilies.keys():
+		FILTERED.write(">" + representative + "\n" + isoformSeq[representative] + "\n")
 
 # for transcript in filter(os.listdir("Input"), "ENST*"):
 # 	for configFile in filter(os.listdir("Input/" + transcript), "*net"):
