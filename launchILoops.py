@@ -14,14 +14,13 @@ class iLoopsParser(parser.ILXMLParser):
 
 		for resultItem in self.results_parser(xml_file=xmlOutput, report_level=0, **kwds): 
 			if isinstance(resultItem, parser.ILXMLProtein):
-				print(resultItem.get_name())
 				loopList = []
 				for aLoop in resultItem.get_loops():
 					loopList.append(aLoop.get_code())
 
-				print loopList
 				if loopList:
-					parsedLoops[resultItem.get_name()] = ";".join(loopList.sort())
+					loopList.sort()
+					parsedLoops[resultItem.get_name()] = ";".join(loopList)
 
 		return parsedLoops
 
@@ -58,7 +57,6 @@ allTranscripts = {}
 
 for mappingBatch in filter(os.listdir("Output/"), "Mapping_*"):
 	for xmlFile in filter(os.listdir("Output/" + mappingBatch + "/sge_output"), "*assignation.??.xml"):
-		print xmlFile
 		filePath = "Output/" + mappingBatch + "/sge_output/" + xmlFile
 		newLoops = myParser.parseResults(xmlOutput=filePath, 
 										 output_proteins               = True, 
@@ -72,21 +70,23 @@ for mappingBatch in filter(os.listdir("Output/"), "Mapping_*"):
                                          output_RF_precisions          = False)
 		allTranscripts = dict(allTranscripts.items() + newLoops.items())
 
-print(allTranscripts)
-
-loopPatterns = []
 loopFamilies = {}
 
-for transcript, loops in sorted(allTranscripts.iteritems()):
-	if loops in loopPatterns:
-		loopFamilies[aTranscript].append(aTranscript)
-	else:
-		loopPatterns.append(loops)
-		loopFamilies[aTranscript] = []
+for aTranscript, loops in sorted(allTranscripts.iteritems()):
+	if loops not in loopFamilies.keys():
+		loopFamilies[loops] = []
+
+	loopFamilies[loops].append(aTranscript)
+
+a = 0
+for loop in loopFamilies.keys():
+	a += len(loopFamilies[loop])
+
+print a
 
 with open("ExpressedTranscripts.loopFiltered.fasta", "w") as FILTERED:
 	for representative in loopFamilies.keys():
-		FILTERED.write(">" + representative + "\n" + isoformSeq[representative] + "\n")
+		FILTERED.write(">" + loopFamilies[representative][0] + "\n" + isoformSeq[loopFamilies[representative][0]] + "\n")
 
 # for transcript in filter(os.listdir("Input"), "ENST*"):
 # 	for configFile in filter(os.listdir("Input/" + transcript), "*net"):
