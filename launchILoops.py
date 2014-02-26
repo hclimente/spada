@@ -15,6 +15,7 @@ class iLoopsParser(parser.ILXMLParser):
 		with open("noLoops.li", "w") as noLoops:
 			for resultItem in self.results_parser(xml_file=xmlOutput, report_level=0, **kwds): 
 				if isinstance(resultItem, parser.ILXMLProtein):
+					print resultItem.get_name()
 					if resultItem.get_loops():
 						loopList = []
 						for aLoop in resultItem.get_loops():
@@ -23,7 +24,6 @@ class iLoopsParser(parser.ILXMLParser):
 						parsedLoops[resultItem.get_name()] = ";".join(loopList)
 					else:
 						noLoops.write(resultItem.get_name() + "\n")
-
 
 		return parsedLoops
 
@@ -61,8 +61,9 @@ allTranscripts = {}
 for mappingBatch in filter(os.listdir("Output/"), "Mapping_*"):
 	for xmlFile in filter(os.listdir("Output/" + mappingBatch + "/sge_output"), "*assignation.??.xml"):
 		filePath = "Output/" + mappingBatch + "/sge_output/" + xmlFile
+		print xmlFile
 		newLoops = myParser.parseResults(xmlOutput=filePath, 
-										 output_proteins               = True, 
+					 output_proteins               = True, 
                                          output_alignments             = False,
                                          output_domain_mappings        = False,
                                          output_protein_features       = True,
@@ -72,6 +73,8 @@ for mappingBatch in filter(os.listdir("Output/"), "Mapping_*"):
                                          output_RF_results             = False,
                                          output_RF_precisions          = False)
 		allTranscripts = dict(allTranscripts.items() + newLoops.items())
+		print len(newLoops)
+		print len(allTranscripts)
 
 loopFamilies = {}
 
@@ -84,6 +87,7 @@ for aTranscript, loops in sorted(allTranscripts.iteritems()):
 a = 0
 for loop in loopFamilies.keys():
 	a += len(loopFamilies[loop])
+#	print str(loopFamilies[loop])
 
 print a
 
