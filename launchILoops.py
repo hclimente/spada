@@ -12,15 +12,18 @@ class iLoopsParser(parser.ILXMLParser):
 	def parseResults(self, xmlOutput, **kwds):
 		parsedLoops = {}
 
-		for resultItem in self.results_parser(xml_file=xmlOutput, report_level=0, **kwds): 
-			if isinstance(resultItem, parser.ILXMLProtein):
-				loopList = []
-				for aLoop in resultItem.get_loops():
-					loopList.append(aLoop.get_code())
+		with open("noLoops.li", "w") as noLoops:
+			for resultItem in self.results_parser(xml_file=xmlOutput, report_level=0, **kwds): 
+				if isinstance(resultItem, parser.ILXMLProtein):
+					if resultItem.get_loops():
+						loopList = []
+						for aLoop in resultItem.get_loops():
+							loopList.append(aLoop.get_code())
+						loopList.sort()
+						parsedLoops[resultItem.get_name()] = ";".join(loopList)
+					else:
+						noLoops.write(resultItem.get_name() + "\n")
 
-				if loopList:
-					loopList.sort()
-					parsedLoops[resultItem.get_name()] = ";".join(loopList)
 
 		return parsedLoops
 
