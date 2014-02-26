@@ -3,7 +3,7 @@
 import sys, os
 from libsmartas import *
 from fnmatch import filter
-import iLoopsXMLParser as parser
+import iLoops_xml_parser as parser
 
 class iLoopsParser(parser.ILXMLParser):
 	def custom_protein_output(self, protein_object, **kwds): 
