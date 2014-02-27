@@ -24,8 +24,8 @@ class iLoopsParser(parser.ILXMLParser):
 
 		return parsedLoops
 
-	def parseNoLoops(self, xmlOutput, **kwds):
-		with open("noLoops.li", "a") as noLoops:
+	def parseNoLoops(self, iLoopsPath, xmlOutput, **kwds):
+		with open(iLoopsPath + "noLoops.li", "a") as noLoops:
 			for resultItem in self.results_parser(xml_file=xmlOutput, report_level=0, **kwds): 
 				if isinstance(resultItem, parser.ILXMLProtein):
 					noLoops.write(resultItem.get_name() + "\n")
@@ -122,21 +122,18 @@ for mappingBatch in filter(os.listdir(iLoopsFolder + "Output/"), "Mapping_*"):
 
 		loopFamilies[loops].append(aTranscript)
 
-	newNoLoops = myParser.parseNoLoops(xmlOutput                     = errFile,
-									   output_proteins               = True, 
-									   output_alignments             = False,
-									   output_domain_mappings        = False,
-									   output_protein_features       = False,
-									   output_domain_assignations    = False,
-									   output_interactions           = False,
-									   output_interaction_signatures = False,
-									   output_RF_results             = False,
-									   output_RF_precisions          = False
-									  )
-	
-	with open(iLoopsFolder + "noLoops.li", "a") as noLoopsList:
-		for noLoops in newNoLoops:
-			noLoopsList.write(noLoops + "\n")
+	myParser.parseNoLoops(xmlOutput                     = errFile,
+						  iLoopsPath 					= iLoopsFolder,
+						  output_proteins               = True, 
+						  output_alignments             = False,
+						  output_domain_mappings        = False,
+						  output_protein_features       = False,
+						  output_domain_assignations    = False,
+						  output_interactions           = False,
+						  output_interaction_signatures = False,
+						  output_RF_results             = False,
+						  output_RF_precisions          = False
+						 )
 
 with open(iLoopsFolder + "expressedTranscripts.uniqLoops.li", "w") as uniqLoops, \
 	 open(iLoopsFolder + "loopFamilies.txt", "w") as loopFamiliesList:
