@@ -47,8 +47,7 @@ def writeFasta(basename, inputType, expressedTranscripts):
 		for line in gcMULTIFASTA:
 			if line.find(">") != -1:
 
-				if transcriptCounter >= 100:
-					break
+				if transcriptCounter >= 9999:
 					fileCounter += 1
 					MULTIFASTA.close()
 					MULTIFASTA = open(basename + "_" + str(fileCounter) + ".fasta", "w")
@@ -147,6 +146,7 @@ with open(iLoopsFolder + "expressedTranscripts.uniqLoops.li", "w") as uniqLoops,
 writeFasta(iLoopsFolder + "ExpressedTranscripts.uniqLoops", inputType, iLoopsFolder + "expressedTranscripts.uniqLoops.li")
 
 print("\t* Writing the pairs files.")
+top = 0
 
 with open(candidateTranscripts, "r") as CANDIDATES:
 	CANDIDATES.readline()
@@ -190,8 +190,11 @@ with open(candidateTranscripts, "r") as CANDIDATES:
 							PAIRS = open(iLoopsFolder + "/Input/" + aCandidate + '/' + aCandidate + '_' + str(fileNumber) + '.net', "w")
 					PAIRS.close()
 
-		break
+		top +=1
+		if top >=30:
+			break
 
+print("\t* Launching iLoops.")
 for transcript in filter(os.listdir(iLoopsFolder + "/Input"), "ENST*"):
 	for configFile in filter(os.listdir(iLoopsFolder + "/Input/" + transcript), "*net"):
 		print transcript
