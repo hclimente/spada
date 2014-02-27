@@ -162,8 +162,8 @@ with open(candidateTranscripts, "r") as CANDIDATES:
 			print aCandidate
 
 			for expressedFasta in filter(os.listdir(iLoopsFolder), "ExpressedTranscripts.uniqLoops_*.fasta"):
-				cmd("cp", iLoopsFolder + expressedFasta, iLoopsFolder + "/Input/" + aCandidate)
-				with open(iLoopsFolder + "/Input/" + aCandidate + "/" + expressedFasta, "a") as exprFast, \
+				cmd("cp", iLoopsFolder + expressedFasta, iLoopsFolder + "Input/" + aCandidate)
+				with open(iLoopsFolder + "Input/" + aCandidate + "/" + expressedFasta, "a") as exprFast, \
 					 open("Data/" + inputType + "/proteins.fa", "r") as motherFast:
 					 writeSeq = False
 					 for line in motherFast:
@@ -171,21 +171,41 @@ with open(candidateTranscripts, "r") as CANDIDATES:
 					 		writeSeq = False
 					 		if line.find(aCandidate) != -1:
 					 			writeSeq = True
-						 		exprFast.write(">" + aCandidate + "\n")
+								exprFast.write(">" + aCandidate + "\n")
 						elif writeSeq:
-							exprFast.write(line)
+					 		exprFast.write(line)
 
-				PAIRS = open(out + "/iLoops/Input/" + aCandidate + '/' + aCandidate + '_' + str(fileNumber) + '.net', "w")
-				with open(iLoopsFolder + "/Input/" + aCandidate + "/" + expressedFasta, "r") as exprFast:
+				PAIRS = open(iLoopsFolder + "Input/" + aCandidate + '/' + aCandidate + '_' + str(fileNumber) + '.net', "w")
+				with open(iLoopsFolder + "Input/" + aCandidate + "/" + expressedFasta, "r") as exprFast:
 					for rawExpressed in exprFast:
-						expressedTranscript = rawExpressed.strip()
+						if rawExpressed.find(">") == -1:
+							continue
+						expressedTranscript = rawExpressed.strip()[1:]
 						PAIRS.write(aCandidate + "\t" + expressedTranscript + "\n")
 						numberOfCandidates += 1
 						if(numberOfCandidates >= 10000):
 							fileNumber += 1
 							numberOfCandidates = 0
 							PAIRS.close()
-							PAIRS = open(out + "/iLoops/Input/" + aCandidate + '/' + aCandidate + '_' + str(fileNumber) + '.net', "w")
+							PAIRS = open(iLoopsFolder + "/Input/" + aCandidate + '/' + aCandidate + '_' + str(fileNumber) + '.net', "w")
 					PAIRS.close()
 
 		break
+
+for transcript in filter(os.listdir(iLoopsFolder + "/Input"), "ENST*"):
+	for configFile in filter(os.listdir(iLoopsFolder + "/Input/" + transcript), "*net"):
+		print transcript
+		print configFile
+		cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py",
+			"-f " + iLoopsFolder + "/Input/" + transcript + "/" + "ExpressedTranscripts.uniqLoops_1.fasta",
+			"-q " + iLoopsFolder + "/Input/" + transcript + "/" + configFile,
+			"-j " + iLoopsFolder + "/Output/" + configFile,
+			"-x " + configFile + ".xml",
+			"-g all",
+			"-n 25",
+			"-Q sbi",
+			"-c 1,5,6,7,8,9,10,11,12,13,14,15,20,30,40,50",
+			"-v"
+			)
+
+cmd("scp -r " + iLoopsFolder + " hector@feynman.imim.es:~/SmartAS/Results/")
