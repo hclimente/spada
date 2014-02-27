@@ -70,6 +70,7 @@ candidateTranscripts = out + sys.argv[3]
 inputType = sys.argv[4]
 iLoopsFolder = out + "/iLoops/"
 myParser = iLoopsParser()
+os.chdir("/sbi/users/hectorc/SmartAS")
 
 print("\t* Preparing original FASTA file.")
 
@@ -77,7 +78,7 @@ writeFasta(iLoopsFolder + "ExpressedTranscripts", inputType, expressedTranscript
 
 isoformSeq = {}
 for expressedFasta in filter(os.listdir(iLoopsFolder), "ExpressedTranscripts_*.fasta"):
-	with open(expressedFasta, "r") as expFasta:
+	with open(iLoopsFolder + "/" + expressedFasta, "r") as expFasta:
 		currentTranscript = ""
 		for line in expFasta:
 			trueLine = line.strip()
