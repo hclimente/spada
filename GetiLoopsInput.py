@@ -157,24 +157,26 @@ with open(candidateTranscripts, "r") as CANDIDATES:
 	
 			fileNumber = 1
 			numberOfCandidates = 0
-			cmd("mkdir Results/" + out + "/iLoops/Input/" + aCandidate)
+			cmd("mkdir " + out + "/iLoops/Input/" + aCandidate)
 
-			for expressedFasta in filter(os.listdir(iLoopsFolder + "/Input"), "ExpressedTranscripts.uniqLoops*.fasta"):
-				with open(iLoopsFolder + "/Input/" + expressedFasta, "a") as exprFast, \
+			print aCandidate
+
+			for expressedFasta in filter(os.listdir(iLoopsFolder), "ExpressedTranscripts.uniqLoops_*.fasta"):
+				cmd("cp", iLoopsFolder + expressedFasta, iLoopsFolder + "/Input/" + aCandidate)
+				with open(iLoopsFolder + "/Input/" + aCandidate + "/" + expressedFasta, "a") as exprFast, \
 					 open("Data/" + inputType + "/proteins.fa", "r") as motherFast:
 					 writeSeq = False
 					 for line in motherFast:
-					 	if writeSeq:
-					 		exprFast.write(line)
 					 	if line.find(">") != -1:
 					 		writeSeq = False
+					 		if line.find(aCandidate) != -1:
+					 			writeSeq = True
+						 		exprFast.write(">" + aCandidate + "\n")
+						elif writeSeq:
+							exprFast.write(line)
 
-					 	if line.find(aCandidate) != -1:
-					 		writeSeq = True
-					 		exprFast.write(line)
-
-				PAIRS = open(out + "/iLoops/Input/" + aCandidate + '/' + aCandidate + '_' + str(fileNumber) + '.net', "w"), \
-				with open(iLoopsFolder + "/Input/" + expressedFasta, "r") as exprFast:
+				PAIRS = open(out + "/iLoops/Input/" + aCandidate + '/' + aCandidate + '_' + str(fileNumber) + '.net', "w")
+				with open(iLoopsFolder + "/Input/" + aCandidate + "/" + expressedFasta, "r") as exprFast:
 					for rawExpressed in exprFast:
 						expressedTranscript = rawExpressed.strip()
 						PAIRS.write(aCandidate + "\t" + expressedTranscript + "\n")
