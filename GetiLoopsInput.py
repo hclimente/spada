@@ -197,10 +197,9 @@ with open(candidateTranscripts, "r") as CANDIDATES:
 print("\t* Launching iLoops.")
 for transcript in filter(os.listdir(iLoopsFolder + "/Input"), "ENST*"):
 	for configFile in filter(os.listdir(iLoopsFolder + "/Input/" + transcript), "*net"):
-		print transcript
-		print configFile
+		batch = (configFile.split(".")[0]).split["_"][1]
 		cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py",
-			"-f " + iLoopsFolder + "/Input/" + transcript + "/" + "ExpressedTranscripts.uniqLoops_1.fasta",
+			"-f " + iLoopsFolder + "/Input/" + transcript + "/" + "ExpressedTranscripts.uniqLoops_" + batch + ".fasta",
 			"-q " + iLoopsFolder + "/Input/" + transcript + "/" + configFile,
 			"-j " + iLoopsFolder + "/Output/" + configFile,
 			"-x " + configFile + ".xml",
