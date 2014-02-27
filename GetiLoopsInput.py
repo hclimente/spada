@@ -146,29 +146,44 @@ with open(iLoopsFolder + "expressedTranscripts.uniqLoops.li", "w") as uniqLoops,
 
 writeFasta(iLoopsFolder + "ExpressedTranscripts.uniqLoops", inputType, iLoopsFolder + "expressedTranscripts.uniqLoops.li")
 
-# print("\t* Writing the pairs files.")
+print("\t* Writing the pairs files.")
 
-# with open(candidateTranscripts, "r") as CANDIDATES:
-# 	CANDIDATES.readline()
-# 	for line in CANDIDATES:
-# 		elements = line.split("\t")
-# 		if len(elements) == 4:
-# 			break
+with open(candidateTranscripts, "r") as CANDIDATES:
+	CANDIDATES.readline()
+	for line in CANDIDATES:
+		elements = line.split("\t")
 		
-# 		for aCandidate in [elements[2], elements[3]]:
+		for aCandidate in [elements[2], elements[3]]:
 	
-# 			cmd("mkdir Results/" + out + "/iLoops/Input/" + aCandidate)
-# 			fileNumber = 1
-# 			numberOfCandidates = 0
-# 			with open(expressedTranscripts, "r") as EXPRESSED:
-# 				PAIRS = open(out + "/iLoops/Input/" + aCandidate + '/' + aCandidate + '_' + str(fileNumber) + '.net', "w")
-# 				for rawExpressed in EXPRESSED:
-# 					expressedTranscript = rawExpressed.strip()
-# 					PAIRS.write(aCandidate + "\t" + expressedTranscript + "\n")
-# 					numberOfCandidates += 1
-# 					if(numberOfCandidates >= 10000):
-# 						fileNumber += 1
-# 						numberOfCandidates = 0
-# 						PAIRS.close()
-# 						PAIRS = open(out + "/iLoops/Input/" + aCandidate + '/' + aCandidate + '_' + str(fileNumber) + '.net', "w")
-# 				PAIRS.close()
+			fileNumber = 1
+			numberOfCandidates = 0
+			cmd("mkdir Results/" + out + "/iLoops/Input/" + aCandidate)
+
+			for expressedFasta in filter(os.listdir(iLoopsFolder + "/Input"), "ExpressedTranscripts.uniqLoops*.fasta"):
+				with open(iLoopsFolder + "/Input/" + expressedFasta, "a") as exprFast, \
+					 open("Data/" + inputType + "/proteins.fa", "r") as motherFast:
+					 writeSeq = False
+					 for line in motherFast:
+					 	if writeSeq:
+					 		exprFast.write(line)
+					 	if line.find(">") != -1:
+					 		writeSeq = False
+
+					 	if line.find(aCandidate) != -1:
+					 		writeSeq = True
+					 		exprFast.write(line)
+
+				PAIRS = open(out + "/iLoops/Input/" + aCandidate + '/' + aCandidate + '_' + str(fileNumber) + '.net', "w"), \
+				with open(iLoopsFolder + "/Input/" + expressedFasta, "r") as exprFast:
+					for rawExpressed in exprFast:
+						expressedTranscript = rawExpressed.strip()
+						PAIRS.write(aCandidate + "\t" + expressedTranscript + "\n")
+						numberOfCandidates += 1
+						if(numberOfCandidates >= 10000):
+							fileNumber += 1
+							numberOfCandidates = 0
+							PAIRS.close()
+							PAIRS = open(out + "/iLoops/Input/" + aCandidate + '/' + aCandidate + '_' + str(fileNumber) + '.net', "w")
+					PAIRS.close()
+
+		break
