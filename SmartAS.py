@@ -35,8 +35,7 @@ def main(argv):
 	if opt["initialStep"] <= 3:
 		candidatePrioritization(opt)
 	if opt["initialStep"] <= 4:
-		#prepareILoopsInput(opt)
-		pass
+		prepareILoopsInput(opt)
 	if opt["initialStep"] <= 5:
 		#launchILoops(opt)
 		pass
@@ -59,7 +58,7 @@ def getCandidates(opt):
 	cmd("sort", "Results/" + opt["out"] + "/expressedGenes.lst", ">" + "Results/" + opt["out"] + "/expressedGenes.tmp.lst")
 	cmd("mv", "Results/" + opt["out"] + "/expressedGenes.tmp.lst", "Results/" + opt["out"] + "/expressedGenes.lst")
 
-	outputCandidates(opt["out"])
+	outputCandidates(opt["out"], opt["inputType"])
 	
 def candidatePrioritization(opt):
 
@@ -69,15 +68,17 @@ def candidatePrioritization(opt):
 def prepareILoopsInput(opt):
 
 	print("* Retrieving protein sequences for transcripts and printing to multiFASTA file.")
-	cmd("Pipeline/GetiLoopsInput.py", opt["out"], "/expressedGenes.lst", "/candidateList.top.tsv")
+	cmd("ssh hectorc@gaudi 'rm -r", opt["gOut"] + "')
+	cmd("ssh hectorc@gaudi 'mkdir -p", opt["gOut"] + "/iLoops/Output; mkdir -p", opt["gOut"] + "/iLoops/Input'")
+	cmd("scp -r " + "Results/" + opt["out"] + "/expressedGenes.lst Results/" + opt["out"] + "/candidateList.top.tsv hectorc@gaudi.imim.es:" + opt["gOut"])
+
+	cmd("ssh hectorc@gaudi '" + opt["gaudiWd"] + "/Pipeline/GetiLoopsInput.py", opt["gOut"], "/expressedGenes.lst", "/candidateList.top.tsv", opt["inputType"] + "'")
 
 def launchILoops(opt):
 
 	print("* Launching iLoops jobs.")
 	
-	cmd("ssh hectorc@gaudi 'rm -r", opt["gOut"] + "/iLoops; mkdir -p", opt["gOut"] + "'")
-	cmd("scp -r " + "Results/" + opt["out"] + "/iLoops hectorc@gaudi.imim.es:" + opt["gOut"])
-	cmd("ssh hectorc@gaudi '" + opt["gaudiWd"] + "/Pipeline/launchILoops.py", opt["gOut"] + "/iLoops'")
+	cmd("ssh hectorc@gaudi '" + opt["gaudiWd"] + "/Pipeline/launchILoops.py", opt["gOut"] + "/iLoops", "~/SmartAS/Results/" + opt["out"] + "/iLoops'")
 
 def exloreILoopsResults(opt):
 
