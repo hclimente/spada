@@ -47,7 +47,7 @@ def writeFasta(basename, inputType, expressedTranscripts):
 		for line in gcMULTIFASTA:
 			if line.find(">") != -1:
 
-				if transcriptCounter >= 400:
+				if transcriptCounter >= 100:
 					break
 					fileCounter += 1
 					MULTIFASTA.close()
@@ -88,14 +88,14 @@ for expressedFasta in filter(os.listdir(iLoopsFolder), "ExpressedTranscripts_*.f
 				isoformSeq[currentTranscript] += trueLine
 	
 	assignationBatch = expressedFasta.split("_")[1].split(".")[0]
-#	cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py",
-#		"-f " + iLoopsFolder + expressedFasta,
-#		"-j " + iLoopsFolder + "Output/Mapping_" + assignationBatch,
-#		"-x Mapping_" + assignationBatch + ".xml",
-#		"-v",
-#		"-m",
-#		"-n 25"
-#	   )
+	cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py",
+		"-f " + iLoopsFolder + expressedFasta,
+		"-j " + iLoopsFolder + "Output/Mapping_" + assignationBatch,
+		"-x Mapping_" + assignationBatch + ".xml",
+		"-v",
+		"-m",
+		"-n 25"
+	   )
 
 loopFamilies = {}
 
