@@ -37,12 +37,12 @@ def writeFasta(basename, inputType, expressedTranscripts):
 	transcriptCounter = 0
 
 	expressedTranscriptsSet = set()
-	if isinstance(expressedTranscript, basestring):
+	if isinstance(expressedTranscripts, basestring):
 		with open(expressedTranscripts, "r") as EXPRESSED:
 			for line in EXPRESSED:
 				expressedTranscriptsSet.add(line.strip())
-	elif isinstance(expressedTranscript, set):
-		expressedTranscriptsSet = expressedTranscript
+	elif isinstance(expressedTranscripts, set):
+		expressedTranscriptsSet = expressedTranscripts
 
 	MULTIFASTA = open(basename + "_" + str(fileCounter) + ".fasta", "w")
 
@@ -186,7 +186,7 @@ with open(candidateTranscripts, "r") as CANDIDATES:
 print("\t* Launching iLoops.")
 for transcript in filter(os.listdir(iLoopsFolder + "/Input"), "ENST*"):
 	for configFile in filter(os.listdir(iLoopsFolder + "/Input/" + transcript), "*net"):
-		batch = (configFile.split(".")[0]).split["_"][1]
+		batch = (configFile.split(".")[0]).split("_")[1]
 		cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py",
 			"-f " + iLoopsFolder + "/Input/" + transcript + "/" + "ExpressedTranscripts.uniqLoops_" + batch + ".fasta",
 			"-q " + iLoopsFolder + "/Input/" + transcript + "/" + configFile,
