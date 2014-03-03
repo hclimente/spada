@@ -186,8 +186,8 @@ def finish(opt):
 
 def outputCandidates(out, inputType):
 	with open('Results/' + out + "/candidateList.tsv", "r") as CANDIDATES, \
-		 open('Results/' + out + "/candidates_normal.gff", 'w') as GFF2n_TRACK, \
-		 open("Results/" + out + "/candidates_tumor.gff", 'w') as GFF2t_TRACK, \
+		 open('Results/' + out + "/candidates_normal.gff", 'w') as GFF2n, \
+		 open("Results/" + out + "/candidates_tumor.gff", 'w') as GFF2t, \
 		 open("Data/" + inputType + "/annotation.gtf", "r") as ALLTRANSCRIPTS:
 			candTnt = []
 			for line in CANDIDATES:
@@ -197,6 +197,6 @@ def outputCandidates(out, inputType):
 			for line in ALLTRANSCRIPTS:
 				for pair in candTnt:
 					if line.find(pair[0]) != -1:
-						GFF2n_TRACK.write(line)
+						GFF2n.write(line)
 					elif line.find(pair[1]) != -1:
-						GFF2t_TRACK.write(line)
+						GFF2t.write(line)
