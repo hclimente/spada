@@ -4,7 +4,7 @@ import sys, os
 from shutil import copy
 from libsmartas import *
 from fnmatch import filter
-import iLoops_xml_parser as parser
+import include.iLoops_xml_parser as parser
 
 class iLoopsParser(parser.ILXMLParser):
 	def custom_protein_output(self, protein_object, **kwds): 

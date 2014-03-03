@@ -35,15 +35,11 @@ def main(argv):
 	if opt["initialStep"] <= 3:
 		candidatePrioritization(opt)
 	if opt["initialStep"] <= 4:
-		prepareILoopsInput(opt)
+		launchiLoops(opt)
 	if opt["initialStep"] <= 5:
-		#launchILoops(opt)
-		pass
-	if opt["initialStep"] <= 6:
-		#exloreILoopsResults(opt)
-		pass
+		analyzeInteractions(opt)
 	
-	#finish(opt)
+	finish(opt)
 
 def exploreData(opt):
 	
@@ -65,7 +61,7 @@ def candidatePrioritization(opt):
 	print("* Prioritizing candidates.")
 	cmd("Pipeline/CandidatePrioritization.py", opt["out"], opt["inputType"])
 
-def prepareILoopsInput(opt):
+def launchiLoops(opt):
 
 	print("* Retrieving protein sequences for transcripts and printing to multiFASTA file.")
 	cmd("ssh hectorc@gaudi 'rm -r", opt["gOut"] + "'")
@@ -74,15 +70,9 @@ def prepareILoopsInput(opt):
 
 	cmd("ssh hectorc@gaudi '" + opt["gaudiWd"] + "/Pipeline/LaunchiLoops.py", opt["gaudiWd"], opt["out"], "/expressedGenes.lst", "/candidateList.top.tsv", opt["inputType"] + "'")
 
-def launchILoops(opt):
-
-	print("* Launching iLoops jobs.")
-	
-	cmd("ssh hectorc@gaudi '" + opt["gaudiWd"] + "/Pipeline/launchILoops.py", opt["gOut"] + "/iLoops", "~/SmartAS/Results/" + opt["out"] + "/iLoops'")
-
-def exloreILoopsResults(opt):
+def analyzeInteractions(opt):
 
 	print("* Examining iLoops results.")
-	cmd("Pipeline/exploreiLoopsOutput.py")
+	cmd("Pipeline/analyzeInteractions.py")
 
 main(sys.argv[1:])
