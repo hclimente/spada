@@ -68,11 +68,11 @@ def candidatePrioritization(opt):
 def prepareILoopsInput(opt):
 
 	print("* Retrieving protein sequences for transcripts and printing to multiFASTA file.")
-	cmd("ssh hectorc@gaudi 'rm -r", opt["gOut"] + "')
+	cmd("ssh hectorc@gaudi 'rm -r", opt["gOut"] + "'")
 	cmd("ssh hectorc@gaudi 'mkdir -p", opt["gOut"] + "/iLoops/Output; mkdir -p", opt["gOut"] + "/iLoops/Input'")
 	cmd("scp -r " + "Results/" + opt["out"] + "/expressedGenes.lst Results/" + opt["out"] + "/candidateList.top.tsv hectorc@gaudi.imim.es:" + opt["gOut"])
 
-	cmd("ssh hectorc@gaudi '" + opt["gaudiWd"] + "/Pipeline/GetiLoopsInput.py", opt["gOut"], "/expressedGenes.lst", "/candidateList.top.tsv", opt["inputType"] + "'")
+	cmd("ssh hectorc@gaudi '" + opt["gaudiWd"] + "/Pipeline/LaunchiLoops.py", opt["gaudiWd"], opt["out"], "/expressedGenes.lst", "/candidateList.top.tsv", opt["inputType"] + "'")
 
 def launchILoops(opt):
 
