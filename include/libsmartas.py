@@ -39,11 +39,8 @@ def setEnvironment(cfgFile):
 	print("* Preparing the environment")
 	cmd("rm -r old2/" + opt["out"] + "; mv", "old/" + opt["out"], "old2/"  + opt["out"])
 	cmd("mv", "Results/" + opt["out"], "old/" + opt["out"])
-	cmd("mkdir -p", "Results/" + opt["out"] + "/iLoops/Output/Mapping")
-	cmd("mkdir", "Results/" + opt["out"] + "/iLoops/Input")
-	cmd("mkdir", "Results/" + opt["out"] + "/RWorkspaces")
+	cmd("mkdir -p", "Results/" + opt["out"] + "/RWorkspaces")
 	cmd("mkdir", "Results/" + opt["out"] + "/DataExploration")
-	cmd("mkdir", "Results/" + opt["out"] + "/Input")
 
 	if opt["initialStep"] <= 1:
 		printParam(opt)
@@ -63,15 +60,17 @@ def setEnvironment(cfgFile):
 	if opt["initialStep"] > 2:
 		cmd("cp -r", "old/" + opt["out"] + "/RWorkspaces/2_GetCandidates.RData", "Results/" + opt["out"] + "/RWorkspaces")
 		cmd("cp", "old/" + opt["out"] + "/candidateList.tsv", "old/" + opt["out"] + "/expressedGenes.lst", "Results/" + opt["out"])
-		cmd("cp", "old/" + opt["out"] + "/candidates_normal.gff", "old/" + opt["out"] + "/candidates_tumor.gff", "Results/" + opt["out"])
+		cmd("cp", "old/" + opt["out"] + "/candidates_normal.gtf", "old/" + opt["out"] + "/candidates_tumor.gtf", "Results/" + opt["out"])
 	if opt["initialStep"] > 3:
 		cmd("cp", "old/" + opt["out"] + "/candidateInteractions.tsv", "old/" + opt["out"] + "/candidateList.top.tsv", "Results/" + opt["out"])
 	if opt["initialStep"] > 4:
-		cmd("cp -r", "old/" + opt["out"] + "/iLoops/Input", "Results/" + opt["out"] + "/iLoops/")
-		cmd("cp -r", "old/" + opt["out"] + "/iLoops/ExpressedTranscripts.fasta", "Results/" + opt["out"] + "/iLoops/")
-		cmd("cp", "old/" + opt["out"] + "/candidates_normal.top.gff", "old/" + opt["out"] + "/candidates_tumor.top.gff", "Results/" + opt["out"])
+		cmd("mv", "old/" + opt["out"] + "/iLoops", "Results/" + opt["out"])
+	else:
+		cmd("mkdir -p", "Results/" + opt["out"] + "/iLoops/Output/Mapping")
+		cmd("mkdir", "Results/" + opt["out"] + "/iLoops/Input")
 	if opt["initialStep"] > 5:
-		cmd("cp -r", "old/" + opt["out"] + "/iLoops/Output", "Results/" + opt["out"] + "/iLoops")
+		pass
+		#cmd("cp -r", "old/" + opt["out"] + "/iLoops/Output", "Results/" + opt["out"] + "/iLoops")
 
 	return opt
 
@@ -130,8 +129,7 @@ def parseParam(cfgFile):
 
 	opt = { "initialStep" : 0, "wd" : "/home/hector/SmartAS/", "gaudiWd" : "/sbi/users/hectorc/SmartAS",
 		    "minExpression" : 0, "minCandidateExpression" : 4, "inputType" : "GENCODE" , "Conditions" : ["N", "T"],
-		    "tag1" : "20", "Replicates" : 0
-	}
+		    "tag1" : "20", "Replicates" : 0 }
 
 	with open(cfgFile, "r") as PARAMETERS:
 		for line in PARAMETERS:
@@ -173,21 +171,21 @@ def finish(opt):
 		if not overwrite == "y":
 			return
 
-	cmd("cp", "Results/" + opt["out"] + "/candidates_normal.gff", outFolder + "/" + "candidates_normal." + outTag + ".gff")
-	cmd("cp", "Results/" + opt["out"] + "/candidates_tumor.gff", outFolder + "/" + "candidates_tumor." + outTag + ".gff")
+	cmd("cp", "Results/" + opt["out"] + "/candidates_normal.gtf", outFolder + "/" + "candidates_normal." + outTag + ".gtf")
+	cmd("cp", "Results/" + opt["out"] + "/candidates_tumor.gtf", outFolder + "/" + "candidates_tumor." + outTag + ".gtf")
 	cmd("cp", "Results/" + opt["out"] + "/candidateList.top.tsv", outFolder + "/" + "candidateList." + outTag + ".tsv")
 
 	chdir(outFolder)
 	cmd("cp -r", "../SmartAS/Results/" + opt["out"] + "/* .")
 
-	cmd("tar -czvf", outTag + ".tar.gz candidates_normal." + outTag + ".gff candidates_tumor." + outTag + ".gff candidateList." + outTag + ".tsv")
+	cmd("tar -czvf", outTag + ".tar.gz candidates_normal." + outTag + ".gtf candidates_tumor." + outTag + ".gtf candidateList." + outTag + ".tsv")
 	cmd("rm", "*" + opt["out"] + "*gff", "*" + opt["out"] + "*tsv")
 	chdir("/home/hector/SmartAS")
 
 def outputCandidates(out, inputType):
 	with open('Results/' + out + "/candidateList.tsv", "r") as CANDIDATES, \
-		 open('Results/' + out + "/candidates_normal.gff", 'w') as GFF2n, \
-		 open("Results/" + out + "/candidates_tumor.gff", 'w') as GFF2t, \
+		 open('Results/' + out + "/candidates_normal.gtf", 'w') as GTFn, \
+		 open("Results/" + out + "/candidates_tumor.gtf", 'w') as GTFt, \
 		 open("Data/" + inputType + "/annotation.gtf", "r") as ALLTRANSCRIPTS:
 			candTnt = []
 			for line in CANDIDATES:
@@ -197,6 +195,6 @@ def outputCandidates(out, inputType):
 			for line in ALLTRANSCRIPTS:
 				for pair in candTnt:
 					if line.find(pair[0]) != -1:
-						GFF2n.write(line)
+						GTFn.write(line)
 					elif line.find(pair[1]) != -1:
-						GFF2t.write(line)
+						GTFt.write(line)
