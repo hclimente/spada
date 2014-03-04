@@ -40,7 +40,6 @@ def writeFasta(basename, inputType, expressedTranscripts):
 			elif wannaWrite:
 				MULTIFASTA.write(line)
 
-
 def parseMapping(iLoopsFolder, tag):
 	loopFamilies = {}
 	noLoops = set()
