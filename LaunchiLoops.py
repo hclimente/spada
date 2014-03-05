@@ -114,7 +114,7 @@ def getFASTAInput(iLoopsFolder, tag, inputType, transcripts):
 
 	writeFasta(iLoopsFolder + tag + ".uniqLoops", inputType, loopPatternReps)
 
-	with open(iLoopsPath + tag + "_noLoops.li", "a") as NOLOOPS:
+	with open(iLoopsFolder + tag + "_noLoops.li", "a") as NOLOOPS:
 		for aTranscript in noLoops:
 			NOLOOPS.write(aTranscript + "\n")
 
@@ -148,7 +148,7 @@ def getPairsInput(iLoopsFolder, goodCandidates):
 					expressedTranscript = rawExpressed.strip()[1:]
 					PAIRS.write(aCandidate + "\t" + expressedTranscript + "\n")
 		
-def getFASTAandPairs(iLoopsFolder, inputType, candidates):
+def getFASTAandPairs(iLoopsFolder, inputType, transcripts):
 	candidates = set()
 	candidatePairs = []
 
@@ -161,7 +161,7 @@ def getFASTAandPairs(iLoopsFolder, inputType, candidates):
 			elements = line.split("\t")
 			candidates.add(elements[2])
 			candidates.add(elements[3])
-			candidatePairs.appendi( (elements[2], elements[3]) )
+			candidatePairs.append( (elements[2], elements[3]) )
 			
 			top += 1
 			if top >= 10:
@@ -174,7 +174,7 @@ def getFASTAandPairs(iLoopsFolder, inputType, candidates):
 	for candidatePair in candidatePairs:
 		for candidate in candidatePair:
 			if candidate in noLoops:
-				toDelete.append(candidatePair)
+				toDelete.add(candidatePair)
 
 		for loop in loopPatternReps.keys():
 			if candidatePair[0] in loopPatternReps[loop] and candidatePair[1] in loopPatternReps[loop]:
@@ -195,7 +195,7 @@ candidateTranscripts = out + sys.argv[4]
 inputType = sys.argv[5]
 
 print("\t* Preparing FASTA files for all transcripts.")
-getFASTAInput(iLoopsFolder, "Expressed", inputType, expressedTranscripts)
+#getFASTAInput(iLoopsFolder, "Expressed", inputType, expressedTranscripts)
 
 print("\t* Checking loop mapping for top candidates and preparing input.")
 goodCandidates = getFASTAandPairs(iLoopsFolder, inputType, candidateTranscripts)

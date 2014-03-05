@@ -28,6 +28,8 @@ class iLoopsParser(iLoops_xml_parser.ILXMLParser):
 			if isinstance(resultItem, iLoops_xml_parser.ILXMLProtein):
 				noLoops.append(resultItem.get_name())
 
+		return noLoops
+
 	def parseInteractions(self, thisCandidate, xmlOutput, **kwds):
 		interactions = []
 
