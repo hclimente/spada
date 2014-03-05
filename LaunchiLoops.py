@@ -45,6 +45,8 @@ def parseMapping(iLoopsFolder, tag):
 	noLoops = set()
 	loopPatternModel = set()
 
+	myParser = parser.iLoopsParser()
+
 	for mappingBatch in filter(os.listdir(iLoopsFolder + "Output/"), tag + "_*"):
 		xmlFile = iLoopsFolder + "Output/" + mappingBatch + "/" + mappingBatch + ".xml"
 		errFile = iLoopsFolder + "Output/" + mappingBatch + "/" + mappingBatch + ".err.xml"
@@ -91,14 +93,6 @@ def parseMapping(iLoopsFolder, tag):
 		 		loopFamiliesList.write(transcript + "\n")
 
 	return (loopPatternModel, noLoops)
-
-os.chdir(sys.argv[1])
-out = "Results/" + sys.argv[2]
-expressedTranscripts = out + sys.argv[3]
-candidateTranscripts = out + sys.argv[4]
-inputType = sys.argv[5]
-iLoopsFolder = out + "/iLoops/"
-myParser = parser.iLoopsParser()
 
 def getFASTAInput(iLoopsFolder, tag, inputType, transcripts):
 
@@ -193,6 +187,12 @@ def getFASTAandPairs(iLoopsFolder, inputType, candidates):
 
 	return candidatePairs
 
+os.chdir(sys.argv[1])
+out = "Results/" + sys.argv[2]
+iLoopsFolder = out + "/iLoops/"
+expressedTranscripts = out + sys.argv[3]
+candidateTranscripts = out + sys.argv[4]
+inputType = sys.argv[5]
 
 print("\t* Preparing FASTA files for all transcripts.")
 getFASTAInput(iLoopsFolder, "Expressed", inputType, expressedTranscripts)
