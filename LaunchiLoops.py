@@ -165,7 +165,7 @@ def getFASTAandPairs(iLoopsFolder, inputType, transcripts):
 			candidatePairs.append( (elements[2], elements[3]) )
 			
 			top += 1
-			if top >= 10:
+			if top >= 30:
 				break
 
 	loopFamilies, noLoops = getFASTAInput(iLoopsFolder, "Candidate", inputType, candidates)
@@ -196,7 +196,7 @@ candidateTranscripts = out + sys.argv[4]
 inputType = sys.argv[5]
 
 print("\t* Preparing FASTA files for all transcripts.")
-#getFASTAInput(iLoopsFolder, "Expressed", inputType, expressedTranscripts)
+getFASTAInput(iLoopsFolder, "Expressed", inputType, expressedTranscripts)
 
 print("\t* Checking loop mapping for top candidates and preparing input.")
 goodCandidates = getFASTAandPairs(iLoopsFolder, inputType, candidateTranscripts)
@@ -205,7 +205,7 @@ print("\t* Launching iLoops.")
 
 for transcriptPair in goodCandidates:
 	for transcript in transcriptPair:
-		for configFile in filter(os.listdir(iLoopsFolder + "/Input/" + transcript), "*net"):
+		for configFile in filter(os.listdir(iLoopsFolder + "Input/" + transcript), "*net"):
 			batch = (configFile.split(".")[0]).split("_")[1]
 			cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py",
 				"-f " + iLoopsFolder + "/Input/" + transcript + "/" + "ExpressedTranscripts.uniqLoops_" + batch + ".fasta",
