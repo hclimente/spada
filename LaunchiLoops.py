@@ -121,32 +121,33 @@ def getFASTAInput(iLoopsFolder, tag, inputType, transcripts):
 	return (loopFamilies, noLoops)
 
 def getPairsInput(iLoopsFolder, goodCandidates):
-	for aCandidate in goodCandidates:
+	for aPair in goodCandidates:
+		for aCandidate in aPair:
 
-		cmd("mkdir " + iLoopsFolder + aCandidate)
-		for expressedFasta in filter(os.listdir(iLoopsFolder), "ExpressedTranscripts.uniqLoops_*.fasta"):
-			cmd("cp", iLoopsFolder + expressedFasta, iLoopsFolder + "Input/" + aCandidate)
+			cmd("mkdir " + iLoopsFolder + aCandidate)
+			for expressedFasta in filter(os.listdir(iLoopsFolder), "ExpressedTranscripts.uniqLoops_*.fasta"):
+				cmd("cp", iLoopsFolder + expressedFasta, iLoopsFolder + "Input/" + aCandidate)
 
-			with open(iLoopsFolder + "Input/" + aCandidate + "/" + expressedFasta, "a") as exprFast, \
-				 open("Data/" + inputType + "/proteins.fa", "r") as motherFast:
-				fileNumber = (expressedFasta.split(".")[1]).split("_")[1]
-				writeSeq = False
-				
-				for line in motherFast:
-					if line.find(">") != -1:
-						writeSeq = False
-						if line.find(aCandidate) != -1:
-							writeSeq = True
-						exprFast.write(">" + aCandidate + "\n")
-					elif writeSeq:
-						exprFast.write(line)
-			with open(iLoopsFolder + "Input/" + aCandidate + '/' + aCandidate + '_' + fileNumber + '.net', "w") as PAIRS, \
-				 open(iLoopsFolder + "Input/" + aCandidate + "/" + expressedFasta, "r") as exprFast:
-				for rawExpressed in exprFast:
-					if rawExpressed.find(">") == -1:
-						continue
-					expressedTranscript = rawExpressed.strip()[1:]
-					PAIRS.write(aCandidate + "\t" + expressedTranscript + "\n")
+				with open(iLoopsFolder + "Input/" + aCandidate + "/" + expressedFasta, "a") as exprFast, \
+					 open("Data/" + inputType + "/proteins.fa", "r") as motherFast:
+					fileNumber = (expressedFasta.split(".")[1]).split("_")[1]
+					writeSeq = False
+					
+					for line in motherFast:
+						if line.find(">") != -1:
+							writeSeq = False
+							if line.find(aCandidate) != -1:
+								writeSeq = True
+							exprFast.write(">" + aCandidate + "\n")
+						elif writeSeq:
+							exprFast.write(line)
+				with open(iLoopsFolder + "Input/" + aCandidate + '/' + aCandidate + '_' + fileNumber + '.net', "w") as PAIRS, \
+					 open(iLoopsFolder + "Input/" + aCandidate + "/" + expressedFasta, "r") as exprFast:
+					for rawExpressed in exprFast:
+						if rawExpressed.find(">") == -1:
+							continue
+						expressedTranscript = rawExpressed.strip()[1:]
+						PAIRS.write(aCandidate + "\t" + expressedTranscript + "\n")
 		
 def getFASTAandPairs(iLoopsFolder, inputType, transcripts):
 	candidates = set()
