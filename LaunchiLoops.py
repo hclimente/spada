@@ -92,7 +92,7 @@ def parseMapping(iLoopsFolder, tag):
 		 	for transcript in loopFamilies[loopPattern][1:]:
 		 		loopFamiliesList.write(transcript + "\n")
 
-	return (loopPatternModel, noLoops)
+	return (loopFamilies, loopPatternModel, noLoops)
 
 def getFASTAInput(iLoopsFolder, tag, inputType, transcripts):
 
@@ -110,7 +110,7 @@ def getFASTAInput(iLoopsFolder, tag, inputType, transcripts):
 			"-n 25"
 		   )
 
-	loopPatternReps, noLoops = parseMapping(iLoopsFolder, "Mapping_" + tag)
+	loopFamilies, loopPatternReps, noLoops = parseMapping(iLoopsFolder, "Mapping_" + tag)
 
 	writeFasta(iLoopsFolder + tag + ".uniqLoops", inputType, loopPatternReps)
 
@@ -118,7 +118,7 @@ def getFASTAInput(iLoopsFolder, tag, inputType, transcripts):
 		for aTranscript in noLoops:
 			NOLOOPS.write(aTranscript + "\n")
 
-	return (loopPatternReps, noLoops)
+	return (loopFamilies, noLoops)
 
 def getPairsInput(iLoopsFolder, goodCandidates):
 	for aCandidate in goodCandidates:
@@ -167,7 +167,7 @@ def getFASTAandPairs(iLoopsFolder, inputType, transcripts):
 			if top >= 10:
 				break
 
-	loopPatternReps, noLoops = getFASTAInput(iLoopsFolder, "Candidate", inputType, candidates)
+	loopFamilies, noLoops = getFASTAInput(iLoopsFolder, "Candidate", inputType, candidates)
 
 	toDelete = set()
 
@@ -176,12 +176,12 @@ def getFASTAandPairs(iLoopsFolder, inputType, transcripts):
 			if candidate in noLoops:
 				toDelete.add(candidatePair)
 
-		for loop in loopPatternReps.keys():
-			if candidatePair[0] in loopPatternReps[loop] and candidatePair[1] in loopPatternReps[loop]:
+		for loop in loopFamilies.keys():
+			if candidatePair[0] in loopFamilies[loop] and candidatePair[1] in loopFamilies[loop]:
 				toDelete.add(candidatePair)
 
-	for dele in toDelete:
-		candidatePairs.remove(dele)
+	for aCandidate in toDelete:
+		candidatePairs.remove(aCandidate)
 
 	getPairsInput(iLoopsFolder, candidatePairs)
 
