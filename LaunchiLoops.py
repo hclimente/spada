@@ -90,7 +90,7 @@ def parseMapping(iLoopsFolder, tag):
 		 	for transcript in loopFamilies[loopPattern][1:]:
 		 		loopFamiliesList.write(transcript + "\n")
 
-	return loopPatternModel, noLoops
+	return (loopPatternModel, noLoops)
 
 os.chdir(sys.argv[1])
 out = "Results/" + sys.argv[2]
@@ -98,7 +98,7 @@ expressedTranscripts = out + sys.argv[3]
 candidateTranscripts = out + sys.argv[4]
 inputType = sys.argv[5]
 iLoopsFolder = out + "/iLoops/"
-myParser = iLoopsParser()
+myParser = parser.iLoopsParser()
 
 def getFASTAInput(iLoopsFolder, tag, inputType, transcripts):
 
@@ -124,7 +124,7 @@ def getFASTAInput(iLoopsFolder, tag, inputType, transcripts):
 		for aTranscript in noLoops:
 			NOLOOPS.write(aTranscript + "\n")
 
-	return loopPatternReps, noLoops
+	return (loopPatternReps, noLoops)
 
 def getPairsInput(iLoopsFolder, goodCandidates):
 	for aCandidate in goodCandidates:
@@ -167,15 +167,15 @@ def getFASTAandPairs(iLoopsFolder, inputType, candidates):
 			elements = line.split("\t")
 			candidates.add(elements[2])
 			candidates.add(elements[3])
-			candidatePairs.append[elements[2], elements[3]]
+			candidatePairs.appendi( (elements[2], elements[3]) )
 			
 			top += 1
 			if top >= 10:
 				break
 
-	loopPatternReps, noLoops = getFASTAInput(iLoopsFolder, "Candidate", inputType, candidateTranscripts)
+	loopPatternReps, noLoops = getFASTAInput(iLoopsFolder, "Candidate", inputType, candidates)
 
-	toDelete = []
+	toDelete = set()
 
 	for candidatePair in candidatePairs:
 		for candidate in candidatePair:
@@ -184,7 +184,7 @@ def getFASTAandPairs(iLoopsFolder, inputType, candidates):
 
 		for loop in loopPatternReps.keys():
 			if candidatePair[0] in loopPatternReps[loop] and candidatePair[1] in loopPatternReps[loop]:
-				toDelete.append(candidatePair)
+				toDelete.add(candidatePair)
 
 	for dele in toDelete:
 		candidatePairs.remove(dele)
