@@ -124,7 +124,7 @@ def getPairsInput(iLoopsFolder, goodCandidates):
 	for aPair in goodCandidates:
 		for aCandidate in aPair:
 
-			cmd("mkdir " + iLoopsFolder + aCandidate)
+			cmd("mkdir " + iLoopsFolder + "Input/" + aCandidate)
 			for expressedFasta in filter(os.listdir(iLoopsFolder), "ExpressedTranscripts.uniqLoops_*.fasta"):
 				cmd("cp", iLoopsFolder + expressedFasta, iLoopsFolder + "Input/" + aCandidate)
 
