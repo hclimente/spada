@@ -125,7 +125,7 @@ def getPairsInput(iLoopsFolder, goodCandidates):
 		for aCandidate in aPair:
 
 			cmd("mkdir " + iLoopsFolder + "Input/" + aCandidate)
-			for expressedFasta in filter(os.listdir(iLoopsFolder), "ExpressedTranscripts.uniqLoops_*.fasta"):
+			for expressedFasta in filter(os.listdir(iLoopsFolder), "Expressed.uniqLoops_*.fasta"):
 				cmd("cp", iLoopsFolder + expressedFasta, iLoopsFolder + "Input/" + aCandidate)
 
 				with open(iLoopsFolder + "Input/" + aCandidate + "/" + expressedFasta, "a") as exprFast, \
@@ -208,7 +208,7 @@ for transcriptPair in goodCandidates:
 		for configFile in filter(os.listdir(iLoopsFolder + "Input/" + transcript), "*net"):
 			batch = (configFile.split(".")[0]).split("_")[1]
 			cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py",
-				"-f " + iLoopsFolder + "/Input/" + transcript + "/" + "ExpressedTranscripts.uniqLoops_" + batch + ".fasta",
+				"-f " + iLoopsFolder + "/Input/" + transcript + "/" + "Expressed.uniqLoops_" + batch + ".fasta",
 				"-q " + iLoopsFolder + "/Input/" + transcript + "/" + configFile,
 				"-j " + iLoopsFolder + "/Output/" + configFile,
 				"-x " + configFile + ".xml",
