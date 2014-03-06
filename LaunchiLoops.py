@@ -43,11 +43,11 @@ def writeFasta(basename, inputType, expressedTranscripts):
 def parseMapping(iLoopsFolder, tag):
 	loopFamilies = {}
 	noLoops = set()
-	loopPatternModel = set()
+	loopModels = set()
 
 	myParser = parser.iLoopsParser()
 
-	for mappingBatch in filter(os.listdir(iLoopsFolder + "Output/"), tag + "_*"):
+	for mappingBatch in filter(os.listdir(iLoopsFolder + "Output/"), tag + "_*.fasta"):
 		xmlFile = iLoopsFolder + "Output/" + mappingBatch + "/" + mappingBatch + ".xml"
 		errFile = iLoopsFolder + "Output/" + mappingBatch + "/" + mappingBatch + ".err.xml"
 
@@ -86,13 +86,13 @@ def parseMapping(iLoopsFolder, tag):
 
 	with open(iLoopsFolder + tag + "_loopFamilies.txt", "w") as loopFamiliesList:
 		 for loopPattern in loopFamilies.keys():
-		 	loopPatternModel.add(loopFamilies[loopPattern][0])
+		 	loopModels.add(loopFamilies[loopPattern][0])
 
 		 	loopFamiliesList.write(">" + loopPattern + "\t" + loopFamilies[loopPattern][0] + "\n")
 		 	for transcript in loopFamilies[loopPattern][1:]:
 		 		loopFamiliesList.write(transcript + "\n")
 
-	return (loopFamilies, loopPatternModel, noLoops)
+	return (loopFamilies, loopModels, noLoops)
 
 def getFASTAInput(iLoopsFolder, tag, inputType, transcripts):
 
@@ -100,7 +100,7 @@ def getFASTAInput(iLoopsFolder, tag, inputType, transcripts):
 
 	for expressedFasta in filter(os.listdir(iLoopsFolder), tag + "_*.fasta"):
 		
-		assignationBatch = expressedFasta.split("_")[1].split(".")[0]
+		assignationBatch = expressedFasta.split(".")[0].split("_")[1]
 		cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py",
 			"-f " + iLoopsFolder + expressedFasta,
 			"-j " + iLoopsFolder + "Output/Mapping_" + tag + "_" + assignationBatch,
@@ -110,9 +110,9 @@ def getFASTAInput(iLoopsFolder, tag, inputType, transcripts):
 			"-n 25"
 		   )
 
-	loopFamilies, loopPatternReps, noLoops = parseMapping(iLoopsFolder, "Mapping_" + tag)
+	loopFamilies, loopModels, noLoops = parseMapping(iLoopsFolder, tag)
 
-	writeFasta(iLoopsFolder + tag + ".uniqLoops", inputType, loopPatternReps)
+	writeFasta(iLoopsFolder + tag + "_uniqLoops", inputType, loopModels)
 
 	with open(iLoopsFolder + tag + "_noLoops.li", "a") as NOLOOPS:
 		for aTranscript in noLoops:
@@ -121,16 +121,17 @@ def getFASTAInput(iLoopsFolder, tag, inputType, transcripts):
 	return (loopFamilies, noLoops)
 
 def getPairsInput(iLoopsFolder, goodCandidates):
+	print str(goodCandidates)
 	for aPair in goodCandidates:
 		for aCandidate in aPair:
 
 			cmd("mkdir " + iLoopsFolder + "Input/" + aCandidate)
-			for expressedFasta in filter(os.listdir(iLoopsFolder), "Expressed.uniqLoops_*.fasta"):
+			for expressedFasta in filter(os.listdir(iLoopsFolder), "Expressed_uniqLoops_*.fasta"):
 				cmd("cp", iLoopsFolder + expressedFasta, iLoopsFolder + "Input/" + aCandidate)
 
 				with open(iLoopsFolder + "Input/" + aCandidate + "/" + expressedFasta, "a") as exprFast, \
 					 open("Data/" + inputType + "/proteins.fa", "r") as motherFast:
-					fileNumber = (expressedFasta.split(".")[1]).split("_")[1]
+					fileNumber = (expressedFasta.split(".")[0]).split("_")[2]
 					writeSeq = False
 					
 					for line in motherFast:
@@ -181,8 +182,8 @@ def getFASTAandPairs(iLoopsFolder, inputType, transcripts):
 			if candidatePair[0] in loopFamilies[loop] and candidatePair[1] in loopFamilies[loop]:
 				toDelete.add(candidatePair)
 
-	for aCandidate in toDelete:
-		candidatePairs.remove(aCandidate)
+	for failCandidate in toDelete:
+		candidatePairs.remove(failCandidate)
 
 	getPairsInput(iLoopsFolder, candidatePairs)
 
@@ -208,7 +209,7 @@ for transcriptPair in goodCandidates:
 		for configFile in filter(os.listdir(iLoopsFolder + "Input/" + transcript), "*net"):
 			batch = (configFile.split(".")[0]).split("_")[1]
 			cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py",
-				"-f " + iLoopsFolder + "/Input/" + transcript + "/" + "Expressed.uniqLoops_" + batch + ".fasta",
+				"-f " + iLoopsFolder + "/Input/" + transcript + "/" + "Expressed_uniqLoops_" + batch + ".fasta",
 				"-q " + iLoopsFolder + "/Input/" + transcript + "/" + configFile,
 				"-j " + iLoopsFolder + "/Output/" + configFile,
 				"-x " + configFile + ".xml",
