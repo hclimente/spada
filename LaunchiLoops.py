@@ -4,6 +4,7 @@ import sys, os
 from include.libsmartas import *
 from fnmatch import filter
 import include.custom_iLoops_xml_parser as parser
+import pdb
 
 def writeFasta(basename, inputType, expressedTranscripts):
 	wannaWrite = False
@@ -48,6 +49,7 @@ def parseMapping(iLoopsFolder, tag):
 	myParser = parser.iLoopsParser()
 
 	for mappingBatch in filter(os.listdir(iLoopsFolder + "Output/"), tag + "_*.fasta"):
+		pdb.set_trace()
 		xmlFile = iLoopsFolder + "Output/" + mappingBatch + "/" + mappingBatch + ".xml"
 		errFile = iLoopsFolder + "Output/" + mappingBatch + "/" + mappingBatch + ".err.xml"
 
@@ -128,7 +130,6 @@ def getPairsInput(iLoopsFolder, goodCandidates):
 			cmd("mkdir " + iLoopsFolder + "Input/" + aCandidate)
 			for expressedFasta in filter(os.listdir(iLoopsFolder), "Expressed_uniqLoops_*.fasta"):
 				cmd("cp", iLoopsFolder + expressedFasta, iLoopsFolder + "Input/" + aCandidate)
-
 				with open(iLoopsFolder + "Input/" + aCandidate + "/" + expressedFasta, "a") as exprFast, \
 					 open("Data/" + inputType + "/proteins.fa", "r") as motherFast:
 					fileNumber = (expressedFasta.split(".")[0]).split("_")[2]
@@ -139,7 +140,7 @@ def getPairsInput(iLoopsFolder, goodCandidates):
 							writeSeq = False
 							if line.find(aCandidate) != -1:
 								writeSeq = True
-							exprFast.write(">" + aCandidate + "\n")
+								exprFast.write(">" + aCandidate + "\n")
 						elif writeSeq:
 							exprFast.write(line)
 				with open(iLoopsFolder + "Input/" + aCandidate + '/' + aCandidate + '_' + fileNumber + '.net', "w") as PAIRS, \
