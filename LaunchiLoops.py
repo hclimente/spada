@@ -48,8 +48,7 @@ def parseMapping(iLoopsFolder, tag):
 
 	myParser = parser.iLoopsParser()
 
-	for mappingBatch in filter(os.listdir(iLoopsFolder + "Output/"), tag + "_*.fasta"):
-		pdb.set_trace()
+	for mappingBatch in filter(os.listdir(iLoopsFolder + "Output/"), "Mapping_" + tag + "_*" ):
 		xmlFile = iLoopsFolder + "Output/" + mappingBatch + "/" + mappingBatch + ".xml"
 		errFile = iLoopsFolder + "Output/" + mappingBatch + "/" + mappingBatch + ".err.xml"
 
@@ -85,7 +84,6 @@ def parseMapping(iLoopsFolder, tag):
 									   )
 		for aTranscript in newNoLoops:
 			noLoops.add(aTranscript)		
-
 	with open(iLoopsFolder + tag + "_loopFamilies.txt", "w") as loopFamiliesList:
 		 for loopPattern in loopFamilies.keys():
 		 	loopModels.add(loopFamilies[loopPattern][0])
@@ -93,13 +91,12 @@ def parseMapping(iLoopsFolder, tag):
 		 	loopFamiliesList.write(">" + loopPattern + "\t" + loopFamilies[loopPattern][0] + "\n")
 		 	for transcript in loopFamilies[loopPattern][1:]:
 		 		loopFamiliesList.write(transcript + "\n")
-
+	
 	return (loopFamilies, loopModels, noLoops)
 
 def getFASTAInput(iLoopsFolder, tag, inputType, transcripts):
 
 	writeFasta(iLoopsFolder + tag, inputType, transcripts)
-
 	for expressedFasta in filter(os.listdir(iLoopsFolder), tag + "_*.fasta"):
 		
 		assignationBatch = expressedFasta.split(".")[0].split("_")[1]
@@ -113,7 +110,6 @@ def getFASTAInput(iLoopsFolder, tag, inputType, transcripts):
 		   )
 
 	loopFamilies, loopModels, noLoops = parseMapping(iLoopsFolder, tag)
-
 	writeFasta(iLoopsFolder + tag + "_uniqLoops", inputType, loopModels)
 
 	with open(iLoopsFolder + tag + "_noLoops.li", "a") as NOLOOPS:
@@ -123,7 +119,6 @@ def getFASTAInput(iLoopsFolder, tag, inputType, transcripts):
 	return (loopFamilies, noLoops)
 
 def getPairsInput(iLoopsFolder, goodCandidates):
-	print str(goodCandidates)
 	for aPair in goodCandidates:
 		for aCandidate in aPair:
 
