@@ -15,7 +15,7 @@ def writeFasta(basename, inputType, expressedTranscripts):
 	if isinstance(expressedTranscripts, basestring):
 		with open(expressedTranscripts, "r") as EXPRESSED:
 			for line in EXPRESSED:
-				expressedTranscriptsSet.add(line.strip())
+				expressedTranscriptsSet.add(line.strip().split("\t")[0])
 	elif isinstance(expressedTranscripts, set):
 		expressedTranscriptsSet = expressedTranscripts
 
@@ -71,19 +71,20 @@ def parseMapping(iLoopsFolder, tag):
 			loopFamilies[loops].append(aTranscript)
 
 		newNoLoops = myParser.parseNoLoops(xmlOutput                     = errFile,
-									    iLoopsPath                    = iLoopsFolder,
-									    output_proteins               = True, 
-									    output_alignments             = False,
-									    output_domain_mappings        = False,
-									    output_protein_features       = False,
-									    output_domain_assignations    = False,
-									    output_interactions           = False,
-									    output_interaction_signatures = False,
-									    output_RF_results             = False,
-									    output_RF_precisions          = False
-									   )
+										   iLoopsPath                    = iLoopsFolder,
+										   output_proteins               = True, 
+										   output_alignments             = False,
+										   output_domain_mappings        = False,
+										   output_protein_features       = False,
+										   output_domain_assignations    = False,
+										   output_interactions           = False,
+										   output_interaction_signatures = False,
+										   output_RF_results             = False,
+										   output_RF_precisions          = False
+										  )
 		for aTranscript in newNoLoops:
-			noLoops.add(aTranscript)		
+			noLoops.add(aTranscript)
+
 	with open(iLoopsFolder + tag + "_loopFamilies.txt", "w") as loopFamiliesList:
 		 for loopPattern in loopFamilies.keys():
 		 	loopModels.add(loopFamilies[loopPattern][0])
