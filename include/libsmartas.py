@@ -33,21 +33,18 @@ def setEnvironment(cfgFile):
 
 	opt = parseParam(cfgFile)
 
-	opt["out"] = opt["inputType"] + "/" + opt["tag1"] + "_mE" + str(opt["minExpression"]) + "_mCE" + str(opt["minCandidateExpression"])
-	opt["gOut"] = opt["gaudiWd"] + "/Results/" + opt["out"]
-
 	print("* Preparing the environment")
 	cmd("rm -r old2/" + opt["out"] + "; mv", "old/" + opt["out"], "old2/"  + opt["out"])
 	cmd("mv", "Results/" + opt["out"], "old/" + opt["out"])
 	cmd("mkdir -p", "Results/" + opt["out"] + "/RWorkspaces")
 	cmd("mkdir", "Results/" + opt["out"] + "/DataExploration")
 
-	if opt["initialStep"] <= 1:
+	if opt["initialStep"] <= 1 and not opt["External"]:
 		printParam(opt)
 		setRWorkspace(opt["wd"], opt["out"], opt["Replicates"])
 		getDB()
 
-	if opt["initialStep"] > 1:
+	if opt["initialStep"] > 1 and not opt["External"]:
 
 		currentInitialState = opt["initialStep"]
 		opt = parseParam("old/" + opt["out"] + "/Parameters.cfg")
@@ -57,7 +54,7 @@ def setEnvironment(cfgFile):
 		cmd("cp -r", "old/" + opt["out"] + "/DataExploration", "Results/" + opt["out"])
 		cmd("cp -r", "old/" + opt["out"] + "/RWorkspaces/1_ExploreData.RData", "Results/" + opt["out"] + "/RWorkspaces")
 
-	if opt["initialStep"] > 2:
+	if opt["initialStep"] > 2 and not opt["External"]:
 		cmd("cp -r", "old/" + opt["out"] + "/RWorkspaces/2_GetCandidates.RData", "Results/" + opt["out"] + "/RWorkspaces")
 		cmd("cp", "old/" + opt["out"] + "/candidateList.tsv", "old/" + opt["out"] + "/expressedGenes.lst", "Results/" + opt["out"])
 		cmd("cp", "old/" + opt["out"] + "/candidates_normal.gtf", "old/" + opt["out"] + "/candidates_tumor.gtf", "Results/" + opt["out"])
@@ -102,23 +99,6 @@ def getDB():
 		res = urllib2.urlopen(req, query)
 		Intogen.write(res.read())
 
-def waitPID(pidQueue):
-	newPidQueue = pidQueue
-	while True:
-		pidFinish = ""
-		for job in newPidQueue:
-			if cmdOut("ps --pid", job, " | grep ", job, "| wc -l").stdout.read().strip() == "0":
-				print(job + " finished.")
-				pidFinish = job
-				newPidQueue.remove(job)
-			else:
-				print("Awaiting for completion of one of those jobs:" + str(pidQueue))
-			
-		if pidFinish:
-			return newPidQueue
-		else:
-			sleep(900)
-
 def printParam(opt):
 	with open("Results/" + opt["out"] + "/Parameters.cfg", "w") as paramFile:
 		for aKey in opt.keys():
@@ -127,9 +107,8 @@ def printParam(opt):
 
 def parseParam(cfgFile):
 
-	opt = { "initialStep" : 0, "wd" : "/home/hector/SmartAS/", "gaudiWd" : "/sbi/users/hectorc/SmartAS",
-		    "minExpression" : 0, "minCandidateExpression" : 4, "inputType" : "GENCODE" , "Conditions" : ["N", "T"],
-		    "tag1" : "20", "Replicates" : 0 }
+	opt = { "initialStep" : 0, "wd" : "/home/hector/SmartAS/", "gaudiWd" : "/sbi/users/hectorc/SmartAS", "minExpression" : 0, 
+			"inputType" : "GENCODE" , "Conditions" : ["N", "T"], "tag1" : "20", "Replicates" : 0, "External" : False }
 
 	with open(cfgFile, "r") as PARAMETERS:
 		for line in PARAMETERS:
@@ -144,8 +123,6 @@ def parseParam(cfgFile):
 				opt["gaudiWd"] = elements[1]
 			elif elements[0] == "minExpression":
 				opt["minExpression"] = float(elements[1])
-			elif elements[0] == "minCandidateExpression":
-				opt["minCandidateExpression"] = float(elements[1])
 			elif elements[0] == "inputType":
 				opt["inputType"] = elements[1]
 			elif elements[0] == "tag1":
@@ -154,8 +131,19 @@ def parseParam(cfgFile):
 				opt["out"] = elements[1]
 			elif elements[0] == "gOut":
 				opt["gOut"] = elements[1]
+			elif elements[0] == "External":
+				if elements[1] == "True":
+					opt["External"] = True
+				elif elements[1] == "False":
+					opt["External"] = False
 			else:
-				print("Unrecognized option:" + line)
+				print("Unrecognized option:" + line.strip() )
+
+	opt["out"] = opt["inputType"] + "/" + opt["tag1"] + "_mE" + str(opt["minExpression"])
+	if opt["External"]:
+		opt["out"] = opt["inputType"] + "/" + opt["tag1"]
+
+	opt["gOut"] = opt["gaudiWd"] + "/Results/" + opt["out"]
 
 	return opt
 
@@ -164,7 +152,7 @@ def finish(opt):
 	print("* Moving files to the Results directory and creating a summary tar file.")
 	    
 	outFolder = "/home/hector/Results/" + opt["out"]
-	outTag = opt["tag1"] + "_mCE" + str(opt["minCandidateExpression"]) + "_mE" + str(opt["minExpression"])
+	outTag = opt["tag1"] + "_mE" + str(opt["minExpression"])
 
 	if not cmdOut("mkdir -p", outFolder).stdout.read().strip():
 		overwrite = raw_input("\tDirectory exists. Do you want to overwrite it? (y/n)")
