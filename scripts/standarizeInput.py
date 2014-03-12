@@ -38,7 +38,7 @@ if(inputType == "GENCODE"):
 
 elif(inputType == "TCGA"):
 	patients = []
-	with open("Data/TCGA/Rawdata/" + tag1 + "_iso_tpm_paired.txt", "r") as FILE:
+	with open("Data/TCGA/Rawdata/" + tag1 + "_iso_tpm_paired-filtered.txt", "r") as FILE:
 		firstLine = FILE.readline().strip().split("\t")
 		for sampleType in ["N", "T"]:
 			replicateCounter = 1
