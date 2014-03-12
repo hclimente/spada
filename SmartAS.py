@@ -2,7 +2,7 @@
 
 import sys, getopt
 from os import path, chdir
-from libsmartas import cmd, setEnvironment, finish, outputCandidates
+from include.libsmartas import cmd, setEnvironment, finish, outputCandidates
 
 def main(argv):
 
@@ -34,12 +34,13 @@ def main(argv):
 		getCandidates(opt)
 	if opt["initialStep"] <= 3:
 		candidatePrioritization(opt)
+		exit()
 	if opt["initialStep"] <= 4:
 		launchiLoops(opt)
 	if opt["initialStep"] <= 5:
 		analyzeInteractions(opt)
 	
-	finish(opt)
+	#finish(opt)
 
 def exploreData(opt):
 	
@@ -49,8 +50,8 @@ def exploreData(opt):
 def getCandidates(opt):
 
 	print("* Extracting transcripts with high variance and high expression.")
-	cmd("Pipeline/GetCandidates.r", opt["minExpression"], opt["minCandidateExpression"], opt["out"])
-
+	cmd("Pipeline/GetCandidates.r", opt["minExpression"], opt["out"])
+	
 	cmd("sort", "Results/" + opt["out"] + "/expressedGenes.lst", ">" + "Results/" + opt["out"] + "/expressedGenes.tmp.lst")
 	cmd("mv", "Results/" + opt["out"] + "/expressedGenes.tmp.lst", "Results/" + opt["out"] + "/expressedGenes.lst")
 
@@ -68,11 +69,11 @@ def launchiLoops(opt):
 	cmd("ssh hectorc@gaudi 'mkdir -p", opt["gOut"] + "/iLoops/Output; mkdir -p", opt["gOut"] + "/iLoops/Input'")
 	cmd("scp -r " + "Results/" + opt["out"] + "/expressedGenes.lst Results/" + opt["out"] + "/candidateList.top.tsv hectorc@gaudi.imim.es:" + opt["gOut"])
 
-	cmd("ssh hectorc@gaudi '" + opt["gaudiWd"] + "/Pipeline/LaunchiLoops.py", opt["gaudiWd"], opt["out"], "/expressedGenes.lst", "/candidateList.top.tsv", opt["inputType"] + "'")
+	cmd("ssh hectorc@gaudi '" + opt["gaudiWd"] + "/Pipeline/LaunchiLoops.py", opt["gaudiWd"], opt["out"], opt["inputType"] + "'")
 
 def analyzeInteractions(opt):
 
 	print("* Examining iLoops results.")
-	cmd("Pipeline/analyzeInteractions.py")
+	cmd("Pipeline/analyzeInteractions.py", opt["out"])
 
 main(sys.argv[1:])
