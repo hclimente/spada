@@ -31,15 +31,14 @@ class iLoopsParser(iLoops_xml_parser.ILXMLParser):
 		return noLoops
 
 	def parseInteractions(self, thisCandidate, xmlOutput, **kwds):
-		interactions = []
+		maxCost = {}
 
 		for resultItem in self.results_parser(xml_file=xmlOutput, report_level=0, **kwds): 
-			if isinstance(resultItem, parser.ILXMLInteraction):
-				if thisCandidate == resultItem.get_interactor1_ID():
-					print resultItem.get_interactor2_ID()
-					interactions.append(resultItem.get_interactor2_ID())
-				elif thisCandidate == resultItem.get_interactor2_ID():
-					print resultItem.get_interactor1_ID()
-					interactions.append(resultItem.get_interactor1_ID())
+			if isinstance(resultItem, iLoops_xml_parser.ILXMLInteraction):
+				intPartner = resultItem.get_i2name()
+				maxCost[intPartner] = 0
+				for RFResult in resultItem.get_RFResults(): 
+					if RFResult.get_prediction() and RFResult.get_cost() > maxCost[intPartner]:
+						maxCost[intPartner] = RFResult.get_cost()
 
-		return interactions
+		return maxCost
