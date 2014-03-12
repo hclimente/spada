@@ -1,7 +1,7 @@
 #!/soft/devel/python-2.7/bin/python
 
-from biana import *
-from biana.utilities import identifier_utilities
+from include.biana import *
+from include.biana.utilities import identifier_utilities
 import csv
 import sys
 
@@ -41,22 +41,22 @@ with open("Results/" + out + "/candidateList.tsv", "r") as candidates:
 list_input_restriction_identifiers = []
 list_input_negative_restriction_identifiers = []
 
-# Create The Set
-user_entity_set_object = bianaSession.create_new_user_entity_set( 
-																	identifier_description_list = list_input_identifiers, 
-																	attribute_restriction_list = list_input_restriction_identifiers,
-																	negative_attribute_restriction_list = list_input_negative_restriction_identifiers,					
-																	id_type = 'embedded', 
-																	new_user_entity_set_id = "SmartAS_entitySet"
-																)
+# Create The Set for Y2H-detected interactions
+userEntity_Y2H = bianaSession.create_new_user_entity_set( 
+																		identifier_description_list = list_input_identifiers, 
+																		attribute_restriction_list = list_input_restriction_identifiers,
+																		negative_attribute_restriction_list = list_input_negative_restriction_identifiers,					
+																		id_type = 'embedded', 
+																		new_user_entity_set_id = "entitySet_Y2H"
+																	)
 
 # Create Network Commands
 bianaSession.create_network(
-								user_entity_set_id = 'SmartAS_entitySet', 
+								user_entity_set_id = 'entitySet_Y2H', 
 								level = 1, 
 								include_relations_last_level = False, 
 								relation_type_list = ["interaction"], 
-								relation_attribute_restriction_list = [], 
+								relation_attribute_restriction_list = [("method_id", 18)], 
 								use_self_relations = True,
 								expansion_attribute_list = [],
 								expansion_relation_type_list = [], 
@@ -65,8 +65,39 @@ bianaSession.create_network(
 								group_relation_type_list = []
 							)
 
+# Create The Set for Lumier-detected interactions
+userEntity_Lumier = bianaSession.create_new_user_entity_set( 
+																			identifier_description_list = list_input_identifiers, 
+																			attribute_restriction_list = list_input_restriction_identifiers,
+																			negative_attribute_restriction_list = list_input_negative_restriction_identifiers,					
+																			id_type = 'embedded', 
+																			new_user_entity_set_id = "entitySet_Lumier"
+																		)
+
+# Create Network Commands
+bianaSession.create_network(
+								user_entity_set_id = 'entitySet_Lumier', 
+								level = 1, 
+								include_relations_last_level = False, 
+								relation_type_list = ["interaction"], 
+								relation_attribute_restriction_list = [("method_id", 696)], 
+								use_self_relations = True,
+								expansion_attribute_list = [],
+								expansion_relation_type_list = [], 
+								expansion_level = 2, 
+								attribute_network_attribute_list = [], 
+								group_relation_type_list = []
+							)
+
+# Make union of the previous
+userEntity_union = bianaSession.get_union_of_user_entity_set_list(
+																			[userEntity_Y2H, userEntity_Lumier], 
+																			include_relations=True, 
+																			new_user_entity_set_id="SmartAS_entitySet"
+																		)
+
 # Output Commands
-user_entities_to_print = set(user_entity_set_object.get_user_entity_ids(level=0))
+user_entities_to_print = set(userEntity_union.get_user_entity_ids(level=0))
 bianaSession.select_user_entities_from_user_entity_set(
 														user_entity_set_id = 'SmartAS_entitySet', 
                                                 		user_entity_id_list = user_entities_to_print, 
@@ -85,7 +116,6 @@ bianaSession.output_user_entity_set_details(
 												include_tags_linkage_degree_info = [], 
 												output_1_value_per_attribute = False
 											)
-
 
 intogenDrivers = set()
 articleCompilation = {}
