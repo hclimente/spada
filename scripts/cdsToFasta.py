@@ -64,7 +64,4 @@ with open("knownGene.txt","r") as CDSFile, open("proteins_cds.fa","w") as PROTEI
 		PROTEINS.write(str(record.seq.translate(stop_symbol="")) + "\n")
 
 		TRANSCRIPTS.write(">" + record.id + "\n")
-		if strand == "+":
-			TRANSCRIPTS.write(orf + "\n")
-		elif strand == "-":
-			TRANSCRIPTS.write(orf + "\n")
+		TRANSCRIPTS.write(orf + "\n")

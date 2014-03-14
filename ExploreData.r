@@ -16,7 +16,7 @@ printTPMHist <- function(x, xLab, pngName){
   histogram <- hist(log10(x + 0.0001), 10000)
   histogram$counts <- log10(histogram$counts)
   plot(histogram$mids, histogram$counts, type="h", main=pngName, xlab=xLab, ylab="log10(Frequency)")
-  dev.off()
+  graphics.off()
 }
 
 printLogFreqHist <- function(x, xLab, pngName){
@@ -24,7 +24,7 @@ printLogFreqHist <- function(x, xLab, pngName){
   histogram <- hist(x, 10000)
   histogram$counts <- log10(histogram$counts)
   plot(histogram$mids, histogram$counts, type="h", main=tag, xlab=xLab, ylab="log10(Frequency)")
-  dev.off()
+  graphics.off()
 }
 
 plotCorrelations <- function(x, y, lab, pngName){
@@ -32,14 +32,14 @@ plotCorrelations <- function(x, y, lab, pngName){
   yLab=paste0(lab, " Replicate 2")
   png(paste0(out, "DataExploration/", pngName, ".png"), width=960, height=960)
   plot(x, y, xlab=xLab, ylab=yLab)
-  dev.off()
+  graphics.off()
   cor(x, y, use="complete.obs")
 }
 
 simplePlot <- function(x, y, title, xLab, yLab, pngName){
   png(pngName, width=960, height=960)
   plot(x, y, main=title, xlab=xLab, ylab=yLab)
-  dev.off()
+  graphics.off()
 }
 
 for (replicate in seq(1, inputData[["Replicates"]])){

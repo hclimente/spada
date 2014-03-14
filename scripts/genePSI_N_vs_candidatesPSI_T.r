@@ -42,12 +42,12 @@ for (gene in genesOfInterest){
 	png(paste0("~/", thisKansur, "_", gene, "_isoT(",mindPSI ,").png"), width=1080, height=1080)
   print(ggplot(tumorDist, aes(x=PSI, fill=Condition)) + geom_density(alpha=.3) + scale_fill_manual( values = c("steelblue3","firebrick2")) + scale_x_continuous(limits = c(0, 1)) + theme_minimal(base_size=40) + guides(fill=FALSE))
   #print(ggplot(NULL) + geom_histogram(data=normalDist, aes(x=PSI_T, fill = ..count..), binwidth = 0.01) + scale_fill_gradient("Count", low = "black", high = "red") + geom_point(data=ti_candidates, aes(x=PSI, y=Y, size=5)))
-	dev.off()
+	graphics.off()
 
 	png(paste0("~/", thisKansur, "_", gene, "_isoN(",maxdPSI ,").png"), width=1080, height=1080)
   print(ggplot(normalDist, aes(x=PSI, fill=Condition)) + geom_density(alpha=.3) + scale_fill_manual( values = c("steelblue3","firebrick2")) + scale_x_continuous(limits = c(0, 1)) + theme_minimal(base_size=40) + guides(fill=FALSE))
   #print(ggplot(NULL) + geom_histogram(data=normalDist, aes(x=PSI_N, fill = ..count..), binwidth = 0.01) + scale_fill_gradient("Count", low = "black", high = "red") + geom_point(data=ni_candidates, aes(x=PSI, y=Y, size=5)))
-	dev.off()
+	graphics.off()
 }
 
 ggplot(normalDist, aes(x=PSI_N, fill=condition)) + geom_histogram(binwidth=.01, alpha=.5, position="identity")

@@ -32,6 +32,6 @@ png(paste0(tag, "_heatmap.png"), width=960, height=960)
 myPalette <- colorRampPalette(c("white", "firebrick2"))(n = 14)
 heatmap.2(as.matrix(fig), trace="none", scale="none", col=myPalette, na.col="grey", Rowv=NULL, Colv=NULL, 
           dendrogram="none", breaks=seq(0, max(fig, na.rm=T), length.out=15), main="PSI Switch")
-dev.off()
+graphics.off()
 
 save(fig, tag, file=paste0(tag, ".RData"))
