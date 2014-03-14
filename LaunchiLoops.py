@@ -166,12 +166,13 @@ def getFASTAandPairs(iLoopsFolder, inputType, transcripts):
 		top = 0
 
 		for line in CANDIDATES:
+			top += 1
+
 			elements = line.split("\t")
 			candidates.add(elements[2])
 			candidates.add(elements[3])
 			candidatePairs.append( (elements[2], elements[3]) )
 			
-			top += 1
 			if top >= 30:
 				break
 
@@ -198,33 +199,74 @@ def getFASTAandPairs(iLoopsFolder, inputType, transcripts):
 os.chdir(sys.argv[1])
 out = "Results/" + sys.argv[2]
 inputType = sys.argv[3]
-iLoopsFolder = out + "/iLoops/"
+iLoopsFolder = iLoopsFolder + ""
 expressedTranscripts = out + "/expressedGenes.lst"
 candidateTranscripts = out + "/candidateList.top.tsv"
 
-print("\t* Preparing FASTA files for all transcripts.")
-getFASTAInput(iLoopsFolder, "Expressed", inputType, expressedTranscripts)
+# print("\t* Preparing FASTA files for all transcripts.")
+# getFASTAInput(iLoopsFolder, "Expressed", inputType, expressedTranscripts)
 
-print("\t* Checking loop mapping for top candidates and preparing input.")
-goodCandidates = getFASTAandPairs(iLoopsFolder, inputType, candidateTranscripts)
+# print("\t* Checking loop mapping for top candidates and preparing input.")
+# goodCandidates = getFASTAandPairs(iLoopsFolder, inputType, candidateTranscripts)
 
-print("\t* Launching iLoops.")
+# print("\t* Launching iLoops.")
 
-for transcriptPair in goodCandidates:
-	for transcript in transcriptPair:
-		for configFile in filter(os.listdir(iLoopsFolder + "Input/" + transcript), "*net"):
-			batch = (configFile.split(".")[0]).split("_")[1]
-			cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py",
-				"-f " + iLoopsFolder + "/Input/" + transcript + "/" + "Expressed_uniqLoops_" + batch + ".fasta",
-				"-q " + iLoopsFolder + "/Input/" + transcript + "/" + configFile,
-				"-j " + iLoopsFolder + "/Output/" + configFile,
-				"-x " + configFile + ".xml",
-				"-v",
-				"-g all",
-				"-n 25",
-				"-Q sbi",
-				"-c 1,5,6,7,8,9,10,11,12,13,14,15,20,30,40,50",
-				">" + configFile + ".log"
-			   )
+# for transcriptPair in goodCandidates:
+# 	for transcript in transcriptPair:
+# 		for configFile in filter(os.listdir(iLoopsFolder + "Input/" + transcript), "*net"):
+# 			batch = (configFile.split(".")[0]).split("_")[1]
+# 			cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py",
+# 				"-f " + iLoopsFolder + "/Input/" + transcript + "/" + "Expressed_uniqLoops_" + batch + ".fasta",
+# 				"-q " + iLoopsFolder + "/Input/" + transcript + "/" + configFile,
+# 				"-j " + iLoopsFolder + "/Output/" + configFile,
+# 				"-x " + configFile + ".xml",
+# 				"-v",
+# 				"-g all",
+# 				"-n 25",
+# 				"-Q sbi",
+# 				"-c 1,5,6,7,8,9,10,11,12,13,14,15,20,30,40,50",
+# 				">" + configFile + ".log"
+# 			   )
 
-cmd("scp -r " + iLoopsFolder + " hector@feynman.imim.es:~/SmartAS/" + out)
+with open(out + "candidateList.top.tsv", "r") as CANDIDATES:
+
+	CANDIDATES.readline()
+	top = 0
+	
+	for line in CANDIDATES:
+		elements = line.strip().split("\t")
+		top += 1
+		
+		if not filter(listdir(iLoopsFolder + "Output"), elements[2] + "_*") and not filter(listdir(iLoopsFolder + "Output"), elements[3] + "_*"):
+			continue
+
+		for iso in [elements[2], elements[3]]:
+			with open(iLoopsFolder + "Output/" + elements[2] + ".ips", "w") as ISO_OUTPUT:
+
+				ISO_OUTPUT.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n")
+				ISO_OUTPUT.write("<xml>\n")
+
+				for candidate in filter(listdir(iLoopsFolder + "Output"), iso + "_*"):
+					for nodeMap in filter(listdir(iLoopsFolder + "Output/" + candidate + "/sge_output"), "*.assignation.[012][0-9].xml" ):
+						mapFile = iLoopsFolder + "Output/" + candidate + "/sge_output/" + nodeMap
+
+						with open(mapFile, "r") as MAPPED:
+							for line in MAPPED:
+								if line.strip() != "<?xml version=\"1.0\" encoding=\"utf-8\"?>" and line.strip() != "<xml>" and line.strip() != "</xml>":
+									continue
+
+								ISO_OUTPUT.write(line)
+
+					for nodeAss in filter(listdir(iLoopsFolder + "Output/" + candidate + "/sge_output"), "*.scoring.[012][0-9].xml" ):
+						assFile = iLoopsFolder + "Output/" + candidate + "/sge_output/" + nodeAss
+
+						with open(assFile, "r") as ASSIGNED:
+							for line in ASSIGNED:
+								if line.strip() != "<?xml version=\"1.0\" encoding=\"utf-8\"?>" and line.strip() != "<xml>" and line.strip() != "</xml>":
+									continue
+
+								ISO_OUTPUT.write(line)
+
+				ISO_OUTPUT.write("</xml>\n")
+
+cmd("scp -r " + iLoopsFolder + "Output/*.ips hector@feynman.imim.es:~/SmartAS/" + out)
