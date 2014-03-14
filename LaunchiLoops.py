@@ -32,6 +32,8 @@ def writeFasta(basename, inputType, expressedTranscripts):
 					transcriptCounter = 0
 
 				identifiers = ((line[1:].split("|"))[0].split("."))[0]
+				if inputType == "TCGA":
+					identifiers = line[1:].strip()
 				if identifiers in expressedTranscriptsSet:
 					MULTIFASTA.write(">" + identifiers + "\n")
 					wannaWrite = True
@@ -107,7 +109,8 @@ def getFASTAInput(iLoopsFolder, tag, inputType, transcripts):
 			"-x Mapping_" + tag + "_" + assignationBatch + ".xml",
 			"-v",
 			"-m",
-			"-n 25"
+			"-n 25", 
+			">Mapping_" + tag + "_" + assignationBatch + ".log"
 		   )
 
 	loopFamilies, loopModels, noLoops = parseMapping(iLoopsFolder, tag)
@@ -210,11 +213,12 @@ for transcriptPair in goodCandidates:
 				"-q " + iLoopsFolder + "/Input/" + transcript + "/" + configFile,
 				"-j " + iLoopsFolder + "/Output/" + configFile,
 				"-x " + configFile + ".xml",
+				"-v",
 				"-g all",
 				"-n 25",
 				"-Q sbi",
 				"-c 1,5,6,7,8,9,10,11,12,13,14,15,20,30,40,50",
-				"-v"
+				">" + configFile + ".log"
 			   )
 
 cmd("scp -r " + iLoopsFolder + " hector@feynman.imim.es:~/SmartAS/" + out)
