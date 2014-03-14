@@ -39,12 +39,16 @@ def setEnvironment(cfgFile):
 	cmd("mkdir -p", "Results/" + opt["out"] + "/RWorkspaces")
 	cmd("mkdir", "Results/" + opt["out"] + "/DataExploration")
 
-	if opt["initialStep"] <= 1 and not opt["External"]:
+	if opt["external"]:
+		cmd("cp", opt["external"] + ".tsv" , "Results/" + opt["out"] + "/candidateList.top.tsv")
+		cmd("cp", opt["external"] + "_expressedGenes.lst", "Results/" + opt["out"] + "/expressedGenes.lst")
+
+	if opt["initialStep"] <= 1 and not opt["external"]:
 		printParam(opt)
 		setRWorkspace(opt["wd"], opt["out"], opt["Replicates"])
 		getDB()
 
-	if opt["initialStep"] > 1 and not opt["External"]:
+	if opt["initialStep"] > 1 and not opt["external"]:
 
 		currentInitialState = opt["initialStep"]
 		opt = parseParam("old/" + opt["out"] + "/Parameters.cfg")
@@ -54,7 +58,7 @@ def setEnvironment(cfgFile):
 		cmd("cp -r", "old/" + opt["out"] + "/DataExploration", "Results/" + opt["out"])
 		cmd("cp -r", "old/" + opt["out"] + "/RWorkspaces/1_ExploreData.RData", "Results/" + opt["out"] + "/RWorkspaces")
 
-	if opt["initialStep"] > 2 and not opt["External"]:
+	if opt["initialStep"] > 2 and not opt["external"]:
 		cmd("cp -r", "old/" + opt["out"] + "/RWorkspaces/2_GetCandidates.RData", "Results/" + opt["out"] + "/RWorkspaces")
 		cmd("cp", "old/" + opt["out"] + "/candidateList.tsv", "old/" + opt["out"] + "/expressedGenes.lst", "Results/" + opt["out"])
 		cmd("cp", "old/" + opt["out"] + "/candidates_normal.gtf", "old/" + opt["out"] + "/candidates_tumor.gtf", "Results/" + opt["out"])
@@ -66,8 +70,7 @@ def setEnvironment(cfgFile):
 		cmd("mkdir -p", "Results/" + opt["out"] + "/iLoops/Output/Mapping")
 		cmd("mkdir", "Results/" + opt["out"] + "/iLoops/Input")
 	if opt["initialStep"] > 5:
-		pass
-		#cmd("cp -r", "old/" + opt["out"] + "/iLoops/Output", "Results/" + opt["out"] + "/iLoops")
+		cmd("cp", "old/" + opt["out"] + "/*dot", "Results/" + opt["out"])
 
 	return opt
 
@@ -108,7 +111,7 @@ def printParam(opt):
 def parseParam(cfgFile):
 
 	opt = { "initialStep" : 0, "wd" : "/home/hector/SmartAS/", "gaudiWd" : "/sbi/users/hectorc/SmartAS", "minExpression" : 0, 
-			"inputType" : "GENCODE" , "Conditions" : ["N", "T"], "tag1" : "20", "Replicates" : 0, "External" : False }
+			"inputType" : "GENCODE" , "Conditions" : ["N", "T"], "tag1" : "20", "Replicates" : 0, "external" : "" }
 
 	with open(cfgFile, "r") as PARAMETERS:
 		for line in PARAMETERS:
@@ -131,16 +134,13 @@ def parseParam(cfgFile):
 				opt["out"] = elements[1]
 			elif elements[0] == "gOut":
 				opt["gOut"] = elements[1]
-			elif elements[0] == "External":
-				if elements[1] == "True":
-					opt["External"] = True
-				elif elements[1] == "False":
-					opt["External"] = False
+			elif elements[0] == "external":
+				opt["external"] = elements[1]
 			else:
 				print("Unrecognized option:" + line.strip() )
 
 	opt["out"] = opt["inputType"] + "/" + opt["tag1"] + "_mE" + str(opt["minExpression"])
-	if opt["External"]:
+	if opt["external"]:
 		opt["out"] = opt["inputType"] + "/" + opt["tag1"]
 
 	opt["gOut"] = opt["gaudiWd"] + "/Results/" + opt["out"]

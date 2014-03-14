@@ -80,7 +80,7 @@ write.table(allExpressedTranscripts, paste0(out, "expressedGenes.lst"), sep="\t"
 save(isoformExpression, intraReplicate, interReplicate, candidates, candidateList, inputData, wd, out, file=paste0(out, "RWorkspaces/2_GetCandidates.RData"))
 
 #Plot heatmap
-library(gplots)
+suppressMessages(library(gplots)) #Avoid the annoying message
 library(RColorBrewer)
 
 top <- length(candidateList$Genename[candidateList$Replicated >= inputData[["Replicates"]] * 0.2])
@@ -108,6 +108,6 @@ myPalette <- colorRampPalette(c("white", "firebrick2"))(n = 14)
 heatmap.2(as.matrix(fig), trace="none", scale="none", col=myPalette, na.col="grey", 
           breaks=seq(0, max(fig, na.rm=T), length.out=15), main="PSI Switch"
          )
-dev.off()
+graphics.off()
 
 save(isoformExpression, intraReplicate, interReplicate, candidates, candidateList, inputData, wd, out, fig, file=paste0(out, "RWorkspaces/2_GetCandidates.RData"))
