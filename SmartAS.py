@@ -64,7 +64,7 @@ def candidatePrioritization(opt):
 
 def launchiLoops(opt):
 
-	print("* Retrieving protein sequences for transcripts and printing to multiFASTA file.")
+	print("* Sending files to Gaudi and performing the iLoops analysis.")
 	cmd("ssh hectorc@gaudi 'rm -r", opt["gOut"] + "'")
 	cmd("ssh hectorc@gaudi 'mkdir -p", opt["gOut"] + "/iLoops/Output; mkdir -p", opt["gOut"] + "/iLoops/Input'")
 	cmd("scp -r " + "Results/" + opt["out"] + "/expressedGenes.lst Results/" + opt["out"] + "/candidateList.top.tsv hectorc@gaudi.imim.es:" + opt["gOut"])
