@@ -51,41 +51,47 @@ def parseMapping(iLoopsFolder, tag):
 	myParser = parser.iLoopsParser()
 
 	for mappingBatch in filter(os.listdir(iLoopsFolder + "Output/"), "Mapping_" + tag + "_*" ):
-		xmlFile = iLoopsFolder + "Output/" + mappingBatch + "/" + mappingBatch + ".xml"
-		errFile = iLoopsFolder + "Output/" + mappingBatch + "/" + mappingBatch + ".err.xml"
+		for mappingBatch_nodeResult in filter(os.listdir(iLoopsFolder + "Output/" + mappingBatch + "/sge_output"), "*.assignation.[012][0-9].xml" ):
+			xmlFile = iLoopsFolder + "Output/" + mappingBatch + "/sge_output/" + mappingBatch_nodeResult
 
-		newLoops = myParser.parseLoops(xmlOutput					 = xmlFile,
-									   output_proteins               = True, 
-									   output_alignments             = False,
-									   output_domain_mappings        = False,
-									   output_protein_features       = True,
-									   output_domain_assignations    = False,
-									   output_interactions           = False,
-									   output_interaction_signatures = False,
-									   output_RF_results             = False,
-									   output_RF_precisions          = False
-									  )
-		
-		for aTranscript, loops in sorted(newLoops.iteritems()):
-			if loops not in loopFamilies.keys():
-				loopFamilies[loops] = []
-
-			loopFamilies[loops].append(aTranscript)
-
-		newNoLoops = myParser.parseNoLoops(xmlOutput                     = errFile,
-										   iLoopsPath                    = iLoopsFolder,
-										   output_proteins               = True, 
-										   output_alignments             = False,
-										   output_domain_mappings        = False,
-										   output_protein_features       = False,
-										   output_domain_assignations    = False,
-										   output_interactions           = False,
-										   output_interaction_signatures = False,
-										   output_RF_results             = False,
-										   output_RF_precisions          = False
+			newLoops = myParser.parseLoops(
+											xmlOutput					  = xmlFile,
+											output_proteins               = True, 
+											output_alignments             = False,
+											output_domain_mappings        = False,
+											output_protein_features       = True,
+											output_domain_assignations    = False,
+											output_interactions           = False,
+											output_interaction_signatures = False,
+											output_RF_results             = False,
+											output_RF_precisions          = False
 										  )
-		for aTranscript in newNoLoops:
-			noLoops.add(aTranscript)
+			
+			for aTranscript, loops in sorted(newLoops.iteritems()):
+				if loops not in loopFamilies.keys():
+					loopFamilies[loops] = []
+
+				loopFamilies[loops].append(aTranscript)
+		
+		for mappingBatch_nodeErr in filter(os.listdir(iLoopsFolder + "Output/" + mappingBatch + "/sge_output"), "*.assignation.[012][0-9].err.xml" ):
+			errFile = iLoopsFolder + "Output/" + mappingBatch + "/sge_output/" + mappingBatch_nodeErr
+
+			newNoLoops = myParser.parseNoLoops(
+												xmlOutput                     = errFile,
+												iLoopsPath                    = iLoopsFolder,
+												output_proteins               = True, 
+												output_alignments             = False,
+												output_domain_mappings        = False,
+												output_protein_features       = False,
+												output_domain_assignations    = False,
+												output_interactions           = False,
+												output_interaction_signatures = False,
+												output_RF_results             = False,
+												output_RF_precisions          = False
+											  )
+			
+			for aTranscript in newNoLoops:
+				noLoops.add(aTranscript)
 
 	with open(iLoopsFolder + tag + "_loopFamilies.txt", "w") as loopFamiliesList:
 		 for loopPattern in loopFamilies.keys():
