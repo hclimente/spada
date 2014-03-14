@@ -199,7 +199,7 @@ def getFASTAandPairs(iLoopsFolder, inputType, transcripts):
 os.chdir(sys.argv[1])
 out = "Results/" + sys.argv[2]
 inputType = sys.argv[3]
-iLoopsFolder = iLoopsFolder + ""
+iLoopsFolder = out + "/iLoops/"
 expressedTranscripts = out + "/expressedGenes.lst"
 candidateTranscripts = out + "/candidateList.top.tsv"
 
