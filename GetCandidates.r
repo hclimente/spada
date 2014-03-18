@@ -16,7 +16,7 @@ for (replicate in seq(1,inputData[["Replicates"]])){
   candidates[[replicate]] <- data.frame(Gene=as.character(), Genename=as.character(), Switch=as.numeric(), maxdPSI=as.character(), mindPSI=as.character())
   
   #Filter by deltaPSI and expression, based on the FPR
-  psiThreshold <- abs(intraReplicate[[replicate]]$deltaPSI) > 4 * interReplicate$MAD
+  psiThreshold <- abs(intraReplicate[[replicate]]$deltaPSI) > 4 * interReplicate_N$MAD
   psiThreshold[is.na(psiThreshold)] <- FALSE
   
   norExpression <- log(intraReplicate[[replicate]]$TPM_N) > minExpression
@@ -77,7 +77,7 @@ candidateList <- candidateList[with(candidateList, order(-Replicated)), ]
 write.table(candidateList, file=paste0(out, "candidateList.tsv"), sep="\t", row.names=F, col.names=F, quote=F)
 write.table(allExpressedTranscripts, paste0(out, "expressedGenes.lst"), sep="\t", row.names=F, col.names=F, quote=F)
 
-save(isoformExpression, intraReplicate, interReplicate, candidates, candidateList, inputData, wd, out, file=paste0(out, "RWorkspaces/2_GetCandidates.RData"))
+save(isoformExpression, intraReplicate, interReplicate_N, candidates, candidateList, inputData, wd, out, file=paste0(out, "RWorkspaces/2_GetCandidates.RData"))
 
 #Plot heatmap
 suppressMessages(library(gplots)) #Avoid the annoying message
@@ -110,4 +110,4 @@ heatmap.2(as.matrix(fig), trace="none", scale="none", col=myPalette, na.col="gre
          )
 graphics.off()
 
-save(isoformExpression, intraReplicate, interReplicate, candidates, candidateList, inputData, wd, out, fig, file=paste0(out, "RWorkspaces/2_GetCandidates.RData"))
+save(isoformExpression, intraReplicate, interReplicate_N, candidates, candidateList, inputData, wd, out, fig, file=paste0(out, "RWorkspaces/2_GetCandidates.RData"))
