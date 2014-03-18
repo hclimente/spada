@@ -116,8 +116,9 @@ def getFASTAInput(iLoopsFolder, tag, inputType, transcripts):
 			"-x Mapping_" + tag + "_" + assignationBatch + ".xml",
 			"-v",
 			"-m",
-			"-n 25", 
-			">Mapping_" + tag + "_" + assignationBatch + ".log"
+			"-n 25",
+			"-Q short-sbi",
+			"2>&1 >" + iLoopsFolder + "Mapping_" + tag + "_" + assignationBatch + ".log"
 		   )
 
 	loopFamilies, loopModels, noLoops = parseMapping(iLoopsFolder, tag)
@@ -204,30 +205,31 @@ iLoopsFolder = out + "/iLoops/"
 expressedTranscripts = out + "/expressedGenes.lst"
 candidateTranscripts = out + "/candidateList.top.tsv"
 
-# print("\t* Preparing FASTA files for all transcripts.")
-# getFASTAInput(iLoopsFolder, "Expressed", inputType, expressedTranscripts)
+print("\t* Preparing FASTA files for all transcripts.")
+#getFASTAInput(iLoopsFolder, "Expressed", inputType, expressedTranscripts)
 
-# print("\t* Checking loop mapping for top candidates and preparing input.")
-# goodCandidates = getFASTAandPairs(iLoopsFolder, inputType, candidateTranscripts)
+print("\t* Checking loop mapping for top candidates and preparing input.")
+goodCandidates = getFASTAandPairs(iLoopsFolder, inputType, candidateTranscripts)
 
-# print("\t* Launching iLoops.")
+print("\t* Launching iLoops.")
 
-# for transcriptPair in goodCandidates:
-# 	for transcript in transcriptPair:
-# 		for configFile in filter(listdir(iLoopsFolder + "Input/" + transcript), "*net"):
-# 			batch = (configFile.split(".")[0]).split("_")[1]
-# 			cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py",
-# 				"-f " + iLoopsFolder + "/Input/" + transcript + "/" + "Expressed_uniqLoops_" + batch + ".fasta",
-# 				"-q " + iLoopsFolder + "/Input/" + transcript + "/" + configFile,
-# 				"-j " + iLoopsFolder + "/Output/" + configFile,
-# 				"-x " + configFile + ".xml",
-# 				"-v",
-# 				"-g all",
-# 				"-n 25",
-# 				"-Q sbi",
-# 				"-c 1,5,6,7,8,9,10,11,12,13,14,15,20,30,40,50",
-# 				">" + configFile + ".log"
-# 			   )
+for transcriptPair in goodCandidates:
+	for transcript in transcriptPair:
+ 		for configFile in filter(listdir(iLoopsFolder + "Input/" + transcript), "*net"):
+ 			batch = (configFile.split(".")[1]).split("_")[1]
+			print configFile, batch
+ 			cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py",
+ 				"-f " + iLoopsFolder + "/Input/" + transcript + "/" + "Expressed_uniqLoops_" + batch + ".fasta",
+ 				"-q " + iLoopsFolder + "/Input/" + transcript + "/" + configFile,
+ 				"-j " + iLoopsFolder + "/Output/" + configFile,
+ 				"-x " + configFile + ".xml",
+ 				"-v",
+ 				"-g all",
+ 				"-n 25",
+ 				"-Q sbi",
+ 				"-c 1,5,6,7,8,9,10,11,12,13,14,15,20,30,40,50",
+ 				"2>&1 >" + iLoopsFolder + configFile + ".log"
+ 			   )
 
 with open(out + "/candidateList.top.tsv", "r") as CANDIDATES:
 
