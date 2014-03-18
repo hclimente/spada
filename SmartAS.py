@@ -34,7 +34,8 @@ def main(argv):
 		getCandidates(opt)
 	if opt["initialStep"] <= 3:
 		candidatePrioritization(opt)
-		exit()
+		if not opt["external"]:
+			exit()
 	if opt["initialStep"] <= 4:
 		launchiLoops(opt)
 	if opt["initialStep"] <= 5:
@@ -66,7 +67,7 @@ def launchiLoops(opt):
 
 	print("* Sending files to Gaudi and performing the iLoops analysis.")
 	cmd("ssh hectorc@gaudi 'rm -r", opt["gOut"] + "'")
-	cmd("ssh hectorc@gaudi 'mkdir -p", opt["gOut"] + "/iLoops/Output; mkdir -p", opt["gOut"] + "/iLoops/Input'")
+	cmd("ssh hectorc@gaudi 'mkdir -p", opt["gOut"] + "/iLoops/Output; mkdir -p", opt["gOut"] + "/iLoops/Input; mkdir -p", opt["gOut"] + "/iLoops/logs'")
 	cmd("scp -r " + "Results/" + opt["out"] + "/expressedGenes.lst Results/" + opt["out"] + "/candidateList.top.tsv hectorc@gaudi.imim.es:" + opt["gOut"])
 
 	cmd("ssh hectorc@gaudi '" + opt["gaudiWd"] + "/Pipeline/LaunchiLoops.py", opt["gaudiWd"], opt["out"], opt["inputType"] + "'")
