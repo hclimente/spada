@@ -117,8 +117,8 @@ def getFASTAInput(iLoopsFolder, tag, inputType, transcripts):
 			"-v",
 			"-m",
 			"-n 25",
-			"-Q short-sbi",
-			"2>&1 >" + iLoopsFolder + "Mapping_" + tag + "_" + assignationBatch + ".log"
+			"-Q bigmem",
+			"2>&1 >" + iLoopsFolder + "logs/Mapping_" + tag + "_" + assignationBatch + ".log"
 		   )
 
 	loopFamilies, loopModels, noLoops = parseMapping(iLoopsFolder, tag)
@@ -206,7 +206,7 @@ expressedTranscripts = out + "/expressedGenes.lst"
 candidateTranscripts = out + "/candidateList.top.tsv"
 
 print("\t* Preparing FASTA files for all transcripts.")
-#getFASTAInput(iLoopsFolder, "Expressed", inputType, expressedTranscripts)
+getFASTAInput(iLoopsFolder, "Expressed", inputType, expressedTranscripts)
 
 print("\t* Checking loop mapping for top candidates and preparing input.")
 goodCandidates = getFASTAandPairs(iLoopsFolder, inputType, candidateTranscripts)
@@ -228,49 +228,28 @@ for transcriptPair in goodCandidates:
  				"-n 25",
  				"-Q sbi",
  				"-c 1,5,6,7,8,9,10,11,12,13,14,15,20,30,40,50",
- 				"2>&1 >" + iLoopsFolder + configFile + ".log"
+ 				"2>&1 >" + iLoopsFolder + "logs/" + configFile + ".log"
  			   )
 
-with open(out + "/candidateList.top.tsv", "r") as CANDIDATES:
-
-	CANDIDATES.readline()
-	top = 0
-	
-	for line in CANDIDATES:
-		elements = line.strip().split("\t")
-		top += 1
-		
-		if not filter(listdir(iLoopsFolder + "Output"), elements[2] + "_*") and not filter(listdir(iLoopsFolder + "Output"), elements[3] + "_*"):
-			continue
-
-		for iso in [elements[2], elements[3]]:
-			with open(iLoopsFolder + "Output/" + elements[2] + ".ips", "w") as ISO_OUTPUT:
-
-				ISO_OUTPUT.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n")
-				ISO_OUTPUT.write("<xml>\n")
-
-				for candidate in filter(listdir(iLoopsFolder + "Output"), iso + "_*"):
-					for nodeMap in filter(listdir(iLoopsFolder + "Output/" + candidate + "/sge_output"), "*.assignation.[012][0-9].xml" ):
-						mapFile = iLoopsFolder + "Output/" + candidate + "/sge_output/" + nodeMap
-
-						with open(mapFile, "r") as MAPPED:
-							for line in MAPPED:
-								if line.strip() == "<?xml version=\"1.0\" encoding=\"utf-8\"?>" or line.strip() == "<xml>" or line.strip() == "</xml>":
-									continue
-
+		with open(iLoopsFolder + "Output/" + transcript + ".ips", "w") as ISO_OUTPUT:
+			ISO_OUTPUT.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n")
+			ISO_OUTPUT.write("<xml>\n")
+			for candidate in filter(listdir(iLoopsFolder + "Output"), transcript + "_*"):
+				for nodeMap in filter(listdir(iLoopsFolder + "Output/" + candidate + "/sge_output"), "*.assignation.[012][0-9].xml" ):
+					mapFile = iLoopsFolder + "Output/" + candidate + "/sge_output/" + nodeMap
+					with open(mapFile, "r") as MAPPED:
+						for line in MAPPED:
+							if line.strip() != "<?xml version=\"1.0\" encoding=\"utf-8\"?>" and line.strip() != "<xml>" and line.strip() != "</xml>":
 								ISO_OUTPUT.write(line)
-				
-				for candidate in filter(listdir(iLoopsFolder + "Output"), iso + "_*"):
-					for nodeAss in filter(listdir(iLoopsFolder + "Output/" + candidate + "/sge_output"), "*.scoring.[012][0-9].xml" ):
-						assFile = iLoopsFolder + "Output/" + candidate + "/sge_output/" + nodeAss
-
-						with open(assFile, "r") as ASSIGNED:
-							for line in ASSIGNED:
-								if line.strip() == "<?xml version=\"1.0\" encoding=\"utf-8\"?>" or line.strip() == "<xml>" or line.strip() == "</xml>":
-									continue
-
+			
+			for candidate in filter(listdir(iLoopsFolder + "Output"), transcript + "_*"):
+				for nodeAss in filter(listdir(iLoopsFolder + "Output/" + candidate + "/sge_output"), "*.scoring.[012][0-9].xml" ):
+					assFile = iLoopsFolder + "Output/" + candidate + "/sge_output/" + nodeAss
+					with open(assFile, "r") as ASSIGNED:
+						for line in ASSIGNED:
+							if line.strip() != "<?xml version=\"1.0\" encoding=\"utf-8\"?>" and line.strip() != "<xml>" and line.strip() != "</xml>":
 								ISO_OUTPUT.write(line)
 
-				ISO_OUTPUT.write("</xml>\n")
+			ISO_OUTPUT.write("</xml>\n")
 
 cmd("scp -r " + iLoopsFolder + "Output/*.ips hector@feynman.imim.es:~/SmartAS/" + iLoopsFolder + "Output")
