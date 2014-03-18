@@ -52,27 +52,32 @@ def parseMapping(iLoopsFolder, tag):
 	myParser = parser.iLoopsParser()
 
 	for mappingBatch in filter(listdir(iLoopsFolder + "Output/"), "Mapping_" + tag + "_*" ):
-		for mappingBatch_nodeResult in filter(listdir(iLoopsFolder + "Output/" + mappingBatch + "/sge_output"), "*.assignation.[012][0-9].xml" ):
-			xmlFile = iLoopsFolder + "Output/" + mappingBatch + "/sge_output/" + mappingBatch_nodeResult
+		for tens in range(2):
+			for units in range(10):
+				number = str(tens) + str(units)
+				if number == "00": continue
+				
+				for mappingBatch_nodeResult in filter(listdir(iLoopsFolder + "Output/" + mappingBatch + "/sge_output"), "*.assignation." + number + ".xml" ):
+					xmlFile = iLoopsFolder + "Output/" + mappingBatch + "/sge_output/" + mappingBatch_nodeResult
 
-			newLoops = myParser.parseLoops(
-											xmlOutput					  = xmlFile,
-											output_proteins               = True, 
-											output_alignments             = False,
-											output_domain_mappings        = False,
-											output_protein_features       = True,
-											output_domain_assignations    = False,
-											output_interactions           = False,
-											output_interaction_signatures = False,
-											output_RF_results             = False,
-											output_RF_precisions          = False
-										  )
-			
-			for aTranscript, loops in sorted(newLoops.iteritems()):
-				if loops not in loopFamilies.keys():
-					loopFamilies[loops] = []
+					newLoops = myParser.parseLoops(
+													xmlOutput					  = xmlFile,
+													output_proteins               = True, 
+													output_alignments             = False,
+													output_domain_mappings        = False,
+													output_protein_features       = True,
+													output_domain_assignations    = False,
+													output_interactions           = False,
+													output_interaction_signatures = False,
+													output_RF_results             = False,
+													output_RF_precisions          = False
+												  )
+					
+					for aTranscript, loops in sorted(newLoops.iteritems()):
+						if loops not in loopFamilies.keys():
+							loopFamilies[loops] = []
 
-				loopFamilies[loops].append(aTranscript)
+						loopFamilies[loops].append(aTranscript)
 		
 		for mappingBatch_nodeErr in filter(listdir(iLoopsFolder + "Output/" + mappingBatch + "/sge_output"), "*.assignation.[012][0-9].err.xml" ):
 			errFile = iLoopsFolder + "Output/" + mappingBatch + "/sge_output/" + mappingBatch_nodeErr
@@ -253,7 +258,7 @@ for transcriptPair in goodCandidates:
 					for units in range(10):
 						number = str(tens) + str(units)
 						if number == "00": continue
-							
+
 						for nodeAss in filter(listdir(iLoopsFolder + "Output/" + candidate + "/sge_output"), "*.scoring." + number + ".xml" ):
 							assFile = iLoopsFolder + "Output/" + candidate + "/sge_output/" + nodeAss
 							with open(assFile, "r") as ASSIGNED:
