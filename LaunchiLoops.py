@@ -114,6 +114,7 @@ def getFASTAInput(iLoopsFolder, tag, inputType, transcripts):
 			"-f " + iLoopsFolder + expressedFasta,
 			"-j " + iLoopsFolder + "Output/Mapping_" + tag + "_" + assignationBatch,
 			"-x Mapping_" + tag + "_" + assignationBatch + ".xml",
+			"-g all",
 			"-v",
 			"-m",
 			"-n 25",
@@ -183,10 +184,11 @@ def getFASTAandPairs(iLoopsFolder, inputType, transcripts):
 	toDelete = set()
 
 	for candidatePair in candidatePairs:
-		for candidate in candidatePair:
-			if candidate in noLoops:
-				toDelete.add(candidatePair)
-
+		#delete if none has a loop
+		if candidateiPair[0] in noLoops and candidateiPair[1] in noLoops:
+			toDelete.add(candidatePair)
+		
+		#delete if both have the same loops
 		for loop in loopFamilies.keys():
 			if candidatePair[0] in loopFamilies[loop] and candidatePair[1] in loopFamilies[loop]:
 				toDelete.add(candidatePair)
@@ -217,16 +219,16 @@ for transcriptPair in goodCandidates:
 	for transcript in transcriptPair:
  		for configFile in filter(listdir(iLoopsFolder + "Input/" + transcript), "*net"):
  			batch = (configFile.split(".")[1]).split("_")[1]
-			print configFile, batch
- 			cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py",
- 				"-f " + iLoopsFolder + "/Input/" + transcript + "/" + "Expressed_uniqLoops_" + batch + ".fasta",
- 				"-q " + iLoopsFolder + "/Input/" + transcript + "/" + configFile,
- 				"-j " + iLoopsFolder + "/Output/" + configFile,
+ 			
+			cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py",
+ 				"-f " + iLoopsFolder + "Input/" + transcript + "/Expressed_uniqLoops_" + batch + ".fasta",
+ 				"-q " + iLoopsFolder + "Input/" + transcript + "/" + configFile,
+ 				"-j " + iLoopsFolder + "Output/" + configFile,
  				"-x " + configFile + ".xml",
  				"-v",
  				"-g all",
  				"-n 25",
- 				"-Q sbi",
+ 				"-Q bigmem",
  				"-c 1,5,6,7,8,9,10,11,12,13,14,15,20,30,40,50",
  				"2>&1 >" + iLoopsFolder + "logs/" + configFile + ".log"
  			   )
@@ -234,8 +236,15 @@ for transcriptPair in goodCandidates:
 		with open(iLoopsFolder + "Output/" + transcript + ".ips", "w") as ISO_OUTPUT:
 			ISO_OUTPUT.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n")
 			ISO_OUTPUT.write("<xml>\n")
+			
 			for candidate in filter(listdir(iLoopsFolder + "Output"), transcript + "_*"):
-				for nodeMap in filter(listdir(iLoopsFolder + "Output/" + candidate + "/sge_output"), "*.assignation.[012][0-9].xml" ):
+				for tens in range(2):
+					for units in range(10):
+						number = str(tens) + str(units)
+						if number == "00": continue
+
+						
+				for nodeMap in filter(listdir(iLoopsFolder + "Output/" + candidate + "/sge_output"), "*.assignation." + number + ".xml" ):
 					mapFile = iLoopsFolder + "Output/" + candidate + "/sge_output/" + nodeMap
 					with open(mapFile, "r") as MAPPED:
 						for line in MAPPED:
