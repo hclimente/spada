@@ -4,7 +4,7 @@ kk <- vector('list', length(unique(intraReplicate[[8]]$Gene)))
 counter <- 1
 for(aRow in unique(intraReplicate[[8]]$Gene)){
 	tTPM <- intraReplicate[[8]]$la_tTPM[intraReplicate[[8]]$Gene == aRow][1]
-	MAD <- interReplicate$MAD[interReplicate$Gene == aRow][1]
+	MAD <- interReplicate_N$MAD[interReplicate_N$Gene == aRow][1]
 	kk[[counter]] <- data.frame(MAD=MAD,tTPM=tTPM)
 	counter <- counter + 1
 }
