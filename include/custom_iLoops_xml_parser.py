@@ -39,6 +39,6 @@ class iLoopsParser(iLoops_xml_parser.ILXMLParser):
 				maxCost[intPartner] = 0
 				for RFResult in resultItem.get_RFResults(): 
 					if RFResult.get_prediction() and RFResult.get_cost() > maxCost[intPartner]:
-						maxCost[intPartner] = RFResult.get_cost()
+						maxCost[intPartner] = int(RFResult.get_cost())
 
 		return maxCost
