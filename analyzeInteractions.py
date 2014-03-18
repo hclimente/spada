@@ -3,8 +3,11 @@
 from include.libsmartas import *
 import include.custom_iLoops_xml_parser as parser
 from os import listdir
+from os.path import isfile
 from fnmatch import filter
 import sys
+
+import pdb
 
 out = "Results/" + sys.argv[1] + "/"
 myParser = parser.iLoopsParser()
@@ -17,8 +20,9 @@ with open(out + "expressedGenes.lst", "r") as EXPRESSED:
 		elements = line.strip().split("\t")
 		expressedTranscripts[elements[0]] = elements[1]
 
-with open(out + "candidateList.top.tsv", "r") as CANDIDATES:
+with open(out + "candidateList.top.tsv", "r") as CANDIDATES, open(out + "InteraxChanges.tsv", "w") as INTERAX:
 
+	INTERAX.write("Gene" + "\t" + "Origin" + "\t" + "Transcript" + "\t" + "Interactions" + "\n")
 	CANDIDATES.readline()
 	top = 0
 	
@@ -28,46 +32,47 @@ with open(out + "candidateList.top.tsv", "r") as CANDIDATES:
 		InteraX = {}
 		top += 1
 		
-		if not filter(listdir(out + "/iLoops/Output"), elements[2] + "_*") and not filter(listdir(out + "/iLoops/Output"), elements[3] + "_*"):
+		if not isfile(out + "iLoops/Output/" + elements[2] + ".ips") or not isfile(out + "iLoops/Output/" + elements[3] + ".ips"):
 			print("\t * Gene " + elements[1] + ": iLoops couldn't process this candidate.")
 			continue
 
 		print("\t * Gene " + elements[1])
-		
+				
 		for iso, ori in zip([elements[2], elements[3]], ["Normal","Tumor"]):
 
-			interactions[ori] = {}
+			INTERAX.write(elements[0] + "\t" + ori + "\t" + iso + "\t")
+
 			print("\t\t" + ori + ": " + iso)
-			for candidate in filter(listdir(out + "/iLoops/Output"), iso + "_*"):
-				#print out + "/iLoops/Output/" + candidate + "/" + candidate + ".xml"
+			for candidate in filter(listdir(out + "iLoops/Output"), iso + ".ips"):
+				xmlFile = out + "iLoops/Output/" + candidate
+				candidateTag = candidate.split(".")[0]
 
-				for nodeResult in filter(os.listdir(iLoopsFolder + "Output/" + candidate + "/sge_output"), "*.assignation.[012][0-9].xml" ):
-					xmlFile = iLoopsFolder + "Output/" + candidate + "/sge_output/" + nodeResult
+				interactions[ori] = myParser.parseInteractions(
+															 	thisCandidate				  = candidateTag,
+															 	xmlOutput					  = xmlFile,
+															 	output_proteins               = False, 
+															 	output_alignments             = False,
+															 	output_domain_mappings        = False,
+															 	output_protein_features       = False,
+															 	output_domain_assignations    = False,
+															 	output_interactions           = True,
+															 	output_interaction_signatures = True,
+															 	output_RF_results             = True,
+															 	output_RF_precisions          = False
+															  )
 
-					candidateTag = candidate.split("_")[0]
-					newInteractions = myParser.parseInteractions(
-																 	thisCandidate				   = candidateTag,
-																 	xmlOutput					   = xmlFile,
-																 	output_proteins               = False, 
-																 	output_alignments             = False,
-																 	output_domain_mappings        = False,
-																 	output_protein_features       = False,
-																 	output_domain_assignations    = False,
-																 	output_interactions           = True,
-																 	output_interaction_signatures = True,
-																 	output_RF_results             = True,
-																 	output_RF_precisions          = False
-																)
+				for partner in interactions[ori].keys():
+					if ori == "Normal":
+						InteraX[partner] = InteraX.get(partner, 0) + interactions[ori][partner]
+					elif ori == "Tumor":
+						InteraX[partner] = InteraX.get(partner, 0) - interactions[ori][partner]
+					
+					INTERAX.write(partner + "(" + str(interactions[ori][partner]) + ")" + ";")
 
-					interactions[ori].update(newInteractions)
-					for partner in newInteractions.keys():
-						if ori == "Normal":
-							InteraX[partner] = InteraX.get(partner, 0) + newInteractions[partner]
-						elif ori == "Tumor":
-							InteraX[partner] = InteraX.get(partner, 0) - newInteractions[partner]
-		
-		for iso, ori in zip([elements[2], elements[3]], ["Normal","Tumor"]):
-		 	with open(out + elements[0] + ".dot", "w") as DOTFile:
+			INTERAX.write("\n")
+
+		with open(out + elements[0] + ".dot", "w") as DOTFile:
+			for iso, ori in zip([elements[2], elements[3]], ["Normal","Tumor"]):
 		 		DOTFile.write("graph " + iso + " {\n")
 		 		DOTFile.write("\t" + iso + " [label=" + elements[0] + ", shape=polygon,sides=5];\n")
 		 		for partner in interactions[ori].keys():
@@ -84,15 +89,3 @@ with open(out + "candidateList.top.tsv", "r") as CANDIDATES:
 
 		if top >= 3:
 			break
-
-with open(out + "InteraxChanges.tsv", "w") as INTERAX:
-	INTERAX.write("Gene" + "\t" + "Normal" + "\t" + "Tumor" + "\t" + "Loss in tumor" + "\t" + "Gain in tumor" + "\n")
-	for candidate in InteraX.keys():
-		elements = candidate.split("_")
-		INTERAX.write(elements[0] + "\t" + elements[1] + "\t" + elements[2] + "\t")
-		for alteration in ["loss", "gain"]:
-			for protein in InteraX[candidate][alteration]:
-				INTERAX.write(protein + ";")
-			INTERAX.write("\t")
-
-		INTERAX.write("\n")
