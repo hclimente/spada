@@ -7,10 +7,6 @@ inputPath <- args[2]
 intraReplicate <- list()
 isoformExpression <- list()
 
-compartment <- inputData[["Compartments"]][1]
-reference <- inputData[["Conditions"]][1]
-alterated <- inputData[["Conditions"]][2]
-
 printTPMHist <- function(x, xLab, pngName){
   png(paste0(out, "DataExploration/", pngName, ".png"), width=960, height=960)
   histogram <- hist(log10(x + 0.0001), 10000)
@@ -68,7 +64,7 @@ for (replicate in seq(1, inputData[["Replicates"]])){
    
   nTag <- paste0(replicate, "N")
   tTag <- paste0(replicate, "T")
-    
+  
   intraReplicate[[replicate]] <- merge(isoformExpression[[nTag]], isoformExpression[[tTag]], by=c("Gene", "Transcript", "Genename"), suffixes=c("_N","_T"), all=T)
   intraReplicate[[replicate]]$deltaPSI <- intraReplicate[[replicate]]$PSI_N - intraReplicate[[replicate]]$PSI_T
   intraReplicate[[replicate]]$la_tTPM <- 0.5 * (log(intraReplicate[[replicate]]$tTPM_N) + log(intraReplicate[[replicate]]$tTPM_T))
@@ -91,19 +87,19 @@ for (replicate in seq(1,inputData[["Replicates"]])){
 
   replicate_c <- as.character(replicate)
       
-  if(!exists("interReplicate")){
-    interReplicate <- intraReplicate[[replicate]]
-    interReplicate <- interReplicate[,!(colnames(interReplicate) %in% delete), drop=FALSE]
+  if(!exists("interReplicate_N")){
+    interReplicate_N <- intraReplicate[[replicate]]
+    interReplicate_N <- interReplicate_N[,!(colnames(interReplicate_N) %in% delete), drop=FALSE]
     
     columns <- c("Gene", "Transcript", "Genename", paste0("PSI_", replicate_c))
     
   } else {
-    interReplicate <- merge(interReplicate, intraReplicate[[replicate]], by=c("Gene", "Transcript", "Genename"), suffixes=c("",paste0("_", replicate_c)), all=T)
-    interReplicate <- interReplicate[,!(colnames(interReplicate) %in% delete), drop=FALSE]
+    interReplicate_N <- merge(interReplicate_N, intraReplicate[[replicate]], by=c("Gene", "Transcript", "Genename"), suffixes=c("",paste0("_", replicate_c)), all=T)
+    interReplicate_N <- interReplicate_N[,!(colnames(interReplicate_N) %in% delete), drop=FALSE]
     
     columns <- c(columns, paste0("PSI_", replicate_c))
   }
-  colnames(interReplicate) <- columns
+  colnames(interReplicate_N) <- columns
   psiCols <- c(psiCols, paste0("PSI_", replicate))
 
   simplePlot(intraReplicate[[replicate]]$la_tTPM, intraReplicate[[replicate]]$deltaPSI, replicate, "0.5·(log(sum tTPM_N) + log(sum tTPM_T) )", 
@@ -111,9 +107,9 @@ for (replicate in seq(1,inputData[["Replicates"]])){
 
 }
 
-interReplicate$MedianPSI <- apply(interReplicate[,psiCols], 1, median)
-interReplicate$MAD <- apply(interReplicate[,psiCols], 1, mad)
+interReplicate_N$MedianPSI <- apply(interReplicate_N[,psiCols], 1, median)
+interReplicate_N$MAD <- apply(interReplicate_N[,psiCols], 1, mad)
 
-simplePlot(interReplicate$MedianPSI, interReplicate$MAD, paste0("InterReplicate"), "Median PSI", "MAD", paste0(out, "DataExploration/Interreplicate_mean_MAD.png"))
+simplePlot(interReplicate_N$MedianPSI, interReplicate_N$MAD, "InterReplicate_N", "Median PSI", "MAD", paste0(out, "DataExploration/Interreplicate_mean_MAD_N.png"))
 
-save(isoformExpression, intraReplicate, interReplicate, inputData, wd, out, file=paste0(out, "RWorkspaces/1_ExploreData.RData"))
+save(isoformExpression, intraReplicate, interReplicate_N, inputData, wd, out, file=paste0(out, "RWorkspaces/1_ExploreData.RData"))
