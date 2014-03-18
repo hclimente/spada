@@ -39,29 +39,34 @@ def setEnvironment(cfgFile):
 	cmd("mkdir -p", "Results/" + opt["out"] + "/RWorkspaces")
 	cmd("mkdir", "Results/" + opt["out"] + "/DataExploration")
 
-	if opt["external"]:
-		cmd("cp", opt["external"] + ".tsv" , "Results/" + opt["out"] + "/candidateList.top.tsv")
-		cmd("cp", opt["external"] + "_expressedGenes.lst", "Results/" + opt["out"] + "/expressedGenes.lst")
+	if not opt["external"]:
+		if opt["initialStep"] <= 1:
+			printParam(opt)
+			setRWorkspace(opt["wd"], opt["out"], opt["Replicates"])
+			getDB()
 
-	if opt["initialStep"] <= 1 and not opt["external"]:
+		if opt["initialStep"] > 1:
+
+			currentInitialState = opt["initialStep"]
+			opt = parseParam("old/" + opt["out"] + "/Parameters.cfg")
+			opt["initialStep"] = currentInitialState
+
+			cmd("cp", "old/" + opt["out"] + "/Parameters.cfg", "Results/" + opt["out"])
+			cmd("cp -r", "old/" + opt["out"] + "/DataExploration", "Results/" + opt["out"])
+			cmd("cp", "old/" + opt["out"] + "/RWorkspaces/1_ExploreData.RData", "Results/" + opt["out"] + "/RWorkspaces")
+
+		if opt["initialStep"] > 2:
+			cmd("cp", "old/" + opt["out"] + "/RWorkspaces/2_GetCandidates.RData", "Results/" + opt["out"] + "/RWorkspaces")
+			cmd("cp", "old/" + opt["out"] + "/candidateList.tsv", "old/" + opt["out"] + "/expressedGenes.lst", "Results/" + opt["out"])
+			cmd("cp", "old/" + opt["out"] + "/candidates_normal.gtf", "old/" + opt["out"] + "/candidates_tumor.gtf", "Results/" + opt["out"])
+	else:
 		printParam(opt)
-		setRWorkspace(opt["wd"], opt["out"], opt["Replicates"])
-		getDB()
+		if opt["initialStep"] > 1:
+			cmd("scripts/InputUnpaired.r", opt["out"])
+		if opt["initialStep"] > 2:
+			cmd("cp", opt["external"] + ".tsv" , "Results/" + opt["out"] + "/candidateList.tsv")
+			cmd("cp", opt["external"] + "_expressedGenes.lst", "Results/" + opt["out"] + "/expressedGenes.lst")
 
-	if opt["initialStep"] > 1 and not opt["external"]:
-
-		currentInitialState = opt["initialStep"]
-		opt = parseParam("old/" + opt["out"] + "/Parameters.cfg")
-		opt["initialStep"] = currentInitialState
-
-		cmd("cp", "old/" + opt["out"] + "/Parameters.cfg", "Results/" + opt["out"])
-		cmd("cp -r", "old/" + opt["out"] + "/DataExploration", "Results/" + opt["out"])
-		cmd("cp -r", "old/" + opt["out"] + "/RWorkspaces/1_ExploreData.RData", "Results/" + opt["out"] + "/RWorkspaces")
-
-	if opt["initialStep"] > 2 and not opt["external"]:
-		cmd("cp -r", "old/" + opt["out"] + "/RWorkspaces/2_GetCandidates.RData", "Results/" + opt["out"] + "/RWorkspaces")
-		cmd("cp", "old/" + opt["out"] + "/candidateList.tsv", "old/" + opt["out"] + "/expressedGenes.lst", "Results/" + opt["out"])
-		cmd("cp", "old/" + opt["out"] + "/candidates_normal.gtf", "old/" + opt["out"] + "/candidates_tumor.gtf", "Results/" + opt["out"])
 	if opt["initialStep"] > 3:
 		cmd("cp", "old/" + opt["out"] + "/candidateInteractions.tsv", "old/" + opt["out"] + "/candidateList.top.tsv", "Results/" + opt["out"])
 	if opt["initialStep"] > 4:
@@ -69,6 +74,7 @@ def setEnvironment(cfgFile):
 	else:
 		cmd("mkdir -p", "Results/" + opt["out"] + "/iLoops/Output/Mapping")
 		cmd("mkdir", "Results/" + opt["out"] + "/iLoops/Input")
+		cmd("mkdir", "Results/" + opt["out"] + "/iLoops/logs")
 	if opt["initialStep"] > 5:
 		cmd("cp", "old/" + opt["out"] + "/*dot", "Results/" + opt["out"])
 
@@ -116,26 +122,13 @@ def parseParam(cfgFile):
 	with open(cfgFile, "r") as PARAMETERS:
 		for line in PARAMETERS:
 			elements = line.strip().split("=")
-			if elements[0] == "Replicates":
-				opt["Replicates"] = int(elements[1])
-			elif elements[0] == "initialStep":
-				opt["initialStep"] = int(elements[1])
-			elif elements[0] == "wd":
-				opt["wd"] = elements[1]
-			elif elements[0] == "gaudiWd":
-				opt["gaudiWd"] = elements[1]
-			elif elements[0] == "minExpression":
-				opt["minExpression"] = float(elements[1])
-			elif elements[0] == "inputType":
-				opt["inputType"] = elements[1]
-			elif elements[0] == "tag1":
-				opt["tag1"] = elements[1]
-			elif elements[0] == "out":
-				opt["out"] = elements[1]
-			elif elements[0] == "gOut":
-				opt["gOut"] = elements[1]
-			elif elements[0] == "external":
-				opt["external"] = elements[1]
+
+			if elements[0] in ["wd", "gaudiWd", "inputType", "tag1", "out", "gOut", "external"]:
+				opt[elements[0]] = elements[1]
+			elif elements[0] in ["Replicates", "initialStep"]:
+				opt[elements[0]] = int(elements[1])
+			elif elements[0] in ["minExpression"]:
+				opt[elements[0]] = float(elements[1])
 			else:
 				print("Unrecognized option:" + line.strip() )
 
