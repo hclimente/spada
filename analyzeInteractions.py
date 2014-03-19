@@ -32,7 +32,7 @@ with open(out + "candidateList.top.tsv", "r") as CANDIDATES, open(out + "Interax
 		InteraX = {}
 		top += 1
 		
-		if not isfile(out + "iLoops/Output/" + elements[2] + ".ips") or not isfile(out + "iLoops/Output/" + elements[3] + ".ips"):
+		if not isfile(out + "iLoops/Output/" + elements[2] + ".ips") and not isfile(out + "iLoops/Output/" + elements[3] + ".ips"):
 			print("\t * Gene " + elements[1] + ": iLoops couldn't process this candidate.")
 			continue
 
@@ -43,12 +43,14 @@ with open(out + "candidateList.top.tsv", "r") as CANDIDATES, open(out + "Interax
 			INTERAX.write(elements[0] + "\t" + ori + "\t" + iso + "\t")
 
 			print("\t\t" + ori + ": " + iso)
-			for candidate in filter(listdir(out + "iLoops/Output"), iso + ".ips"):
-				xmlFile = out + "iLoops/Output/" + candidate
-				candidateTag = candidate.split(".")[0]
 
+			xmlFile = out + "iLoops/Output/" + iso + ".ips"
+
+			if not isfile(xmlFile):
+				interactions[ori] = {}
+			else:
 				interactions[ori] = myParser.parseInteractions(
-															 	thisCandidate				  = candidateTag,
+															 	thisCandidate				  = iso,
 															 	xmlOutput					  = xmlFile,
 															 	output_proteins               = False, 
 															 	output_alignments             = False,
@@ -61,13 +63,13 @@ with open(out + "candidateList.top.tsv", "r") as CANDIDATES, open(out + "Interax
 															 	output_RF_precisions          = False
 															  )
 
-				for partner in interactions[ori].keys():
-					if ori == "Normal":
-						InteraX[partner] = InteraX.get(partner, 0) + interactions[ori][partner]
-					elif ori == "Tumor":
-						InteraX[partner] = InteraX.get(partner, 0) - interactions[ori][partner]
-					
-					INTERAX.write(partner + "(" + str(interactions[ori][partner]) + ")" + ";")
+			for partner in interactions[ori].keys():
+				if ori == "Normal":
+					InteraX[partner] = InteraX.get(partner, 0) + interactions[ori][partner]
+				elif ori == "Tumor":
+					InteraX[partner] = InteraX.get(partner, 0) - interactions[ori][partner]
+				
+				INTERAX.write(partner + "(" + str(interactions[ori][partner]) + ")" + ";")
 
 			INTERAX.write("\n")
 

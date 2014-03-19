@@ -34,6 +34,7 @@ def setEnvironment(cfgFile):
 	opt = parseParam(cfgFile)
 
 	print("* Preparing the environment")
+	return opt
 	cmd("rm -r old2/" + opt["out"] + "; mv", "old/" + opt["out"], "old2/"  + opt["out"])
 	cmd("mv", "Results/" + opt["out"], "old/" + opt["out"])
 	cmd("mkdir -p", "Results/" + opt["out"] + "/RWorkspaces")
@@ -72,7 +73,7 @@ def setEnvironment(cfgFile):
 	if opt["initialStep"] > 4:
 		cmd("mv", "old/" + opt["out"] + "/iLoops", "Results/" + opt["out"])
 	else:
-		cmd("mkdir -p", "Results/" + opt["out"] + "/iLoops/Output/Mapping")
+		cmd("mkdir -p", "Results/" + opt["out"] + "/iLoops/Output")
 		cmd("mkdir", "Results/" + opt["out"] + "/iLoops/Input")
 		cmd("mkdir", "Results/" + opt["out"] + "/iLoops/logs")
 	if opt["initialStep"] > 5:
