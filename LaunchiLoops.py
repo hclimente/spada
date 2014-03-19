@@ -190,7 +190,7 @@ def getFASTAandPairs(iLoopsFolder, inputType, transcripts):
 
 	for candidatePair in candidatePairs:
 		#delete if none has a loop
-		if candidateiPair[0] in noLoops and candidateiPair[1] in noLoops:
+		if candidatePair[0] in noLoops and candidatePair[1] in noLoops:
 			toDelete.add(candidatePair)
 		
 		#delete if both have the same loops
