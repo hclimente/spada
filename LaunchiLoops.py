@@ -52,7 +52,7 @@ def parseMapping(iLoopsFolder, tag):
 	myParser = parser.iLoopsParser()
 
 	for mappingBatch in filter(listdir(iLoopsFolder + "Output/"), "Mapping_" + tag + "_*" ):
-		for tens in range(2):
+		for tens in range(3):
 			for units in range(10):
 				number = str(tens) + str(units)
 				if number == "00": continue
@@ -243,7 +243,7 @@ for transcriptPair in goodCandidates:
 			ISO_OUTPUT.write("<xml>\n")
 			
 			for candidate in filter(listdir(iLoopsFolder + "Output"), transcript + "_*"):
-				for tens in range(2):
+				for tens in range(3):
 					for units in range(10):
 						number = str(tens) + str(units)
 						if number == "00": continue
@@ -254,7 +254,7 @@ for transcriptPair in goodCandidates:
 								for line in MAPPED:
 									if line.strip() != "<?xml version=\"1.0\" encoding=\"utf-8\"?>" and line.strip() != "<xml>" and line.strip() != "</xml>":
 										ISO_OUTPUT.write(line)
-				for tens in range(2):
+				for tens in range(3):
 					for units in range(10):
 						number = str(tens) + str(units)
 						if number == "00": continue
