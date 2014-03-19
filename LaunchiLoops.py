@@ -5,7 +5,6 @@ from os import listdir,chdir
 from include.libsmartas import *
 from fnmatch import filter
 import include.custom_iLoops_xml_parser as parser
-import pdb
 
 def writeFasta(basename, inputType, expressedTranscripts):
 	wannaWrite = False
@@ -32,9 +31,10 @@ def writeFasta(basename, inputType, expressedTranscripts):
 					MULTIFASTA = open(basename + "_" + str(fileCounter) + ".fasta", "w")
 					transcriptCounter = 0
 
-				identifiers = ((line[1:].split("|"))[0].split("."))[0]
-				if inputType == "TCGA":
-					identifiers = line[1:].strip()
+				identifiers = line[1:].strip()
+				if inputType == "GENCODE":
+					identifiers = ((line[1:].split("|"))[0].split("."))[0]
+				
 				if identifiers in expressedTranscriptsSet:
 					MULTIFASTA.write(">" + identifiers + "\n")
 					wannaWrite = True
@@ -52,7 +52,7 @@ def parseMapping(iLoopsFolder, tag):
 	myParser = parser.iLoopsParser()
 
 	for mappingBatch in filter(listdir(iLoopsFolder + "Output/"), "Mapping_" + tag + "_*" ):
-		for tens in range(3):
+		for tens in ["", range(3) ]:
 			for units in range(10):
 				number = str(tens) + str(units)
 				if number == "00": continue
@@ -79,25 +79,30 @@ def parseMapping(iLoopsFolder, tag):
 
 						loopFamilies[loops].append(aTranscript)
 		
-		for mappingBatch_nodeErr in filter(listdir(iLoopsFolder + "Output/" + mappingBatch + "/sge_output"), "*.assignation.[012][0-9].err.xml" ):
-			errFile = iLoopsFolder + "Output/" + mappingBatch + "/sge_output/" + mappingBatch_nodeErr
+		for tens in ["", range(3) ]:
+			for units in range(10):
+				number = str(tens) + str(units)
+				if number == "00": continue
 
-			newNoLoops = myParser.parseNoLoops(
-												xmlOutput                     = errFile,
-												iLoopsPath                    = iLoopsFolder,
-												output_proteins               = True, 
-												output_alignments             = False,
-												output_domain_mappings        = False,
-												output_protein_features       = False,
-												output_domain_assignations    = False,
-												output_interactions           = False,
-												output_interaction_signatures = False,
-												output_RF_results             = False,
-												output_RF_precisions          = False
-											  )
-			
-			for aTranscript in newNoLoops:
-				noLoops.add(aTranscript)
+				for mappingBatch_nodeErr in filter(listdir(iLoopsFolder + "Output/" + mappingBatch + "/sge_output"), "*.assignation." + number + ".err.xml" ):
+					errFile = iLoopsFolder + "Output/" + mappingBatch + "/sge_output/" + mappingBatch_nodeErr
+
+					newNoLoops = myParser.parseNoLoops(
+														xmlOutput                     = errFile,
+														iLoopsPath                    = iLoopsFolder,
+														output_proteins               = True, 
+														output_alignments             = False,
+														output_domain_mappings        = False,
+														output_protein_features       = False,
+														output_domain_assignations    = False,
+														output_interactions           = False,
+														output_interaction_signatures = False,
+														output_RF_results             = False,
+														output_RF_precisions          = False
+													  )
+					
+					for aTranscript in newNoLoops:
+						noLoops.add(aTranscript)
 
 	with open(iLoopsFolder + tag + "_loopFamilies.txt", "w") as loopFamiliesList:
 		 for loopPattern in loopFamilies.keys():
@@ -243,7 +248,7 @@ for transcriptPair in goodCandidates:
 			ISO_OUTPUT.write("<xml>\n")
 			
 			for candidate in filter(listdir(iLoopsFolder + "Output"), transcript + "_*"):
-				for tens in range(3):
+				for tens in ["", range(3) ]:
 					for units in range(10):
 						number = str(tens) + str(units)
 						if number == "00": continue
@@ -254,7 +259,7 @@ for transcriptPair in goodCandidates:
 								for line in MAPPED:
 									if line.strip() != "<?xml version=\"1.0\" encoding=\"utf-8\"?>" and line.strip() != "<xml>" and line.strip() != "</xml>":
 										ISO_OUTPUT.write(line)
-				for tens in range(3):
+				for tens in ["", range(3) ]:
 					for units in range(10):
 						number = str(tens) + str(units)
 						if number == "00": continue
