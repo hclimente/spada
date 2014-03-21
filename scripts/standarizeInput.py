@@ -32,7 +32,7 @@ if(inputType == "GENCODE"):
 					if line.find("#") == -1:
 						tableValues=line.strip().split("\t")
 						splitIds=tableValues[0].split("|")
-						FILTERED.write(splitIds[1].split(".")[0] + "\t" + splitIds[0].split(".")[0] + "\t" + splitIds[5] + "\t" + tableValues[2] + "\n")
+						FILTERED.write(splitIds[1] + "\t" + splitIds[0] + "\t" + splitIds[5] + "\t" + tableValues[2] + "\n")
 			reps.append(replicateCounter)
 			replicateCounter += 1
 
