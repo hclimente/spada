@@ -5,6 +5,10 @@ from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio.Alphabet import generic_dna
 
+equal = 0
+notOrf = 0
+badCoordinates = 0
+
 with open("knownGene.txt","r") as CDSFile, open("proteins_cds.fa","w") as PROTEINS, open("transcripts_cds.fa","w") as TRANSCRIPTS:
 	currentChr = ""
 	chromosome = ""
@@ -33,6 +37,8 @@ with open("knownGene.txt","r") as CDSFile, open("proteins_cds.fa","w") as PROTEI
 			CHROMOSOME.close()
 
 		if cdsStart == cdsEnd:
+			print(name + " couldn't be processed: cdsStart == cdsEnd")
+			equal += 1
 			continue
 		
 		orf = ""
@@ -47,6 +53,8 @@ with open("knownGene.txt","r") as CDSFile, open("proteins_cds.fa","w") as PROTEI
 
 		for exonSt, exonEnd in zip(norExonStarts, norExonEnds):
 			if exonEnd < 0 or exonSt > len(cds):
+				print(name + " couldn't be processed: exonEnd < 0 or exonSt > len(cds)")
+				badCoordinates += 1
 				continue
 			
 			if not orf:
@@ -57,6 +65,8 @@ with open("knownGene.txt","r") as CDSFile, open("proteins_cds.fa","w") as PROTEI
 			orf += str(cds[exonSt:exonEnd].seq)
 	
 		if not orf:
+			print(name + " couldn't be processed: not orf")
+			notOrf += 1
 			continue
 		record = SeqRecord(Seq(orf, generic_dna), id=name)
 
@@ -65,3 +75,7 @@ with open("knownGene.txt","r") as CDSFile, open("proteins_cds.fa","w") as PROTEI
 
 		TRANSCRIPTS.write(">" + record.id + "\n")
 		TRANSCRIPTS.write(orf + "\n")
+
+print("Equal: " + str(equal))
+print("not orf: " + str(notOrf))
+print("bad coordinates: " + str(badCoordinates))
