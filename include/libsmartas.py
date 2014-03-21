@@ -34,7 +34,6 @@ def setEnvironment(cfgFile):
 	opt = parseParam(cfgFile)
 
 	print("* Preparing the environment")
-	return opt
 	cmd("rm -r old2/" + opt["out"] + "; mv", "old/" + opt["out"], "old2/"  + opt["out"])
 	cmd("mv", "Results/" + opt["out"], "old/" + opt["out"])
 	cmd("mkdir -p", "Results/" + opt["out"] + "/RWorkspaces")
@@ -62,9 +61,9 @@ def setEnvironment(cfgFile):
 			cmd("cp", "old/" + opt["out"] + "/candidates_normal.gtf", "old/" + opt["out"] + "/candidates_tumor.gtf", "Results/" + opt["out"])
 	else:
 		printParam(opt)
-		if opt["initialStep"] > 1:
+		if opt["initialStep"] == 1:
 			cmd("scripts/InputUnpaired.r", opt["out"])
-		if opt["initialStep"] > 2:
+		if opt["initialStep"] == 3:
 			cmd("cp", opt["external"] + ".tsv" , "Results/" + opt["out"] + "/candidateList.tsv")
 			cmd("cp", opt["external"] + "_expressedGenes.lst", "Results/" + opt["out"] + "/expressedGenes.lst")
 
