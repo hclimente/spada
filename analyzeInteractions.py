@@ -75,13 +75,13 @@ with open(out + "candidateList.top.tsv", "r") as CANDIDATES, open(out + "Interax
 
 		with open(out + elements[0] + ".dot", "w") as DOTFile:
 			for iso, ori in zip([elements[2], elements[3]], ["Normal","Tumor"]):
-		 		DOTFile.write("graph " + iso + " {\n")
-		 		DOTFile.write("\t" + iso + " [label=" + elements[0] + ", shape=polygon,sides=5];\n")
+		 		DOTFile.write("graph " + iso.split(".")[0] + " {\n")
+		 		DOTFile.write("\t" + iso.split(".")[0] + " [label=" + elements[0] + ", shape=polygon,sides=5];\n")
 		 		for partner in interactions[ori].keys():
-		 			DOTFile.write("\t" + partner + " [shape=record,label=\"<f0> "+ partner +"|<f1> " + expressedTranscripts[partner] + "\"];\n") 
+		 			DOTFile.write("\t" + partner.split(".")[0] + " [shape=record,label=\"<f0> "+ partner.split(".")[0] +"|<f1> " + expressedTranscripts[partner] + "\"];\n") 
 
 		 		for partner in interactions[ori].keys():
-		 			DOTFile.write("\t" + iso + " -- " + partner + " [label=\"" + str(interactions[ori][partner]) + "\"") 
+		 			DOTFile.write("\t" + iso.split(".")[0] + " -- " + partner.split(".")[0] + " [label=\"" + str(interactions[ori][partner]) + "\"") 
 		 			if InteraX[partner] >= 6:
 		 				DOTFile.write(", style=bold, color=blue, weight=" + str(InteraX[partner]) )
 		 			elif InteraX[partner] <= -6:
@@ -89,5 +89,7 @@ with open(out + "candidateList.top.tsv", "r") as CANDIDATES, open(out + "Interax
 		 			DOTFile.write("];\n")
 		 		DOTFile.write("}\n")
 
-		if top >= 3:
+		cmd("circo", "-Tps", out + elements[0] + ".dot", "-o", out + elements[0] + ".ps")
+
+		if top >= 30:
 			break
