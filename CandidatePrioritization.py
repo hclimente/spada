@@ -119,6 +119,7 @@ bianaSession.output_user_entity_set_details(
 
 intogenDrivers = set()
 articleCompilation = {}
+txInfo = {}
 
 with open('Data/Databases/Intogen.tsv','r') as Intogen_r:
 	print("\t* Reading known driver genes from IntOGen.")
@@ -140,12 +141,45 @@ with open("Data/Databases/compilationTable.tsv", "r") as compilationTable:
 				articleCompilation[splitted[1]].append("-")
 			articleCompilation[splitted[1]].append(splitted[14])
 
+with open("Data/TCGA/knownGene.txt", "r") as TX_INFO:
+	print("\t* Calculating transcript differences.")
+	for line in TX_INFO:
+		elements = line.strip().split("\t")
+		name		= elements[0] 
+		chrom		= elements[1] 
+		strand		= elements[2] 
+		txStart		= int(elements[3])
+		txEnd		= int(elements[4])
+		cdsStart	= int(elements[5])
+		cdsEnd		= int(elements[6])
+		exonCount	= int(elements[7])
+		exonStarts	= map(int, filter(None, elements[8].split(",") ) )
+		exonEnds	= map(int, filter(None, elements[9].split(",") ) )
+		proteinID	= elements[10]
+		alignID		= elements[11]
+
+		txInfo[name] = {}
+		txInfo[name]["txStart"] 	= txStart
+		txInfo[name]["txEnd"] 		= txEnd
+		txInfo[name]["cdsStart"] 	= cdsStart
+		txInfo[name]["cdsEnd"] 		= cdsEnd
+		txInfo[name]["exonStarts"] 	= exonStarts
+		txInfo[name]["exonEnds"] 	= exonEnds
+
 candidateList = []
 with open("Results/" + out + "/candidateList.tsv", "r") as candidates:
 	print("\t* Checking coincidences.")
 	for line in candidates:
 		aCandidate = {}
 		aCandidate["Basic"] = line.strip()
+
+		#Data from external sources doesn't have number of replicates
+		if len(aCandidate["Basic"].split("\t")) == 5:
+			aCandidate["Basic"] += "\t-1"
+		
+		aCandidate["UTR Change"] = "No"
+		aCandidate["CDS Change"] = "No"
+		aCandidate["CDS?"] = "Yes"
 		aCandidate["Hub"] = "na"
 		aCandidate["IntOGen"] = "no"
 		aCandidate["Articles"] = []
@@ -156,6 +190,7 @@ with open("Results/" + out + "/candidateList.tsv", "r") as candidates:
 		candidate1 = splitted[2]
 		candidate2 = splitted[3]
 		
+		#BIANA info
 		with open("Results/" + out + "/candidateInteractions.tsv", "r") as nodes:
 			for line in nodes:
 				ids = set(line.split("\t")[3].split())
@@ -168,22 +203,51 @@ with open("Results/" + out + "/candidateList.tsv", "r") as candidates:
 						aCandidate["Hub"] = (line.split("\t"))[2]
 						break
 		
+		#Intogen info
 		if (inputType == "ensembl" and gene in intogenDrivers) or (inputType == "geneid" and name in intogenDrivers):
 			aCandidate["IntOGen"] = "yes"
 		
+		#Journals info
 		if name in articleCompilation.keys():
 			for info in articleCompilation[name]:
 				aCandidate["Articles"].append(info)
 		else:
 			aCandidate["Articles"] = ["-","-","-","-","-","-","-","-","-","-","-","NA"]
 
+		#CDS and UTR change
+		if txInfo[candidate1]["cdsStart"] == txInfo[candidate1]["cdsEnd"] or txInfo[candidate2]["cdsStart"] == txInfo[candidate2]["cdsEnd"]:
+			aCandidate["CDS?"] = "No"
+
+		if txInfo[candidate1]["exonStarts"] != txInfo[candidate2]["exonStarts"] or txInfo[candidate1]["exonEnds"] != txInfo[candidate2]["exonEnds"]:
+			if txInfo[candidate1]["cdsStart"] != txInfo[candidate2]["cdsStart"] or txInfo[candidate1]["cdsEnd"] != txInfo[candidate2]["cdsEnd"]:
+				aCandidate["CDS Change"] = "Yes"
+			if txInfo[candidate1]["txStart"] != txInfo[candidate2]["txStart"] or txInfo[candidate1]["txEnd"] != txInfo[candidate2]["txEnd"]:
+				aCandidate["UTR Change"] = "Yes"
+
+		#Check if each of the exons at the CDS are the same.
+		for anExonStart_1, anExonEnd_1 in zip(txInfo[candidate1]["exonStarts"], txInfo[candidate1]["exonEnds"] ):
+			exonMatch = False
+			
+			for anExonStart_2, anExonEnd_2 in zip(txInfo[candidate2]["exonStarts"], txInfo[candidate2]["exonEnds"] ):
+				if anExonStart_1 == anExonStart_2 and anExonEnd_1 == anExonEnd_2:
+					exonMatch = True
+					break
+			
+			if not exonMatch:
+				if anExonStart_1 < txInfo[candidate1]["cdsStart"] or anExonStart_1 > txInfo[candidate1]["cdsEnd"]:
+					aCandidate["UTR Change"] = "Yes"
+				else:
+					aCandidate["CDS Change"] = "Yes"
+
 		candidateList.append(aCandidate)
 
-with open("Results/" + out + "/candidateList.top.tsv", "w") as candidates:
-	candidates.write("hugo_id\tGene\tTranscript_normal\tTranscript_tumor\tReplicates\tKnown PPI\tIntOGen\t")
-	candidates.write("baltz_a\tcastello_a\tkwon_a\tgonzalez_a\tbrosseau_a\tvogelstein_a\than_a\tjuan_ap\tjuan_pr\tbiomart_a\tcosmic_a\treactome\n")
+with open("Results/" + out + "/candidateList.top.tsv", "w") as CANDIDATES_TOP:
+	CANDIDATES_TOP.write("hugo_id\tGene\tTranscript_normal\tTranscript_tumor\tReplicates\tKnown PPI\tCDS?\tUTR Change\tCDS Change\tIntOGen\t")
+	CANDIDATES_TOP.write("baltz_a\tcastello_a\tkwon_a\tgonzalez_a\tbrosseau_a\tvogelstein_a\than_a\tjuan_ap\tjuan_pr\tbiomart_a\tcosmic_a\treactome\n")
 	for aCandidate in candidateList:
-		candidates.write(aCandidate["Basic"] + "\t" + aCandidate["Hub"] + "\t" + aCandidate["IntOGen"])
+		CANDIDATES_TOP.write(aCandidate["Basic"] + "\t" + aCandidate["Hub"] + "\t" + aCandidate["CDS?"] + "\t")
+		CANDIDATES_TOP.write(aCandidate["UTR Change"] + "\t" + aCandidate["CDS Change"] + "\t" + aCandidate["IntOGen"])
+		
 		for info in aCandidate["Articles"]:
-			candidates.write("\t" + info)
-		candidates.write("\n")
+			CANDIDATES_TOP.write("\t" + info)
+		CANDIDATES_TOP.write("\n")
