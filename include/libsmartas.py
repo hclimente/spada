@@ -61,8 +61,8 @@ def setEnvironment(cfgFile):
 			cmd("cp", "old/" + opt["out"] + "/candidates_normal.gtf", "old/" + opt["out"] + "/candidates_tumor.gtf", "Results/" + opt["out"])
 	else:
 		printParam(opt)
-		if opt["initialStep"] == 1:
-			cmd("scripts/InputUnpaired.r", opt["out"])
+		if opt["initialStep"] == 2:
+			cmd("scripts/InputUnpaired.r", opt["out"], opt["unpairedReplicates"], "Data/TCGA/Unpaired/" + opt["tag1"] + "/")
 		if opt["initialStep"] == 3:
 			cmd("cp", opt["external"] + ".tsv" , "Results/" + opt["out"] + "/candidateList.tsv")
 			cmd("cp", opt["external"] + "_expressedGenes.lst", "Results/" + opt["out"] + "/expressedGenes.lst")
@@ -117,7 +117,7 @@ def printParam(opt):
 def parseParam(cfgFile):
 
 	opt = { "initialStep" : 0, "wd" : "/home/hector/SmartAS/", "gaudiWd" : "/sbi/users/hectorc/SmartAS", "minExpression" : 0, 
-			"inputType" : "GENCODE" , "Conditions" : ["N", "T"], "tag1" : "20", "Replicates" : 0, "external" : "" }
+			"inputType" : "GENCODE" , "Conditions" : ["N", "T"], "tag1" : "20", "Replicates" : 0, "external" : "", "unpairedReplicates" : 0}
 
 	with open(cfgFile, "r") as PARAMETERS:
 		for line in PARAMETERS:
@@ -125,7 +125,7 @@ def parseParam(cfgFile):
 
 			if elements[0] in ["wd", "gaudiWd", "inputType", "tag1", "out", "gOut", "external"]:
 				opt[elements[0]] = elements[1]
-			elif elements[0] in ["Replicates", "initialStep"]:
+			elif elements[0] in ["Replicates", "initialStep", "unpairedReplicates"]:
 				opt[elements[0]] = int(elements[1])
 			elif elements[0] in ["minExpression"]:
 				opt[elements[0]] = float(elements[1])
