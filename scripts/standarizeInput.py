@@ -62,6 +62,31 @@ elif(inputType == "TCGA"):
 				currentCol += 1
 	for patient in patients:
 		patient.close()
+elif(inputType == "TCGA_unpaired"):
+	patients = []
+	with open("Data/TCGA/Rawdata/" + tag1 + "_iso_tpm_tumor-filtered.txt", "r") as FILE:
+		firstLine = FILE.readline().strip().split("\t")
+		replicateCounter = 1
+		for patient in range(0, len(firstLine) ):
+			patients.append(open(outDir + str(replicateCounter) + "_T.tsv", "w"))
+			reps.append(replicateCounter)
+			replicateCounter += 1
+		
+		for line in FILE:
+						
+			splitted = line.strip().split("\t")
+			seqTags = splitted[0].split(",")
+			
+			gene = seqTags[0]
+			transcript = seqTags[1]
+			name = gene.split("|")[0]
+			
+			currentCol = 1
+			for patient in patients:
+				patient.write( gene + "\t" + transcript + "\t" + name + "\t" + splitted[currentCol] + "\n")
+				currentCol += 1
+	for patient in patients:
+		patient.close()
 
 cmd("cp Data/config.cfg", outDir)
 with open(outDir + "config.cfg", "a") as CONFIG:
