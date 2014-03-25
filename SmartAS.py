@@ -70,11 +70,11 @@ def launchiLoops(opt):
 	cmd("ssh hectorc@gaudi 'mkdir -p", opt["gOut"] + "/iLoops/Output; mkdir -p", opt["gOut"] + "/iLoops/Input; mkdir -p", opt["gOut"] + "/iLoops/logs'")
 	cmd("scp -r " + "Results/" + opt["out"] + "/expressedGenes.lst Results/" + opt["out"] + "/candidateList.top.tsv hectorc@gaudi.imim.es:" + opt["gOut"])
 
-	cmd("ssh hectorc@gaudi '" + opt["gaudiWd"] + "/Pipeline/LaunchiLoops.py", opt["gaudiWd"], opt["out"], opt["inputType"] + "'")
+	cmd("ssh hectorc@gaudi '" + opt["gaudiWd"] + "/Pipeline/CalculateInteractions.py", opt["gaudiWd"], opt["out"], opt["inputType"] + "'")
 
 def analyzeInteractions(opt):
 
 	print("* Examining iLoops results.")
-	cmd("Pipeline/analyzeInteractions.py", opt["out"])
+	cmd("Pipeline/AnalyzeInteractions.py", opt["out"])
 
 main(sys.argv[1:])
