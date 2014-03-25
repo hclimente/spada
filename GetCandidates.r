@@ -5,11 +5,18 @@ library(plyr)
 args <- commandArgs(trailingOnly = TRUE)
 minExpression <- as.numeric(args[1])
 load(paste0("Results/", args[2], "/RWorkspaces/1_ExploreData.RData"))
+unpairedReplicates <- as.numeric(args[3])
+numOfReplicates <- inputData[["Replicates"]]
+
+if unpairedReplicates != 0 {
+  load(paste0("Results/", args[2], "/RWorkspaces/1_Tumor_Intereplicate.RData"))
+  numOfReplicates <- unpairedReplicates
+}
 
 candidates <- list()
 replicateExpressed  <- list()
 
-for (replicate in seq(1,inputData[["Replicates"]])){
+for (replicate in seq(1,numOfReplicates)){
   
 	cat("\t* Replicate", replicate)
 
