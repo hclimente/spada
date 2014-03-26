@@ -120,7 +120,7 @@ def getFASTAInput(iLoopsFolder, tag, inputType, transcripts):
 	for expressedFasta in filter(listdir(iLoopsFolder), tag + "_*.fasta"):
 		
 		assignationBatch = expressedFasta.split(".")[0].split("_")[1]
-		cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py",
+		cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops13/iLoops.py",
 			"-f " + iLoopsFolder + expressedFasta,
 			"-j " + iLoopsFolder + "Output/Mapping_" + tag + "_" + assignationBatch,
 			"-x Mapping_" + tag + "_" + assignationBatch + ".xml",
@@ -230,7 +230,7 @@ for transcriptPair in goodCandidates:
  		for configFile in filter(listdir(iLoopsFolder + "Input/" + transcript), "*net"):
  			batch = (configFile.split(".")[1]).split("_")[1]
  			
-			cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py",
+			cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops13/iLoops.py",
  				"-f " + iLoopsFolder + "Input/" + transcript + "/Expressed_uniqLoops_" + batch + ".fasta",
  				"-q " + iLoopsFolder + "Input/" + transcript + "/" + configFile,
  				"-j " + iLoopsFolder + "Output/" + configFile,
