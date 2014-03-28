@@ -246,26 +246,32 @@ for transcriptPair in goodCandidates:
 		with open(iLoopsFolder + "Output/" + transcript + ".ips", "w") as ISO_OUTPUT:
 			ISO_OUTPUT.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n")
 			ISO_OUTPUT.write("<xml>\n")
+
+			maxBatch = len( filter( listdir(iLoopsFolder + "Output"), transcript + "_*") )
 			
-			for candidate in filter(listdir(iLoopsFolder + "Output"), transcript + "_*"):
+			for batch in range(1, maxBatch + 1):
+				candidateOut = iLoopsFolder + "Output/" + transcript + "_" + str(batch) + "/sge_output"
 				for tens in ["", range(3) ]:
 					for units in range(10):
 						number = str(tens) + str(units)
 						if number == "00": continue
 
-						for nodeMap in filter(listdir(iLoopsFolder + "Output/" + candidate + "/sge_output"), "*.assignation." + number + ".xml" ):
-							mapFile = iLoopsFolder + "Output/" + candidate + "/sge_output/" + nodeMap
+						for nodeMap in filter(listdir( candidateOut ), "*.assignation." + number + ".xml" ):
+							mapFile =  candidateOut + "/" + nodeMap
 							with open(mapFile, "r") as MAPPED:
 								for line in MAPPED:
 									if line.strip() != "<?xml version=\"1.0\" encoding=\"utf-8\"?>" and line.strip() != "<xml>" and line.strip() != "</xml>":
 										ISO_OUTPUT.write(line)
+
+			for batch in range(1, maxBatch + 1):
+				candidateOut = iLoopsFolder + "Output/" + transcript + "_" + str(batch) + "/sge_output"
 				for tens in ["", range(3) ]:
 					for units in range(10):
 						number = str(tens) + str(units)
 						if number == "00": continue
 
-						for nodeAss in filter(listdir(iLoopsFolder + "Output/" + candidate + "/sge_output"), "*.scoring." + number + ".xml" ):
-							assFile = iLoopsFolder + "Output/" + candidate + "/sge_output/" + nodeAss
+						for nodeAss in filter(listdir( candidateOut ), "*.scoring." + number + ".xml" ):
+							assFile = candidateOut + "/" + nodeAss
 							with open(assFile, "r") as ASSIGNED:
 								for line in ASSIGNED:
 									if line.strip() != "<?xml version=\"1.0\" encoding=\"utf-8\"?>" and line.strip() != "<xml>" and line.strip() != "</xml>":
