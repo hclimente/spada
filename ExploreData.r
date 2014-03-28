@@ -107,9 +107,46 @@ for (replicate in seq(1,inputData[["Replicates"]])){
 
 }
 
-interReplicate_N$MedianPSI <- apply(interReplicate_N[,psiCols], 1, median)
-interReplicate_N$MAD <- apply(interReplicate_N[,psiCols], 1, mad)
+interReplicate_N$MedianPSI <- apply(interReplicate_N[,psiCols], 1, median, na.rm=T)
+interReplicate_N$MAD <- apply(interReplicate_N[,psiCols], 1, mad, na.rm=T)
+
+q01 <- as.numeric()
+q05 <- as.numeric()
+q95 <- as.numeric()
+q99 <- as.numeric()
+fpr <- as.numeric()
+
+for (tx in interReplicate_N$Transcript){
+  thisTranscript <- interReplicate_N[interReplicate_N$Transcript==tx,]
+  subtraction <- as.numeric()
+  for (i in seq(1, inputData[["Replicates"]] - 1) ){
+    s <- thisTranscript[,paste0("PSI_",i)] - as.numeric(thisTranscript[,psiCols])
+    subtraction <- c(subtraction,s)
+  }
+  
+  q01 <- c(q01, as.numeric( quantile(subtraction, 0.01, na.rm=T) ) )
+  q05 <- c(q05, as.numeric( quantile(subtraction, 0.05, na.rm=T) ) )
+  q95 <- c(q95, as.numeric( quantile(subtraction, 0.95, na.rm=T) ) )
+  q99 <- c(q99, as.numeric( quantile(subtraction, 0.99, na.rm=T) ) )
+
+  if ( any(!is.na(subtraction)) ) {
+    fpr <- c(fpr, ecdf(subtraction)(4 * thisTranscript$MAD) )
+  } else {
+    fpr <- c(fpr, NA)
+  }
+
+}
+
+interReplicate_N$FPR_01 <- q01
+interReplicate_N$FPR_05 <- q05
+interReplicate_N$FPR_95 <- q95
+interReplicate_N$FPR_99 <- q99
+interReplicate_N$FPR_4MAD <- fpr
 
 simplePlot(interReplicate_N$MedianPSI, interReplicate_N$MAD, "InterReplicate_N", "Median PSI", "MAD", paste0(out, "DataExploration/Interreplicate_mean_MAD_N.png"))
+simplePlot(interReplicate_N$MedianPSI, interReplicate_N$FPR_01, "InterReplicate_N", "Median PSI", "FPR 1%", paste0(out, "DataExploration/Interreplicate_medianPSI_FRP1_N.png"))
+simplePlot(interReplicate_N$MedianPSI, interReplicate_N$FPR_05, "InterReplicate_N", "Median PSI", "FPR 5%", paste0(out, "DataExploration/Interreplicate_medianPSI_FRP5_N.png"))
+simplePlot(interReplicate_N$MedianPSI, interReplicate_N$FPR_95, "InterReplicate_N", "Median PSI", "FPR 95%", paste0(out, "DataExploration/Interreplicate_medianPSI_FRP95_N.png"))
+simplePlot(interReplicate_N$MedianPSI, interReplicate_N$FPR_99, "InterReplicate_N", "Median PSI", "FPR 99%", paste0(out, "DataExploration/Interreplicate_medianPSI_FRP99_N.png"))
 
 save(isoformExpression, intraReplicate, interReplicate_N, inputData, wd, out, file=paste0(out, "RWorkspaces/1_ExploreData.RData"))
