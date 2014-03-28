@@ -25,7 +25,7 @@ def writeFasta(basename, inputType, expressedTranscripts):
 		for line in gcMULTIFASTA:
 			if line.find(">") != -1:
 
-				if transcriptCounter >= 9999:
+				if transcriptCounter >= 1499:
 					fileCounter += 1
 					MULTIFASTA.close()
 					MULTIFASTA = open(basename + "_" + str(fileCounter) + ".fasta", "w")
@@ -128,7 +128,7 @@ def getFASTAInput(iLoopsFolder, tag, inputType, transcripts):
 			"-v",
 			"-m",
 			"-n 25",
-			"-Q bigmem",
+			"-Q sbi",
 			"2>&1 >" + iLoopsFolder + "logs/Mapping_" + tag + "_" + assignationBatch + ".log"
 		   )
 
@@ -238,7 +238,7 @@ for transcriptPair in goodCandidates:
  				"-v",
  				"-g all",
  				"-n 25",
- 				"-Q bigmem",
+ 				"-Q sbi",
  				"-c 1,5,6,7,8,9,10,11,12,13,14,15,20,30,40,50",
  				"2>&1 >" + iLoopsFolder + "logs/" + configFile + ".log"
  			   )
