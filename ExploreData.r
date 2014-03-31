@@ -110,43 +110,39 @@ for (replicate in seq(1,inputData[["Replicates"]])){
 interReplicate_N$MedianPSI <- apply(interReplicate_N[,psiCols], 1, median, na.rm=T)
 interReplicate_N$MAD <- apply(interReplicate_N[,psiCols], 1, mad, na.rm=T)
 
-q01 <- as.numeric()
-q05 <- as.numeric()
-q95 <- as.numeric()
-q99 <- as.numeric()
-fpr <- as.numeric()
+mad0_mask <- interReplicate_N$MAD == 0
+is.na(mad0_mask) <- TRUE
+mad0 <- interReplicate_N[mad0_mask, psiCols]
+
+interReplicate_N$MAD[mad0_mask] <- apply(mad0, 1, function(x) mad(x,center = mean(as.numeric(x),na.rm=T), constant = 1.253314, na.rm = TRUE))
+
+#rzs <- sweep(intraReplicate[[wut]]$deltaPSI, 1, interReplicate_N$MedianPSI, "-")
+#rzs <- sweep(rzs, 1, interReplicate_N$MAD, "/")
+
+fpr1 <- as.numeric()
+fpr5 <- as.numeric()
+fprMAD <- as.numeric()
 
 for (tx in interReplicate_N$Transcript){
   thisTranscript <- interReplicate_N[interReplicate_N$Transcript==tx,]
-  subtraction <- as.numeric()
-  for (i in seq(1, inputData[["Replicates"]] - 1) ){
-    s <- thisTranscript[,paste0("PSI_",i)] - as.numeric(thisTranscript[,psiCols])
-    subtraction <- c(subtraction,s)
-  }
   
-  q01 <- c(q01, as.numeric( quantile(subtraction, 0.01, na.rm=T) ) )
-  q05 <- c(q05, as.numeric( quantile(subtraction, 0.05, na.rm=T) ) )
-  q95 <- c(q95, as.numeric( quantile(subtraction, 0.95, na.rm=T) ) )
-  q99 <- c(q99, as.numeric( quantile(subtraction, 0.99, na.rm=T) ) )
-
-  if ( any(!is.na(subtraction)) ) {
-    fpr <- c(fpr, ecdf(subtraction)(4 * thisTranscript$MAD) )
+  diffMatrix <- abs(outer(as.numeric(thisTranscript[,psiCols]),as.numeric(thisTranscript[,psiCols]),"-"))
+  subtraction <- diffMatrix[lower.tri(diffMatrix, diag = FALSE)]
+  fpr1 <- c(fpr1, as.numeric( quantile(subtraction, 0.99, na.rm=T) ) )
+  fpr5 <- c(fpr5, as.numeric( quantile(subtraction, 0.95, na.rm=T) ) )
+  if ( !anyNA(subtraction) ) {
+    fprMAD <- c(fprMAD, ecdf(subtraction)(4 * thisTranscript$MAD) )
   } else {
-    fpr <- c(fpr, NA)
+    fprMAD <- c(fprMAD, NA)
   }
-
 }
 
-interReplicate_N$FPR_01 <- q01
-interReplicate_N$FPR_05 <- q05
-interReplicate_N$FPR_95 <- q95
-interReplicate_N$FPR_99 <- q99
-interReplicate_N$FPR_4MAD <- fpr
+interReplicate_N$FPR_1 <- fpr1
+interReplicate_N$FPR_5 <- fpr5
+interReplicate_N$FPR_4MAD <- fprMAD
 
 simplePlot(interReplicate_N$MedianPSI, interReplicate_N$MAD, "InterReplicate_N", "Median PSI", "MAD", paste0(out, "DataExploration/Interreplicate_mean_MAD_N.png"))
-simplePlot(interReplicate_N$MedianPSI, interReplicate_N$FPR_01, "InterReplicate_N", "Median PSI", "FPR 1%", paste0(out, "DataExploration/Interreplicate_medianPSI_FRP1_N.png"))
-simplePlot(interReplicate_N$MedianPSI, interReplicate_N$FPR_05, "InterReplicate_N", "Median PSI", "FPR 5%", paste0(out, "DataExploration/Interreplicate_medianPSI_FRP5_N.png"))
-simplePlot(interReplicate_N$MedianPSI, interReplicate_N$FPR_95, "InterReplicate_N", "Median PSI", "FPR 95%", paste0(out, "DataExploration/Interreplicate_medianPSI_FRP95_N.png"))
-simplePlot(interReplicate_N$MedianPSI, interReplicate_N$FPR_99, "InterReplicate_N", "Median PSI", "FPR 99%", paste0(out, "DataExploration/Interreplicate_medianPSI_FRP99_N.png"))
+simplePlot(interReplicate_N$MedianPSI, interReplicate_N$FPR_1, "InterReplicate_N", "Median PSI", "FPR 1%", paste0(out, "DataExploration/Interreplicate_medianPSI_FRP1_N.png"))
+simplePlot(interReplicate_N$MedianPSI, interReplicate_N$FPR_5, "InterReplicate_N", "Median PSI", "FPR 5%", paste0(out, "DataExploration/Interreplicate_medianPSI_FRP5_N.png"))
 
 save(isoformExpression, intraReplicate, interReplicate_N, inputData, wd, out, file=paste0(out, "RWorkspaces/1_ExploreData.RData"))
