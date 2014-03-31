@@ -23,15 +23,15 @@ for (replicate in seq(1,numOfReplicates)){
   candidates[[replicate]] <- data.frame(Gene=as.character(), Genename=as.character(), Switch=as.numeric(), maxdPSI=as.character(), mindPSI=as.character())
   
   #Filter by deltaPSI and expression, based on the FPR
-  psiThreshold <- abs(intraReplicate[[replicate]]$deltaPSI) > 4 * interReplicate_N$MAD
-  psiThreshold[is.na(psiThreshold)] <- FALSE
+  psiThreshold <- abs(intraReplicate[[replicate]]$deltaPSI) > interReplicate_N$FPR_5
+  is.na(psiThreshold) <- FALSE
   
   norExpression <- log(intraReplicate[[replicate]]$TPM_N) > minExpression
   tumExpression <- log(intraReplicate[[replicate]]$TPM_T) > minExpression
   
-  replicateCandidates <- vector('list', length(unique(intraReplicate[[replicate]]$Gene[psiThreshold]))) # & expressionThreshold])))
+  replicateCandidates <- vector('list', length(unique(intraReplicate[[replicate]]$Gene[psiThreshold]))) 
 
-  for (aCandidate in unique(intraReplicate[[replicate]]$Gene[psiThreshold])){ # & expressionThreshold])){
+  for (aCandidate in unique(intraReplicate[[replicate]]$Gene[psiThreshold){ 
     
     thisGeneData <- intraReplicate[[replicate]]$Gene == aCandidate
 
