@@ -6,7 +6,7 @@ origin=$2
 while read line
 do
 	echo === $line ===
-	if [[ $origin -eq "ext" ]]; then
+	if [[ "$origin" == "ext" ]]; then
 		if [[ ! -f Data/TCGA/External/"$line"_expressedGenes.lst ]]; then
 			echo Data/TCGA/External/"$line"_expressedGenes.lst
 			continue
