@@ -23,7 +23,7 @@ def writeFasta(basename, inputType, expressedTranscripts):
 
 	with open("Data/" + inputType + "/proteins.fa", "r") as gcMULTIFASTA:
 		for line in gcMULTIFASTA:
-			if line.find(">") != -1:
+			if ">" in line:
 
 				if transcriptCounter >= 1499:
 					fileCounter += 1
@@ -154,9 +154,9 @@ def getPairsInput(iLoopsFolder, goodCandidates):
 					writeSeq = False
 					
 					for line in motherFast:
-						if line.find(">") != -1:
+						if ">" in line:
 							writeSeq = False
-							if line.find(aCandidate) != -1:
+							if aCandidate in line:
 								writeSeq = True
 								exprFast.write(">" + aCandidate + "\n")
 						elif writeSeq:
@@ -164,7 +164,7 @@ def getPairsInput(iLoopsFolder, goodCandidates):
 				with open(iLoopsFolder + "Input/" + aCandidate + '/' + aCandidate + '_' + fileNumber + '.net', "w") as PAIRS, \
 					 open(iLoopsFolder + "Input/" + aCandidate + "/" + expressedFasta, "r") as exprFast:
 					for rawExpressed in exprFast:
-						if rawExpressed.find(">") == -1:
+						if not ">" in rawExpressed:
 							continue
 						expressedTranscript = rawExpressed.strip()[1:]
 						PAIRS.write(aCandidate + "\t" + expressedTranscript + "\n")
