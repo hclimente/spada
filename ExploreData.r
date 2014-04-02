@@ -56,8 +56,7 @@ for (replicate in seq(1, inputData[["Replicates"]])){
     colnames(vtTPM) <- c("Gene", "tTPM")
     isoformExpression[[tag]] <- merge(isoformExpression[[tag]], vtTPM)
     isoformExpression[[tag]] <- transform(isoformExpression[[tag]], PSI = TPM / tTPM)
-      
-    #write.table(isoformExpression[[tag]], file=outputFile, sep="\t", row.names=F)
+    
   }
 
   cat("\n")
@@ -75,8 +74,6 @@ for (replicate in seq(1, inputData[["Replicates"]])){
   printLogFreqHist(intraReplicate[[replicate]]$PSI_N, "PSI_N", paste0("PSI_N_",replicate))
   printTPMHist(intraReplicate[[replicate]]$TPM_T, "log10(TPM_T+0.0001)", paste0("TPM_T_",replicate))
   printLogFreqHist(intraReplicate[[replicate]]$PSI_N, "PSI_T", paste0("PSI_T_",replicate))
-    
-  #write.table(intraReplicate[[replicate]], file=paste0(out, "IntraReplicate_",replicate,".tsv"), sep="\t", row.names=F)
 
 }
 
@@ -111,13 +108,10 @@ interReplicate_N$MedianPSI <- apply(interReplicate_N[,psiCols], 1, median, na.rm
 interReplicate_N$MAD <- apply(interReplicate_N[,psiCols], 1, mad, na.rm=T)
 
 mad0_mask <- interReplicate_N$MAD == 0
-is.na(mad0_mask) <- TRUE
+mad0_mask[is.na(mad0_mask)] <- TRUE
 mad0 <- interReplicate_N[mad0_mask, psiCols]
 
 interReplicate_N$MAD[mad0_mask] <- apply(mad0, 1, function(x) mad(x,center = mean(as.numeric(x),na.rm=T), constant = 1.253314, na.rm = TRUE))
-
-#rzs <- sweep(intraReplicate[[wut]]$deltaPSI, 1, interReplicate_N$MedianPSI, "-")
-#rzs <- sweep(rzs, 1, interReplicate_N$MAD, "/")
 
 fpr1 <- as.numeric()
 fpr5 <- as.numeric()
@@ -130,8 +124,8 @@ for (tx in interReplicate_N$Transcript){
   subtraction <- diffMatrix[lower.tri(diffMatrix, diag = FALSE)]
   fpr1 <- c(fpr1, as.numeric( quantile(subtraction, 0.99, na.rm=T) ) )
   fpr5 <- c(fpr5, as.numeric( quantile(subtraction, 0.95, na.rm=T) ) )
-  if ( !anyNA(subtraction) ) {
-    fprMAD <- c(fprMAD, ecdf(subtraction)(4 * thisTranscript$MAD) )
+  if ( !any(is.na(subtraction) ) ) {
+    fprMAD <- c(fprMAD, 1 - ecdf(subtraction)(4 * thisTranscript$MAD) )
   } else {
     fprMAD <- c(fprMAD, NA)
   }
