@@ -2,15 +2,16 @@
 
 from include.libsmartas import *
 import include.custom_iLoops_xml_parser as parser
-from os import listdir
 from os.path import isfile
-from fnmatch import filter
 import sys
-
-import pdb
+from math import fabs
+import networkx as nx
+import matplotlib.pyplot as plt
 
 out = "Results/" + sys.argv[1] + "/"
 myParser = parser.iLoopsParser()
+
+minDiff = 6
 
 InteraX = {}
 expressedTranscripts = {}
@@ -20,78 +21,86 @@ with open(out + "expressedGenes.lst", "r") as EXPRESSED:
 		elements = line.strip().split("\t")
 		expressedTranscripts[elements[0]] = elements[1]
 
-with open(out + "candidateList.top.tsv", "r") as CANDIDATES, open(out + "InteraxChanges.tsv", "w") as INTERAX:
+with open(out + "candidateList.top.tsv", "r") as CANDIDATES:
 
-	INTERAX.write("Gene" + "\t" + "Origin" + "\t" + "Transcript" + "\t" + "Interactions" + "\n")
 	CANDIDATES.readline()
 	top = 0
 	
 	for line in CANDIDATES:
+
 		elements = line.split("\t")
+		gene = elements[0]
+		normalIso = elements[2]
+		tumorIso = elements[3]
 		interactions = {}
 		InteraX = {}
 		top += 1
-		
-		if not isfile(out + "iLoops/Output/" + elements[2] + ".ips") and not isfile(out + "iLoops/Output/" + elements[3] + ".ips"):
+
+		if not isfile(out + "iLoops/Output/" + normalIso + ".ips") and not isfile(out + "iLoops/Output/" + tumorIso + ".ips"):
 			print("\t * Gene " + elements[1] + ": iLoops couldn't process this candidate.")
 			continue
 
-		print("\t * Gene " + elements[1])
-				
-		for iso, ori in zip([elements[2], elements[3]], ["Normal","Tumor"]):
+		with open(out + "InteraxChanges_" + gene + ".tsv", "w") as INTERAX:
 
-			INTERAX.write(elements[0] + "\t" + ori + "\t" + iso + "\t")
+			INTERAX.write("Transcript\tPartner\tPartner gene\tmaxRC\tDiff\n")
+		
+			print("\t * Gene " + elements[1])
+					
+			for iso, ori in zip([normalIso, tumorIso], ["Normal","Tumor"]):
 
-			print("\t\t" + ori + ": " + iso)
+				print("\t\t" + ori + ": " + iso)
 
-			xmlFile = out + "iLoops/Output/" + iso + ".ips"
+				xmlFile = out + "iLoops/Output/" + iso + ".ips"
 
-			if not isfile(xmlFile):
-				interactions[ori] = {}
-			else:
-				interactions[ori] = myParser.parseInteractions(
-															 	thisCandidate				  = iso,
-															 	xmlOutput					  = xmlFile,
-															 	output_proteins               = False, 
-															 	output_alignments             = False,
-															 	output_domain_mappings        = False,
-															 	output_protein_features       = False,
-															 	output_domain_assignations    = False,
-															 	output_interactions           = True,
-															 	output_interaction_signatures = True,
-															 	output_RF_results             = True,
-															 	output_RF_precisions          = False
-															  )
+				if not isfile(xmlFile):
+					interactions[ori] = {}
+				else:
+					interactions[ori] = myParser.parseInteractions(
+																 	thisCandidate				  = iso,
+																 	xmlOutput					  = xmlFile,
+																 	output_proteins               = False, 
+																 	output_alignments             = False,
+																 	output_domain_mappings        = False,
+																 	output_protein_features       = False,
+																 	output_domain_assignations    = False,
+																 	output_interactions           = True,
+																 	output_interaction_signatures = True,
+																 	output_RF_results             = True,
+																 	output_RF_precisions          = False
+																  )
 
-			for partner in interactions[ori].keys():
-				if ori == "Normal":
-					InteraX[partner] = InteraX.get(partner, 0) + interactions[ori][partner]
-				elif ori == "Tumor":
-					InteraX[partner] = InteraX.get(partner, 0) - interactions[ori][partner]
-				
-				INTERAX.write(partner + "(" + str(interactions[ori][partner]) + ")" + ";")
+				for partner in interactions[ori].keys():
+					if ori == "Normal":
+						InteraX[partner] = InteraX.get(partner, 0) + interactions[ori][partner]
+					elif ori == "Tumor":
+						InteraX[partner] = InteraX.get(partner, 0) - interactions[ori][partner]
+					
+					INTERAX.write(iso + "\t" + partner + "\t" + expressedTranscripts[partner] + "\t" + str(interactions[ori][partner]) + "\t" + str(InteraX[partner]) + "\n")
 
-			INTERAX.write("\n")
+			G=nx.Graph()
 
-		with open(out + elements[0] + ".dot", "w") as DOTFile:
-			for iso, ori in zip([elements[2], elements[3]], ["Normal","Tumor"]):
-		 		DOTFile.write("graph " + iso.split(".")[0] + " {\n")
-		 		DOTFile.write("\t" + iso.split(".")[0] + " [label=" + elements[0] + ", shape=polygon,sides=5];\n")
-		 		for partner in interactions[ori].keys():
-		 			DOTFile.write("\t" + partner.split(".")[0] + " [shape=record,label=\"<f0> "+ partner.split(".")[0] +"|<f1> " + expressedTranscripts[partner] + "\"];\n") 
+	 		# DOTFile.write("graph " + gene + " {\n")
+	 		# DOTFile.write("\t" + gene + " [label=" + gene + ", shape=polygon,sides=5];\n")
+	 		G.add_node(gene)
+	 		for partner in InteraX.keys():
+	 		 	if fabs(InteraX[partner]) < minDiff:
+	 		 		continue
 
-		 		for partner in interactions[ori].keys():
-		 			if interactions[ori][partner] < 10:
-		 				continue
-		 			DOTFile.write("\t" + iso.split(".")[0] + " -- " + partner.split(".")[0] + " [label=\"" + str(interactions[ori][partner]) + "\"") 
-		 			if InteraX[partner] >= 6:
-		 				DOTFile.write(", style=bold, color=blue, weight=" + str(InteraX[partner]) )
-		 			elif InteraX[partner] <= -6:
-		 				DOTFile.write(", style=bold, color=blue, weight=" + str(InteraX[partner]) )
-		 			DOTFile.write("];\n")
-		 		DOTFile.write("}\n")
+	 		 	partnerCoreName = partner.split(".")[0]
+	 			G.add_node(partnerCoreName)
+	 			G.add_edge(gene, partnerCoreName)
+	 			G[gene][partnerCoreName]['weight'] = str( fabs(InteraX[partner]) )
+	 			G[gene][partnerCoreName]['label'] = str(InteraX[partner])
+	 			
+	 			if InteraX[partner] > 0:
+	 				G[gene][partnerCoreName]['color']='red'
+	 			elif InteraX[partner] < 0:
+	 				G[gene][partnerCoreName]['color']='blue'
 
-		cmd("circo", "-Tps", out + elements[0] + ".dot", "-o", out + elements[0] + ".ps")
+			nx.draw(G)
+			plt.savefig( out + gene + ".png", dpi=1000)
+			nx.write_dot(G, out + gene + '.dot')
+			nx.write_graphml(G, out + gene + '.gml')
 
-		if top >= 30:
-			break
+			if top >= 30:
+				break
