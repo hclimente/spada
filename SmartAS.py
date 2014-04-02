@@ -51,7 +51,7 @@ def exploreData(opt):
 def getCandidates(opt):
 
 	print("* Extracting transcripts with high variance and high expression.")
-	cmd("Pipeline/GetCandidates.r", opt["minExpression"], opt["out"])
+	cmd("Pipeline/GetCandidates.r", opt["minExpression"], opt["out"], opt["unpairedReplicates"])
 	
 	cmd("sort", "Results/" + opt["out"] + "/expressedGenes.lst", ">" + "Results/" + opt["out"] + "/expressedGenes.tmp.lst")
 	cmd("mv", "Results/" + opt["out"] + "/expressedGenes.tmp.lst", "Results/" + opt["out"] + "/expressedGenes.lst")
