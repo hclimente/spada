@@ -8,7 +8,7 @@ load(paste0("Results/", args[2], "/RWorkspaces/1_ExploreData.RData"))
 unpairedReplicates <- as.numeric(args[3])
 numOfReplicates <- inputData[["Replicates"]]
 
-if unpairedReplicates != 0 {
+if (unpairedReplicates != 0) {
   load(paste0("Results/", args[2], "/RWorkspaces/1_Tumor_Intereplicate.RData"))
   numOfReplicates <- unpairedReplicates
 }
@@ -24,14 +24,14 @@ for (replicate in seq(1,numOfReplicates)){
   
   #Filter by deltaPSI and expression, based on the FPR
   psiThreshold <- abs(intraReplicate[[replicate]]$deltaPSI) > interReplicate_N$FPR_5
-  is.na(psiThreshold) <- FALSE
+  psiThreshold[is.na(psiThreshold)] <- FALSE
   
   norExpression <- log(intraReplicate[[replicate]]$TPM_N) > minExpression
   tumExpression <- log(intraReplicate[[replicate]]$TPM_T) > minExpression
   
   replicateCandidates <- vector('list', length(unique(intraReplicate[[replicate]]$Gene[psiThreshold]))) 
 
-  for (aCandidate in unique(intraReplicate[[replicate]]$Gene[psiThreshold){ 
+  for (aCandidate in unique(intraReplicate[[replicate]]$Gene[psiThreshold])){ 
     
     thisGeneData <- intraReplicate[[replicate]]$Gene == aCandidate
 
