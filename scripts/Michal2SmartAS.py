@@ -5,7 +5,7 @@ from libsmartas import cmd
 
 for michalFile in listdir("."):
 	core = michalFile.split(".")[0]
-	kansurType = michalFile.split("_")[0]
+	kansurType = core.split("_")[1]
 	with open(michalFile, "r") as MICHAL, open("/home/hector/SmartAS/Data/TCGA/External/" + core + ".tsv","w") as SMARTAS:
 		for line in MICHAL:
 			elements = line.strip().split("\t")
