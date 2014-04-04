@@ -1,11 +1,16 @@
 #!/soft/devel/python-2.7/bin/python
 
+from Bio import SeqIO
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
+from Bio.Alphabet import IUPAC
+
 from include.biana import *
 from include.biana.utilities import identifier_utilities
 import csv
 import sys
 
-out = sys.argv[1]
+out = "Results/" + sys.argv[1]
 inputType = ""
 if sys.argv[2] == "GENCODE":
 	inputType = "ensembl"
@@ -27,7 +32,7 @@ bianaSession = create_new_session(
 # Create A List With All The Seed Identifiers
 list_input_identifiers = []
 
-with open("Results/" + out + "/candidateList.tsv", "r") as candidates:
+with open(out + "/candidateList.tsv", "r") as candidates:
 	for line in candidates:
 		fields = line.strip().split("\t")
 		if inputType == "ensembl":
@@ -105,7 +110,7 @@ bianaSession.select_user_entities_from_user_entity_set(
                                                 	  )
 bianaSession.output_user_entity_set_details(
 												user_entity_set_id = 'SmartAS_entitySet', 
-												out_method = open("Results/" + out + "/candidateInteractions.tsv",'w').write, 
+												out_method = open(out + "/candidateInteractions.tsv",'w').write, 
 												attributes = [inputType,"uniprotaccession","uniprotentry"], 
 												include_level_info = True,
 												include_degree_info = True,
@@ -120,6 +125,8 @@ bianaSession.output_user_entity_set_details(
 intogenDrivers = set()
 articleCompilation = {}
 txInfo = {}
+Uniprot_dict = {}
+Protein_dict = {}
 
 with open('Data/Databases/Intogen.tsv','r') as Intogen_r:
 	print("\t* Reading known driver genes from IntOGen.")
@@ -133,7 +140,7 @@ with open("Data/Databases/compilationTable.tsv", "r") as compilationTable:
 	print("\t* Reading information available in bibliography.")
 	for line in compilationTable:
 		splitted = line.strip().split("\t")
-		if line.find("yes") != -1:
+		if "yes" in line:
 			articleCompilation[splitted[1]] = splitted[3:15]
 		else:
 			articleCompilation[splitted[1]] = []
@@ -167,14 +174,19 @@ with open("Data/TCGA/knownGene.txt", "r") as TX_INFO:
 		txInfo[name]["exonEnds"] 	= exonEnds
 
 candidateList = []
-with open("Results/" + out + "/candidateList.tsv", "r") as candidates:
+with open(out + "/candidateList.tsv", "r") as candidates:
 	print("\t* Checking coincidences.")
+
+	with open("Data/Databases/Uniprot.fasta", "rU") as UNIPROT, open("Data/" + sys.argv[2] + "/proteins.fa", "rU") as PROTEINS:
+		Uniprot_dict = SeqIO.to_dict(SeqIO.parse(UNIPROT, "fasta"))
+		Protein_dict = SeqIO.to_dict(SeqIO.parse(PROTEINS, "fasta"))
+
 	for line in candidates:
 		aCandidate = {}
 		aCandidate["Basic"] = line.strip()
 
 		#Data from external sources doesn't have number of replicates
-		if len(aCandidate["Basic"].split("\t")) == 5:
+		if len(aCandidate["Basic"].split("\t")) < 5:
 			aCandidate["Basic"] += "\t-1"
 		
 		aCandidate["UTR Change"] = "No"
@@ -191,7 +203,7 @@ with open("Results/" + out + "/candidateList.tsv", "r") as candidates:
 		candidate2 = splitted[3]
 		
 		#BIANA info
-		with open("Results/" + out + "/candidateInteractions.tsv", "r") as nodes:
+		with open(out + "/candidateInteractions.tsv", "r") as nodes:
 			for line in nodes:
 				ids = set(line.split("\t")[3].split())
 				if inputType == "ensembl" and (candidate1 in ids or candidate2 in ids): 
@@ -239,14 +251,32 @@ with open("Results/" + out + "/candidateList.tsv", "r") as candidates:
 				else:
 					aCandidate["CDS Change"] = "Yes"
 
+		Uniprot_N = "None"
+		Uniprot_T = "None"
+		emptySeqRecord = SeqRecord(Seq("", IUPAC.protein), id="", name="", description="")
+
+		for uniprot_iso, uniprot_seq in Uniprot_dict.iteritems():
+			if str(Protein_dict.get(candidate1, emptySeqRecord).seq) == str(uniprot_seq.seq):
+				if Uniprot_N == "None":
+					Uniprot_N = uniprot_iso.split("|")[1]
+				else:
+					Uniprot_N += ";" + uniprot_iso.split("|")[1]
+			if str(Protein_dict.get(candidate2, emptySeqRecord).seq) == str(uniprot_seq.seq):
+				if Uniprot_T == "None":
+					Uniprot_T = uniprot_iso.split("|")[1]
+				else:
+					Uniprot_T += ";" + uniprot_iso.split("|")[1]
+
+		aCandidate["Uniprot"] = Uniprot_N + "#" + Uniprot_T
+
 		candidateList.append(aCandidate)
 
-with open("Results/" + out + "/candidateList.top.tsv", "w") as CANDIDATES_TOP:
-	CANDIDATES_TOP.write("hugo_id\tGene\tTranscript_normal\tTranscript_tumor\tReplicates\tKnown PPI\tCDS?\tUTR Change\tCDS Change\tIntOGen\t")
+with open(out + "/candidateList.top.tsv", "w") as CANDIDATES_TOP:
+	CANDIDATES_TOP.write("hugo_id\tGene\tTranscript_normal\tTranscript_tumor\tReplicates\tKnown PPI\tUniprot\tCDS?\tUTR Change\tCDS Change\tIntOGen\t")
 	CANDIDATES_TOP.write("baltz_a\tcastello_a\tkwon_a\tgonzalez_a\tbrosseau_a\tvogelstein_a\than_a\tjuan_ap\tjuan_pr\tbiomart_a\tcosmic_a\treactome\n")
 	for aCandidate in candidateList:
-		CANDIDATES_TOP.write(aCandidate["Basic"] + "\t" + aCandidate["Hub"] + "\t" + aCandidate["CDS?"] + "\t")
-		CANDIDATES_TOP.write(aCandidate["UTR Change"] + "\t" + aCandidate["CDS Change"] + "\t" + aCandidate["IntOGen"])
+		CANDIDATES_TOP.write(aCandidate["Basic"] + "\t" + aCandidate["Hub"] + "\t" + aCandidate["Uniprot"] + "\t" + aCandidate["CDS?"] + "\t")
+		CANDIDATES_TOP.write(aCandidate["UTR Change"] + "\t" + aCandidate["CDS Change"] + "\t" + aCandidate["IntOGen"] )
 		
 		for info in aCandidate["Articles"]:
 			CANDIDATES_TOP.write("\t" + info)
