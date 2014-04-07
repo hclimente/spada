@@ -11,6 +11,8 @@ def writeFasta(basename, inputType, expressedTranscripts):
 	fileCounter = 1
 	transcriptCounter = 0
 
+	noLoops = set()
+
 	expressedTranscriptsSet = set()
 	if isinstance(expressedTranscripts, basestring):
 		with open(expressedTranscripts, "r") as EXPRESSED:
@@ -21,9 +23,12 @@ def writeFasta(basename, inputType, expressedTranscripts):
 
 	MULTIFASTA = open(basename + "_" + str(fileCounter) + ".fasta", "w")
 
-	with open("Data/" + inputType + "/proteins.fa", "r") as gcMULTIFASTA:
+	with open("Data/" + inputType + "/UnifiedFasta.fa", "r") as gcMULTIFASTA:
+		familiesAdded = {}
 		for line in gcMULTIFASTA:
 			if ">" in line:
+
+				loopFamily = line.strip().split("#")[3]
 
 				if transcriptCounter >= 1499:
 					fileCounter += 1
@@ -31,115 +36,123 @@ def writeFasta(basename, inputType, expressedTranscripts):
 					MULTIFASTA = open(basename + "_" + str(fileCounter) + ".fasta", "w")
 					transcriptCounter = 0
 
-				identifiers = line[1:].strip()
+				identifier = line[1:].strip().split("#")[0]
 				if inputType == "GENCODE":
-					identifiers = ((line[1:].split("|"))[0].split("."))[0]
+					identifier = ((line[1:].split("|"))[0].split("."))[0]
 				
-				if identifiers in expressedTranscriptsSet:
-					MULTIFASTA.write(">" + identifiers + "\n")
+				if identifier in expressedTranscriptsSet and loopFamily != "" and loopFamily not in familiesAdded.keys():
+					MULTIFASTA.write(line)
+					familiesAdded[loopFamily] = [identifier]
 					wannaWrite = True
 					transcriptCounter += 1
 				else:
 					wannaWrite = False
+					if loopFamily == "":
+						noLoops.add(identifier)
+					else:
+						familiesAdded[loopFamily].append(identifier)
+					
 			elif wannaWrite:
 				MULTIFASTA.write(line)
 
-def parseMapping(iLoopsFolder, tag):
-	loopFamilies = {}
-	noLoops = set()
-	loopModels = set()
+	return (noLoops, familiesAdded)
 
-	myParser = parser.iLoopsParser()
+# def parseMapping(iLoopsFolder, tag):
+# 	loopFamilies = {}
+# 	noLoops = set()
+# 	loopModels = set()
 
-	for mappingBatch in filter(listdir(iLoopsFolder + "Output/"), "Mapping_" + tag + "_*" ):
-		for tens in ["", range(3) ]:
-			for units in range(10):
-				number = str(tens) + str(units)
-				if number == "00": continue
+# 	myParser = parser.iLoopsParser()
+
+# 	for mappingBatch in filter(listdir(iLoopsFolder + "Output/"), "Mapping_" + tag + "_*" ):
+# 		for tens in ["", range(3) ]:
+# 			for units in range(10):
+# 				number = str(tens) + str(units)
+# 				if number == "00": continue
 				
-				for mappingBatch_nodeResult in filter(listdir(iLoopsFolder + "Output/" + mappingBatch + "/sge_output"), "*.assignation." + number + ".xml" ):
-					xmlFile = iLoopsFolder + "Output/" + mappingBatch + "/sge_output/" + mappingBatch_nodeResult
+# 				for mappingBatch_nodeResult in filter(listdir(iLoopsFolder + "Output/" + mappingBatch + "/sge_output"), "*.assignation." + number + ".xml" ):
+# 					xmlFile = iLoopsFolder + "Output/" + mappingBatch + "/sge_output/" + mappingBatch_nodeResult
 
-					newLoops = myParser.parseLoops(
-													xmlOutput					  = xmlFile,
-													output_proteins               = True, 
-													output_alignments             = False,
-													output_domain_mappings        = False,
-													output_protein_features       = True,
-													output_domain_assignations    = False,
-													output_interactions           = False,
-													output_interaction_signatures = False,
-													output_RF_results             = False,
-													output_RF_precisions          = False
-												  )
+# 					newLoops = myParser.parseLoops(
+# 													xmlOutput					  = xmlFile,
+# 													output_proteins               = True, 
+# 													output_alignments             = False,
+# 													output_domain_mappings        = False,
+# 													output_protein_features       = True,
+# 													output_domain_assignations    = False,
+# 													output_interactions           = False,
+# 													output_interaction_signatures = False,
+# 													output_RF_results             = False,
+# 													output_RF_precisions          = False
+# 												  )
 					
-					for aTranscript, loops in sorted(newLoops.iteritems()):
-						if loops not in loopFamilies.keys():
-							loopFamilies[loops] = []
+# 					for aTranscript, loops in sorted(newLoops.iteritems()):
+# 						if loops not in loopFamilies.keys():
+# 							loopFamilies[loops] = []
 
-						loopFamilies[loops].append(aTranscript)
+# 						loopFamilies[loops].append(aTranscript)
 		
-		for tens in ["", range(3) ]:
-			for units in range(10):
-				number = str(tens) + str(units)
-				if number == "00": continue
+# 		for tens in ["", range(3) ]:
+# 			for units in range(10):
+# 				number = str(tens) + str(units)
+# 				if number == "00": continue
 
-				for mappingBatch_nodeErr in filter(listdir(iLoopsFolder + "Output/" + mappingBatch + "/sge_output"), "*.assignation." + number + ".err.xml" ):
-					errFile = iLoopsFolder + "Output/" + mappingBatch + "/sge_output/" + mappingBatch_nodeErr
+# 				for mappingBatch_nodeErr in filter(listdir(iLoopsFolder + "Output/" + mappingBatch + "/sge_output"), "*.assignation." + number + ".err.xml" ):
+# 					errFile = iLoopsFolder + "Output/" + mappingBatch + "/sge_output/" + mappingBatch_nodeErr
 
-					newNoLoops = myParser.parseNoLoops(
-														xmlOutput                     = errFile,
-														iLoopsPath                    = iLoopsFolder,
-														output_proteins               = True, 
-														output_alignments             = False,
-														output_domain_mappings        = False,
-														output_protein_features       = False,
-														output_domain_assignations    = False,
-														output_interactions           = False,
-														output_interaction_signatures = False,
-														output_RF_results             = False,
-														output_RF_precisions          = False
-													  )
+# 					newNoLoops = myParser.parseNoLoops(
+# 														xmlOutput                     = errFile,
+# 														iLoopsPath                    = iLoopsFolder,
+# 														output_proteins               = True, 
+# 														output_alignments             = False,
+# 														output_domain_mappings        = False,
+# 														output_protein_features       = False,
+# 														output_domain_assignations    = False,
+# 														output_interactions           = False,
+# 														output_interaction_signatures = False,
+# 														output_RF_results             = False,
+# 														output_RF_precisions          = False
+# 													  )
 					
-					for aTranscript in newNoLoops:
-						noLoops.add(aTranscript)
+# 					for aTranscript in newNoLoops:
+# 						noLoops.add(aTranscript)
 
-	with open(iLoopsFolder + tag + "_loopFamilies.txt", "w") as loopFamiliesList:
-		 for loopPattern in loopFamilies.keys():
-		 	loopModels.add(loopFamilies[loopPattern][0])
+# 	with open(iLoopsFolder + tag + "_loopFamilies.txt", "w") as loopFamiliesList:
+# 		 for loopPattern in loopFamilies.keys():
+# 		 	loopModels.add(loopFamilies[loopPattern][0])
 
-		 	loopFamiliesList.write(">" + loopPattern + "\t" + loopFamilies[loopPattern][0] + "\n")
-		 	for transcript in loopFamilies[loopPattern][1:]:
-		 		loopFamiliesList.write(transcript + "\n")
+# 		 	loopFamiliesList.write(">" + loopPattern + "\t" + loopFamilies[loopPattern][0] + "\n")
+# 		 	for transcript in loopFamilies[loopPattern][1:]:
+# 		 		loopFamiliesList.write(transcript + "\n")
 	
-	return (loopFamilies, loopModels, noLoops)
+# 	return (loopFamilies, loopModels, noLoops)
 
-def getFASTAInput(iLoopsFolder, tag, inputType, transcripts):
+# def getFASTAInput(iLoopsFolder, tag, inputType, transcripts):
 
-	writeFasta(iLoopsFolder + tag, inputType, transcripts)
-	for expressedFasta in filter(listdir(iLoopsFolder), tag + "_*.fasta"):
+# 	writeFasta(iLoopsFolder + tag, inputType, transcripts)
+# 	for expressedFasta in filter(listdir(iLoopsFolder), tag + "_*.fasta"):
 		
-		assignationBatch = expressedFasta.split(".")[0].split("_")[1]
-		cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py",
-			"-f " + iLoopsFolder + expressedFasta,
-			"-j " + iLoopsFolder + "Output/Mapping_" + tag + "_" + assignationBatch,
-			"-x Mapping_" + tag + "_" + assignationBatch + ".xml",
-			"-g all",
-			"-v",
-			"-m",
-			"-n 25",
-			"-Q sbi",
-			"2>&1 >" + iLoopsFolder + "logs/Mapping_" + tag + "_" + assignationBatch + ".log"
-		   )
+# 		assignationBatch = expressedFasta.split(".")[0].split("_")[1]
+# 		cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py",
+# 			"-f " + iLoopsFolder + expressedFasta,
+# 			"-j " + iLoopsFolder + "Output/Mapping_" + tag + "_" + assignationBatch,
+# 			"-x Mapping_" + tag + "_" + assignationBatch + ".xml",
+# 			"-g all",
+# 			"-v",
+# 			"-m",
+# 			"-n 25",
+# 			"-Q sbi",
+# 			"2>&1 >" + iLoopsFolder + "logs/Mapping_" + tag + "_" + assignationBatch + ".log"
+# 		   )
 
-	loopFamilies, loopModels, noLoops = parseMapping(iLoopsFolder, tag)
-	writeFasta(iLoopsFolder + tag + "_uniqLoops", inputType, loopModels)
+# 	loopFamilies, loopModels, noLoops = parseMapping(iLoopsFolder, tag)
+# 	writeFasta(iLoopsFolder + tag + "_uniqLoops", inputType, loopModels)
 
-	with open(iLoopsFolder + tag + "_noLoops.li", "a") as NOLOOPS:
-		for aTranscript in noLoops:
-			NOLOOPS.write(aTranscript + "\n")
+# 	with open(iLoopsFolder + tag + "_noLoops.li", "a") as NOLOOPS:
+# 		for aTranscript in noLoops:
+# 			NOLOOPS.write(aTranscript + "\n")
 
-	return (loopFamilies, noLoops)
+# 	return (loopFamilies, noLoops)
 
 def getPairsInput(iLoopsFolder, goodCandidates):
 	for aPair in goodCandidates:
@@ -182,6 +195,8 @@ def getFASTAandPairs(iLoopsFolder, inputType, transcripts):
 			top += 1
 
 			elements = line.split("\t")
+			if elements[9] == "No":
+				continue
 			candidates.add(elements[2])
 			candidates.add(elements[3])
 			candidatePairs.append( (elements[2], elements[3]) )
@@ -189,7 +204,8 @@ def getFASTAandPairs(iLoopsFolder, inputType, transcripts):
 			if top >= 30:
 				break
 
-	loopFamilies, noLoops = getFASTAInput(iLoopsFolder, "Candidate", inputType, candidates)
+	#loopFamilies, noLoops = getFASTAInput(iLoopsFolder, "Candidate", inputType, candidates)
+	loopFamilies, noLoops = writeFasta(iLoopsFolder + "Candidate", inputType, candidates)
 
 	toDelete = set()
 
@@ -211,14 +227,15 @@ def getFASTAandPairs(iLoopsFolder, inputType, transcripts):
 	return candidatePairs
 
 chdir(sys.argv[1])
-out = "Results/" + sys.argv[2]
+out = "Results/" + sys.argv[2] + "/"
 inputType = sys.argv[3]
-iLoopsFolder = out + "/iLoops/"
-expressedTranscripts = out + "/expressedGenes.lst"
-candidateTranscripts = out + "/candidateList.top.tsv"
+iLoopsFolder = out + "iLoops/"
+expressedTranscripts = out + "expressedGenes.lst"
+candidateTranscripts = out + "candidateList.top.tsv"
 
 print("\t* Preparing FASTA files for all transcripts.")
-getFASTAInput(iLoopsFolder, "Expressed", inputType, expressedTranscripts)
+#getFASTAInput(iLoopsFolder, "Expressed", inputType, expressedTranscripts)
+writeFasta(iLoopsFolder + "Expressed", inputType, expressedTranscripts)
 
 print("\t* Checking loop mapping for top candidates and preparing input.")
 goodCandidates = getFASTAandPairs(iLoopsFolder, inputType, candidateTranscripts)
