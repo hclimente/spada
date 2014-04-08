@@ -6,7 +6,7 @@ from include.libsmartas import *
 from fnmatch import filter
 import include.custom_iLoops_xml_parser as parser
 
-def writeFasta(basename, inputType, expressedTranscripts):
+def getFASTAInput(basename, inputType, expressedTranscripts):
 	wannaWrite = False
 	fileCounter = 1
 	transcriptCounter = 0
@@ -50,12 +50,15 @@ def writeFasta(basename, inputType, expressedTranscripts):
 					if loopFamily == "":
 						noLoops.add(identifier)
 					else:
-						familiesAdded[loopFamily].append(identifier)
+						if loopFamily not in familiesAdded.keys():
+							familiesAdded[loopFamily] = [identifier]
+						else:
+							familiesAdded[loopFamily].append(identifier)
 					
 			elif wannaWrite:
 				MULTIFASTA.write(line)
 
-	return (noLoops, familiesAdded)
+	return (familiesAdded, noLoops)
 
 # def parseMapping(iLoopsFolder, tag):
 # 	loopFamilies = {}
@@ -159,11 +162,11 @@ def getPairsInput(iLoopsFolder, goodCandidates):
 		for aCandidate in aPair:
 
 			cmd("mkdir " + iLoopsFolder + "Input/" + aCandidate)
-			for expressedFasta in filter(listdir(iLoopsFolder), "Expressed_uniqLoops_*.fasta"):
+			for expressedFasta in filter(listdir(iLoopsFolder), "Expressed_*.fasta"):
 				cmd("cp", iLoopsFolder + expressedFasta, iLoopsFolder + "Input/" + aCandidate)
 				with open(iLoopsFolder + "Input/" + aCandidate + "/" + expressedFasta, "a") as exprFast, \
 					 open("Data/" + inputType + "/proteins.fa", "r") as motherFast:
-					fileNumber = (expressedFasta.split(".")[0]).split("_")[2]
+					fileNumber = expressedFasta.split(".")[0].split("_")[1]
 					writeSeq = False
 					
 					for line in motherFast:
@@ -204,8 +207,7 @@ def getFASTAandPairs(iLoopsFolder, inputType, transcripts):
 			if top >= 30:
 				break
 
-	#loopFamilies, noLoops = getFASTAInput(iLoopsFolder, "Candidate", inputType, candidates)
-	loopFamilies, noLoops = writeFasta(iLoopsFolder + "Candidate", inputType, candidates)
+	loopFamilies, noLoops = getFASTAInput(iLoopsFolder + "Candidate", inputType, candidates)
 
 	toDelete = set()
 
@@ -234,8 +236,7 @@ expressedTranscripts = out + "expressedGenes.lst"
 candidateTranscripts = out + "candidateList.top.tsv"
 
 print("\t* Preparing FASTA files for all transcripts.")
-#getFASTAInput(iLoopsFolder, "Expressed", inputType, expressedTranscripts)
-writeFasta(iLoopsFolder + "Expressed", inputType, expressedTranscripts)
+getFASTAInput(iLoopsFolder + "Expressed", inputType, expressedTranscripts)
 
 print("\t* Checking loop mapping for top candidates and preparing input.")
 goodCandidates = getFASTAandPairs(iLoopsFolder, inputType, candidateTranscripts)
@@ -248,14 +249,14 @@ for transcriptPair in goodCandidates:
  			batch = (configFile.split(".")[1]).split("_")[1]
  			
 			cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py",
- 				"-f " + iLoopsFolder + "Input/" + transcript + "/Expressed_uniqLoops_" + batch + ".fasta",
+ 				"-f " + iLoopsFolder + "Input/" + transcript + "/Expressed_" + batch + ".fasta",
  				"-q " + iLoopsFolder + "Input/" + transcript + "/" + configFile,
  				"-j " + iLoopsFolder + "Output/" + configFile,
  				"-x " + configFile + ".xml",
  				"-v",
  				"-g all",
  				"-n 25",
- 				"-Q sbi",
+ 				"-Q bigmem",
  				"-c 1,5,6,7,8,9,10,11,12,13,14,15,20,30,40,50",
  				"2>&1 >" + iLoopsFolder + "logs/" + configFile + ".log"
  			   )
