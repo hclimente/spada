@@ -69,14 +69,8 @@ def setEnvironment(cfgFile):
 
 	if opt["initialStep"] > 3:
 		cmd("cp", "old/" + opt["out"] + "/candidateInteractions.tsv", "old/" + opt["out"] + "/candidateList.top.tsv", "Results/" + opt["out"])
-	if opt["initialStep"] > 4:
-		cmd("mv", "old/" + opt["out"] + "/iLoops", "Results/" + opt["out"])
-	else:
-		cmd("mkdir -p", "Results/" + opt["out"] + "/iLoops/Output")
-		cmd("mkdir", "Results/" + opt["out"] + "/iLoops/Input")
-		cmd("mkdir", "Results/" + opt["out"] + "/iLoops/logs")
 	if opt["initialStep"] > 5:
-		cmd("cp", "old/" + opt["out"] + "/*dot", "Results/" + opt["out"])
+		cmd("mv", "old/" + opt["out"] + "/iLoops", "Results/" + opt["out"])
 
 	return opt
 
