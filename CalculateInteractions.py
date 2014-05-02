@@ -6,7 +6,7 @@ from include.libsmartas import *
 from fnmatch import filter
 import include.custom_iLoops_xml_parser as parser
 
-def splitFASTA(basename, inputType):
+def splitFASTA(basename, inputType, iLoopsVersion):
 	wannaWrite = False
 	fileCounter = 1
 	transcriptCounter = 0
@@ -15,7 +15,7 @@ def splitFASTA(basename, inputType):
 
 	MULTIFASTA = open(basename + str(fileCounter) + ".fasta", "w")
 
-	with open("Data/" + inputType + "/UnifiedFasta.fa", "r") as gcMULTIFASTA:
+	with open("Data/" + inputType + "/UnifiedFasta_" + iLoopsVersion + ".fa", "r") as gcMULTIFASTA:
 		
 		for line in gcMULTIFASTA:
 			if ">" in line:
@@ -41,7 +41,7 @@ def splitFASTA(basename, inputType):
 			elif wannaWrite:
 				MULTIFASTA.write(line)
 
-def getFASTAandPairs(transcript, batch, inputType, out):
+def getFASTAandPairs(transcript, batch, inputType, out, iLoopsVersion):
 	tag = transcript + "_" + batch
 	cmd("cp", out + "allProteome_" + batch + ".fasta", out + "Input/" + tag + ".fasta")
 
@@ -52,7 +52,7 @@ def getFASTAandPairs(transcript, batch, inputType, out):
 
  				PAIRSUKI.write(transcript + "\t" + pair + "\n")
 
- 	with open("Data/" + inputType + "/UnifiedFasta.fa", "r") as gcMULTIFASTA, \
+ 	with open("Data/" + inputType + "/UnifiedFasta_" + iLoopsVersion + ".fa", "r") as gcMULTIFASTA, \
  		 open(out + "Input/" + tag + ".fasta", "a") as THIS_FASTA:
  		wannaWrite = False
  		for line in gcMULTIFASTA:
@@ -68,21 +68,25 @@ def getFASTAandPairs(transcript, batch, inputType, out):
 chdir(sys.argv[1])
 out = "Results/" + sys.argv[2] + "/"
 inputType = sys.argv[3]
+iLoopsVersion = sys.argv[4]
 
 print("\t* Preparing FASTA files for all transcripts.")
-splitFASTA(out + "allProteome_", inputType)
+splitFASTA(out + "allProteome_", inputType, iLoopsVersion)
 
 print("\t* Launching iLoops.")
 
 with open(out + "candidatesGaudi.lst", "r") as CANDIDATES:
 	for line in CANDIDATES:
-		transcript = line.strip()
+		elements = line.strip().split("\t")
+		if elements[1] == "False":
+			continue
+		transcript = elements[0]
 	 	for fastaFile in filter(listdir(out), "allProteome_*.fasta"):
 	 		batch = (fastaFile.split(".")[0]).split("_")[1]
 	 		tag = transcript + "_" + batch
-	 		getFASTAandPairs(transcript, batch, inputType, out)
+	 		getFASTAandPairs(transcript, batch, inputType, out, iLoopsVersion)
 	 			
-			cmd("/soft/devel/python-2.7/bin/python /sbi/programs/iLoops_devel/iLoops.py",
+			cmd("/soft/devel/python-2.7/bin/python /sbi/programs/" + iLoopsVersion + "/iLoops.py",
 	 			"-f " + out + "Input/" + tag + ".fasta",
 	 			"-q " + out + "Input/" + tag + ".net",
 	 			"-j " + out + "Output/" + tag,
@@ -131,4 +135,4 @@ with open(out + "candidatesGaudi.lst", "r") as CANDIDATES:
 
 			ISO_OUTPUT.write("</xml>\n")
 
-cmd("scp -r " + out + "Output/*.ips hector@feynman.imim.es:~/SmartAS/iLoops/" + inputType)
+		cmd("scp","-r", out + "Output/" + transcript + ".ips", "hector@feynman.imim.es:~/SmartAS/iLoops/" + inputType + "/" + iLoopsVersion)
