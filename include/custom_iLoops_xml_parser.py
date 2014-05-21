@@ -15,9 +15,9 @@ class iLoopsParser(iLoops_xml_parser.ILXMLParser):
 				if resultItem.get_loops():
 					loopList = []
 					for aLoop in resultItem.get_loops():
-						loopList.append(aLoop.get_code())
-					loopList.sort()
-					parsedLoops[resultItem.get_name()] = ";".join(loopList)
+						loopList.append( (aLoop.get_code(), [mapping.get_targetID() for mapping in aLoop.get_mappings()]) )
+					loopList.sort(key=lambda x: x[0]) # sorted list by loop name
+					parsedLoops[resultItem.get_name()] = ";".join([ x[0]+"_"+"?".join([dom for dom in x[1]]) for x in loopList])
 
 		return parsedLoops
 
@@ -33,23 +33,18 @@ class iLoopsParser(iLoops_xml_parser.ILXMLParser):
 	def parseInteractions(self, thisCandidate, expressedIsoforms, xmlOutput, **kwds):
 		maxCost = {}
 
-		#rm the count
-		count = 0
-
 		for resultItem in self.results_parser(xml_file=xmlOutput, report_level=0, **kwds): 
 			if isinstance(resultItem, iLoops_xml_parser.ILXMLInteraction):
 				intPartner = resultItem.get_i2name()
+				if intPartner == thisCandidate:
+					intPartner = resultItem.get_i1name()
 
 				if intPartner not in expressedIsoforms:
 					continue
-					
+				
+				maxCost.setdefault(intPartner, 0)
 				for RFResult in resultItem.get_RFResults(): 
-					if RFResult.get_prediction() and RFResult.get_cost() > maxCost.get(intPartner, 0):
+					if RFResult.get_prediction() and RFResult.get_cost() > maxCost[intPartner]:
 						maxCost[intPartner] = int(RFResult.get_cost())
-
-				count += 1
-
-			if count >= 40:
-				break
 
 		return maxCost
