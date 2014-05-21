@@ -1,106 +1,151 @@
 #!/soft/devel/python-2.7/bin/python
 
-from include.libsmartas import *
-import include.custom_iLoops_xml_parser as parser
+from libsmartas import *
+import custom_iLoops_xml_parser as parser
 from os.path import isfile
 import sys
-from math import fabs
-import networkx as nx
-import matplotlib.pyplot as plt
+from time import sleep
 
 out = "Results/" + sys.argv[1] + "/"
+inputType = sys.argv[2]
+iLoopsVersion = sys.argv[3]
+minReplicates = float(sys.argv[4])
 myParser = parser.iLoopsParser()
-
-minDiff = 6
 
 InteraX = {}
 expressedTranscripts = {}
+articleCompilation = {}
+loopFamilies = {}
+candidatesGaudi = {}
 
 with open(out + "expressedGenes.lst", "r") as EXPRESSED:
 	for line in EXPRESSED:
 		elements = line.strip().split("\t")
 		expressedTranscripts[elements[0]] = elements[1]
 
+with open("Data/Databases/compilationTable.tsv", "r") as compilationTable:
+	for line in compilationTable:
+		elements = line.strip().split("\t")
+		genename = elements[0].split("|")[0]
+		driverDb = [elements[8], elements[13]]
+		apoptosis = [elements[10]]
+		embryo = [elements[9]]
+		rbps = [elements[3], elements[4], elements[5], elements[11]]
+		epigenet = [elements[6]]
+		
+		if "yes" in driverDb:
+			articleCompilation[genename] = "Driver"
+		elif "yes" in rbps:
+			articleCompilation[genename] = "RBP"
+		elif "yes" in epigenet:
+			articleCompilation[genename] = "Epigenetic factor"
+		else:
+			articleCompilation[genename] = "-"
+
+with open("Data/TCGA/UnifiedFasta_" + iLoopsVersion + "_loopFamilies.txt", "r") as LOOP_FAMILIES:
+	currentLoopFamily = ""
+	for line in LOOP_FAMILIES:
+		if ">" in line:
+			currentLoopFamily = line[1:].strip().split("\t")[0]
+			loopFamilies[currentLoopFamily] = set()
+			loopFamilies[currentLoopFamily].add(line[1:].strip().split("\t")[1])
+		else:
+			loopFamilies[currentLoopFamily].add(line.strip())
+
+with open( out + "candidatesGaudi.lst", "r") as GAUDI:
+	for line in GAUDI:
+		element = line.strip().split("\t")
+		if int(element[1]) >= 0:
+			candidatesGaudi[element[0]] = int(element[1])
+
 with open(out + "candidateList.top.tsv", "r") as CANDIDATES:
 
 	CANDIDATES.readline()
-	top = 0
 	
 	for line in CANDIDATES:
 
 		elements = line.split("\t")
 		gene = elements[0]
+		geneEntrez = elements[1]
 		normalIso = elements[2]
 		tumorIso = elements[3]
+		reps = int(elements[4])
+		uniprotIds = elements[6].split("#")
+		tag = gene + "_" + normalIso + "_" + tumorIso
 		interactions = {}
-		InteraX = {}
-		top += 1
 
-		if not isfile(out + "iLoops/Output/" + normalIso + ".ips") and not isfile(out + "iLoops/Output/" + tumorIso + ".ips"):
-			print("\t * Gene " + elements[1] + ": iLoops couldn't process this candidate.")
+		if reps < minReplicates:
+			break
+
+		sys.stdout.write("\t * Gene " + elements[1])
+
+		if not normalIso in candidatesGaudi.keys() and not tumorIso in candidatesGaudi.keys():
+			print(" - not processed")
 			continue
-
-		with open(out + "InteraxChanges_" + gene + ".tsv", "w") as INTERAX:
-
-			INTERAX.write("Transcript\tPartner\tPartner gene\tmaxRC\tDiff\n")
+		elif not normalIso in candidatesGaudi.keys() or not tumorIso in candidatesGaudi.keys():
+			print(" - not fully processed")
+			continue	
 		
-			print("\t * Gene " + elements[1])
+		print("")
 					
-			for iso, ori in zip([normalIso, tumorIso], ["Normal","Tumor"]):
+		for iso, ori in zip([normalIso, tumorIso], ["Normal","Tumor"]):
+			xmlFile = "iLoops/" + inputType + "/" + iLoopsVersion + "/" + iso + ".ips"
+			if candidatesGaudi[iso] == 2:
+				for family in loopFamilies.keys():
+					if iso in loopFamilies[family]:
+						for relative in loopFamilies[family]:
+							xmlFile = "iLoops/" + inputType + "/" + iLoopsVersion + "/" + relative + ".ips"
+							if isfile(xmlFile):
+								break
 
-				print("\t\t" + ori + ": " + iso)
+			sys.stdout.write("\t\t* " + ori + ": " + iso)
+			sys.stdout.flush()
+			while not isfile(xmlFile):
+				sleep(900)
+				
+			interactions[ori] = myParser.parseInteractions(
+															thisCandidate				  = iso,
+															xmlOutput					  = xmlFile,
+															expressedIsoforms			  = expressedTranscripts.keys(),
+															output_proteins               = False, 
+															output_alignments             = False,
+															output_domain_mappings        = False,
+															output_protein_features       = False,
+															output_domain_assignations    = False,
+															output_interactions           = True,
+															output_interaction_signatures = False,
+															output_RF_results             = True,
+															output_RF_precisions          = True
+														  )	
+			
+			print(" - OK")
 
-				xmlFile = out + "iLoops/Output/" + iso + ".ips"
+		with open(out + "iLoops/InteraXChanges_" + tag + ".tsv", "w") as INTERAX:
 
-				if not isfile(xmlFile):
-					interactions[ori] = {}
-				else:
-					interactions[ori] = myParser.parseInteractions(
-																 	thisCandidate				  = iso,
-																 	xmlOutput					  = xmlFile,
-																 	output_proteins               = False, 
-																 	output_alignments             = False,
-																 	output_domain_mappings        = False,
-																 	output_protein_features       = False,
-																 	output_domain_assignations    = False,
-																 	output_interactions           = True,
-																 	output_interaction_signatures = True,
-																 	output_RF_results             = True,
-																 	output_RF_precisions          = False
-																  )
+			INTERAX.write("Partner\tPartner_gene\tRC_N\tRC_T\tdRC\tAnnotation\n")
 
-				for partner in interactions[ori].keys():
-					if ori == "Normal":
-						InteraX[partner] = InteraX.get(partner, 0) + interactions[ori][partner]
-					elif ori == "Tumor":
-						InteraX[partner] = InteraX.get(partner, 0) - interactions[ori][partner]
-					
-					INTERAX.write(iso + "\t" + partner + "\t" + expressedTranscripts[partner] + "\t" + str(interactions[ori][partner]) + "\t" + str(InteraX[partner]) + "\n")
+			#Iterate all interactions that are predicted in normal
+			for familyRep in interactions["Normal"].keys():
+				diff = 100
+				if familyRep in interactions["Tumor"].keys():
+					diff = interactions["Normal"][familyRep] - interactions["Tumor"][familyRep]
+				for family in [f for f in loopFamilies.keys() if familyRep in loopFamilies[f] ]:
+					for partner in [p for p in loopFamilies[family] if p in expressedTranscripts.keys() ]:
+						INTERAX.write( partner + "\t" + expressedTranscripts[partner] + "\t")
+						INTERAX.write( str(interactions["Normal"][familyRep] ) + "\t")
+						INTERAX.write( str(interactions["Tumor"].get(familyRep, "") ) + "\t" )
+						INTERAX.write( str(diff) + "\t")
+						INTERAX.write( articleCompilation.get(expressedTranscripts[partner], "-") + "\n")
 
-			G=nx.Graph()
+			#Interate the rest i.e. the iterations in tumor that are not in normal
+			for familyRep in [p for p in interactions["Tumor"].keys() if p not in interactions["Normal"].keys()]:
+				for family in [f for f in loopFamilies.keys() if familyRep in loopFamilies[f] ]:
+					for partner in [p for p in loopFamilies[family] if p in expressedTranscripts.keys() ]:
+						INTERAX.write( partner + "\t" + expressedTranscripts[partner] + "\t")
+						INTERAX.write( "\t") #Empty value for normal
+						INTERAX.write( str(interactions["Tumor"][familyRep] ) + "\t" )
+						INTERAX.write( "-100\t")
+						INTERAX.write( articleCompilation.get(expressedTranscripts[partner], "-") + "\n")
 
-	 		# DOTFile.write("graph " + gene + " {\n")
-	 		# DOTFile.write("\t" + gene + " [label=" + gene + ", shape=polygon,sides=5];\n")
-	 		G.add_node(gene)
-	 		for partner in InteraX.keys():
-	 		 	if fabs(InteraX[partner]) < minDiff:
-	 		 		continue
-
-	 		 	partnerCoreName = partner.split(".")[0]
-	 			G.add_node(partnerCoreName)
-	 			G.add_edge(gene, partnerCoreName)
-	 			G[gene][partnerCoreName]['weight'] = str( fabs(InteraX[partner]) )
-	 			G[gene][partnerCoreName]['label'] = str(InteraX[partner])
-	 			
-	 			if InteraX[partner] > 0:
-	 				G[gene][partnerCoreName]['color']='red'
-	 			elif InteraX[partner] < 0:
-	 				G[gene][partnerCoreName]['color']='blue'
-
-			nx.draw(G)
-			plt.savefig( out + gene + ".png", dpi=1000)
-			nx.write_dot(G, out + gene + '.dot')
-			nx.write_graphml(G, out + gene + '.gml')
-
-			if top >= 30:
-				break
+		cmd("mkdir", out + "iLoops/" + tag )
+		cmd("Pipeline/AnalyzeInteractors.r", out, tag )
