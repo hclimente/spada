@@ -2,8 +2,7 @@
 
 import sys, getopt
 from os import path, chdir
-from include.libsmartas import cmd, setEnvironment, finish, outputCandidates
-from os.path import isfile
+from libsmartas import cmd, cmdOut, setEnvironment, finish, outputCandidates, pickUniqPatterns
 
 def main(argv):
 
@@ -26,6 +25,9 @@ def main(argv):
 	for opt, arg in opts:
 		if opt == "-f":
 			cfgFile = arg
+		else:
+			print("No config file found.")
+			exit()
 		
 	opt = setEnvironment(cfgFile)
 
@@ -66,50 +68,15 @@ def candidatePrioritization(opt):
 
 def launchiLoops(opt):
 
-	with open("Results/" + opt["out"] + "/candidateList.top.tsv", "r") as CANDIDATES, \
-		 open("Results/" + opt["out"] + "/candidatesGaudi.lst", "w") as CANDIDATES_GAUDI:
+	print("* Selecting isoforms suitable for " + opt["iLoopsVersion"])
+	pickUniqPatterns(opt["gOut"], opt["out"], opt["inputType"], opt["iLoopsVersion"], opt["Replicates"] * 0.1)
 
-		CANDIDATES.readline()
-		top = 0
-
-		for line in CANDIDATES:
-			top += 1
-
-			elements = line.split("\t")
-			if elements[9] == "No":
-				continue
-			
-			previousLoopPattern = ""
-
-			for candidate in [elements[2], elements[3]]:
-
-				if isfile("iLoops/TCGA/" + candidate + ".ips"):
-					continue
-
-				with open("Data/" + opt["inputType"] + "/UnifiedFasta.fa", "r") as MULTIFASTA:
-					for line in MULTIFASTA:
-						if candidate in line:
-							thisLoopPattern = line.strip().split("#")[3]
-
-							if thisLoopPattern != "" and thisLoopPattern != previousLoopPattern:
-								CANDIDATES_GAUDI.write(candidate + "\n")
-								previousLoopPattern = thisLoopPattern
-			
-			if top >= 30:
-				break
-
-	print("* Sending files to Gaudi and performing the iLoops analysis.")
-	cmd("ssh hectorc@gaudi 'rm -r", opt["gOut"] + "'")
-	cmd("ssh hectorc@gaudi 'mkdir -p", opt["gOut"] + "/Output; mkdir -p", opt["gOut"] + "/Input; mkdir -p", opt["gOut"] + "/logs'")
-	cmd("scp -r " + "Results/" + opt["out"] + "/candidatesGaudi.lst hectorc@gaudi.imim.es:" + opt["gOut"])
-
-	cmd("ssh hectorc@gaudi '" + opt["gaudiWd"] + "/Pipeline/CalculateInteractions.py", opt["gaudiWd"], opt["out"], opt["inputType"] + "'")
-
-	exit()
+	print("* Sending list to Gaudi and performing the iLoops analysis.")
+	gaudiThread = cmdOut("ssh", "hectorc@gaudi", "'" + opt["gaudiWd"] + "/Pipeline/CalculateInteractions.py " + opt["gaudiWd"] + " " + opt["out"] + " " + opt["inputType"] + " " + opt["iLoopsVersion"] + "'")
 
 def analyzeInteractions(opt):
 
 	print("* Examining iLoops results.")
-	cmd("Pipeline/AnalyzeInteractions.py", opt["out"])
+	cmd("Pipeline/AnalyzeInteractions.py", opt["out"], opt["inputType"], opt["iLoopsVersion"], opt["Replicates"] * 0.1)
 
 main(sys.argv[1:])
