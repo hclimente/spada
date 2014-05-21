@@ -5,6 +5,7 @@ from rpy2.robjects import r
 from time import sleep
 import urllib2
 from os import chdir
+from os.path import isfile
 
 def cmd(base, *args):
 	command = base
@@ -17,7 +18,7 @@ def cmdOut(base, *args):
 	command = base
 	for arg in args:
 		command += " " + str(arg)
-	
+
 	return Popen(command, shell=True, stdout=PIPE)
 
 def setRWorkspace(wd, out, Replicates):
@@ -38,6 +39,7 @@ def setEnvironment(cfgFile):
 	cmd("mv", "Results/" + opt["out"], "old/" + opt["out"])
 	cmd("mkdir -p", "Results/" + opt["out"] + "/RWorkspaces")
 	cmd("mkdir", "Results/" + opt["out"] + "/DataExploration")
+	cmd("mkdir", "Results/" + opt["out"] + "/iLoops")
 
 	if not opt["external"]:
 		if opt["initialStep"] <= 1:
@@ -62,15 +64,19 @@ def setEnvironment(cfgFile):
 	else:
 		printParam(opt)
 		if opt["initialStep"] == 2:
-			cmd("scripts/InputUnpaired.r", opt["out"], opt["unpairedReplicates"], "Data/TCGA/Unpaired/" + opt["tag1"] + "/")
+			oriOut = "_".join(opt["out"].split("_")[:-1])
+			cmd("cp", "Results/" + oriOut + "/RWorkspaces/1_ExploreData.RData", "Results/" + opt["out"] + "/RWorkspaces")
+			cmd("Pipeline/scripts/InputUnpaired.r", oriOut, opt["unpairedReplicates"], "Data/Input/TCGA/" + opt["tag1"] + "/")
 		if opt["initialStep"] == 3:
 			cmd("cp", opt["external"] + ".tsv" , "Results/" + opt["out"] + "/candidateList.tsv")
 			cmd("cp", opt["external"] + "_expressedGenes.lst", "Results/" + opt["out"] + "/expressedGenes.lst")
 
 	if opt["initialStep"] > 3:
 		cmd("cp", "old/" + opt["out"] + "/candidateInteractions.tsv", "old/" + opt["out"] + "/candidateList.top.tsv", "Results/" + opt["out"])
+	if opt["initialStep"] > 4:
+		cmd("cp", "old/" + opt["out"] + "/candidatesGaudi.lst", "Results/" + opt["out"])
 	if opt["initialStep"] > 5:
-		cmd("mv", "old/" + opt["out"] + "/iLoops", "Results/" + opt["out"])
+		cmd("cp", "old/" + opt["out"] + "/iLoops", "Results/" + opt["out"])
 
 	return opt
 
@@ -111,13 +117,14 @@ def printParam(opt):
 def parseParam(cfgFile):
 
 	opt = { "initialStep" : 0, "wd" : "/home/hector/SmartAS/", "gaudiWd" : "/sbi/users/hectorc/SmartAS", "minExpression" : 0, 
-			"inputType" : "GENCODE" , "Conditions" : ["N", "T"], "tag1" : "20", "Replicates" : 0, "external" : "", "unpairedReplicates" : 0}
+			"inputType" : "GENCODE" , "Conditions" : ["N", "T"], "tag1" : "20", "Replicates" : 0, "external" : "", 
+			"unpairedReplicates" : 0, "iLoopsVersion" : "iLoops_devel"}
 
 	with open(cfgFile, "r") as PARAMETERS:
 		for line in PARAMETERS:
 			elements = line.strip().split("=")
 
-			if elements[0] in ["wd", "gaudiWd", "inputType", "tag1", "out", "gOut", "external"]:
+			if elements[0] in ["wd", "gaudiWd", "inputType", "tag1", "out", "gOut", "external", "iLoopsVersion"]:
 				opt[elements[0]] = elements[1]
 			elif elements[0] in ["Replicates", "initialStep", "unpairedReplicates"]:
 				opt[elements[0]] = int(elements[1])
@@ -126,9 +133,11 @@ def parseParam(cfgFile):
 			else:
 				print("Unrecognized option:" + line.strip() )
 
-	opt["out"] = opt["inputType"] + "/" + opt["tag1"] + "_mE" + str(opt["minExpression"])
 	if opt["external"]:
-		opt["out"] = opt["inputType"] + "/" + opt["tag1"]
+		if opt["unpairedReplicates"] == 0:
+			opt["out"] = opt["inputType"] + "/" + opt["tag1"]
+	else:
+		opt["out"] = opt["inputType"] + "/" + opt["tag1"] + "_mE" + str(opt["minExpression"])
 
 	opt["gOut"] = opt["gaudiWd"] + "/Results/" + opt["out"]
 
@@ -173,3 +182,85 @@ def outputCandidates(out, inputType):
 						GTFn.write(line)
 					elif line.find(pair[1]) != -1:
 						GTFt.write(line)
+
+def pickUniqPatterns(gOut, out, inputType, iLoopsVersion, minReplicates):
+
+	loopFamilies = {}
+
+	with open("Data/TCGA/UnifiedFasta_" + iLoopsVersion + "_loopFamilies.txt", "r") as LOOP_FAMILIES:
+		currentLoopFamily = ""
+		for line in LOOP_FAMILIES:
+			if ">" in line:
+				currentLoopFamily = line[1:].strip().split("\t")[0]
+				loopFamilies[currentLoopFamily] = set()
+				loopFamilies[currentLoopFamily].add(line.strip().split("\t")[1])
+			else:
+				loopFamilies[currentLoopFamily].add(line.strip())
+
+	with open("Results/" + out + "/candidateList.top.tsv", "r") as CANDIDATES, \
+		 open("Results/" + out + "/candidatesGaudi.lst", "w") as CANDIDATES_GAUDI:
+
+		CANDIDATES.readline()
+		analyzedLoops = {}
+
+		for line in CANDIDATES:
+			elements = line.split("\t")
+			isoN = elements[2]
+			isoT = elements[3]
+			reps = int(elements[4])
+			analyze = 0
+			comment = "To analyze."
+
+			if reps < minReplicates:
+				break
+
+			with open("Data/" + inputType + "/UnifiedFasta_" + iLoopsVersion + ".fa", "r") as MULTIFASTA:
+				loopsN = ""
+				loopsT = ""
+				for line in MULTIFASTA:
+					if isoN in line:
+						loopsN = line.strip().split("#")[3]
+					elif isoT in line:
+						loopsT = line.strip().split("#")[3]
+
+			if elements[9] == "No":
+				analyze = -1
+				comment = "No CDS change."
+			elif not loopsN or not loopsT:
+				analyze = -1
+				comment = "No loops mapped with " + iLoopsVersion + "."
+			elif loopsN == loopsT:
+				analyze = -1
+				comment = "No difference in loops mapped with " + iLoopsVersion + "."
+
+			if analyze < 0:
+				CANDIDATES_GAUDI.write( isoN + "\t" + str(analyze) + "\t" + comment + "\n")
+				CANDIDATES_GAUDI.write( isoT + "\t" + str(analyze) + "\t" + comment + "\n")
+				continue
+
+			for candidate, thisLoopPattern in zip([isoN, isoT], [loopsN, loopsT]):
+		
+				analyze = 0
+				comment = "To analyze"
+
+				if isfile("iLoops/TCGA/" + iLoopsVersion + "/" + candidate + ".ips"):
+					analyze = 1
+					comment = "Already analyzed."
+				elif thisLoopPattern in analyzedLoops.keys():
+					analyze = 2
+					comment = "Analyzing relative " + analyzedLoops[thisLoopPattern] + "."
+				else:
+					for isoform in loopFamilies[thisLoopPattern]:
+						if isfile("iLoops/TCGA/" + iLoopsVersion + "/" + isoform + ".ips"):
+							analyze = 2
+							comment = "Analyzed relative " + isoform + "."
+							break
+
+				CANDIDATES_GAUDI.write( candidate + "\t" + str(analyze) + "\t" + comment + "\n")
+
+				if analyze == 0:
+					analyzedLoops[thisLoopPattern] = candidate
+
+	cmd("ssh hectorc@gaudi 'rm -r", gOut + "'")
+	cmd("ssh hectorc@gaudi 'mkdir -p", gOut + "/Output; mkdir -p", gOut + "/Input; mkdir -p", gOut + "/logs'")
+	cmd("scp -r " + "Results/" + out + "/candidatesGaudi.lst hectorc@gaudi.imim.es:" + gOut)
