@@ -8,7 +8,7 @@ load(paste0("Results/", args[2], "/RWorkspaces/1_ExploreData.RData"))
 unpairedReplicates <- as.numeric(args[3])
 numOfReplicates <- inputData[["Replicates"]]
 
-if (unpairedReplicates != 0) {
+if (unpairedReplicates != 0) {  
   load(paste0("Results/", args[2], "/RWorkspaces/1_Tumor_Intereplicate.RData"))
   numOfReplicates <- unpairedReplicates
 }
@@ -54,6 +54,11 @@ for (replicate in seq(1,numOfReplicates)){
     
     minDeltaPsi <- min(intraReplicate[[replicate]]$deltaPSI[thisGeneData & tumTranscripts], na.rm=T)
     tumCandidate <- intraReplicate[[replicate]]$deltaPSI == minDeltaPsi
+
+    if (unpairedReplicates != 0) {
+      norCandidate <- intraReplicate[[replicate]]$deltaPSI <= 0.05
+      tumCandidate <- intraReplicate[[replicate]]$deltaPSI <= 0.05
+    }
     
     Switch <- maxDeltaPsi - minDeltaPsi
     
@@ -93,7 +98,7 @@ candidateList <- candidateList[with(candidateList, order(-Replicated)), ]
 write.table(candidateList, file=paste0(out, "candidateList.tsv"), sep="\t", row.names=F, col.names=F, quote=F)
 write.table(allExpressedTranscripts, paste0(out, "expressedGenes.lst"), sep="\t", row.names=F, col.names=F, quote=F)
 
-save(isoformExpression, intraReplicate, interReplicate, candidates, candidateList, candidateMask, inputData, wd, out, file=paste0(out, "RWorkspaces/2_GetCandidates.RData"))
+save(isoformExpression, intraReplicate, interReplicate, candidates, candidateList, candidateMask, inputData, allExpressedTranscripts, wd, out, file=paste0(out, "RWorkspaces/2_GetCandidates.RData"))
 
 #Plot heatmap
 suppressMessages(library(gplots)) #Avoid the annoying message
@@ -126,4 +131,4 @@ heatmap.2(as.matrix(fig), trace="none", scale="none", col=myPalette, na.col="gre
           
 graphics.off()
 
-save(isoformExpression, intraReplicate, interReplicate, candidates, candidateList, candidateMask, inputData, wd, out, fig, file=paste0(out, "RWorkspaces/2_GetCandidates.RData"))
+save(isoformExpression, intraReplicate, interReplicate, candidates, candidateList, candidateMask, inputData, allExpressedTranscripts, wd, out, fig, file=paste0(out, "RWorkspaces/2_GetCandidates.RData"))
