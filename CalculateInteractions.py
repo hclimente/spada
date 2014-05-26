@@ -78,9 +78,12 @@ print("\t* Launching iLoops.")
 with open(out + "candidatesGaudi.lst", "r") as CANDIDATES:
 	for line in CANDIDATES:
 		elements = line.strip().split("\t")
-		if elements[1] == "False":
-			continue
 		transcript = elements[0]
+		analysisCode = elements[1]
+		
+		if analysisCode != "0":
+			continue
+		
 	 	for fastaFile in filter(listdir(out), "allProteome_*.fasta"):
 	 		batch = (fastaFile.split(".")[0]).split("_")[1]
 	 		tag = transcript + "_" + batch
