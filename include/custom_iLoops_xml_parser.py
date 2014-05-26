@@ -13,11 +13,9 @@ class iLoopsParser(iLoops_xml_parser.ILXMLParser):
 		for resultItem in self.results_parser(xml_file=xmlOutput, report_level=0, **kwds): 
 			if isinstance(resultItem, iLoops_xml_parser.ILXMLProtein):
 				if resultItem.get_loops():
-					loopList = []
-					for aLoop in resultItem.get_loops():
-						loopList.append( (aLoop.get_code(), [mapping.get_ID() for mapping in aLoop.get_mappings()]) )
-					loopList.sort(key=lambda x: x[0]) # sorted list by loop name
-					parsedLoops[resultItem.get_name()] = ";".join([ x[0]+"_"+"?".join([dom for dom in x[1]]) for x in loopList])
+					loopList = [ aLoop.get_code() for aLoop in resultItem.get_loops() ]
+					loopList.sort() # sorted list by loop name
+					parsedLoops[resultItem.get_name()] = ";".join(loopList)
 
 		return parsedLoops
 
