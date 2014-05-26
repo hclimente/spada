@@ -19,9 +19,8 @@ reps = []
 
 outDir = "Data/Input/" + inputType + "/" + tag1 + "/"
 
-cmd("rm -r", outDir, "; mkdir -p", outDir)
-
 if(inputType == "GENCODE"):
+	cmd("rm -r", outDir, "; mkdir -p", outDir)
 	Conditions = {"10": "N", "7": "T"}
 	for condition in Conditions.keys():
 		replicateCounter = 1
@@ -37,6 +36,7 @@ if(inputType == "GENCODE"):
 			replicateCounter += 1
 
 elif(inputType == "TCGA"):
+	cmd("rm -r", outDir, "; mkdir -p", outDir)
 	patients = []
 	with open("Data/TCGA/Rawdata/" + tag1 + "_iso_tpm_paired-filtered.txt", "r") as FILE:
 		firstLine = FILE.readline().strip().split("\t")
@@ -63,6 +63,8 @@ elif(inputType == "TCGA"):
 	for patient in patients:
 		patient.close()
 elif(inputType == "TCGA_unpaired"):
+	outDir = "Data/Input/TCGA/" + tag1 + "_unpaired/"
+	cmd("rm -r", outDir, "; mkdir -p", outDir)
 	patients = []
 	with open("Data/TCGA/Rawdata/" + tag1 + "_iso_tpm_tumor-filtered.txt", "r") as FILE:
 		firstLine = FILE.readline().strip().split("\t")
