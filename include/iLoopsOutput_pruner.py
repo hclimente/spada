@@ -5,32 +5,43 @@ import custom_iLoops_xml_parser as parser
 from os import listdir
 from fnmatch import filter
 import tarfile
+import sys
 
-class xmlLite:
+class iLoopsOutput_pruner:
 	def __init__(self, transcript, workingDirectory):
 		self.transcriptName = transcript
 		self.wd 			= workingDirectory + "/"
-		self.outFile 		= open(self.wd + self.transcriptName + ".xml", "w")
-		self.writer			= loxun.XmlWriter(self.outFile)
-
+		
 		self._init_file()
 
 	def getWd(self):		return self.wd
 	def getTxName(self):	return self.transcriptName
 	def getWriter(self):	return self.writer
-	def _init_file(self): self.getWriter().startTag("xml")
+	def getOutFile(self):	return self.outFile
+
+	def _init_file(self):
+		self.outFile 		= open(self.getWd() + self.getTxName() + ".ips", "w")
+		self.writer			= loxun.XmlWriter(self.outFile)
+		self.getWriter().startTag("xml")
 	def _end_file(self): 
 		self.getWriter().endTag('xml')
 		self.getWriter().close()
+	def _change_pretty_state(self, state):
+		self.getWriter()._pretty = state
 
 	def _open_close_tag_with_info(self, tag_name, value):
 		self.getWriter().startTag(tag_name)
+		self._change_pretty_state(False)
+
+		self.getOutFile().write(self.getWriter()._indent * (len(self.getWriter()._elementStack)-1))
+		self.getOutFile().flush()
 		self.getWriter().text(str(value))
 		self.getWriter().endTag(tag_name)
+		self.getWriter().newline()
+		self._change_pretty_state(True)
 
 	def makeLiteVersion(self):
-		xmlFile = self.getWd() + self.transcriptName + "_raw.ips"
-		self.getWriter().startTag("xml")
+		xmlFile = self.getWd() + self.getTxName() + "_raw.ips"
 		myParser = parser.iLoopsParser()
 		myParser.makeProteinsLite(
 									xmlOutput					  = self,
@@ -59,12 +70,30 @@ class xmlLite:
 										output_RF_results             = True,
 										output_RF_precisions          = True
 									  )
-		self.getWriter().endTag("xml")
-		self.getWriter().close()
+		self._end_file()
+
+	def checkConsistency(self):
+		outFile = self.getWd() + self.getTxName() + ".ips"
+
+		myParser = parser.iLoopsParser()
+		myParser.results_parser(
+										xml_file					  = outFile, 
+										report_level				  = 0, 
+										output_proteins               = True, 
+										output_alignments             = True,
+										output_domain_mappings        = True,
+										output_protein_features       = True,
+										output_domain_assignations    = True,
+										output_interactions           = True,
+										output_interaction_signatures = True,
+										output_RF_results             = True,
+										output_RF_precisions          = True
+									  )
+
 
 	def joinFiles(self):
 		path = self.getWd() + "/" + self.getTxName() + "/"
-		with open(self.getWd() + self.transcriptName + "_raw.ips", "w") as RAW_XML_JOIN:
+		with open(self.getWd() + self.getTxName() + "_raw.ips", "w") as RAW_XML_JOIN:
 			RAW_XML_JOIN.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n")
 			RAW_XML_JOIN.write("<xml>\n")
 
@@ -93,15 +122,16 @@ class xmlLite:
 			RAW_XML_JOIN.write("</xml>\n")
 
 	def makeTarfile(self):
-		with tarfile.open(self.getWd() + self.transcriptName + ".tar.gz", "w:gz") as tar:
-			tar.add(self.getWd() + "/" + self.transcriptName + ".xml", arcname = self.transcriptName + ".xml")
+		with tarfile.open(self.getWd() + self.getTxName() + ".tar.gz", "w:gz") as tar:
+			tar.add(self.getWd() + "/" + self.getTxName() + ".ips", arcname = self.getTxName() + ".ips")
 
 if __name__ == '__main__':
 	
-	transcript = "testTranscript"
-	workingDirectory = "/home/hector/Desktop"
+	transcript = sys.argv[1]
+	workingDirectory = sys.argv[2]
 
-	r = xmlLite(transcript, workingDirectory)
-	#r.joinFiles()
+	r = iLoopsOutput_pruner(transcript, workingDirectory)
+	r.joinFiles()
 	r.makeLiteVersion()
 	r.makeTarfile()
+	r.checkConsistency()
