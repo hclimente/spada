@@ -71,6 +71,10 @@ class iLoopsOutput_pruner:
 										output_RF_precisions          = True
 									  )
 		self._end_file()
+		self.checkConsistency()
+		self.makeTarfile()
+
+		return True
 
 	def checkConsistency(self):
 		outFile = self.getWd() + self.getTxName() + ".ips"
@@ -89,7 +93,6 @@ class iLoopsOutput_pruner:
 										output_RF_results             = True,
 										output_RF_precisions          = True
 									  )
-		return True
 
 	def joinFiles(self):
 		with open(self.getWd() + self.getTxName() + "_raw.ips", "w") as RAW_XML_JOIN:
@@ -132,5 +135,3 @@ if __name__ == '__main__':
 	r = iLoopsOutput_pruner(transcript, workingDirectory)
 	r.joinFiles()
 	r.makeLiteVersion()
-	r.checkConsistency()
-	r.makeTarfile()
