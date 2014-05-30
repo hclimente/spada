@@ -89,18 +89,17 @@ class iLoopsOutput_pruner:
 										output_RF_results             = True,
 										output_RF_precisions          = True
 									  )
-
+		return True
 
 	def joinFiles(self):
-		path = self.getWd() + "/" + self.getTxName() + "/"
 		with open(self.getWd() + self.getTxName() + "_raw.ips", "w") as RAW_XML_JOIN:
 			RAW_XML_JOIN.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n")
 			RAW_XML_JOIN.write("<xml>\n")
 
-			maxBatch = len( filter( listdir(path), transcript + "_[0-9]") )
+			maxBatch = len( filter( listdir(self.getWd()), self.getTxName() + "_[0-9]") )
 				
 			for batch in [ str(n) for n in range(1, maxBatch + 1) ]:
-				candidateOut = path + transcript + "_" + batch + "/sge_output"
+				candidateOut = self.getWd() + self.getTxName() + "_" + batch + "/sge_output"
 				for number in [ str(x) + str(y) for x in [""] + range(10) for y in range(10) if str(x) + str(y) != "00" ]:
 					for nodeMap in filter( listdir( candidateOut ), "*.assignation." + number + ".xml" ):
 						proteinsFile = candidateOut + "/" + nodeMap
@@ -110,7 +109,7 @@ class iLoopsOutput_pruner:
 									RAW_XML_JOIN.write(line)
 
 			for batch in [ str(n) for n in range(1, maxBatch + 1) ]:
-				candidateOut = path + transcript + "_" + batch + "/sge_output"
+				candidateOut = self.getWd() + self.getTxName() + "_" + batch + "/sge_output"
 				for number in [ str(x) + str(y) for x in [""] + range(10) for y in range(10) if str(x) + str(y) != "00" ]:
 					for nodeInt in filter(listdir( candidateOut ), "*.scoring." + number + ".xml" ):
 						interactionsFile = candidateOut + "/" + nodeInt
@@ -133,5 +132,5 @@ if __name__ == '__main__':
 	r = iLoopsOutput_pruner(transcript, workingDirectory)
 	r.joinFiles()
 	r.makeLiteVersion()
-	r.makeTarfile()
 	r.checkConsistency()
+	r.makeTarfile()
