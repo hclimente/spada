@@ -5,6 +5,7 @@ from os import listdir,chdir
 from include.libsmartas import *
 from fnmatch import filter
 import include.custom_iLoops_xml_parser as parser
+from iLoopsOutput_pruner import iLoopsOutput_pruner
 
 def splitFASTA(basename, inputType, iLoopsVersion):
 	wannaWrite = False
@@ -102,40 +103,9 @@ with open(out + "candidatesGaudi.lst", "r") as CANDIDATES:
 	 			"2>&1 >" + out + "logs/" + tag + ".log"
 	 		   )
 
-		with open(out + "Output/" + transcript + ".ips", "w") as ISO_OUTPUT:
-			ISO_OUTPUT.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n")
-			ISO_OUTPUT.write("<xml>\n")
-
-			maxBatch = len( filter( listdir(out + "Output"), transcript + "_*") )
-				
-			for batch in range(1, maxBatch + 1):
-				candidateOut = out + "Output/" + transcript + "_" + str(batch) + "/sge_output"
-				for tens in ["", range(3) ]:
-					for units in range(10):
-						number = str(tens) + str(units)
-						if number == "00": continue
-
-						for nodeMap in filter(listdir( candidateOut ), "*.assignation." + number + ".xml" ):
-							mapFile =  candidateOut + "/" + nodeMap
-							with open(mapFile, "r") as MAPPED:
-								for line in MAPPED:
-									if line.strip() != "<?xml version=\"1.0\" encoding=\"utf-8\"?>" and line.strip() != "<xml>" and line.strip() != "</xml>":
-										ISO_OUTPUT.write(line)
-
-			for batch in range(1, maxBatch + 1):
-				candidateOut = out + "Output/" + transcript + "_" + str(batch) + "/sge_output"
-				for tens in ["", range(3) ]:
-					for units in range(10):
-						number = str(tens) + str(units)
-						if number == "00": continue
-
-						for nodeAss in filter(listdir( candidateOut ), "*.scoring." + number + ".xml" ):
-							assFile = candidateOut + "/" + nodeAss
-							with open(assFile, "r") as ASSIGNED:
-								for line in ASSIGNED:
-									if line.strip() != "<?xml version=\"1.0\" encoding=\"utf-8\"?>" and line.strip() != "<xml>" and line.strip() != "</xml>":
-										ISO_OUTPUT.write(line)
-
-			ISO_OUTPUT.write("</xml>\n")
-
-		cmd("scp","-r", out + "Output/" + transcript + ".ips", "hector@feynman.imim.es:~/SmartAS/iLoops/" + inputType + "/" + iLoopsVersion)
+		r = iLoopsOutput_pruner(transcript, out + "Output/")
+		r.joinFiles()
+		if r.makeLiteVersion():
+			cmd("scp","-r", out + "Output/" + transcript + ".tar.gz", "hector@feynman.imim.es:~/SmartAS/iLoops/" + inputType + "/" + iLoopsVersion)
+		else:
+			print("Error in generation of file.")
