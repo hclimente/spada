@@ -2,9 +2,9 @@
 
 import sys
 from os import listdir,chdir
-from include.libsmartas import *
+from libsmartas import *
 from fnmatch import filter
-import include.custom_iLoops_xml_parser as parser
+import custom_iLoops_xml_parser as parser
 from iLoopsOutput_pruner import iLoopsOutput_pruner
 
 def splitFASTA(basename, inputType, iLoopsVersion):
@@ -106,6 +106,6 @@ with open(out + "candidatesGaudi.lst", "r") as CANDIDATES:
 		r = iLoopsOutput_pruner(transcript, out + "Output/")
 		r.joinFiles()
 		if r.makeLiteVersion():
-			cmd("scp","-r", out + "Output/" + transcript + ".tar.gz", "hector@feynman.imim.es:~/SmartAS/iLoops/" + inputType + "/" + iLoopsVersion)
+			cmd("scp","-r", out + "Output/" + transcript + ".tar.gz", "hector@einstein.imim.es:~/SmartAS/iLoops/" + inputType + "/" + iLoopsVersion)
 		else:
 			print("Error in generation of file.")
