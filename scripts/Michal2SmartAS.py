@@ -1,7 +1,7 @@
 #!/soft/devel/python-2.7/bin/python
 
 from os import listdir
-from libsmartas import cmd
+from libs.utils import cmd
 
 for michalFile in listdir("."):
 	core = michalFile.split(".")[0]

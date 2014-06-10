@@ -2,7 +2,7 @@
 
 import sys, getopt
 from os import path, chdir
-from libsmartas import cmd, cmdOut, setEnvironment, finish, outputCandidates, pickUniqPatterns
+from libs.utils import cmd, cmdOut, setEnvironment, finish, outputCandidates, pickUniqPatterns
 
 def main(argv):
 
@@ -26,7 +26,7 @@ def main(argv):
 		if opt == "-f":
 			cfgFile = arg
 		else:
-			print("No config file found.")
+			print("No configuration file found.")
 			exit()
 		
 	opt = setEnvironment(cfgFile)
@@ -49,12 +49,12 @@ def main(argv):
 def exploreData(opt):
 	
 	print("* Reading and summarizing input files: computing PSI values and intereplicate agreement.")
-	cmd("Pipeline/ExploreData.r", opt["out"], "Data/Input/" + opt["inputType"] + "/" + opt["tag1"] + "/")
+	cmd("Pipeline/methods/ExploreData.r", opt["out"], "Data/Input/" + opt["inputType"] + "/" + opt["tag1"] + "/")
 
 def getCandidates(opt):
 
 	print("* Extracting transcripts with high variance and high expression.")
-	cmd("Pipeline/GetCandidates.r", opt["minExpression"], opt["out"], opt["unpairedReplicates"])
+	cmd("Pipeline/methods/GetCandidates.r", opt["minExpression"], opt["out"], opt["unpairedReplicates"])
 	
 	cmd("sort", "Results/" + opt["out"] + "/expressedGenes.lst", ">" + "Results/" + opt["out"] + "/expressedGenes.tmp.lst")
 	cmd("mv", "Results/" + opt["out"] + "/expressedGenes.tmp.lst", "Results/" + opt["out"] + "/expressedGenes.lst")
@@ -64,7 +64,7 @@ def getCandidates(opt):
 def candidatePrioritization(opt):
 
 	print("* Prioritizing candidates.")
-	cmd("Pipeline/CandidatePrioritization.py", opt["out"], opt["inputType"])
+	cmd("Pipeline/methods/CandidatePrioritization.py", opt["out"], opt["inputType"])
 
 def launchiLoops(opt):
 
@@ -72,11 +72,15 @@ def launchiLoops(opt):
 	pickUniqPatterns(opt["gOut"], opt["out"], opt["inputType"], opt["iLoopsVersion"], opt["Replicates"] * 0.1)
 
 	print("* Sending list to Gaudi and performing the iLoops analysis.")
-	gaudiThread = cmdOut("ssh", "hectorc@gaudi", "'" + opt["gaudiWd"] + "/Pipeline/CalculateInteractions.py " + opt["gaudiWd"] + " " + opt["out"] + " " + opt["inputType"] + " " + opt["iLoopsVersion"] + "'")
+	gaudiThread = cmdOut(
+							"ssh", "hectorc@gaudi", \
+							"'" + opt["gaudiWd"] + "/Pipeline/methods/CalculateInteractions.py " + opt["gaudiWd"] + " " + opt["out"] + " " + opt["inputType"] + " " + opt["iLoopsVersion"] + "'", \
+							">Results/" + opt["out"] + "/calculateInteractions.log"
+						)
 
 def analyzeInteractions(opt):
 
 	print("* Examining iLoops results.")
-	cmd("Pipeline/AnalyzeInteractions.py", opt["out"], opt["inputType"], opt["iLoopsVersion"], opt["Replicates"] * 0.1)
+	cmd("Pipeline/methods/AnalyzeInteractions.py", opt["out"], opt["inputType"], opt["iLoopsVersion"], opt["Replicates"] * 0.1)
 
 main(sys.argv[1:])
