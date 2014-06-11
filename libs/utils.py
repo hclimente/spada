@@ -21,6 +21,11 @@ def cmdOut(base, *args):
 
 	return Popen(command, shell=True, stdout=PIPE)
 
+def readTable(path, sep="\t"):
+	with open(path) as FILE:
+		for line in FILE:
+			yield line.strip().split(sep)
+
 def setRWorkspace(wd, out, Replicates):
 
 	r("wd <- \"" + wd + "\"")

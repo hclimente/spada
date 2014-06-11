@@ -1,7 +1,7 @@
 #!/soft/devel/python-2.7/bin/python
 
 from libs.utils import *
-from iLoops import custom_iLoops_xml_parser as parser
+from interface import iLoops_parser as parser
 from os.path import isfile
 import sys
 from time import sleep

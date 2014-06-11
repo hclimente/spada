@@ -4,8 +4,8 @@ import sys
 from os import listdir,chdir
 from libs.utils import *
 from fnmatch import filter
-import iLoops.custom_iLoops_xml_parser as parser
-from iLoops.iLoopsOutput_pruner import iLoopsOutput_pruner
+import interface import iLoops_parser as parser
+from interface import iLoops_outputPruner as pruner
 
 def splitFASTA(basename, inputType, iLoopsVersion):
 	wannaWrite = False
@@ -103,7 +103,7 @@ with open(out + "candidatesGaudi.lst", "r") as CANDIDATES:
 	 			"2>&1 >" + out + "logs/" + tag + ".log"
 	 		   )
 
-		r = iLoopsOutput_pruner(transcript, out + "Output/")
+		r = pruner.iLoopsOutput_pruner(transcript, out + "Output/")
 		r.joinFiles()
 		if r.makeLiteVersion():
 			cmd("scp","-r", out + "Output/" + transcript + ".tar.gz", "hector@einstein.imim.es:~/SmartAS/iLoops/" + inputType + "/" + iLoopsVersion)

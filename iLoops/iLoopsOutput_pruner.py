@@ -1,7 +1,7 @@
 #!/soft/devel/python-2.7/bin/python
 
 import loxun
-import libs.custom_iLoops_xml_parser as parser
+import interface.iLoops_parser as parser
 from os import listdir
 from fnmatch import filter
 import tarfile
@@ -124,8 +124,9 @@ class iLoopsOutput_pruner:
 			RAW_XML_JOIN.write("</xml>\n")
 
 	def makeTarfile(self):
-		with tarfile.open(self.getWd() + self.getTxName() + ".tar.gz", "w:gz") as tar:
-			tar.add(self.getWd() + "/" + self.getTxName() + ".ips", arcname = self.getTxName() + ".ips")
+		tar = tarfile.open(self.getWd() + self.getTxName() + ".tar.gz", "w:gz")
+		tar.add(self.getWd() + "/" + self.getTxName() + ".ips", arcname = self.getTxName() + ".ips")
+		tar.close()
 
 if __name__ == '__main__':
 	
