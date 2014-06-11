@@ -3,7 +3,7 @@
 import pandas as pd
 import numpy as np
 import sys
-from libs.utils import *
+from libs import utils as ut
 import networkx as nx
 from libs import biana
 
@@ -19,6 +19,8 @@ class Network:
 	def edges(self, **kwds):	return self._net.edges(**kwds)
 
 	def add_node(self, full_name="", score=0.0, gene_id="?", gene_symbol="?", switch=False, driver=False):
+		debug = False
+
 		geneSymbol 	= gene_symbol
 		geneID 		= gene_id
 		Score 		= score
@@ -27,17 +29,17 @@ class Network:
 			nameComponents 	= full_name.split("|")
 
 			if len(nameComponents) == 1:
-				print(full_name + " was not added.")
+				if debug: print(full_name + " not added. Unable to get gene id and symbol.")
 				return
 		
 			geneSymbol 	= nameComponents[0]
 			geneID 		= nameComponents[1]
 
 		elif "locus" in gene_id:
-			print(gene_id + " was not added.")
+			if debug: print( "Unknown gene " + gene_id + " not added.")
 			return
 		elif "locus" in gene_symbol:
-			print(gene_symbol + " was not added.")
+			if debug: print( "Unknown gene " + gene_symbol + " not added.")
 			return
 
 		for s in [ self._net.node[x]["score"] for x in self._net.nodes() if x == geneID ]:
@@ -69,10 +71,8 @@ class Network:
 			self.add_node( full_name=gene, score=candidates.loc[[gene]].Replicates, switch=True )
 
 	def importDrivers(self, path):
-		with open(path) as DRIVER_LIST:
-			for line in DRIVER_LIST:
-				nameComponents = line.strip().split("\t")
-				self.add_node( gene_symbol=nameComponents[0], gene_id=nameComponents[1], score=1.0, driver=True )
+		for nameComponents in ut.readTable(path):
+			self.add_node( gene_symbol=nameComponents[0], gene_id=nameComponents[1], score=1.0, driver=True )
 
 	def importiLoopsInteractions(self, path, gn, nTx, tTx):
 		edges = pd.DataFrame.from_csv(path + "iLoops/InteraXChanges_" + gn + "_" + nTx + "_" + tTx + "_full1.tsv", sep="\t")
@@ -180,9 +180,18 @@ class Network:
 																			  )
 			
 			
-			geneId_1 = [ x for x in session.get_user_entity(uE_id1).get_attribute(attribute_identifier="geneid") ][0]
-			geneId_2 = [ x for x in session.get_user_entity(uE_id2).get_attribute(attribute_identifier="geneid") ][0]
-
+			#geneId_1 = [ x for x in session.get_user_entity(uE_id1).get_attribute(attribute_identifier="geneid") ].pop(0)
+			#geneId_2 = [ x for x in session.get_user_entity(uE_id2).get_attribute(attribute_identifier="geneid") ].pop(0)
+			if session.get_defined_node_attributes("proteome", uE_id1, "geneid", True):
+				geneId_1 = session.get_defined_node_attributes("proteome", uE_id1, "geneid", True).pop()
+			else:
+				print("No gene id for " + str(uE_id1))
+			
+			if session.get_defined_node_attributes("proteome", uE_id2, "geneid", True):
+				geneId_2 = session.get_defined_node_attributes("proteome", uE_id2, "geneid", True).pop()
+			else:
+				print("No gene id for " + str(uE_id2))
+			
 			for current_eErID in eErIDs_list:
 				relationObj = relationObj_dict[current_eErID]
 		
@@ -195,7 +204,7 @@ class Network:
 				
 				nodeScore = 0.0
 				edgeWeight = 0.0
-				if [ x for x in method_ids if m in set(18, 696) ]:
+				if [ x for x in method_ids if x in set([18, 696]) ]:
 					nodeScore = 0.02
 					edgeWeight = 1.0
 				elif [ x for x in method_ids if x not in affinity ]:
