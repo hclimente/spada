@@ -3,27 +3,42 @@
 from libs.utils import *
 from network import network
 from methods import method
+from libs import options as op
 
 class NetworkAnalysis(method.Method):
-	def __init__(self, path, samples, candidates):
+	def __init__(self, candidates, driversFile):
+		path = "/home/hector/SmartAS/Results/TCGA/luad_mE-1.0/"
+		samples = 57
+		#path = op.Options().qout()
+		#samples = op.Options().replicates()
 		method.Method.__init__(self, path=path, samples=samples, candidates=candidates)
 		self._predicted_interactome		= network.Network()
 		self._experimental_interactome	= network.Network()
 		self._full_interactome 			= network.Network()
+		self._drivers_file				= driversFile
 
+	## Getters ##
 	def predInteractome(self):	return self._predicted_interactome
 	def expeInteractome(self):	return self._experimental_interactome
 	def fullInteractome(self):	return self._full_interactome
 
-	def importPredictedInteractome(self, drivers):
+	## run ##
+	def run(self):
+		self.importExperimentalInteractome()
+		self.importPredictedInteractome()
+		self.joinNetworks()
+
+		return self.fullInteractome()
+
+	def importPredictedInteractome(self):
 		self._predicted_interactome.importCandidates(self._path, self._samples)
-		self._predicted_interactome.importDrivers(drivers)
+		self._predicted_interactome.importDrivers(self._drivers_file)
 		for gn,info in self._candidates.iteritems():
 			self._predicted_interactome.importiLoopsInteractions(self._path, gn, info["nTx"], info["tTx"])
 		
-	def importExperimentalInteractome(self, drivers):
+	def importExperimentalInteractome(self):
 		self._experimental_interactome.importCandidates(self._path, self._samples)
-		self._experimental_interactome.importDrivers(drivers)
+		self._experimental_interactome.importDrivers(self._drivers_file)
 		self._experimental_interactome.importKnownInteractions()
 
 	def predictedInteractome(self): return self._predicted_interactome
@@ -99,13 +114,7 @@ class NetworkAnalysis(method.Method):
 			self._experimental_interactome.add_edge(node1, node2, weight=Weight, methods=Methods, sources=Sources)
 
 if __name__ == '__main__':
-	#path = sys.argv[1]
-	path = "/home/hector/SmartAS/Results/TCGA/luad_mE-1.0/"
-	samples = 57
 	candidates = { "ARL1" : {"nTx": "uc001tib.2", "tTx": "uc001tic.2"} }
 	driversFile = "/home/hector/Desktop/Baldo_drivers3.lst"
 	
-	analysis = NetworkAnalysis(path, samples, candidates)
-	analysis.importExperimentalInteractome(driversFile)
-	analysis.importPredictedInteractome(driversFile)
-	analysis.joinNetworks()
+	NetworkAnalysis(candidates, driversFile).run()
