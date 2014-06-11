@@ -3,6 +3,7 @@
 import sys, getopt
 from os import path, chdir
 from libs.utils import cmd, cmdOut, setEnvironment, finish, outputCandidates, pickUniqPatterns
+from libs import options
 
 def main(argv):
 
@@ -19,6 +20,8 @@ def main(argv):
 
 	#Set variables
 	opts, args = getopt.getopt(argv, "f:")
+    options.Options()
+    options.Options().printToFile()
 
 	cfgFile = ""
 
