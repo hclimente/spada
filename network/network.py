@@ -9,7 +9,8 @@ from libs import biana
 
 class Network:
 	def __init__(self):
-		self._net = nx.Graph()
+		self._net 			= nx.Graph()
+		self._rejectedNodes = set()
 	
 	## Getters ##
 	def n(self): 		return self._net
@@ -185,11 +186,13 @@ class Network:
 			if session.get_defined_node_attributes("proteome", uE_id1, "geneid", True):
 				geneId_1 = session.get_defined_node_attributes("proteome", uE_id1, "geneid", True).pop()
 			else:
+				self._rejectedNodes.add(uE_id1)
 				print("No gene id for " + str(uE_id1))
 			
 			if session.get_defined_node_attributes("proteome", uE_id2, "geneid", True):
 				geneId_2 = session.get_defined_node_attributes("proteome", uE_id2, "geneid", True).pop()
 			else:
+				self._rejectedNodes.add(uE_id2)
 				print("No gene id for " + str(uE_id2))
 			
 			for current_eErID in eErIDs_list:
