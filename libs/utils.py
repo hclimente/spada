@@ -21,9 +21,13 @@ def cmdOut(base, *args):
 
 	return Popen(command, shell=True, stdout=PIPE)
 
-def readTable(path, sep="\t"):
+def readTable(path, sep="\t", header=True):
+	counter = 0
 	with open(path) as FILE:
 		for line in FILE:
+			if header and counter is 0:
+				counter = 1
+				continue
 			yield line.strip().split(sep)
 
 def setRWorkspace(wd, out, Replicates):
@@ -269,3 +273,24 @@ def pickUniqPatterns(gOut, out, inputType, iLoopsVersion, minReplicates):
 	cmd("ssh hectorc@gaudi 'rm -r", gOut + "'")
 	cmd("ssh hectorc@gaudi 'mkdir -p", gOut + "/Output; mkdir -p", gOut + "/Input; mkdir -p", gOut + "/logs'")
 	cmd("scp -r " + "Results/" + out + "/candidatesGaudi.lst hectorc@gaudi.imim.es:" + gOut)
+
+def importSequences():
+	kkota = {}
+	with open("/home/hector/SmartAS/Data/TCGA/UnifiedFasta_iLoops13.fa") as KK:
+		currentTx = ""
+		seq = ""
+		for line in KK:
+			if ">" in line:
+				if currentTx:
+					kkota[currentTx]["Sequence"] = seq
+					seq=""
+				elements=line[1:].strip().split("#")
+				currentTx = elements[0]
+				kkota.setdefault(currentTx, {})
+				kkota[currentTx]["Gene"] = elements[1]
+				kkota[currentTx]["Uniprot"] = elements[2]
+				kkota[currentTx]["iLoopsFamily"] = elements[1]
+			else:
+				seq += line.strip()
+
+	return kkota
