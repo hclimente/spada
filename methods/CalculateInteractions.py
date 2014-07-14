@@ -1,11 +1,12 @@
 #!/soft/devel/python-2.7/bin/python
 
-import sys
-from os import listdir,chdir
-from libs.utils import *
-from fnmatch import filter
-import interface import iLoops_parser as parser
+from interface import iLoops_parser as parser
 from interface import iLoops_outputPruner as pruner
+from libs import utils
+
+import sys
+import os
+import fnmatch
 
 def splitFASTA(basename, inputType, iLoopsVersion):
 	wannaWrite = False
@@ -66,7 +67,7 @@ def getFASTAandPairs(transcript, batch, inputType, out, iLoopsVersion):
  			elif wannaWrite:
  				THIS_FASTA.write(line)
 
-chdir(sys.argv[1])
+os.chdir(sys.argv[1])
 out = "Results/" + sys.argv[2] + "/"
 inputType = sys.argv[3]
 iLoopsVersion = sys.argv[4]
@@ -76,36 +77,34 @@ splitFASTA(out + "allProteome_", inputType, iLoopsVersion)
 
 print("\t* Launching iLoops.")
 
-with open(out + "candidatesGaudi.lst", "r") as CANDIDATES:
-	for line in CANDIDATES:
-		elements = line.strip().split("\t")
-		transcript = elements[0]
-		analysisCode = elements[1]
-		
-		if analysisCode != "0":
-			continue
-		
-	 	for fastaFile in filter(listdir(out), "allProteome_*.fasta"):
-	 		batch = (fastaFile.split(".")[0]).split("_")[1]
-	 		tag = transcript + "_" + batch
-	 		getFASTAandPairs(transcript, batch, inputType, out, iLoopsVersion)
-	 			
-			cmd("/soft/devel/python-2.7/bin/python /sbi/programs/" + iLoopsVersion + "/iLoops.py",
-	 			"-f " + out + "Input/" + tag + ".fasta",
-	 			"-q " + out + "Input/" + tag + ".net",
-	 			"-j " + out + "Output/" + tag,
-	 			"-x " + tag + ".xml",
-	 			"-v",
-	 			"-g all",
-	 			"-n 25",
-	 			"-Q sbi",
-	 			"-c 1,5,6,7,8,9,10,11,12,13,14,15,20,30,40,50",
-	 			"2>&1 >" + out + "logs/" + tag + ".log"
-	 		   )
+for line in utils.readTable(out + "candidatesGaudi.lst", header=False):
+	transcript = line[0]
+	analysisCode = line[1]
+	
+	if analysisCode != "0":
+		continue
+	
+ 	for fastaFile in fnmatch.filter(os.listdir(out), "allProteome_*.fasta"):
+ 		batch = (fastaFile.split(".")[0]).split("_")[1]
+ 		tag = transcript + "_" + batch
+ 		getFASTAandPairs(transcript, batch, inputType, out, iLoopsVersion)
+ 			
+		cmd("/soft/devel/python-2.7/bin/python /sbi/programs/" + iLoopsVersion + "/iLoops.py",
+ 			"-f " + out + "Input/" + tag + ".fasta",
+ 			"-q " + out + "Input/" + tag + ".net",
+ 			"-j " + out + "Output/" + tag,
+ 			"-x " + tag + ".xml",
+ 			"-v",
+ 			"-g all",
+ 			"-n 25",
+ 			"-Q sbi",
+ 			"-c 1,5,6,7,8,9,10,11,12,13,14,15,20,30,40,50",
+ 			"2>&1 >" + out + "logs/" + tag + ".log"
+ 		   )
 
-		r = pruner.iLoopsOutput_pruner(transcript, out + "Output/")
-		r.joinFiles()
-		if r.makeLiteVersion():
-			cmd("scp","-r", out + "Output/" + transcript + ".tar.gz", "hector@einstein.imim.es:~/SmartAS/iLoops/" + inputType + "/" + iLoopsVersion)
-		else:
-			print("Error in generation of file.")
+	p = pruner.iLoopsOutput_pruner(transcript, out + "Output/")
+	p.joinFiles()
+	if p.makeLiteVersion():
+		cmd("scp","-r", out + "Output/" + transcript + ".tar.gz", "hector@einstein.imim.es:~/SmartAS/iLoops/" + inputType + "/" + iLoopsVersion)
+	else:
+		print("Error in generation of file.")
