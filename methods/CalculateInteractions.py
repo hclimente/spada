@@ -7,6 +7,7 @@ from libs import utils
 import sys
 import os
 import fnmatch
+import logging
 
 def splitFASTA(basename, inputType, iLoopsVersion):
 	wannaWrite = False
