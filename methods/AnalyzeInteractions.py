@@ -57,8 +57,7 @@ with open("Data/TCGA/UnifiedFasta_" + iLoopsVersion + "_loopFamilies.txt", "r") 
 with open( out + "candidatesGaudi.lst", "r") as GAUDI:
 	for line in GAUDI:
 		element = line.strip().split("\t")
-		if int(element[1]) >= 0:
-			candidatesGaudi[element[0]] = int(element[1])
+		if int(element[1]) >= 0: candidatesGaudi[element[0]] = int(element[1])
 
 with open(out + "candidateList.top.tsv", "r") as CANDIDATES:
 

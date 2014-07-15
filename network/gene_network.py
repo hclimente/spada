@@ -1,11 +1,14 @@
 #!/soft/devel/python-2.7/bin/python
 
-import pandas as pd
-import numpy as np
 import network
 from libs import utils as ut
 from libs import biana
 from libs import options
+
+import pandas as pd
+import numpy as np
+import abc
+import logging
 
 class GeneNetwork(network.Network):
 	"""docstring for GeneNetwork
@@ -16,7 +19,7 @@ class GeneNetwork(network.Network):
 		symbol - str Gene Symbol
 		switch - bool One or more isoform switches detected.
 		isoformSwitches - list List of detected isoform switches [[isoN, isoT], [isoN, isoT]]
-		score - float Score between 0.2 and 0.5 dictacted by the number of patients.
+		score - float,0.01 Score between 0.2 and 0.5 dictacted by the number of patients.
 		Driver - bool Gene described as a driver.
 		RBP - bool Gene described as a RBP.
 		EpiFactor - bool Gene described as epigenetic factor.
@@ -25,27 +28,55 @@ class GeneNetwork(network.Network):
 	Edge information:
 		Id1 - str Gene id of interactor 1.
 		Id2 - str Gene id of interactor 2.
-		weight - float Weight of the itneraction.
-		methods - str Methods of detection of the interaction.
-		sources - str Sources of the interaction.
+		score, 0.01 - float,None Weight of the itneraction.
+		#methods - str,None Methods of detection of the interaction.
+		#sources - str,None Sources of the interaction.
+		iLoops_prediction - bool,None Interaction predicted by iLoops.
+		experimental - bool,None Interaction found through Y2H or Lumier.
+
+	GUILD score:
+
+		Nodes:
+			Base: 		0.01
+			Maximum: 	1
+			Patients:	0.2 - 0.5
+			Driver: 	1
+		Edges:
+			Base: 		0.01
+			Maximum: 	1
+			iLoops:		?
+			KnownPPI:	1 (Lumier, Y2H) - 0.2 (others)
+		
 	"""
-			
+
+	__metaclass__ = abc.ABCMeta
+
 	def __init__(self):
 		network.Network.__init__(self)
 
+	@abc.abstractmethod
+	def nameFilter(self, **kwds):
+		raise NotImplementedError()
+
 	def add_node(self, full_name="", gene_id="?", gene_symbol="?"):
 
+		logging.debug("Importing node: full name {0} id {1} symbol {2}".format(
+								full_name, gene_id, gene_symbol) )
 		geneID,geneSymbol = self.nameFilter(full_name=full_name, gene_id=gene_id, gene_symbol=gene_symbol)
 		
-		if [ x for x in self._net.nodes() if x == geneID ]:
-			print("Error: node {0} exists.".format(geneID))
+		if geneID in self._net.nodes():
+			logging.error("Node {0} already exist.".format(geneID))
+		elif geneID is None:
+			logging.error("Could not retrieve name from node: full name {0} id {1} symbol {2}".format(
+								full_name, gene_id, gene_symbol) )
 		else:
+			logging.debug("Node {0} imported.".format(geneID))
 			self._net.add_node( 
 								geneID, 
 								symbol 					= geneSymbol,
 								switch 					= None, 
 								isoformSwitches 		= [],
-								score 					= None, 
+								score 					= 0.01, 
 								Driver 					= False, 
 								RBP 					= False, 
 								EpiFactor				= False, 
@@ -54,75 +85,57 @@ class GeneNetwork(network.Network):
 
 	def update_node(self, key, value, full_name = "", gene_id = ""):
 		geneID, geneSymbol = self.nameFilter(full_name=full_name, gene_id=gene_id)
+		finalValue = value
 		
 		if geneID is None:
-			print("Unable to get gene id from {0} {1}".format(full_name, geneID))
+			logging.error("Unable to get gene id from {0} {1}".format(full_name, geneID))
 			return False
 
-		self._update_node(geneID, key, value)
-		return True
+		if key is "score":
+			finalValue = min(1.0, self._net.node[geneID]["score"] + value)
+
+		return self._update_node(geneID, key, finalValue)
+
+	def add_edge(self, full_name1 = "", gene_id1 = "", full_name2 = "", gene_id2 = ""):
+
+		node_id1 = self.nameFilter(full_name=full_name1, gene_id=gene_id1)[0]
+		node_id2 = self.nameFilter(full_name=full_name2, gene_id=gene_id2)[0]
+
+		if (node_id1 is None or node_id1 is "") or (node_id2 is None or node_id2 is ""): 
+			logging.warning( "Cannot add edge {1} - {3} ({0} - {2}).".format(
+									full_name1, gene_id1, full_name2, gene_id2) )
+			return False
+		elif node_id1 not in self.nodes():
+			logging.warning("Node {0} does not exist.".format(node_id1))
+			return False
+		elif node_id2 not in self.nodes():
+			logging.warning("Node {0} does not exist.".format(node_id2))
+			return False
+
+		return self._add_edge( 
+								node_id1, 
+								node_id2, 
+								score 				= 0.01, 
+								iLoops_prediction 	= None,
+								experimental 		= None
+							 )
 
 	def update_edge(self, key, value, full_name1 = "", gene_id1 = "", full_name2 = "", gene_id2 = ""):
-		geneIDs = []
-		lst1 = [full_name1, full_name2]
-		lst2 = [gene_id1, gene_id2]
 		
-		for i in [1,2]:
-			geneID = ""
-			if lst1[i]:
-				geneID, geneSymbol = self.nameFilter(full_name=lst1[i])
-			elif lst2[i]:
-				geneID, geneSymbol = self.nameFilter(gene_id=lst2[i])
+		node_id1 = self.nameFilter(full_name=full_name1, gene_id=gene_id1)[0]
+		node_id2 = self.nameFilter(full_name=full_name2, gene_id=gene_id2)[0]
 
-			if geneID is None or geneID is "": 
-				print( "Cannot add edge {0}.".format(str([full_name1, gene_id1, full_name2, gene_id2])))
-				return False
-
-			geneIDs.append(geneID)
-
-		self._update_edge(geneIDs[0], geneIDs[1], key, value)
-		return True
-
-	def add_edge(self, node_id1, node_id2, weight=0.0, methods="", sources=""):
-		Weight 	= weight
-		Methods = methods
-		Sources = sources
-
-		for w in [ self._net[x][y]["weight"] for (x,y) in self._net.edges() if (node_id1,node_id2) == (x,y) or (node_id1,node_id2) == (y,x) ]:
-			Weight = min(1.0, Weight + w)
-
-		self._net.add_edge( 
-							node_id1, 
-							node_id2, 
-							weight=Weight, 
-							methods=Methods, 
-							sources=Sources 
-						  )
-
-	def nameFilter(self, full_name="", gene_id="", gene_symbol=""):
-		geneSymbol 	= None
-		geneID 		= None
-
-		if full_name:
-			nameComponents 	= full_name.split("|")
-
-			if len(nameComponents) > 1:		
-				geneSymbol 	= nameComponents[0]
-				geneID 		= nameComponents[1]
-
-		elif "locus" not in gene_id and "locus" not in gene_symbol:
-			if gene_id:
-				geneID 		= gene_id
-			if gene_symbol:
-				geneSymbol 	= gene_symbol
-
-		return (geneID, geneSymbol)
+		return self._update_edge(node_id1, node_id2, key, value)
 
 	def readGeneInfo(self):
+		"""Read tsv files containing characteristics of the genes:
+			- compilationTable.tsv: gene annotation.
+			- expressedGenes.lst: transcripts above a threshold of expression.
+		"""
 		
 		for line in ut.readTable("Data/Databases/compilationTable.tsv"):
 			self.add_node(full_name=line[0])
-			geneID, geneSymbol = self.nameFilter(full_name=line[0])
+			geneID = self.nameFilter(full_name=line[0])[0]
 
 			apoptosis = [line[10]]
 			embryo = [line[9]]
@@ -139,12 +152,13 @@ class GeneNetwork(network.Network):
 			lst 	= [ x for x in self.nodes() if self._net.node[x]["symbol"] == line[1] ]
 			
 			if lst: 
-				geneID, geneSymbol = self.nameFilter( gene_id=lst.pop())
+				geneID = self.nameFilter( gene_id=lst.pop())[0]
 				self.update_node( "ExpressedTranscripts", line[0], gene_id=geneID )
 
 	def importCandidates(self):
 		"""Import a set of genes with an isoform switch.
 		"""
+		logging.debug("Retrieving calculated isoform switches.")
 
 		samples = options.Options().replicates
 		min_samples = round(samples * 0.1)
@@ -165,47 +179,24 @@ class GeneNetwork(network.Network):
 			if geneID is not None:
 				self.update_node( "switch", True, gene_id=geneID )
 				self.update_node( "isoformSwitches", [nIso, tIso], gene_id=geneID )
-				if self._net.node[geneID]["score"] is None:
-					self.update_node( "score", Score, gene_id=geneID )
-				else:
-					self.update_node( "score", min(1.0, self._net.node[geneID]["score"] + Score), gene_id=geneID )
+				self.update_node( "score", Score, gene_id=geneID )
 
-	def importSpecificDrivers(self, path, otherDrivers = False):
+	def importSpecificDrivers(self, drivers_file, otherDrivers = False):
+		logging.debug("Importing specific drivers.")
 		if not otherDrivers:
-			for node in self.nodes():
+			for node in [ x for x in self.nodes() if self._net.node[x]["Driver"] ]:
 				self.update_node("Driver", False, gene_id = node)
-		for nameComponents in ut.readTable(path, header = False):
+				self.update_node("score", 0.01, gene_id = node)
+		for nameComponents in ut.readTable(drivers_file, header = False):
 			geneID, geneSymbol = self.nameFilter(gene_id = nameComponents[1])
 			self.update_node("Driver", True, gene_id = geneID)
-
-	def importiLoopsInteractions(self, path, gn, nTx, tTx):
-		edges = pd.DataFrame.from_csv(path + "iLoops/InteraXChanges_" + gn + "_" + nTx + "_" + tTx + "_full1.tsv", sep="\t")
-		
-		#Filter out "locus" genes, as they are not understandable by GUILD
-		locus_filter = [ "locus" not in x for x in [ x for x in edges.Partner_gene ] ]
-		edges = edges[ locus_filter ] 
-		
-		#Select genes for which there is only a prediction for one isoform
-		dRC_filter = np.abs(edges.dRC) <= 50
-		
-		for aGene in edges.Partner_gene.unique():
-			genenameMask = edges.Partner_gene == aGene
-			geneInfo 	 = edges[ genenameMask ]
-			geneScore 	 = 0.0
-		
-			if any(geneInfo.Annotation == "Driver"):
-				geneScore += 0.5
-		
-			if ( genenameMask & dRC_filter ).any():
-				geneScore += float( max(np.abs(geneInfo.dRC)) ) / 50
-			else:
-				geneScore += 0.5
-		
-			self.add_edge(gn, aGene, weight=geneScore)
+			self.update_node("score", 1, gene_id = geneID)
 
 	def importKnownInteractions(self):
 
-		affinity_dict = { 
+		logging.debug("Importing interactions from BIANA.")
+
+		affinity_methods = { 
 							'492':'in vivo', '493':'in vitro', '0':'molecular interaction', 
 							'4':'affinity chromatography technology', '6':'anti bait coimmunoprecipitation', 
 							'7':'anti tag coimmunoprecipitation', '8':'array technology', 
@@ -234,16 +225,37 @@ class GeneNetwork(network.Network):
 							'1029':'proteomics of isolated chromatin segments', '1031':'protein folding/unfolding', 
 							'1087':'monoclonal antibody blockade'
 						}
-		
-		affinity = set( affinity_dict.keys() )
-		methods  = [("Method_id", 18),("Method_id", 696)]
-		methods.extend([ ("Method_id", x) for x in affinity ])
 
-		#seeds = [ x for x in self.nodes() if self._net.node[x]["switch"] or self._net.node[x]["driver"] ]
-		#For testing purposes
-		seeds = ["7157"]
-		level = 2
-		########
+		complementation_methods={
+    			'492':'in vivo', '493':'in vitro', '0':'molecular interaction',
+    			'10':	'beta galactosidase complementation', '11':	'beta lactamase complementation', 
+    			'14':	'adenylate cyclase complementation', '18':	'two hybrid', 
+    			'90':	'protein complementation assay', '97':	'reverse ras recruitment system',
+    			'111':	'dihydrofolate reductase reconstruction', '112':	'ubiquitin reconstruction', 
+    			'228':	'cytoplasmic complementation assay', 
+    			'229':	'green fluorescence protein complementation assay', 
+    			'230':	'membrane bound complementation assay', 
+    			'231':	'mammalian protein protein interaction trap',
+    			'232':	'transcriptional complementation assay', '369':	'lex-a dimerization assay', 
+    			'370':	'tox-r dimerization assay', '397':	'two hybrid array', 
+    			'398':	'two hybrid pooling approach', '399':	'two hybrid fragment pooling approach',
+    			'432':	'one hybrid', '437':	'protein tri hybrid', '438':	'rna tri hybrid',
+    			'588':	'3 hybrid method', '655':	'lambda repressor two hybrid', 
+    			'726':	'reverse two hybrid', '727':	'lexa b52 complementation', 
+    			'728':	'gal4 vp16 complementation', '809':	'bimolecular fluorescence complementation',
+    			'895':	'protein kinase A complementation', '916':	'lexa vp16 complementation', 
+    			'1037':	'Split renilla luciferase complementation',
+    		}
+		
+		methods  = [("Method_id", 18),("Method_id", 696)]
+		methods.extend([ ("Method_id", x) for x in complementation_methods if x not in affinity_methods ])
+
+		seeds = [ x for x in self.nodes() if self._net.node[x]["switch"] or self._net.node[x]["Driver"] ]
+
+		bianaInputType = "geneid"
+
+		if options.Options().inputType == "ensembl":
+			bianaInputType = "ensembl" #es asi el identificador?
 
 		session = biana.create_new_session(
 										sessionID="SmartAS", 
@@ -256,47 +268,48 @@ class GeneNetwork(network.Network):
 
 		proteome = session.create_new_user_entity_set(
 														identifier_description_list 			= seeds,
-														#negative_attribute_restriction_list 	= [("taxid", "9606")],
-														id_type 								= "geneid",
+														attribute_restriction_list 				= [("taxid", "9606")],
+														id_type 								= bianaInputType,
 														new_user_entity_set_id					= "proteome",
 													  )
 
 		session.create_network( 
 								user_entity_set_id 					= "proteome", 
-								level 								= level, 
+								level 								= 5, 
 								relation_type_list 					= ["interaction"],
 								relation_attribute_restriction_list = methods,
 								include_relations_last_level 		= False, #Seguro?
 								use_self_relations 					= False
 							  )
 
-		for (uE_id1, uE_id2) in proteome.getRelations():
-			eErIDs_list 		= proteome.get_external_entity_relation_ids(uE_id1, uE_id2)
+		#Iterate through all the interactions
+		c = 1
+		for (userEntity_id1, userEntity_id2) in proteome.getRelations():
+			logging.debug( "Interaction {0}/{1}".format(c, len(proteome.getRelations())) )
+			c += 1
+			eErIDs_list 		= proteome.get_external_entity_relation_ids(
+																userEntity_id1, userEntity_id2)
 			method_names 		= set()
 			method_ids 			= set()
-			source_databases 	= set()
 			use_method_ids 		= set()
 			relationObj_dict 	= session.dbAccess.get_external_entities_dict(
-																				externalEntityIdsList = eErIDs_list, 
-																				attribute_list = [],
-																				relation_attribute_list = ["method_id","psimi_name"], 
-																				participant_attribute_list = []
+												externalEntityIdsList 		= eErIDs_list, 
+												attribute_list 				= [],
+												relation_attribute_list 	= ["method_id","psimi_name"], 
+												participant_attribute_list 	= []
 																			  )
 			
-			
-			#geneId_1 = [ x for x in session.get_user_entity(uE_id1).get_attribute(attribute_identifier="geneid") ].pop(0)
-			#geneId_2 = [ x for x in session.get_user_entity(uE_id2).get_attribute(attribute_identifier="geneid") ].pop(0)
-			if session.get_defined_node_attributes("proteome", uE_id1, "geneid", True):
-				geneId_1 = session.get_defined_node_attributes("proteome", uE_id1, "geneid", True).pop()
+			if session.get_defined_node_attributes("proteome", userEntity_id1, bianaInputType, True):
+				geneId_1 = session.get_defined_node_attributes("proteome", userEntity_id1, bianaInputType, True).pop()
 			else:
-				self._rejectedNodes.add(uE_id1)
-				print("No gene id for " + str(uE_id1))
+				logging.warning("No {0} id for user entity {1}.".format(bianaInputType, userEntity_id1))
+				continue
 			
-			if session.get_defined_node_attributes("proteome", uE_id2, "geneid", True):
-				geneId_2 = session.get_defined_node_attributes("proteome", uE_id2, "geneid", True).pop()
+			if session.get_defined_node_attributes("proteome", userEntity_id2, bianaInputType, True):
+				geneId_2 = session.get_defined_node_attributes("proteome", userEntity_id2, bianaInputType, True).pop()
 			else:
-				self._rejectedNodes.add(uE_id2)
-				print("No gene id for " + str(uE_id2))
+				logging.warning("No {0} id for user entity {1}.".format(bianaInputType, userEntity_id2))
+				continue
 			
 			for current_eErID in eErIDs_list:
 				relationObj = relationObj_dict[current_eErID]
@@ -306,30 +319,10 @@ class GeneNetwork(network.Network):
 				if "method_id" in relationObj.get_attributes_dict():
 					method_ids.update([ x.value for x in relationObj.get_attributes_dict()["method_id"]])
 				
-				source_databases.add( str(session.dbAccess.get_external_database(database_id = relationObj.get_source_database() )) )
-				
-				nodeScore = 0.0
-				edgeWeight = 0.0
+				self.add_edge(gene_id1=geneId_1, gene_id2=geneId_2)
+				self.update_edge("experimental", True, gene_id1=geneId_1, gene_id2=geneId_2)
+
 				if [ x for x in method_ids if x in set([18, 696]) ]:
-					nodeScore = 0.02
-					edgeWeight = 1.0
-				elif [ x for x in method_ids if x not in affinity ]:
-					nodeScore = 0.01
-					edgeWeight = 0.2
-				else:
-					continue
-
-				self.add_node(full_name=geneId_1, score=nodeScore)
-				self.add_node(full_name=geneId_2, score=nodeScore)
-				self.add_edge(geneId_1, geneId_2, weight=edgeWeight, methods=method_names, sources=source_databases)
-
-		nx.write_dot(self.n(), "kk.dot")
-
-	def printGUILDInput(self, path):
-		with open(path + "GUILD_nodes", "w") as NODES:
-			for node, info in self.nodes(data=True):
-				NODES.write("{0}\t{1}\n".format(node, info["score"]))
-
-		with open(path + "GUILD_edges", "w") as EDGES:
-			for node1, node2, info in self.edges(data=True):
-				EDGES.write("{0}\t{1}\t{2}\n".format(node1, info["weight"], node2))
+					self.update_edge("score", 1.0, gene_id1=geneId_1, gene_id2=geneId_2)
+				elif [ x for x in method_ids if x not in affinity_methods ]:
+					self.update_edge("score", 0.2, gene_id1=geneId_1, gene_id2=geneId_2)

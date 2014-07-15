@@ -1,8 +1,11 @@
-import pandas as pd
-import numpy as np
 from libs import utils as ut
 from libs import options
 import network
+
+import abc
+import logging
+import pandas as pd
+import numpy as np
 
 class IsoformNetwork(network.Network):
 	"""docstring for IsoformNetwork
@@ -10,12 +13,20 @@ class IsoformNetwork(network.Network):
 
 	Node information:
 		Id - str Transcript Id
+		exonStructure - list,None List of lists, each of them containing the 
+			limits of an exon.
+		txCoords - list,None List with the starting and the ending genome positions
+			of the trancript.
+		cdsCoords - list,None List with the starting and the ending genome positions
+			of the CDS.
 		median_TPM_N - float Median TPM of the isoform in the normal patients.
 		median_PSI_N - float Median PSI of the isoform in the normal patients.
 		median_TPM_T - float Median TPM of the isoform in the tumor patients.
 		median_PSI_T - float Median PSI of the isoform in the tumor patients.
 		iLoopsFamily - str Loop pattern.
 		gene_id - str Gene Id of the parent gene.
+		proteinSequence - str,None Protein sequence.
+		Uniprot - str,None Associated UniprotId.
 
 	Edge information:
 		Id1 - str Transcript id of interactor 1.
@@ -23,42 +34,43 @@ class IsoformNetwork(network.Network):
 		iLoops_prediction - bool, None iLoops predicted interaction.
 		RC - float,None iLoops max RC with a prediction.
 		experiment - bool,None Interaction from an experiment.
-						  )
+		experimentDescription - str,"" Description of the experiments.
 	"""
+
+	__metaclass__ = abc.ABCMeta
+
 	def __init__(self):
 		network.Network.__init__(self)
 
+	@abc.abstractmethod
+	def genenameFilter(self, **kwds):
+		raise NotImplementedError()
+
 	def add_node(self, tx, gene_full_name):
-		debug = True
-		
-		nameComponents 	= gene_full_name.split("|")
-		if len(nameComponents) == 1:
-			if debug: print("{0} not added. Unable to get gene id and symbol from {1}.".format(tx, gene_full_name))
+				
+		geneID = self.genenameFilter( full_name=gene_full_name )[0]
+
+		if geneID is None:
+			logging.error("Could not add transcript {0}, from gene {1}.".format(tx, geneID))
 			return False
 		
-		geneID = nameComponents[1]
-
-		if "locus" in gene_full_name:
-			if debug: print( "Unknown gene {0} not added.".format(gene_full_name))
-			return False
-		elif "locus" in gene_full_name:
-			if debug: print( "Unknown gene {0} not added.".format(gene_full_name))
-			return False
-
-		self._net.add_node( 
-							tx, 
-							median_TPM_N	= None, #Float
-							median_PSI_N	= None, #Float
-							median_TPM_T	= None, #Float
-							median_PSI_T	= None, #Float
-							iLoopsFamily 	= None, #String
-							gene_id			= geneID#String
-						  )
-
-		return True
+		return self._net.add_node( 
+									tx, 
+									exonStructure	= None,
+									txCoords		= None,
+									cdsCoords		= None,
+									median_TPM_N	= None, 
+									median_PSI_N	= None, 
+									median_TPM_T	= None, 
+									median_PSI_T	= None, 
+									iLoopsFamily 	= None, 
+									gene_id			= geneID,
+									proteinSequence	= None,
+									Uniprot 		= None
+								 )
 
 	def update_node(self, tx, key, value):
-		self._update_node(tx, key, value)
+		return self._update_node(tx, key, value)
 
 	def add_edge(self, tx1, tx2):
 		self._net.add_edge( 
@@ -69,22 +81,24 @@ class IsoformNetwork(network.Network):
 							experiment 			= None 		#Bool
 						  )
 
+	def update_edge(self, tx1, tx2, key, value):
+		return self._update_edge(tx1, tx2, key, value)
+
 	def importTranscriptome(self):
 
-		path = options.Options().qout
-
-		for line in ut.readTable(path + "expression_normal.tsv"):
-			txName 			= line[1]
+		for line in ut.readTable(options.Options().qout + "expression_normal.tsv"):
 			gene_full_name 	= line[0]
+			txName 			= line[1]
+			
 			if not self.add_node(txName, gene_full_name): continue
 			if line[3] != "NA":	self.update_node( txName, "median_PSI_N", float(line[3]) )
 			if line[5] != "NA": self.update_node( txName, "median_TPM_N", float(line[5]) )
 
-		for line in ut.readTable(path + "expression_tumor.tsv"):
+		for line in ut.readTable(options.Options().qout + "expression_tumor.tsv"):
 			txName 			= line[1]
 			if txName not in self.nodes(): continue
 			if line[3] != "NA":	self.update_node( txName, "median_PSI_T", float(line[3]) )
-			if line[5] != "NA": self.update_node( txName, "median_PSI_T", float(line[5]) )
+			if line[5] != "NA": self.update_node( txName, "median_TPM_T", float(line[5]) )
 
 		currentLoopFamily 	= ""
 		for line in ut.readTable("Data/TCGA/UnifiedFasta_" + options.Options().iLoopsVersion + "_loopFamilies.txt", header=False):
@@ -97,3 +111,46 @@ class IsoformNetwork(network.Network):
 			
 			if txName in self.nodes(): 
 				self.update_node(txName, "iLoopsFamily", currentLoopFamily)
+
+	def readTranscriptInfo(self):
+		for line in ut.readTable("{0}Data/{1}/knownGene.txt".format(options.Options().qout, options.Options().inputType), header=False):
+			if line[0] not in self.nodes(): continue
+
+			tx			= line[0]
+			chrom		= line[1] 
+			strand		= line[2] 
+			txStart		= int(line[3])
+			txEnd		= int(line[4])
+			cdsStart	= int(line[5])
+			cdsEnd		= int(line[6])
+			exonCount	= int(line[7])
+			exonStarts	= map(int, filter(None, line[8].split(",") ) )
+			exonEnds	= map(int, filter(None, line[9].split(",") ) )
+			proteinID	= line[10]
+			alignID		= line[11]
+
+			self.update_node(tx, "exonStructure", [])
+			for i in range(0, len(exonStarts)):
+				exon = [ exonStarts[i], exonEnds[i] ]
+				self.update_node(tx, "exonStructure", exon)
+
+			self.update_node(tx, "txCoords", [txStart, txEnd])
+			self.update_node(tx, "cdsCoords", [cdsStart, cdsEnd])
+
+		with open("{0}Data/{1}/UnifiedFasta_{2}.fa".format(options.Options().qout, options.Options().inputType, options.Options().iLoopsVersion)) as FASTA:
+			currentTx = ""
+			seq = ""
+			for line in FASTA:
+				if ">" in line:
+					if currentTx and seq:
+						self.update_node(tx, "proteinSequence", seq)
+						seq=""
+					
+					elements=line[1:].strip().split("#")
+					currentTx = elements[0]
+					
+					if elements[2]:
+						self.update_node(tx, "Uniprot", elements[2])
+
+				else:
+					seq += line.strip()

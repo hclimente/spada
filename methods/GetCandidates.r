@@ -87,6 +87,7 @@ for (replicate in seq(1,numOfReplicates)){
 }
 
 allExpressedTranscripts <- unique(do.call('rbind', replicateExpressed))
+allExpressedTranscripts <- allExpressedTranscripts[with(allExpressedTranscripts, order(Transcript)), ]
 
 candidateMask[["N"]] <- do.call('cbind', candidateMask[["N"]])
 candidateMask[["T"]] <- do.call('cbind', candidateMask[["T"]])
@@ -97,6 +98,10 @@ candidateList <- candidateList[with(candidateList, order(-Replicated)), ]
 
 write.table(candidateList, file=paste0(out, "candidateList.tsv"), sep="\t", row.names=F, col.names=F, quote=F)
 write.table(allExpressedTranscripts, paste0(out, "expressedGenes.lst"), sep="\t", row.names=F, col.names=F, quote=F)
+
+cols <- c( paste0("TPM_", seq(1,inputData$Replicates )), paste0("PSI_", seq(1,inputData$Replicates )), paste0("tTPM_", seq(1,inputData$Replicates )), "FPR_4MAD" )
+write.table(interReplicate[["N"]][,!(colnames(interReplicate$N) %in% cols)], file=paste0(out, "expression_normal.tsv"), sep="\t", row.names=F, quote=F)
+write.table(interReplicate[["T"]][,!(colnames(interReplicate$T) %in% cols)], file=paste0(out, "expression_tumor.tsv"), sep="\t", row.names=F, quote=F)
 
 save(isoformExpression, intraReplicate, interReplicate, candidates, candidateList, candidateMask, inputData, allExpressedTranscripts, wd, out, file=paste0(out, "RWorkspaces/2_GetCandidates.RData"))
 

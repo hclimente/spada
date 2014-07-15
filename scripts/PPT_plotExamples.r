@@ -3,7 +3,7 @@ library(reshape)
 library(RColorBrewer)
 
 load("~/SmartAS/Results/TCGA/luad_mE-1.0/RWorkspaces/2_GetCandidates.RData")
-
+setwd("~/SmartAS")
 nmb <- as.numeric(inputData["Replicates"])
 
 #Plot simulated ideal cases
@@ -17,7 +17,7 @@ for (p in c(0.05, 0.49, 0.95)){
   print(plt)
 }
 
-### PLOT SPECIFIC GENES INFORMATION ###
+### PLOT SPECIFIC GENE INFORMATION ###
 index <- 1
 isof <- list()
 gene <- as.character(candidateList$Gene[index])
@@ -74,24 +74,18 @@ signifFok=fok[(fok$nPSI > fpr5) & (fok$tPSI > fpr5),]
 signifFoken <- melt(signifFok)
 
 png(paste0("~/Dropbox/SmartAS/Presentaciones/", gene, "_method1.png"), width=1300, height=1080)
-plt <- ggplot() + geom_density(data=subtraction, fill="darkolivegreen1", colout="", aes(x = dPSI) ) +
-                  scale_x_continuous(limits = c(0, 0.4)) + theme_minimal(base_size=25)
+plt <- ggplot() + geom_density(data=foken, aes(x=value, fill=variable)) +
+                  scale_x_continuous(limits = c(0, 0.4)) + theme_minimal(base_size=25) +
+                  scale_y_continuous(limits = c(0,12)) + theme(legend.position="none")
 print(plt)
 graphics.off()
 
 png(paste0("~/Dropbox/SmartAS/Presentaciones/", gene, "_method2.png"), width=1300, height=1080)
-plt <- plt + geom_vline(xintercept = fpr5, colour="red", linetype="dashed", size=5)
+plt <- plt + geom_density(data=subtraction, alpha=.7, fill="darkolivegreen1", colout="", aes(x = dPSI) )
 print(plt)
 graphics.off()
 
 png(paste0("~/Dropbox/SmartAS/Presentaciones/", gene, "_method3.png"), width=1300, height=1080)
-plt1 <- plt + geom_density(data=foken, alpha=.7, aes(x=value, fill=variable)) + 
-             geom_vline(xintercept = fpr5, colour="red", linetype="dashed", size=5) +  guides(fill=FALSE)
+plt1 <- plt + geom_vline(xintercept = fpr5, colour="red", linetype="dashed", size=5) +  guides(fill=FALSE)
 print(plt1)
-graphics.off()
-
-png(paste0("~/Dropbox/SmartAS/Presentaciones/", gene, "_method4.png"), width=1300, height=1080)
-plt2 <- plt + geom_density(data=signifFoken, alpha=.7, aes(x=value)) + 
-  geom_vline(xintercept = fpr5, colour="red", linetype="dashed", size=5) +  guides(fill=FALSE)
-print(plt2)
 graphics.off()
