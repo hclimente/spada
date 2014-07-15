@@ -46,7 +46,7 @@ def splitFASTA(basename, inputType, iLoopsVersion):
 
 def getFASTAandPairs(transcript, batch, inputType, out, iLoopsVersion):
 	tag = transcript + "_" + batch
-	cmd("cp", out + "allProteome_" + batch + ".fasta", out + "Input/" + tag + ".fasta")
+	utils.cmd("cp", out + "allProteome_" + batch + ".fasta", out + "Input/" + tag + ".fasta")
 
  	with open(out + "Input/" + tag + ".fasta", "r") as FASTUKI, open(out + "Input/" + tag + ".net", "w") as PAIRSUKI:
  		for line in FASTUKI:
@@ -90,7 +90,7 @@ for line in utils.readTable(out + "candidatesGaudi.lst", header=False):
  		tag = transcript + "_" + batch
  		getFASTAandPairs(transcript, batch, inputType, out, iLoopsVersion)
  			
-		cmd("/soft/devel/python-2.7/bin/python /sbi/programs/" + iLoopsVersion + "/iLoops.py",
+		utils.cmd("/soft/devel/python-2.7/bin/python /sbi/programs/" + iLoopsVersion + "/iLoops.py",
  			"-f " + out + "Input/" + tag + ".fasta",
  			"-q " + out + "Input/" + tag + ".net",
  			"-j " + out + "Output/" + tag,
@@ -106,6 +106,6 @@ for line in utils.readTable(out + "candidatesGaudi.lst", header=False):
 	p = pruner.iLoopsOutput_pruner(transcript, out + "Output/")
 	p.joinFiles()
 	if p.makeLiteVersion():
-		cmd("scp","-r", out + "Output/" + transcript + ".tar.gz", "hector@einstein.imim.es:~/SmartAS/iLoops/" + inputType + "/" + iLoopsVersion)
+		utils.cmd("scp","-r", out + "Output/" + transcript + ".tar.gz", "hector@einstein.imim.es:~/SmartAS/iLoops/" + inputType + "/" + iLoopsVersion)
 	else:
 		print("Error in generation of file.")
