@@ -25,6 +25,7 @@ class Options(object):
         self._unpairedReplicates    = options.unpairedReplicates
         self._tag                   = options.tag
         self._external              = options.external
+        self._specificDrivers       = options.specificDrivers
         if self._external:
             if self._unpairedReplicates == 0:
                 self._out           = self._inputType + "/" + self._tag + "/"
@@ -33,20 +34,37 @@ class Options(object):
         self._gOut                  = self._gwd + "/Results/" + self._out
         self._quickOut              = self._wd + "/Results/" + self._out
 
+    # Getters ##
+    @property
     def configFile(self):           return self._config_file
+    @property
     def initialStep(self):          return self._initial_step
+    @property
     def wd(self):                   return self._wd
+    @property
     def gwd(self):                  return self._gwd
+    @property
     def minExpression(self):        return self._minExpression
+    @property
     def inputType(self):            return self._inputType
+    @property
     def replicates(self):           return self._replicates
+    @property
     def iLoopsVersion(self):        return self._iLoopsVersion
+    @property
     def unpairedReplicates(self):   return self._unpairedReplicates
+    @property
     def tag(self):                  return self._tag
+    @property
     def external(self):             return self._external
+    @property
     def out(self):                  return self._out
+    @property
     def gout(self):                 return self._gOut
+    @property
     def qout(self):                 return self._quickOut
+    @property
+    def specificDrivers(self):      return self._specificDrivers
 
     def parseOptions(self, *args, **kwds):
         parser = Parser(prog="SmartAS.py", description = "Find significant alternative splicing switches. Analyze their functional impact.", epilog= "Hector Climente, 2014", fromfile_prefix_chars='@')
@@ -77,6 +95,8 @@ class Options(object):
                             help='Path of output data, under the Results/ directory.')
         parser.add_argument('-go', '--goutput', dest='gout', action='store', default='',
                             help='Path of output data in Gaudi.')
+        parser.add_argument('-d', '--specific-drivers', dest='specificDrivers', action='store', default='',
+                            help='Path of the specific drivers for the cancer type.')
 
         #"Conditions" : ["N", "T"]
 
@@ -96,6 +116,7 @@ class Options(object):
             if self._unpairedReplicates:    CONFIG.write("unpaired-replicates=" + str(self._unpairedReplicates) + "\n")
             if self._tag:                   CONFIG.write("tag=" + self._tag + "\n")
             if self._external:              CONFIG.write("external=" + self._external + "\n")
+            if self._specificDrivers:       CONFIG.write("specific-drivers=" + self._specificDrivers + "\n")
             #if self._out:                   CONFIG.write("out=" + self._out + "\n")
             #if self._gOut:                  CONFIG.write("gOut=" + self._gOut + "\n")
 
