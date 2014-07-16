@@ -121,41 +121,6 @@ def getDB():
 		res = urllib2.urlopen(req, query)
 		Intogen.write(res.read())
 
-# def printParam(opt):
-# 	with open("Results/" + opt["out"] + "/Parameters.cfg", "w") as paramFile:
-# 		for aKey in opt.keys():
-# 			if not aKey == "Conditions":
-# 				paramFile.write(aKey + "=" + str(opt[aKey]) + "\n")
-
-# def parseParam(cfgFile):
-
-# 	opt = { "initialStep" : 0, "wd" : "/home/hector/SmartAS/", "gaudiWd" : "/sbi/users/hectorc/SmartAS", "minExpression" : 0, 
-# 			"inputType" : "GENCODE" , "Conditions" : ["N", "T"], "tag1" : "20", "Replicates" : 0, "external" : "", 
-# 			"unpairedReplicates" : 0, "iLoopsVersion" : "iLoops_devel"}
-
-# 	with open(cfgFile, "r") as PARAMETERS:
-# 		for line in PARAMETERS:
-# 			elements = line.strip().split("=")
-
-# 			if elements[0] in ["wd", "gaudiWd", "inputType", "tag1", "out", "gOut", "external", "iLoopsVersion"]:
-# 				opt[elements[0]] = elements[1]
-# 			elif elements[0] in ["Replicates", "initialStep", "unpairedReplicates"]:
-# 				opt[elements[0]] = int(elements[1])
-# 			elif elements[0] in ["minExpression"]:
-# 				opt[elements[0]] = float(elements[1])
-# 			else:
-# 				print("Unrecognized option:" + line.strip() )
-
-# 	if opt["external"]:
-# 		if opt["unpairedReplicates"] == 0:
-# 			opt["out"] = opt["inputType"] + "/" + opt["tag1"]
-# 	else:
-# 		opt["out"] = opt["inputType"] + "/" + opt["tag1"] + "_mE" + str(opt["minExpression"])
-
-# 	opt["gOut"] = opt["gaudiWd"] + "/Results/" + opt["out"]
-
-# 	return opt
-
 def finish(opt):
 	
 	print("* Moving files to the Results directory and creating a summary tar file.")
@@ -178,23 +143,6 @@ def finish(opt):
 	cmd("tar -czvf", outTag + ".tar.gz candidates_normal." + outTag + ".gtf candidates_tumor." + outTag + ".gtf candidateList." + outTag + ".tsv")
 	cmd("rm", "*" + opt["out"] + "*gff", "*" + opt["out"] + "*tsv")
 	chdir("/home/hector/SmartAS")
-
-# def outputCandidates(out, inputType):
-# 	with open('Results/' + out + "/candidateList.tsv", "r") as CANDIDATES, \
-# 		 open('Results/' + out + "/candidates_normal.gtf", 'w') as GTFn, \
-# 		 open("Results/" + out + "/candidates_tumor.gtf", 'w') as GTFt, \
-# 		 open("Data/" + inputType + "/annotation.gtf", "r") as ALLTRANSCRIPTS:
-# 			candTnt = []
-# 			for line in CANDIDATES:
-# 				ids = line.strip().split("\t")
-# 				candTnt.append([ids[2], ids[3]])
-			
-# 			for line in ALLTRANSCRIPTS:
-# 				for pair in candTnt:
-# 					if line.find(pair[0]) != -1:
-# 						GTFn.write(line)
-# 					elif line.find(pair[1]) != -1:
-# 						GTFt.write(line)
 
 def pickUniqPatterns(gOut, out, inputType, iLoopsVersion, minReplicates):
 
@@ -277,24 +225,3 @@ def pickUniqPatterns(gOut, out, inputType, iLoopsVersion, minReplicates):
 	cmd("ssh hectorc@gaudi 'rm -r", gOut + "'")
 	cmd("ssh hectorc@gaudi 'mkdir -p", gOut + "/Output; mkdir -p", gOut + "/Input; mkdir -p", gOut + "/logs'")
 	cmd("scp -r " + "Results/" + out + "/candidatesGaudi.lst hectorc@gaudi.imim.es:" + gOut)
-
-# def importSequences():
-# 	kkota = {}
-# 	with open("/home/hector/SmartAS/Data/TCGA/UnifiedFasta_iLoops13.fa") as KK:
-# 		currentTx = ""
-# 		seq = ""
-# 		for line in KK:
-# 			if ">" in line:
-# 				if currentTx:
-# 					kkota[currentTx]["Sequence"] = seq
-# 					seq=""
-# 				elements=line[1:].strip().split("#")
-# 				currentTx = elements[0]
-# 				kkota.setdefault(currentTx, {})
-# 				kkota[currentTx]["Gene"] = elements[1]
-# 				kkota[currentTx]["Uniprot"] = elements[2]
-# 				kkota[currentTx]["iLoopsFamily"] = elements[1]
-# 			else:
-# 				seq += line.strip()
-
-# 	return kkota
