@@ -1,89 +1,164 @@
 #!/soft/devel/python-2.7/bin/python
 
-import sys, getopt
-from os import path, chdir
-from libs.utils import cmd, cmdOut, setEnvironment, finish, outputCandidates, pickUniqPatterns
+from interface import out_network
+from libs import utils
 from libs import options
+from methods import analyzeInteractions
+from methods import networkAnalysis
+from methods import structural_analysis
+from network import ucsc_gene_network, ucsc_isoform_network
 
-def main(argv):
+import cPickle
+import logging
 
-	print("""
-#######################################
-#                                     #
-#               SmartAS               #
-#    Finding significant AS events    #
-#                                     #
-#      Hector Climente-GRIB 2014      #
-#                                     #
-#######################################
-	""")
+class SmartAS:
+	def __init__(self):
+		self.logger = logging.getLogger()
 
-	#Set variables
-	opts, args = getopt.getopt(argv, "f:")
-    options.Options()
-    options.Options().printToFile()
+		self.logger.info("SmartAS - Finding significant AS events")
+		self.logger.info("Hector Climente - GRIB 2014")
 
-	cfgFile = ""
+	def exploreData(self):
+		self.logger.info("Reading and summarizing input files: computing PSI values and intereplicate agreement.")
+		utils.cmd(	
+					"Pipeline/methods/ExploreData.r", 
+					options.Options().qout, 
+					"Data/Input/{0}/{1}/".format(options.Options().inputType, options.Options().tag)
+				 )
 
-	for opt, arg in opts:
-		if opt == "-f":
-			cfgFile = arg
-		else:
-			print("No configuration file found.")
-			exit()
+	def getCandidates(self):
+		self.logger.info("Extracting transcripts with high variance and high expression.")
+		utils.cmd(
+					"Pipeline/methods/GetCandidates.r", 
+					options.Options().minExpression, 
+					options.Options().qout, 
+					options.Options().unpairedReplicates
+				 )
+
+		self.createGeneNetwork(False)
+		self.createTranscriptNetwork(False)
+
+		out_network.outputGTF(
+				sorted(self._gene_network.nodes(data=True), key=lambda (a, dct): dct['score'], reverse=True),
+				self._transcript_network
+				)
+		out_network.outCandidateList(self._gene_network, self._transcript_network)
+
+	def launchiLoops(self):
+		self.logger.info("Selecting isoforms suitable for {0}".format( options.Options().iLoopsVersion) )
+		utils.pickUniqPatterns( 
+								options.Options().gout,
+								options.Options().qout,
+								options.Options().inputType,
+								options.Options().iLoopsVersion,
+								options.Options().replicates * 0.1
+							  )
+
+		self.logger.info("Sending list to Gaudi and performing the iLoops analysis.")
+		gaudiThread = utils.cmdOut(
+									"ssh", "hectorc@gaudi", \
+									"'{0}/Pipeline/methods/CalculateInteractions.py {1} {2} {3} {4}'".format(
+											options.Options().gwd,
+											options.Options().gaudiWd,
+											options.Options().out,
+											options.Options().inputType,
+											options.Options().iLoopsVersion 
+										 ), 
+									">Results/{0}/calculateInteractions.log".format(options.Options().qout)
+								  )
+
+
+	def analyzeInteractions(self):
+
+		a = analyzeInteractions.AnalyzeInteractions( self._gene_network, self._transcript_network )
+		a.run()
+
+	def networkAnalysis(self):
 		
-	opt = setEnvironment(cfgFile)
+		n = networkAnalysis.NetworkAnalysis( self._gene_network, self._transcript_network )
+		n.run()
 
-	if opt["initialStep"] <= 1:
-		exploreData(opt)
-	if opt["initialStep"] <= 2:
-		getCandidates(opt)
-	if opt["initialStep"] <= 3:
-		candidatePrioritization(opt)
-		if not opt["external"]:
+	def structuralAnalysis(self):
+
+		s = structural_analysis.StructuralAnalysis( self._gene_network, self._transcript_network )
+		s.run()
+
+	def createGeneNetwork(self, recover=False):
+
+		if recover:
+			self.logger.info("Recovering gene network from file.")
+			self._gene_network = cPickle.load(open(options.Options().qout + "geneNetwork.pkl", "r"))
+		else:
+			self.logger.info("Creating gene network.")
+
+			if options.Options().inputType == "TCGA": 
+				self._gene_network = ucsc_gene_network.UCSCGeneNetwork()
+			else:
+				self.logger.error("Unrecognized input type {0}.".format(options.Options().inputType))
+				exit()
+			
+			self.logger.debug("Reading gene info.")
+			self._gene_network.readGeneInfo()
+			if options.Options().specificDrivers:
+				self._gene_network.importSpecificDrivers(drivers_file=options.Options().specificDrivers, otherDrivers = False)
+			
+			self._gene_network.importKnownInteractions()
+			self._gene_network.importCandidates()
+
+			self._gene_network.saveNetwork("geneNetwork.pkl")
+
+	def createTranscriptNetwork(self, recover=False):
+		if recover:
+			self.logger.info("Recovering transcript network from file.")
+			self._transcript_network = cPickle.load(open(options.Options().qout + "txNetwork.pkl", "r"))
+		else:
+			if options.Options().inputType == "TCGA":
+				self._transcript_network = ucsc_isoform_network.UCSCIsoformNetwork()
+			else:
+				self.logger.error("Unrecognized input type {0}.".format(options.Options().inputType))
+				exit()
+
+			self.logger.info("Creating transcript network.")
+			self._transcript_network.importTranscriptome()
+			self._transcript_network.readTranscriptInfo()
+			self._transcript_network.saveNetwork("txNetwork.pkl")
+
+if __name__ == '__main__':
+
+	utils.setEnvironment()
+
+	logging.basicConfig(
+							level=logging.DEBUG,
+							format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+							datefmt='%m-%d %H:%M',
+	                    	filename=options.Options().qout + 'smartAS.log',
+	                    	filemode='w'
+					   )
+
+	console = logging.StreamHandler()
+	console.setLevel(logging.INFO)
+
+	formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+	console.setFormatter(formatter)
+	logging.getLogger().addHandler(console)
+
+	S = SmartAS()
+
+	if options.Options().initialStep <= 1:
+		S.exploreData()
+	if options.Options().initialStep <= 2:
+	 	S.getCandidates()
+		if not options.Options().external:
 			exit()
-	if opt["initialStep"] <= 4:
-		launchiLoops(opt)
-	if opt["initialStep"] <= 5:
-		analyzeInteractions(opt)
-	
-	#finish(opt)
 
-def exploreData(opt):
-	
-	print("* Reading and summarizing input files: computing PSI values and intereplicate agreement.")
-	cmd("Pipeline/methods/ExploreData.r", opt["out"], "Data/Input/" + opt["inputType"] + "/" + opt["tag1"] + "/")
+	S.createGeneNetwork(True)
+	S.createTranscriptNetwork(True)	
 
-def getCandidates(opt):
-
-	print("* Extracting transcripts with high variance and high expression.")
-	cmd("Pipeline/methods/GetCandidates.r", opt["minExpression"], opt["out"], opt["unpairedReplicates"])
-	
-	cmd("sort", "Results/" + opt["out"] + "/expressedGenes.lst", ">" + "Results/" + opt["out"] + "/expressedGenes.tmp.lst")
-	cmd("mv", "Results/" + opt["out"] + "/expressedGenes.tmp.lst", "Results/" + opt["out"] + "/expressedGenes.lst")
-
-	outputCandidates(opt["out"], opt["inputType"])
-	
-def candidatePrioritization(opt):
-
-	print("* Prioritizing candidates.")
-	cmd("Pipeline/methods/CandidatePrioritization.py", opt["out"], opt["inputType"])
-
-def launchiLoops(opt):
-
-	print("* Selecting isoforms suitable for " + opt["iLoopsVersion"])
-	pickUniqPatterns(opt["gOut"], opt["out"], opt["inputType"], opt["iLoopsVersion"], opt["Replicates"] * 0.1)
-
-	print("* Sending list to Gaudi and performing the iLoops analysis.")
-	gaudiThread = cmdOut(
-							"ssh", "hectorc@gaudi", \
-							"'" + opt["gaudiWd"] + "/Pipeline/methods/CalculateInteractions.py " + opt["gaudiWd"] + " " + opt["out"] + " " + opt["inputType"] + " " + opt["iLoopsVersion"] + "'", \
-							">Results/" + opt["out"] + "/calculateInteractions.log"
-						)
-
-def analyzeInteractions(opt):
-
-	print("* Examining iLoops results.")
-	cmd("Pipeline/methods/AnalyzeInteractions.py", opt["out"], opt["inputType"], opt["iLoopsVersion"], opt["Replicates"] * 0.1)
-
-main(sys.argv[1:])
+	if options.Options().initialStep <= 3:
+		S.launchiLoops()
+	if options.Options().initialStep <= 4:
+		S.structuralAnalysis()
+	if options.Options().initialStep <= 5:
+		S.analyzeInteractions()
+	if options.Options().initialStep <= 6:
+		S.networkAnalysis()
