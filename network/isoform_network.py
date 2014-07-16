@@ -1,11 +1,10 @@
-from libs import utils as ut
-from libs import options
 import network
+from libs import utils
+from libs import options
 
-import abc
-import logging
 import pandas as pd
 import numpy as np
+import abc
 
 class IsoformNetwork(network.Network):
 	"""docstring for IsoformNetwork
@@ -39,8 +38,8 @@ class IsoformNetwork(network.Network):
 
 	__metaclass__ = abc.ABCMeta
 
-	def __init__(self):
-		network.Network.__init__(self)
+	def __init__(self, name):
+		network.Network.__init__(self, name)
 
 	@abc.abstractmethod
 	def genenameFilter(self, **kwds):
@@ -51,7 +50,7 @@ class IsoformNetwork(network.Network):
 		geneID = self.genenameFilter( full_name=gene_full_name )[0]
 
 		if geneID is None:
-			logging.error("Could not add transcript {0}, from gene {1}.".format(tx, geneID))
+			self.logger.error("Could not add transcript {0}, from gene {1}.".format(tx, geneID))
 			return False
 		
 		return self._net.add_node( 
@@ -86,7 +85,7 @@ class IsoformNetwork(network.Network):
 
 	def importTranscriptome(self):
 
-		for line in ut.readTable(options.Options().qout + "expression_normal.tsv"):
+		for line in utils.readTable(options.Options().qout + "expression_normal.tsv"):
 			gene_full_name 	= line[0]
 			txName 			= line[1]
 			
@@ -94,26 +93,27 @@ class IsoformNetwork(network.Network):
 			if line[3] != "NA":	self.update_node( txName, "median_PSI_N", float(line[3]) )
 			if line[5] != "NA": self.update_node( txName, "median_TPM_N", float(line[5]) )
 
-		for line in ut.readTable(options.Options().qout + "expression_tumor.tsv"):
+		for line in utils.readTable(options.Options().qout + "expression_tumor.tsv"):
 			txName 			= line[1]
 			if txName not in self.nodes(): continue
 			if line[3] != "NA":	self.update_node( txName, "median_PSI_T", float(line[3]) )
 			if line[5] != "NA": self.update_node( txName, "median_TPM_T", float(line[5]) )
 
-		currentLoopFamily 	= ""
-		for line in ut.readTable("Data/TCGA/UnifiedFasta_" + options.Options().iLoopsVersion + "_loopFamilies.txt", header=False):
-			txName = ""
-			if ">" in line[0]:
-				currentLoopFamily = line[0][1:]
-				txName = line[1]
-			else:
-				txName = line.pop()
+		# currentLoopFamily 	= ""
+		# for line in utils.readTable("Data/TCGA/UnifiedFasta_" + options.Options().iLoopsVersion + "_loopFamilies.txt", header=False):
+		# 	txName = ""
+		# 	if ">" in line[0]:
+		# 		currentLoopFamily = line[0][1:]
+		# 		txName = line[1]
+		# 	else:
+		# 		txName = line.pop()
 			
-			if txName in self.nodes(): 
-				self.update_node(txName, "iLoopsFamily", currentLoopFamily)
+		# 	if txName in self.nodes(): 
+		# 		self.update_node(txName, "iLoopsFamily", currentLoopFamily)
 
 	def readTranscriptInfo(self):
-		for line in ut.readTable("{0}Data/{1}/knownGene.txt".format(options.Options().qout, options.Options().inputType), header=False):
+		self.logger.debug("Reading transcript info: exon, CDS and UTR structure.")
+		for line in utils.readTable("{0}Data/{1}/knownGene.txt".format(options.Options().wd, options.Options().inputType), header=False):
 			if line[0] not in self.nodes(): continue
 
 			tx			= line[0]
@@ -137,20 +137,27 @@ class IsoformNetwork(network.Network):
 			self.update_node(tx, "txCoords", [txStart, txEnd])
 			self.update_node(tx, "cdsCoords", [cdsStart, cdsEnd])
 
-		with open("{0}Data/{1}/UnifiedFasta_{2}.fa".format(options.Options().qout, options.Options().inputType, options.Options().iLoopsVersion)) as FASTA:
-			currentTx = ""
-			seq = ""
+		self.logger.debug("Reading transcript info: protein sequence, Uniprot and iLoops family.")
+		with open("{0}Data/{1}/UnifiedFasta_{2}.fa".format(options.Options().wd, options.Options().inputType, options.Options().iLoopsVersion)) as FASTA:
+			txName 			= ""
+			geneFullName 	= ""
+			sequence 		= ""
+			iLoopsFamily 	= ""
+			Uniprot 		= ""
+
 			for line in FASTA:
 				if ">" in line:
-					if currentTx and seq:
-						self.update_node(tx, "proteinSequence", seq)
-						seq=""
-					
-					elements=line[1:].strip().split("#")
-					currentTx = elements[0]
-					
-					if elements[2]:
-						self.update_node(tx, "Uniprot", elements[2])
+					if txName:
+						if sequence:		self.update_node(txName, "proteinSequence", sequence)	
+						if Uniprot: 		self.update_node(txName, "Uniprot", Uniprot)
+						if iLoopsFamily: 	self.update_node(txName, "iLoopsFamily", iLoopsFamily)
+						
+					elements = line[1:].strip().split("#")
+					txName 			= elements[0]
+					geneFullName 	= elements[1]
+					Uniprot 		= elements[2]
+					iLoopsFamily 	= elements[3]
+					sequence 		= ""
 
 				else:
-					seq += line.strip()
+					sequence += line.strip()
