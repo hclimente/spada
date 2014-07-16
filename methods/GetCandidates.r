@@ -19,9 +19,13 @@ candidateMask <- list()
 candidateMask[["N"]] <- list()
 candidateMask[["T"]] <- list()
 
+cat("Searching isoform switches from", inputData[["Replicates"]], "patients.\n")
+candidatesPB <- txtProgressBar(min=1, max=numOfReplicates, initial = 1, style=3)
+counter <- 1
+
 for (replicate in seq(1,numOfReplicates)){
   
-  cat("\t* Replicate", replicate)
+  #cat("\t* Replicate", replicate)
   
   candidates[[replicate]] <- data.frame(Gene=as.character(), Genename=as.character(), Switch=as.numeric(), maxdPSI=as.character(), mindPSI=as.character())
   
@@ -82,9 +86,13 @@ for (replicate in seq(1,numOfReplicates)){
   replicateExpressed[[replicate]] <- data.frame(Transcript=intraReplicate[[replicate]]$Transcript[norExpression | tumExpression],
                                                 Genename=intraReplicate[[replicate]]$Genename[norExpression | tumExpression])
   
-  cat(":", nrow(candidates[[replicate]]), "candidates found.\n")
+  #cat(":", nrow(candidates[[replicate]]), "candidates found.\n")
+  setTxtProgressBar(candidatesPB, counter)
+  counter <- counter + 1
   
 }
+
+close(candidatesPB)
 
 allExpressedTranscripts <- unique(do.call('rbind', replicateExpressed))
 allExpressedTranscripts <- allExpressedTranscripts[with(allExpressedTranscripts, order(Transcript)), ]

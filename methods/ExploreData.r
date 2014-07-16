@@ -1,7 +1,7 @@
 #!/soft/R/R-3.0.0/bin/Rscript
 
 args <- commandArgs(trailingOnly = TRUE)
-load(paste0("Results/", args[1], "/RWorkspaces/0_InitialEnvironment.RData"))
+load(paste0(args[1], "RWorkspaces/0_InitialEnvironment.RData"))
 inputPath <- args[2]
 
 intraReplicate <- list()
@@ -53,12 +53,15 @@ calculateMAD <- function(x){
 
 }
 
+cat("Importing data from", inputData[["Replicates"]], "patients.\n")
+explorationPB <- txtProgressBar(min=1, max=inputData[["Replicates"]], initial=1, style=3)
+counter <- 1
+
 for (replicate in seq(1, inputData[["Replicates"]])){
-  cat("\t* Exploring replicate",replicate, "/", inputData[["Replicates"]], "\t")
+
   for (sample in inputData[["Conditions"]]){
 
     tag <- paste0(replicate, sample)
-    cat(" ",sample)
     inputFile=paste0(inputPath, replicate, "_", sample, ".tsv")
     outputFile=paste0(out, replicate, "_", sample, ".tsv")
       
@@ -67,14 +70,12 @@ for (replicate in seq(1, inputData[["Replicates"]])){
     colnames(isoformExpression[[tag]]) <- c("Gene", "Transcript","Genename","TPM")
       
     #Calculate the PSI for each transcript and the total expression of the gene
-    vtTPM <- aggregate(TPM ~ Gene, data = isoformExpression[[tag]], FUN = "sum")
+    vtTPM <- aggregate(TPM ~ Gene, data=isoformExpression[[tag]], FUN = "sum")
     colnames(vtTPM) <- c("Gene", "tTPM")
     isoformExpression[[tag]] <- merge(isoformExpression[[tag]], vtTPM)
     isoformExpression[[tag]] <- transform(isoformExpression[[tag]], PSI = TPM / tTPM)
-    
+  
   }
-
-  cat("\n")
    
   nTag <- paste0(replicate, "N")
   tTag <- paste0(replicate, "T")
@@ -90,7 +91,12 @@ for (replicate in seq(1, inputData[["Replicates"]])){
   printTPMHist(intraReplicate[[replicate]]$TPM_T, "log10(TPM_T+0.0001)", paste0("TPM_T_",replicate))
   printLogFreqHist(intraReplicate[[replicate]]$PSI_N, "PSI_T", paste0("PSI_T_",replicate))
 
+  setTxtProgressBar(explorationPB, counter)
+  counter <- counter + 1
+
 }
+
+close(explorationPB)
 
 tpmCols <- paste0("TPM_", seq(1,inputData[["Replicates"]]) )
 ttpmCols <- paste0("tTPM_", seq(1,inputData[["Replicates"]]) )
@@ -101,6 +107,10 @@ all <- c(rbind(tpmCols, ttpmCols, psiCols))
 delete <- list()
 delete[["N"]] <- c("TPM_T","tTPM_T", "PSI_T", "deltaPSI", "la_tTPM")
 delete[["T"]] <- c("TPM_N","tTPM_N", "PSI_N", "deltaPSI", "la_tTPM")
+
+cat("Summarizing data from", inputData[["Replicates"]], "patients.\n")
+patientSumPB <- txtProgressBar(min=1, max=inputData[["Replicates"]] * 2, initial=1, style=3)
+counter <- 1
 
 for (sample in inputData[["Conditions"]]){
 
@@ -119,6 +129,9 @@ for (sample in inputData[["Conditions"]]){
     simplePlot(intraReplicate[[replicate]]$la_tTPM, intraReplicate[[replicate]]$deltaPSI, replicate, "0.5·(log(sum tTPM_N) + log(sum tTPM_T) )", 
                "deltaPSI", paste0(out, "DataExploration/latTPM_PSI_intrarreplicate",replicate,"_", sample,".png"))
 
+    setTxtProgressBar(patientSumPB, counter)
+    counter <- counter + 1
+
   }
 
   colnames(interReplicate[[sample]]) <- c("Gene", "Transcript", "Genename", all)
@@ -132,9 +145,15 @@ for (sample in inputData[["Conditions"]]){
 
 }
 
+close(patientSumPB)
+
 fpr1 <- as.numeric()
 fpr5 <- as.numeric()
 fprMAD <- as.numeric()
+
+cat("Summarizing data from", length(interReplicate[["N"]]$Transcript), "transcripts.\n")
+sampleSumPB <- txtProgressBar(min = 1, max = inputData[["Replicates"]], initial = 1, style=3)
+counter <- 1
 
 for (tx in interReplicate[["N"]]$Transcript){
   thisTranscript <- interReplicate[["N"]][interReplicate[["N"]]$Transcript==tx,psiCols]
@@ -149,7 +168,12 @@ for (tx in interReplicate[["N"]]$Transcript){
   } else {
     fprMAD <- c(fprMAD, NA)
   }
+
+  setTxtProgressBar(sampleSumPB, counter)
+  counter <- counter + 1
 }
+
+close(sampleSumPB)
 
 interReplicate[["N"]]$FPR_1 <- fpr1
 interReplicate[["N"]]$FPR_5 <- fpr5
