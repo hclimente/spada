@@ -7,13 +7,10 @@ from libs import options
 
 class NetworkAnalysis(method.Method):
 	def __init__(self, gn_network, tx_network):
-		self._gene_network			= gn_network
-		self._transcript_network	= tx_network
-		
-		method.Method.__init__(self)
+		method.Method.__init__(self, __name__, gn_network, tx_network)
 
 	def run(self):
-		logging.info("GUILD analysis.")
+		self.logger.info("GUILD analysis.")
 
 if __name__ == '__main__':
 	pass

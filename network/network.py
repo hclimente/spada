@@ -11,7 +11,8 @@ class Network:
 
 	__metaclass__ = abc.ABCMeta
 
-	def __init__(self):
+	def __init__(self, name):
+		self.logger 		= logging.getLogger(name)
 		self._net 			= networkx.Graph()
 		self._rejectedNodes = set()
 	

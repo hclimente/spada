@@ -4,27 +4,25 @@ from libs import utils
 from network import gene_network, isoform_network
 from methods import method
 from libs import options
-from interface import iLoops_parser as parser
+from interface import iLoops_parser
 from interface import out_network
 
 from os.path import isfile
 import os
 import time
-import logging
-import pdb
 
 class AnalyzeInteractions(method.Method):
 	def __init__(self, gn_network, tx_network):
-		self._gene_network			= gn_network
-		self._transcript_network	= tx_network
+		method.Method.__init__(self, __name__, gn_network, tx_network)
 		self._expressed_transcripts = set()
+
 		for txSet in [ self._gene_network._net.node[x]["ExpressedTranscripts"] for x in self._gene_network.nodes() ]:
 			for tx in txSet:
 				self._expressed_transcripts.add(tx)
 		self._analyzable_candidates	= self.getAnalyzableCandidates()
 
 	def run(self):
-		logging.info("Examining iLoops results.")
+		self.logger.info("Examining iLoops results.")
 		
 		#Sort by score: drivers will be first to be analyzed. Then, genes with an isoform switch with 
 		#decreasing patients
@@ -59,26 +57,26 @@ class AnalyzeInteractions(method.Method):
 		return candidatesGaudi
 
 	def getPredictedInteractions(self, gene, nIso, tIso):
-		myParser = parser.iLoopsParser()
+		myParser = iLoops_parser.iLoopsParser()
 		symbol = self._gene_network._net.node[gene]["symbol"]
 		
 		if not nIso in self._analyzable_candidates and not tIso in self._analyzable_candidates:
- 			logging.debug("Gene {0} ({1}): lacking {2} and {3} predictions.".format(gene, symbol, nIso, tIso) )
+ 			self.logger.debug("Gene {0} ({1}): lacking {2} and {3} predictions.".format(gene, symbol, nIso, tIso) )
 			return False
  		
  		elif not nIso in self._analyzable_candidates:
- 			logging.debug("Gene {0} ({1}): lacking {2} predictions.".format(gene, symbol, nIso) )
+ 			self.logger.debug("Gene {0} ({1}): lacking {2} predictions.".format(gene, symbol, nIso) )
  			return False
 
  		elif not tIso in self._analyzable_candidates:
-			logging.debug("Gene {0} ({1}): lacking {2} predictions.".format(gene, symbol, tIso) )
+			self.logger.debug("Gene {0} ({1}): lacking {2} predictions.".format(gene, symbol, tIso) )
  			return False
 
  		elif self._transcript_network._net.edges(nIso) and self._transcript_network._net.edges(tIso):
- 			logging.debug("Gene {0} ({1}): {2} and {3} predictions already analyzed.".format(gene, symbol, nIso, tIso) )
+ 			self.logger.debug("Gene {0} ({1}): {2} and {3} predictions already analyzed.".format(gene, symbol, nIso, tIso) )
  			return True
  		
- 		logging.info("Gene {0} ({1}): analyzing {2} and {3} predictions.".format(gene, symbol, nIso, tIso) )
+ 		self.logger.info("Gene {0} ({1}): analyzing {2} and {3} predictions.".format(gene, symbol, nIso, tIso) )
  		
  		for iso, ori in zip([nIso, tIso], ["Normal","Tumor"]):
 			tarFile = "iLoops/{0}/{1}/{2}".format(
@@ -87,7 +85,7 @@ class AnalyzeInteractions(method.Method):
 													self._analyzable_candidates[iso]
 												 )
 			
-			logging.info("Analyzing {0} predictions ({1} transcript).".format(iso, ori) )
+			self.logger.info("Analyzing {0} predictions ({1} transcript).".format(iso, ori) )
 
 			while not isfile(tarFile):
 				time.sleep(900)
@@ -119,7 +117,7 @@ class AnalyzeInteractions(method.Method):
 				self._transcript_network.update_edge( iso, partner, "iLoops_prediction", True )
 				self._transcript_network.update_edge( iso, partner, "RC", interactions[partner] )
 			
-			logging.info("Predictions for {0} analyzed.".format(iso) )
+			self.logger.info("Predictions for {0} analyzed.".format(iso) )
 			self._gene_network.saveNetwork("geneNetwork_2.pkl")
 			self._transcript_network.saveNetwork("txNetwork_2.pkl")
 

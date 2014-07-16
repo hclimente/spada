@@ -5,7 +5,7 @@ import abc
 
 class UCSCGeneNetwork(gene_network.GeneNetwork):
 	def __init__(self):
-		gene_network.GeneNetwork.__init__(self)
+		gene_network.GeneNetwork.__init__(self, __name__)
 
 	def nameFilter(self, full_name="", gene_id="", gene_symbol=""):
 		geneSymbol 	= None

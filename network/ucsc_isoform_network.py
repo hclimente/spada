@@ -4,7 +4,7 @@ import isoform_network
 
 class UCSCIsoformNetwork(isoform_network.IsoformNetwork):
 	def __init__(self):
-		isoform_network.IsoformNetwork.__init__(self)
+		isoform_network.IsoformNetwork.__init__(self, __name__)
 
 	def genenameFilter(self, full_name="", gene_id="", gene_symbol=""):
 		geneSymbol 	= None
