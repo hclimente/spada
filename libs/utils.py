@@ -2,10 +2,8 @@
 
 from subprocess import call,Popen,PIPE
 from rpy2.robjects import r
-from time import sleep
 import urllib2
-from os import chdir
-from os.path import isfile
+import os
 import logging
 
 from libs import options
@@ -137,91 +135,75 @@ def finish(opt):
 	cmd("cp", "Results/" + opt["out"] + "/candidates_tumor.gtf", outFolder + "/" + "candidates_tumor." + outTag + ".gtf")
 	cmd("cp", "Results/" + opt["out"] + "/candidateList.top.tsv", outFolder + "/" + "candidateList." + outTag + ".tsv")
 
-	chdir(outFolder)
+	os.chdir(outFolder)
 	cmd("cp -r", "../SmartAS/Results/" + opt["out"] + "/* .")
 
 	cmd("tar -czvf", outTag + ".tar.gz candidates_normal." + outTag + ".gtf candidates_tumor." + outTag + ".gtf candidateList." + outTag + ".tsv")
 	cmd("rm", "*" + opt["out"] + "*gff", "*" + opt["out"] + "*tsv")
-	chdir("/home/hector/SmartAS")
+	os.chdir("/home/hector/SmartAS")
 
-def pickUniqPatterns(gOut, out, inputType, iLoopsVersion, minReplicates):
+def pickUniqPatterns(tx_network):
 
 	loopFamilies = {}
 
-	with open("Data/TCGA/UnifiedFasta_" + iLoopsVersion + "_loopFamilies.txt", "r") as LOOP_FAMILIES:
-		currentLoopFamily = ""
-		for line in LOOP_FAMILIES:
-			if ">" in line:
-				currentLoopFamily = line[1:].strip().split("\t")[0]
-				loopFamilies[currentLoopFamily] = set()
-				loopFamilies[currentLoopFamily].add(line.strip().split("\t")[1])
-			else:
-				loopFamilies[currentLoopFamily].add(line.strip())
+	for tx,family in [ x[0],x[1]["iLoopsFamily"] for x in tx_network.nodes(data=True) if x[1]["iLoopsFamily"] is not None ]:
+		if family in loopFamilies:
+			loopFamilies[family].add(tx)
+		else:
+			loopFamilies[family] = set(tx)
 
-	with open("Results/" + out + "/candidateList.top.tsv", "r") as CANDIDATES, \
-		 open("Results/" + out + "/candidatesGaudi.lst", "w") as CANDIDATES_GAUDI:
+	analyzedLoops = {}
+	with open(options.Options().qout + "candidatesGaudi.lst", "w") as CANDIDATES_GAUDI:
+		for line in readTable(options.Options().qout + "candidateList_v2.tsv"):
 
-		CANDIDATES.readline()
-		analyzedLoops = {}
-
-		for line in CANDIDATES:
-			elements = line.split("\t")
-			isoN = elements[2]
-			isoT = elements[3]
-			reps = int(elements[4])
+			nIso = line[2]
+			nFamily = tx_network._net.node[nIso]["iLoopsFamily"]
+			tIso = line[3]
+			tFamily = tx_network._net.node[tIso]["iLoopsFamily"]
 			analyze = 0
 			comment = "To analyze."
 
-			if reps < minReplicates:
-				break
-
-			with open("Data/" + inputType + "/UnifiedFasta_" + iLoopsVersion + ".fa", "r") as MULTIFASTA:
-				loopsN = ""
-				loopsT = ""
-				for line in MULTIFASTA:
-					if isoN in line:
-						loopsN = line.strip().split("#")[3]
-					elif isoT in line:
-						loopsT = line.strip().split("#")[3]
-
-			if elements[9] == "No":
+			if float(line[4]) < 0.1: continue
+			elif line[9] = "False": 
 				analyze = -1
 				comment = "No CDS change."
-			elif not loopsN or not loopsT:
+			elif not nFamily or not tFamily:
 				analyze = -1
-				comment = "No loops mapped with " + iLoopsVersion + "."
-			elif loopsN == loopsT:
+				comment = "No loops mapped with {0}.".format(options.Options().iLoopsVersion)
+			elif nFamily == tFamily:
 				analyze = -1
 				comment = "No difference in loops mapped with " + iLoopsVersion + "."
 
 			if analyze < 0:
-				CANDIDATES_GAUDI.write( isoN + "\t" + str(analyze) + "\t" + comment + "\n")
-				CANDIDATES_GAUDI.write( isoT + "\t" + str(analyze) + "\t" + comment + "\n")
+				CANDIDATES_GAUDI.write("{0}\t{1}\t{2}\n".format(nIso, analyze, comment))
+				CANDIDATES_GAUDI.write("{0}\t{1}\t{2}\n".format(tIso, analyze, comment))
 				continue
 
-			for candidate, thisLoopPattern in zip([isoN, isoT], [loopsN, loopsT]):
-		
-				analyze = 0
-				comment = "To analyze"
-
-				if isfile("iLoops/TCGA/" + iLoopsVersion + "/" + candidate + ".tar.gz"):
-					analyze = 1
-					comment = "Already analyzed."
-				elif thisLoopPattern in analyzedLoops.keys():
-					analyze = 2
-					comment = "Analyzing relative " + analyzedLoops[thisLoopPattern] + "."
+			for isoform,thisLoopPattern in zip([nIso,tIso],[nFamily,tFamily]):
+			
+				if os.path.isfile("iLoops/{0}/{1}/{2}.tar.gz".format(
+										options.Options().inputType,
+										options.Options().iLoopsVersion,
+										isoform) )
+						analyze = 1
+						comment = "Already analyzed."
+				elif thisLoopPattern in analyzedLoops:
+						analyze = 2
+						comment = "Analyzing relative {0}.".format(analyzedLoops[thisLoopPattern])
 				else:
 					for isoform in loopFamilies[thisLoopPattern]:
-						if isfile("iLoops/TCGA/" + iLoopsVersion + "/" + isoform + ".tar.gz"):
+						if os.path.isfile("iLoops/TCGA/" + iLoopsVersion + "/" + isoform + ".tar.gz"):
 							analyze = 2
-							comment = "Analyzed relative " + isoform + "."
+							comment = "Analyzed relative {0}.".format(isoform)
 							break
 
-				CANDIDATES_GAUDI.write( candidate + "\t" + str(analyze) + "\t" + comment + "\n")
+				CANDIDATES_GAUDI.write( "{0}\t{1}\t{2}\n".format(isoform, analyze, comment))
 
 				if analyze == 0:
-					analyzedLoops[thisLoopPattern] = candidate
+					analyzedLoops[thisLoopPattern] = isoform
 
-	cmd("ssh hectorc@gaudi 'rm -r", gOut + "'")
-	cmd("ssh hectorc@gaudi 'mkdir -p", gOut + "/Output; mkdir -p", gOut + "/Input; mkdir -p", gOut + "/logs'")
-	cmd("scp -r " + "Results/" + out + "/candidatesGaudi.lst hectorc@gaudi.imim.es:" + gOut)
+	cmd("ssh","hectorc@gaudi", "'rm -r {0}'".format(options.Options().gout))
+	cmd("ssh","hectorc@gaudi","'mkdir -p {0}Output'".format(options.Options().gout))
+	cmd("ssh","hectorc@gaudi","'mkdir -p {0}Input'".format(options.Options().gout))
+	cmd("ssh","hectorc@gaudi","'mkdir -p{0}logs'".format(options.Options().gout))
+	cmd("scp","-r","{0}candidatesGaudi.lst".format(options.Options().qout),"hectorc@gaudi.imim.es:{0}".format(options.Options().gout) )
