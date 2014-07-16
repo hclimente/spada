@@ -1,14 +1,11 @@
-#!/soft/devel/python-2.7/bin/python
-
 import network
-from libs import utils as ut
-from libs import biana
+from libs import utils
 from libs import options
+from libs import biana
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import abc
-import logging
 
 class GeneNetwork(network.Network):
 	"""docstring for GeneNetwork
@@ -29,8 +26,6 @@ class GeneNetwork(network.Network):
 		Id1 - str Gene id of interactor 1.
 		Id2 - str Gene id of interactor 2.
 		score, 0.01 - float,None Weight of the itneraction.
-		#methods - str,None Methods of detection of the interaction.
-		#sources - str,None Sources of the interaction.
 		iLoops_prediction - bool,None Interaction predicted by iLoops.
 		experimental - bool,None Interaction found through Y2H or Lumier.
 
@@ -51,26 +46,29 @@ class GeneNetwork(network.Network):
 
 	__metaclass__ = abc.ABCMeta
 
-	def __init__(self):
-		network.Network.__init__(self)
+	def __init__(self, name):
+		network.Network.__init__(self, name)
 
 	@abc.abstractmethod
 	def nameFilter(self, **kwds):
+		"""Receive a gene identifier and convert it to the consensus identifier for the network."""
 		raise NotImplementedError()
 
 	def add_node(self, full_name="", gene_id="?", gene_symbol="?"):
+		"""Adds a node to the network. Return True if succesful; else, return False.
+		The value of the attributes are the default, specified in GeneNetwork documentation."""
 
-		logging.debug("Importing node: full name {0} id {1} symbol {2}".format(
+		self.logger.debug("Importing node: full name {0} id {1} symbol {2}".format(
 								full_name, gene_id, gene_symbol) )
 		geneID,geneSymbol = self.nameFilter(full_name=full_name, gene_id=gene_id, gene_symbol=gene_symbol)
 		
 		if geneID in self._net.nodes():
-			logging.error("Node {0} already exist.".format(geneID))
+			self.logger.error("Node {0} already exist.".format(geneID))
 		elif geneID is None:
-			logging.error("Could not retrieve name from node: full name {0} id {1} symbol {2}".format(
+			self.logger.error("Could not retrieve name from node: full name {0} id {1} symbol {2}".format(
 								full_name, gene_id, gene_symbol) )
 		else:
-			logging.debug("Node {0} imported.".format(geneID))
+			self.logger.debug("Node {0} imported.".format(geneID))
 			self._net.add_node( 
 								geneID, 
 								symbol 					= geneSymbol,
@@ -83,12 +81,19 @@ class GeneNetwork(network.Network):
 								ExpressedTranscripts 	= set()
 							  )
 
+			return True
+
+		return False
+
 	def update_node(self, key, value, full_name = "", gene_id = ""):
+		"""Changes the value of a node attribute, specified by the key argument. 
+		Returns True if succesful; else, returns False."""
+
 		geneID, geneSymbol = self.nameFilter(full_name=full_name, gene_id=gene_id)
 		finalValue = value
 		
 		if geneID is None:
-			logging.error("Unable to get gene id from {0} {1}".format(full_name, geneID))
+			self.logger.error("Unable to get gene id from {0} {1}".format(full_name, geneID))
 			return False
 
 		if key is "score":
@@ -97,19 +102,21 @@ class GeneNetwork(network.Network):
 		return self._update_node(geneID, key, finalValue)
 
 	def add_edge(self, full_name1 = "", gene_id1 = "", full_name2 = "", gene_id2 = ""):
+		"""Adds an edge to the network. Return True if succesful; else, return False.
+		The value of the attributes are the default, specified in GeneNetwork documentation."""
 
 		node_id1 = self.nameFilter(full_name=full_name1, gene_id=gene_id1)[0]
 		node_id2 = self.nameFilter(full_name=full_name2, gene_id=gene_id2)[0]
 
 		if (node_id1 is None or node_id1 is "") or (node_id2 is None or node_id2 is ""): 
-			logging.warning( "Cannot add edge {1} - {3} ({0} - {2}).".format(
+			self.logger.warning( "Cannot add edge {1} - {3} ({0} - {2}).".format(
 									full_name1, gene_id1, full_name2, gene_id2) )
 			return False
 		elif node_id1 not in self.nodes():
-			logging.warning("Node {0} does not exist.".format(node_id1))
+			self.logger.warning("Node {0} does not exist.".format(node_id1))
 			return False
 		elif node_id2 not in self.nodes():
-			logging.warning("Node {0} does not exist.".format(node_id2))
+			self.logger.warning("Node {0} does not exist.".format(node_id2))
 			return False
 
 		return self._add_edge( 
@@ -121,6 +128,8 @@ class GeneNetwork(network.Network):
 							 )
 
 	def update_edge(self, key, value, full_name1 = "", gene_id1 = "", full_name2 = "", gene_id2 = ""):
+		"""Changes the value of an edge attribute, specified by the key argument. 
+		Returns True if succesful; else, returns False."""
 		
 		node_id1 = self.nameFilter(full_name=full_name1, gene_id=gene_id1)[0]
 		node_id2 = self.nameFilter(full_name=full_name2, gene_id=gene_id2)[0]
@@ -128,12 +137,13 @@ class GeneNetwork(network.Network):
 		return self._update_edge(node_id1, node_id2, key, value)
 
 	def readGeneInfo(self):
-		"""Read tsv files containing characteristics of the genes:
-			- compilationTable.tsv: gene annotation.
-			- expressedGenes.lst: transcripts above a threshold of expression.
+		"""Read tsv files containing characteristics of the genes. Updates the nodes.:
+			- compilationTable.tsv: gene annotation of Drivers, epigenetic factors and RBPs.
+			- expressedGenes.lst: R-generated file containing the transcripts above
+			a threshold of expression.
 		"""
 		
-		for line in ut.readTable("Data/Databases/compilationTable.tsv"):
+		for line in utils.readTable("Data/Databases/compilationTable.tsv"):
 			self.add_node(full_name=line[0])
 			geneID = self.nameFilter(full_name=line[0])[0]
 
@@ -147,7 +157,7 @@ class GeneNetwork(network.Network):
 			if "yes" in [line[6]]:
 				self.update_node( "EpiFactor", True, gene_id = geneID )
 		
-		for line in ut.readTable(options.Options().qout + "expressedGenes.lst", header=False):
+		for line in utils.readTable(options.Options().qout + "expressedGenes.lst", header=False):
 			geneId 	= ""
 			lst 	= [ x for x in self.nodes() if self._net.node[x]["symbol"] == line[1] ]
 			
@@ -156,45 +166,53 @@ class GeneNetwork(network.Network):
 				self.update_node( "ExpressedTranscripts", line[0], gene_id=geneID )
 
 	def importCandidates(self):
-		"""Import a set of genes with an isoform switch.
+		"""Import a set of genes with an isoform switch from candidateList.tsv.
 		"""
-		logging.debug("Retrieving calculated isoform switches.")
+		self.logger.debug("Retrieving calculated isoform switches.")
 
 		samples = options.Options().replicates
 		min_samples = round(samples * 0.1)
-		candidates = pd.DataFrame.from_csv(options.Options().qout + "candidateList.top.tsv", sep="\t")
-		candidates = candidates[ candidates.Replicates >= min_samples ]
-		candidates_filt = candidates[ ["Gene", "Replicates"] ]
-		
-		#Remove less significant switches
-		candidates_filt = candidates_filt.groupby("Gene").sum()
-		candidates_filt.Replicates = 0.2 + 0.3 * (candidates_filt.Replicates - min_samples)/(samples - min_samples)
-				
-		for gene in candidates_filt.index.values:
-			nIso = candidates.loc[candidates.Gene==gene, "Transcript_normal"].iloc[0]
-			tIso = candidates.loc[candidates.Gene==gene, "Transcript_tumor"].iloc[0]
-			Score = candidates_filt.loc[gene, "Replicates"]
-			geneID, geneSymbol = self.nameFilter(full_name=gene)
 
-			if geneID is not None:
-				self.update_node( "switch", True, gene_id=geneID )
-				self.update_node( "isoformSwitches", [nIso, tIso], gene_id=geneID )
-				self.update_node( "score", Score, gene_id=geneID )
+		switches = pd.DataFrame.from_csv(options.Options().qout + "candidateList.tsv", sep="\t", header=None, index_col=None)
+		switches.columns = ['Symbol', 'Gene', "Transcript_normal", "Transcript_tumor", "Replicates"]
+		switches = switches[ switches.Replicates >= min_samples ]
+		switches_groupedByGene = switches[ ["Gene", "Replicates"] ]
+				
+		switches_groupedByGene = switches_groupedByGene.groupby("Gene").sum()
+		switches_groupedByGene.Replicates = 0.2 + 0.3 * (switches_groupedByGene.Replicates - min_samples)/(samples - min_samples)
+
+		for index,row in switches_groupedByGene.iterrows():
+			Gene = row["Gene"]
+			Score = switches_groupedByGene["Replicates"]
+			
+			self.update_node( "score", Score, full_name=Gene )
+
+		switches_groupedBySwitch = switches[ ["Gene", "Replicates", "Transcript_normal", "Transcript_tumor"] ]
+		switches_groupedBySwitch.Replicates = switches_groupedBySwitch.Replicates.astype(float)
+		switches_groupedBySwitch.Replicates = switches_groupedBySwitch.Replicates/samples
+
+		for index,row in switches_groupedBySwitch.iterrows():
+			Gene = row["Gene"]
+			nIso = row["Transcript_normal"]
+			tIso = row["Transcript_tumor"]
+			Score = row["Replicates"]
+
+			self.update_node("isoformSwitches", ((nIso, tIso), Score), full_name=Gene)
 
 	def importSpecificDrivers(self, drivers_file, otherDrivers = False):
-		logging.debug("Importing specific drivers.")
+		self.logger.debug("Importing specific drivers.")
 		if not otherDrivers:
 			for node in [ x for x in self.nodes() if self._net.node[x]["Driver"] ]:
 				self.update_node("Driver", False, gene_id = node)
 				self.update_node("score", 0.01, gene_id = node)
-		for nameComponents in ut.readTable(drivers_file, header = False):
+		for nameComponents in utils.readTable(drivers_file, header = False):
 			geneID, geneSymbol = self.nameFilter(gene_id = nameComponents[1])
 			self.update_node("Driver", True, gene_id = geneID)
 			self.update_node("score", 1, gene_id = geneID)
 
 	def importKnownInteractions(self):
 
-		logging.debug("Importing interactions from BIANA.")
+		self.logger.debug("Importing interactions from BIANA.")
 
 		affinity_methods = { 
 							'492':'in vivo', '493':'in vitro', '0':'molecular interaction', 
@@ -285,7 +303,7 @@ class GeneNetwork(network.Network):
 		#Iterate through all the interactions
 		c = 1
 		for (userEntity_id1, userEntity_id2) in proteome.getRelations():
-			logging.debug( "Interaction {0}/{1}".format(c, len(proteome.getRelations())) )
+			self.logger.debug( "Interaction {0}/{1}".format(c, len(proteome.getRelations())) )
 			c += 1
 			eErIDs_list 		= proteome.get_external_entity_relation_ids(
 																userEntity_id1, userEntity_id2)
@@ -302,13 +320,13 @@ class GeneNetwork(network.Network):
 			if session.get_defined_node_attributes("proteome", userEntity_id1, bianaInputType, True):
 				geneId_1 = session.get_defined_node_attributes("proteome", userEntity_id1, bianaInputType, True).pop()
 			else:
-				logging.warning("No {0} id for user entity {1}.".format(bianaInputType, userEntity_id1))
+				self.logger.warning("No {0} id for user entity {1}.".format(bianaInputType, userEntity_id1))
 				continue
 			
 			if session.get_defined_node_attributes("proteome", userEntity_id2, bianaInputType, True):
 				geneId_2 = session.get_defined_node_attributes("proteome", userEntity_id2, bianaInputType, True).pop()
 			else:
-				logging.warning("No {0} id for user entity {1}.".format(bianaInputType, userEntity_id2))
+				self.logger.warning("No {0} id for user entity {1}.".format(bianaInputType, userEntity_id2))
 				continue
 			
 			for current_eErID in eErIDs_list:
