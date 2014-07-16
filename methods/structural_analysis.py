@@ -6,20 +6,20 @@ from methods import method
 
 from collections import Counter
 from Bio import pairwise2
-import logging
+
+import pdb
 
 class StructuralAnalysis(method.Method):
 	def __init__(self, gn_network, tx_network):
-		self._gene_network			= gn_network
-		self._transcript_network	= tx_network
-		
-		method.Method.__init__(self)
+		method.Method.__init__(self, __name__, gn_network, tx_network)
 
 	def run(self):
-		logging.info("Structural analysis.")
+		self.logger.info("Structural analysis.")
 
 		sortedNodes = sorted(self._gene_network.nodes(data=True), key=lambda (a, dct): dct['score'], reverse=True)
 		for gene, properties in sortedNodes:
+			if not self._gene_network._net.node[gene]["isoformSwitches"]: continue
+			self.logger.debug("Searching structural information for gene {0}.".format(gene))
 			switch = self._gene_network._net.node[gene]["isoformSwitches"][0]
 			nIso = switch[0]
 			tIso = switch[1]
@@ -37,16 +37,17 @@ class StructuralAnalysis(method.Method):
 											self._transcript_network._net.node[tIso]["exonStructure"]
 													  )
 
-			if self._transcript_network._net[nIso]["Uniprot"] is not None:
+			if self._transcript_network._net.node[nIso]["Uniprot"] is not None:
 				self.analyzeStructuralImpact(normalProtein)
-			if self._transcript_network._net[tIso]["Uniprot"] is not None:
+			if self._transcript_network._net.node[tIso]["Uniprot"] is not None:
 				self.analyzeStructuralImpact(tumorProtein)
 			
-			if normalProtein.hasPdbs and tumorProtein.hasPdbs:
-				logging.debug("No Uniprot for {0} or {1}".format(nIso, tIso))
+			if not normalProtein.hasPdbs and not tumorProtein.hasPdbs:
+				self.logger.debug("No Uniprot for {0} or {1}".format(nIso, tIso))
 				continue
 			
-			logging.info("Structural information found for gene {0}.".format(gene))
+			self.logger.info("Structural information found for gene {0}.".format(gene))
+			pdb.set_trace()
 
 			if normalProtein.hasPdbs:
 				normalProtein.getAlteredRegions(tumorProtein)
@@ -55,27 +56,26 @@ class StructuralAnalysis(method.Method):
 				tumorProtein.getAlteredRegions(normalProtein)
 				tumorProtein.report()
 
-	def analyzeStructuralImpact(self, tx, uniprot, seq, exons):
+	def analyzeStructuralImpact(self, protein):
 
-		protein = 
 		noInteractions = True
 
 		for line in utils.readTable("Data/Databases/Interactome3D/2014_01/interactions.dat"):
 			interactionPdb 	= "Data/Databases/Interactome3D/2014_01/interactions/" + line[21]
 
 			if protein.uniprot == line[0]:
-				logging.debug("Relevant interaction for {0} at {1}.".format(
+				self.logger.debug("Relevant interaction for {0} at {1}.".format(
 															protein.tx, interactionPdb))
 				protein.calculateVolumes(interactionPdb, "A", self._transcript_network._net.node[protein.tx]["exonStructure"])
 				noInteractions = False
 			elif protein.uniprot == line[1]:
-				logging.debug("Relevant interaction for {0} at {1}.".format(
+				self.logger.debug("Relevant interaction for {0} at {1}.".format(
 															protein.tx, interactionPdb))
 				protein.calculateVolumes(interactionPdb, "B")
 				noInteractions = False
 
 		if noInteractions:
-			logging.debug("No relevant structures found for {0}.".format(protein.tx))
+			self.logger.debug("No relevant structures found for {0}.".format(protein.tx))
 			return False
 
 		return True
