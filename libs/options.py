@@ -1,8 +1,6 @@
 #!/soft/devel/python-2.7/bin/python
 
-import pandas as pd
 import argparse
-from libs import utils as ut
 
 class Options(object):
     _instance = None
