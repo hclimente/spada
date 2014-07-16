@@ -6,8 +6,11 @@ from collections import Counter
 from Bio import pairwise2
 import logging
 
+import pdb
+
 class AminoAcid:
 	def __init__(self, resNum, resName):
+		self.logger = logging.getLogger(__name__)
 		self._num 				= resNum
 		self._res 				= resName
 		self._tag 				= []
@@ -27,6 +30,7 @@ class AminoAcid:
 
 class Protein:
 	def __init__(self, tx, uniprot, seq, exons):
+		self.logger = logging.getLogger(__name__)
 		self._tx 				= tx
 		self._uniprot 			= uniprot
 		self._sequence 			= seq
@@ -34,10 +38,11 @@ class Protein:
 		self._residueCorresp	= {}
 		self._has_pdbs			= False
 
-		for res in range(0, len(self._sequence) ):
-			self._structure.append( AminoAcid(res+1, self._sequence[res]) )
+		if self._sequence is not None:
+			for res in range(0, len(self._sequence) ):
+				self._structure.append( AminoAcid(res+1, self._sequence[res]) )
 
-		self.mapResiduesToGenome(exons)
+			self.mapResiduesToGenome(exons)
 
 	@property
 	def tx(self): return self._tx
@@ -66,7 +71,7 @@ class Protein:
 				elif self._sequence[posOri] == thisRes:
 					correspondence.append(posOri)
 				else:
-					logging.debug("Unmatched residue {0} != {1}".format(self._sequence[posOri], thisRes))
+					self.logger.debug("Unmatched residue {0} != {1}".format(self._sequence[posOri], thisRes))
 
 				posSub += 1
 
@@ -110,17 +115,17 @@ class Protein:
  			if thisRes.identifier in buried:
 				self._structure[a[x]].setTag("B")
 				self._structure[a[x]]._pdbMapping[interaction] = ( chainObj.chain, thisRes.identifier )
-				logging.debug("{0}: residue {1}-{2} ({3} in sequence) detected as buried.".format(
+				self.logger.debug("{0}: residue {1}-{2} ({3} in sequence) detected as buried.".format(
 											interaction, chainObj.chain, thisRes.identifier))
 			elif thisRes.identifier in non_interacting_surface:
 				self._structure[a[x]].setTag("NIS")
 				self._structure[a[x]]._pdbMapping[interaction] = ( chainObj.chain, thisRes.identifier )
-				logging.debug("{0}: residue {1}-{2} ({3} in sequence) detected as non-interacting surface.".format(
+				self.logger.debug("{0}: residue {1}-{2} ({3} in sequence) detected as non-interacting surface.".format(
 											interaction, chainObj.chain, thisRes.identifier))
 			elif thisRes.identifier in interacting_surface:
 				self._structure[a[x]].setTag("IS")
 				self._structure[a[x]]._pdbMapping[interaction] = ( chainObj.chain, thisRes.identifier )
-				logging.debug("{0}: residue {1}-{2} ({3} in sequence) detected as interacting surface.".format(
+				self.logger.debug("{0}: residue {1}-{2} ({3} in sequence) detected as interacting surface.".format(
 											interaction, chainObj.chain, thisRes.identifier))
 
 	def mapResiduesToGenome(self, exons):
@@ -148,5 +153,5 @@ class Protein:
 			if aa[1]: isoSp += "X"
 			else: isoSp += "-"
 
-		logging.info("{0}".format(seq))
-		logging.info("{0}".format(isoSp))
+		self.logger.info("{0}".format(seq))
+		self.logger.info("{0}".format(isoSp))
