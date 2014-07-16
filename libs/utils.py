@@ -6,12 +6,18 @@ from time import sleep
 import urllib2
 from os import chdir
 from os.path import isfile
+import logging
+
+from libs import options
+
+logger = logging.getLogger("utils")
 
 def cmd(base, *args):
 	command = base
 	for arg in args:
 		command += " " + str(arg)
 
+	logger.debug(command)
 	call(command, shell=True)
 
 def cmdOut(base, *args):
@@ -19,6 +25,7 @@ def cmdOut(base, *args):
 	for arg in args:
 		command += " " + str(arg)
 
+	logger.debug(command)
 	return Popen(command, shell=True, stdout=PIPE)
 
 def readTable(path, sep="\t", header=True):
@@ -30,64 +37,61 @@ def readTable(path, sep="\t", header=True):
 				continue
 			yield line.strip().split(sep)
 
-def setRWorkspace(wd, out, Replicates):
+def setEnvironment():
 
-	r("wd <- \"" + wd + "\"")
-	r("out <- \"Results/" + out + "/\"")
-	r("inputData <- list()")	
-	r('inputData[["Conditions"]] <- c("N", "T")')
-	r('inputData[["Replicates"]] <- ' + str(Replicates))
-	r('save.image("Results/' + out + '/RWorkspaces/0_InitialEnvironment.RData")')
+	o = options.Options()
+	o.printToFile()
 
-def setEnvironment(cfgFile):
+	logger.info("Preparing the environment.")
+	cmd("rm -r old2/" + o.out )
+	cmd("mv", "old/" + o.out, "old2/" + o.out )
+	cmd("mv", o.qout, "old/" + o.out )
+	cmd("mkdir -p", "Results/" + o.out + "RWorkspaces")
+	cmd("mkdir", o.qout + "DataExploration")
+	cmd("mkdir", o.qout + o.iLoopsVersion)
 
-	opt = parseParam(cfgFile)
+	if not o.external:
+		if o.initialStep <= 1:
+			
+			#Set R workspace
+			r("wd <- \"" + options.Options().wd + "\"")
+			r("out <- \"Results/" + options.Options().out + "\"")
+			r("inputData <- list()")	
+			r('inputData[["Conditions"]] <- c("N", "T")')
+			r('inputData[["Replicates"]] <- ' + str(options.Options().replicates))
+			r('save.image("' + options.Options().qout + 'RWorkspaces/0_InitialEnvironment.RData")')
+			
+			#getDB()
 
-	print("* Preparing the environment")
-	cmd("rm -r old2/" + opt["out"] + "; mv", "old/" + opt["out"], "old2/"  + opt["out"])
-	cmd("mv", "Results/" + opt["out"], "old/" + opt["out"])
-	cmd("mkdir -p", "Results/" + opt["out"] + "/RWorkspaces")
-	cmd("mkdir", "Results/" + opt["out"] + "/DataExploration")
-	cmd("mkdir", "Results/" + opt["out"] + "/iLoops")
+		if o.initialStep > 1:
 
-	if not opt["external"]:
-		if opt["initialStep"] <= 1:
-			printParam(opt)
-			setRWorkspace(opt["wd"], opt["out"], opt["Replicates"])
-			getDB()
+			#currentInitialState = o.initialStep
+			#opt = parseParam("old/" + o.out + "/Parameters.cfg")
+			#o.initialStep = currentInitialState
+			#cmd("cp", "old/" + o.out + "/Parameters.cfg", "Results/" + o.out)
+			cmd("cp -r", "old/" + o.out + "/DataExploration", o.qout)
+			cmd("cp", "old/" + o.out + "/RWorkspaces/1_ExploreData.RData", o.qout + "/RWorkspaces")
 
-		if opt["initialStep"] > 1:
-
-			currentInitialState = opt["initialStep"]
-			opt = parseParam("old/" + opt["out"] + "/Parameters.cfg")
-			opt["initialStep"] = currentInitialState
-
-			cmd("cp", "old/" + opt["out"] + "/Parameters.cfg", "Results/" + opt["out"])
-			cmd("cp -r", "old/" + opt["out"] + "/DataExploration", "Results/" + opt["out"])
-			cmd("cp", "old/" + opt["out"] + "/RWorkspaces/1_ExploreData.RData", "Results/" + opt["out"] + "/RWorkspaces")
-
-		if opt["initialStep"] > 2:
-			cmd("cp", "old/" + opt["out"] + "/RWorkspaces/2_GetCandidates.RData", "Results/" + opt["out"] + "/RWorkspaces")
-			cmd("cp", "old/" + opt["out"] + "/candidateList.tsv", "old/" + opt["out"] + "/expressedGenes.lst", "Results/" + opt["out"])
-			cmd("cp", "old/" + opt["out"] + "/candidates_normal.gtf", "old/" + opt["out"] + "/candidates_tumor.gtf", "Results/" + opt["out"])
+		if o.initialStep > 2:
+			cmd("cp", "old/" + o.out + "/RWorkspaces/2_GetCandidates.RData", o.qout + "/RWorkspaces")
+			cmd("cp", "old/" + o.out + "/candidateList.tsv", "old/" + o.out + "/expressedGenes.lst", o.qout)
+			cmd("cp", "old/" + o.out + "/candidates_normal.gtf", "old/" + o.out + "/candidates_tumor.gtf", o.qout)
 	else:
-		printParam(opt)
-		if opt["initialStep"] == 2:
-			oriOut = "_".join(opt["out"].split("_")[:-1])
-			cmd("cp", "Results/" + oriOut + "/RWorkspaces/1_ExploreData.RData", "Results/" + opt["out"] + "/RWorkspaces")
-			cmd("Pipeline/scripts/InputUnpaired.r", oriOut, opt["unpairedReplicates"], "Data/Input/TCGA/" + opt["tag1"] + "/")
-		if opt["initialStep"] == 3:
-			cmd("cp", opt["external"] + ".tsv" , "Results/" + opt["out"] + "/candidateList.tsv")
-			cmd("cp", opt["external"] + "_expressedGenes.lst", "Results/" + opt["out"] + "/expressedGenes.lst")
+		
+		if o.initialStep == 2:
+			oriOut = "_".join(o.out.split("_")[:-1])
+			cmd("cp", "Results/" + oriOut + "/RWorkspaces/1_ExploreData.RData", "Results/" + o.out + "/RWorkspaces")
+			cmd("Pipeline/scripts/InputUnpaired.r", oriOut, o.unpairedReplicates, "Data/Input/TCGA/" + o.tag + "/")
+		if o.initialStep == 3:
+			cmd("cp", o.external + ".tsv" , "Results/" + o.out + "/candidateList.tsv")
+			cmd("cp", o.external + "_expressedGenes.lst", "Results/" + o.out + "/expressedGenes.lst")
 
-	if opt["initialStep"] > 3:
-		cmd("cp", "old/" + opt["out"] + "/candidateInteractions.tsv", "old/" + opt["out"] + "/candidateList.top.tsv", "Results/" + opt["out"])
-	if opt["initialStep"] > 4:
-		cmd("cp", "old/" + opt["out"] + "/candidatesGaudi.lst", "Results/" + opt["out"])
-	if opt["initialStep"] > 5:
-		cmd("cp", "old/" + opt["out"] + "/iLoops", "Results/" + opt["out"])
-
-	return opt
+	if o.initialStep > 3:
+		cmd("cp", "old/" + o.out + "/candidateInteractions.tsv", "old/" + o.out + "/candidateList.top.tsv", o.qout)
+	if o.initialStep > 4:
+		cmd("cp", "old/" + o.out + "/candidatesGaudi.lst", o.qout)
+	if o.initialStep > 5:
+		cmd("cp", "old/" + o.out + "/iLoops", o.qout)
 
 def getDB():
 	with open("Data/Databases/Intogen.tsv", "w") as Intogen:
@@ -117,40 +121,40 @@ def getDB():
 		res = urllib2.urlopen(req, query)
 		Intogen.write(res.read())
 
-def printParam(opt):
-	with open("Results/" + opt["out"] + "/Parameters.cfg", "w") as paramFile:
-		for aKey in opt.keys():
-			if not aKey == "Conditions":
-				paramFile.write(aKey + "=" + str(opt[aKey]) + "\n")
+# def printParam(opt):
+# 	with open("Results/" + opt["out"] + "/Parameters.cfg", "w") as paramFile:
+# 		for aKey in opt.keys():
+# 			if not aKey == "Conditions":
+# 				paramFile.write(aKey + "=" + str(opt[aKey]) + "\n")
 
-def parseParam(cfgFile):
+# def parseParam(cfgFile):
 
-	opt = { "initialStep" : 0, "wd" : "/home/hector/SmartAS/", "gaudiWd" : "/sbi/users/hectorc/SmartAS", "minExpression" : 0, 
-			"inputType" : "GENCODE" , "Conditions" : ["N", "T"], "tag1" : "20", "Replicates" : 0, "external" : "", 
-			"unpairedReplicates" : 0, "iLoopsVersion" : "iLoops_devel"}
+# 	opt = { "initialStep" : 0, "wd" : "/home/hector/SmartAS/", "gaudiWd" : "/sbi/users/hectorc/SmartAS", "minExpression" : 0, 
+# 			"inputType" : "GENCODE" , "Conditions" : ["N", "T"], "tag1" : "20", "Replicates" : 0, "external" : "", 
+# 			"unpairedReplicates" : 0, "iLoopsVersion" : "iLoops_devel"}
 
-	with open(cfgFile, "r") as PARAMETERS:
-		for line in PARAMETERS:
-			elements = line.strip().split("=")
+# 	with open(cfgFile, "r") as PARAMETERS:
+# 		for line in PARAMETERS:
+# 			elements = line.strip().split("=")
 
-			if elements[0] in ["wd", "gaudiWd", "inputType", "tag1", "out", "gOut", "external", "iLoopsVersion"]:
-				opt[elements[0]] = elements[1]
-			elif elements[0] in ["Replicates", "initialStep", "unpairedReplicates"]:
-				opt[elements[0]] = int(elements[1])
-			elif elements[0] in ["minExpression"]:
-				opt[elements[0]] = float(elements[1])
-			else:
-				print("Unrecognized option:" + line.strip() )
+# 			if elements[0] in ["wd", "gaudiWd", "inputType", "tag1", "out", "gOut", "external", "iLoopsVersion"]:
+# 				opt[elements[0]] = elements[1]
+# 			elif elements[0] in ["Replicates", "initialStep", "unpairedReplicates"]:
+# 				opt[elements[0]] = int(elements[1])
+# 			elif elements[0] in ["minExpression"]:
+# 				opt[elements[0]] = float(elements[1])
+# 			else:
+# 				print("Unrecognized option:" + line.strip() )
 
-	if opt["external"]:
-		if opt["unpairedReplicates"] == 0:
-			opt["out"] = opt["inputType"] + "/" + opt["tag1"]
-	else:
-		opt["out"] = opt["inputType"] + "/" + opt["tag1"] + "_mE" + str(opt["minExpression"])
+# 	if opt["external"]:
+# 		if opt["unpairedReplicates"] == 0:
+# 			opt["out"] = opt["inputType"] + "/" + opt["tag1"]
+# 	else:
+# 		opt["out"] = opt["inputType"] + "/" + opt["tag1"] + "_mE" + str(opt["minExpression"])
 
-	opt["gOut"] = opt["gaudiWd"] + "/Results/" + opt["out"]
+# 	opt["gOut"] = opt["gaudiWd"] + "/Results/" + opt["out"]
 
-	return opt
+# 	return opt
 
 def finish(opt):
 	
@@ -175,22 +179,22 @@ def finish(opt):
 	cmd("rm", "*" + opt["out"] + "*gff", "*" + opt["out"] + "*tsv")
 	chdir("/home/hector/SmartAS")
 
-def outputCandidates(out, inputType):
-	with open('Results/' + out + "/candidateList.tsv", "r") as CANDIDATES, \
-		 open('Results/' + out + "/candidates_normal.gtf", 'w') as GTFn, \
-		 open("Results/" + out + "/candidates_tumor.gtf", 'w') as GTFt, \
-		 open("Data/" + inputType + "/annotation.gtf", "r") as ALLTRANSCRIPTS:
-			candTnt = []
-			for line in CANDIDATES:
-				ids = line.strip().split("\t")
-				candTnt.append([ids[2], ids[3]])
+# def outputCandidates(out, inputType):
+# 	with open('Results/' + out + "/candidateList.tsv", "r") as CANDIDATES, \
+# 		 open('Results/' + out + "/candidates_normal.gtf", 'w') as GTFn, \
+# 		 open("Results/" + out + "/candidates_tumor.gtf", 'w') as GTFt, \
+# 		 open("Data/" + inputType + "/annotation.gtf", "r") as ALLTRANSCRIPTS:
+# 			candTnt = []
+# 			for line in CANDIDATES:
+# 				ids = line.strip().split("\t")
+# 				candTnt.append([ids[2], ids[3]])
 			
-			for line in ALLTRANSCRIPTS:
-				for pair in candTnt:
-					if line.find(pair[0]) != -1:
-						GTFn.write(line)
-					elif line.find(pair[1]) != -1:
-						GTFt.write(line)
+# 			for line in ALLTRANSCRIPTS:
+# 				for pair in candTnt:
+# 					if line.find(pair[0]) != -1:
+# 						GTFn.write(line)
+# 					elif line.find(pair[1]) != -1:
+# 						GTFt.write(line)
 
 def pickUniqPatterns(gOut, out, inputType, iLoopsVersion, minReplicates):
 
@@ -274,23 +278,23 @@ def pickUniqPatterns(gOut, out, inputType, iLoopsVersion, minReplicates):
 	cmd("ssh hectorc@gaudi 'mkdir -p", gOut + "/Output; mkdir -p", gOut + "/Input; mkdir -p", gOut + "/logs'")
 	cmd("scp -r " + "Results/" + out + "/candidatesGaudi.lst hectorc@gaudi.imim.es:" + gOut)
 
-def importSequences():
-	kkota = {}
-	with open("/home/hector/SmartAS/Data/TCGA/UnifiedFasta_iLoops13.fa") as KK:
-		currentTx = ""
-		seq = ""
-		for line in KK:
-			if ">" in line:
-				if currentTx:
-					kkota[currentTx]["Sequence"] = seq
-					seq=""
-				elements=line[1:].strip().split("#")
-				currentTx = elements[0]
-				kkota.setdefault(currentTx, {})
-				kkota[currentTx]["Gene"] = elements[1]
-				kkota[currentTx]["Uniprot"] = elements[2]
-				kkota[currentTx]["iLoopsFamily"] = elements[1]
-			else:
-				seq += line.strip()
+# def importSequences():
+# 	kkota = {}
+# 	with open("/home/hector/SmartAS/Data/TCGA/UnifiedFasta_iLoops13.fa") as KK:
+# 		currentTx = ""
+# 		seq = ""
+# 		for line in KK:
+# 			if ">" in line:
+# 				if currentTx:
+# 					kkota[currentTx]["Sequence"] = seq
+# 					seq=""
+# 				elements=line[1:].strip().split("#")
+# 				currentTx = elements[0]
+# 				kkota.setdefault(currentTx, {})
+# 				kkota[currentTx]["Gene"] = elements[1]
+# 				kkota[currentTx]["Uniprot"] = elements[2]
+# 				kkota[currentTx]["iLoopsFamily"] = elements[1]
+# 			else:
+# 				seq += line.strip()
 
-	return kkota
+# 	return kkota
