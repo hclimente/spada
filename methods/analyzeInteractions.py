@@ -47,12 +47,10 @@ class AnalyzeInteractions(method.Method):
 		for line in utils.readTable(options.Options().qout + "candidatesGaudi.lst"):
 			index = int(line[1])
 			if index >= 0 and index <= 1:
-				#candidatesGaudi[line[0]] = line[0] + ".tar.gz"
-				candidatesGaudi[line[0]] = line[0] + ".ips"
+				candidatesGaudi[line[0]] = line[0] + ".tar.gz"
 			if index == 2:
 				relative = line[2][-1].split(" ").pop()
-				#candidatesGaudi[line[0]] = relative + ".tar.gz"
-				candidatesGaudi[line[0]] = relative + ".ips"
+				candidatesGaudi[line[0]] = relative + ".tar.gz"
 
 		return candidatesGaudi
 
@@ -90,11 +88,10 @@ class AnalyzeInteractions(method.Method):
 			while not isfile(tarFile):
 				time.sleep(900)
 			
-			#tar = tarfile.open(tarFile)
-			#xmlFile = tar.getmembers()[0].name
-			xmlFile = tarFile
-			#tar.extract(xmlFile)
-			#tar.close()
+			tar = tarfile.open(tarFile)
+			xmlFile = tar.getmembers()[0].name
+			tar.extract(xmlFile)
+			tar.close()
 
 			interactions = myParser.parseInteractions(
 									thisCandidate				  = iso,
@@ -110,7 +107,7 @@ class AnalyzeInteractions(method.Method):
 									output_RF_results             = True,
 									output_RF_precisions          = True
 													 )
-			#os.remove(xmlFile)
+			os.remove(xmlFile)
 
 			for partner in interactions:
 				self._transcript_network.add_edge( iso, partner )
