@@ -11,6 +11,8 @@ from network import ucsc_gene_network, ucsc_isoform_network
 import cPickle
 import logging
 
+import pdb
+
 class SmartAS:
 	def __init__(self):
 		self.logger = logging.getLogger()
@@ -57,14 +59,13 @@ class SmartAS:
 		self.logger.info("Sending list to Gaudi and performing the iLoops analysis.")
 		gaudiThread = utils.cmdOut(
 									"ssh", "hectorc@gaudi", \
-									"'{0}/Pipeline/methods/CalculateInteractions.py {1} {2} {3} {4}'".format(
+									"'{0}Pipeline/methods/CalculateInteractions.py {1} {2} {3}'".format(
 											options.Options().gwd,
-											options.Options().gaudiWd,
-											options.Options().out,
+											options.Options().gwd,
 											options.Options().inputType,
 											options.Options().iLoopsVersion 
 										 ), 
-									">Results/{0}/calculateInteractions.log".format(options.Options().qout)
+									">{0}calculateInteractions.log".format(options.Options().qout)
 								  )
 
 
@@ -88,6 +89,7 @@ class SmartAS:
 		if recover:
 			self.logger.info("Recovering gene network from file.")
 			self._gene_network = cPickle.load(open(options.Options().qout + "geneNetwork.pkl", "r"))
+			self._gene_network.createLogger()
 		else:
 			self.logger.info("Creating gene network.")
 
@@ -100,7 +102,7 @@ class SmartAS:
 			self.logger.debug("Reading gene info.")
 			self._gene_network.readGeneInfo()
 			if options.Options().specificDrivers:
-				self._gene_network.importSpecificDrivers(drivers_file=options.Options().specificDrivers, otherDrivers = False)
+				self._gene_network.importSpecificDrivers()
 			
 			self._gene_network.importKnownInteractions()
 			self._gene_network.importCandidates()
@@ -111,6 +113,7 @@ class SmartAS:
 		if recover:
 			self.logger.info("Recovering transcript network from file.")
 			self._transcript_network = cPickle.load(open(options.Options().qout + "txNetwork.pkl", "r"))
+			self._transcript_network.createLogger()
 		else:
 			if options.Options().inputType == "TCGA":
 				self._transcript_network = ucsc_isoform_network.UCSCIsoformNetwork()
@@ -150,12 +153,12 @@ if __name__ == '__main__':
 	 	S.getCandidates()
 		if not options.Options().external:
 			exit()
+	else:
+		S.createGeneNetwork(True)
+		S.createTranscriptNetwork(False)
 
-	S.createGeneNetwork(True)
-	S.createTranscriptNetwork(True)	
-
-	if options.Options().initialStep <= 3:
-		S.launchiLoops()
+	# if options.Options().initialStep <= 3:
+	# 	S.launchiLoops()
 	if options.Options().initialStep <= 4:
 		S.structuralAnalysis()
 	if options.Options().initialStep <= 5:
