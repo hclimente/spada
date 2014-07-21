@@ -14,8 +14,8 @@ class Options(object):
 
         self._config_file           = options.config_file
         self._initial_step          = options.initial_step
-        self._wd                    = options.wd
-        self._gwd                   = options.gwd
+        self._wd                    = options.wd + "/"
+        self._gwd                   = options.gwd + "/"
         self._minExpression         = options.minExpression
         self._inputType             = options.inputType
         self._replicates            = options.replicates
@@ -29,8 +29,8 @@ class Options(object):
                 self._out           = self._inputType + "/" + self._tag + "/"
         else:
             self._out               = self._inputType + "/" + self._tag + "_mE" + str(self._minExpression) + "/"
-        self._gOut                  = self._gwd + "/Results/" + self._out
-        self._quickOut              = self._wd + "/Results/" + self._out
+        self._gOut                  = self._gwd + "Results/" + self._out
+        self._quickOut              = self._wd + "Results/" + self._out
 
     # Getters ##
     @property
@@ -95,8 +95,6 @@ class Options(object):
                             help='Path of output data in Gaudi.')
         parser.add_argument('-d', '--specific-drivers', dest='specificDrivers', action='store', default='',
                             help='Path of the specific drivers for the cancer type.')
-
-        #"Conditions" : ["N", "T"]
 
         config_opt  = parser.parse_args()
         options     = parser.parse_args(["@" + config_opt.config_file])
