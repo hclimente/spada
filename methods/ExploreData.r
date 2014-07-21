@@ -1,8 +1,15 @@
 #!/soft/R/R-3.0.0/bin/Rscript
 
+suppressMessages(library(logging))
+
 args <- commandArgs(trailingOnly = TRUE)
 load(paste0(args[1], "RWorkspaces/0_InitialEnvironment.RData"))
 inputPath <- args[2]
+
+logger <- getLogger(name="exploreData", level=10) #Level debug
+
+addHandler(writeToConsole, logger="exploreData", level='INFO')
+addHandler(writeToFile, logger="exploreData", file=paste0(out, "rSmartAS.log"), level='DEBUG')
 
 intraReplicate <- list()
 interReplicate <- list(N=NULL, T=NULL)
@@ -152,7 +159,7 @@ fpr5 <- as.numeric()
 fprMAD <- as.numeric()
 
 cat("Summarizing data from", length(interReplicate[["N"]]$Transcript), "transcripts.\n")
-sampleSumPB <- txtProgressBar(min = 1, max = inputData[["Replicates"]], initial = 1, style=3)
+sampleSumPB <- txtProgressBar(min = 1, max = length(interReplicate[["N"]]$Transcript), initial = 1, style=3)
 counter <- 1
 
 for (tx in interReplicate[["N"]]$Transcript){
