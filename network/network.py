@@ -12,9 +12,11 @@ class Network:
 	__metaclass__ = abc.ABCMeta
 
 	def __init__(self, name):
-		self.logger 		= logging.getLogger(name)
+		
+		self._name			= name
 		self._net 			= networkx.Graph()
 		self._rejectedNodes = set()
+		self.createLogger()
 	
 	## Getters ##
 	def n(self): 		return self._net
@@ -79,6 +81,15 @@ class Network:
 		return True
 
 	def saveNetwork(self, filename):
-		logging.debug("Saving network at {0}.".format(filename))
+		#Unattach logger to allow saving
+		self.removeLogger()
+		logging.debug("Saving network at {0}{1}.".format(options.Options().qout,filename))
 		with open(options.Options().qout + filename, "wb") as NET_DUMP:
 			cPickle.dump(self, NET_DUMP, -1)
+
+		self.createLogger()
+
+	def createLogger(self):
+		self.logger	= logging.getLogger(self._name)
+	def removeLogger(self):
+		self.logger = None
