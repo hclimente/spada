@@ -12,22 +12,22 @@ class GeneNetwork(network.Network):
 	GeneNetwork contains a network of genes.
 
 	Node information:
-		Id - str Gene Id
-		symbol - str Gene Symbol
-		switch - bool One or more isoform switches detected.
-		isoformSwitches - list List of detected isoform switches [[isoN, isoT], [isoN, isoT]]
-		score - float,0.01 Score between 0.2 and 0.5 dictacted by the number of patients.
-		Driver - bool Gene described as a driver.
-		RBP - bool Gene described as a RBP.
-		EpiFactor - bool Gene described as epigenetic factor.
-		ExpressedTranscripts - set Set with transcripts with a significant expression.
+		Id(str) 						Gene Id
+		symbol(str) 					Gene Symbol
+		isoformSwitches(list,[]) 		List of detected isoform switches [[isoN, isoT], [isoN, isoT]]
+		score(float,0.01)				Score between 0.2 and 0.5 dictacted by the number of patients.
+		Driver(bool,False) 				Gene described as a driver.
+		specificDriver(bool,False) 		Gene described as driver in this cancer type.
+		RBP(bool,False) 				Gene described as a RBP.
+		EpiFactor(bool,False) 			Gene described as epigenetic factor.
+		ExpressedTranscripts(set,()) 	Set with transcripts with a significant expression.
 
 	Edge information:
-		Id1 - str Gene id of interactor 1.
-		Id2 - str Gene id of interactor 2.
-		score, 0.01 - float,None Weight of the itneraction.
-		iLoops_prediction - bool,None Interaction predicted by iLoops.
-		experimental - bool,None Interaction found through Y2H or Lumier.
+		Id1(str) 						Gene id of interactor 1.
+		Id2(str) 						Gene id of interactor 2.
+		score(float,0.01) 				Weight of the itneraction.
+		iLoops_prediction(bool,None) 	Interaction predicted by iLoops.
+		experimental(bool,None) 		Interaction found through Y2H or Lumier.
 
 	GUILD score:
 
@@ -72,9 +72,9 @@ class GeneNetwork(network.Network):
 			self._net.add_node( 
 								geneID, 
 								symbol 					= geneSymbol,
-								switch 					= None, 
 								isoformSwitches 		= [],
 								score 					= 0.01, 
+								specificDriver 			= False,
 								Driver 					= False, 
 								RBP 					= False, 
 								EpiFactor				= False, 
@@ -174,39 +174,39 @@ class GeneNetwork(network.Network):
 		min_samples = round(samples * 0.1)
 
 		switches = pd.DataFrame.from_csv(options.Options().qout + "candidateList.tsv", sep="\t", header=None, index_col=None)
-		switches.columns = ['Symbol', 'Gene', "Transcript_normal", "Transcript_tumor", "Replicates"]
-		switches = switches[ switches.Replicates >= min_samples ]
-		switches_groupedByGene = switches[ ["Gene", "Replicates"] ]
+		switches.columns = ['Symbol', 'Gene', "Transcript_normal", "Transcript_tumor", "Replicates", "Patients"]
+		switches.Replicates = switches.Replicates.astype(float)
+		switches.Patients = switches.Patients.str.split(",")
+		switches["Percentage"] = switches.Replicates/samples
+
+		switches = switches[ switches.Percentage >= 0.1 ]
 				
+		switches_groupedByGene = switches[ ["Gene", "Replicates"] ]
 		switches_groupedByGene = switches_groupedByGene.groupby("Gene").sum()
 		switches_groupedByGene.Replicates = 0.2 + 0.3 * (switches_groupedByGene.Replicates - min_samples)/(samples - min_samples)
 
-		for index,row in switches_groupedByGene.iterrows():
-			Gene = row["Gene"]
-			Score = switches_groupedByGene["Replicates"]
+		for Gene,row in switches_groupedByGene.iterrows():
+			Score = row["Replicates"]
 			
 			self.update_node( "score", Score, full_name=Gene )
 
-		switches_groupedBySwitch = switches[ ["Gene", "Replicates", "Transcript_normal", "Transcript_tumor"] ]
-		switches_groupedBySwitch.Replicates = switches_groupedBySwitch.Replicates.astype(float)
-		switches_groupedBySwitch.Replicates = switches_groupedBySwitch.Replicates/samples
+		for index,row in switches.iterrows():
+			Gene 		= row["Gene"]
+			nIso 		= row["Transcript_normal"]
+			tIso 		= row["Transcript_tumor"]
+			Score 		= row["Percentage"]
+			Patients 	= row["Patients"]
 
-		for index,row in switches_groupedBySwitch.iterrows():
-			Gene = row["Gene"]
-			nIso = row["Transcript_normal"]
-			tIso = row["Transcript_tumor"]
-			Score = row["Replicates"]
+			self.update_node("isoformSwitches", ((nIso, tIso), Score, Patients), full_name=Gene)
 
-			self.update_node("isoformSwitches", ((nIso, tIso), Score), full_name=Gene)
-
-	def importSpecificDrivers(self, drivers_file, otherDrivers = False):
+	def importSpecificDrivers(self):
 		self.logger.debug("Importing specific drivers.")
-		if not otherDrivers:
-			for node in [ x for x in self.nodes() if self._net.node[x]["Driver"] ]:
-				self.update_node("Driver", False, gene_id = node)
-				self.update_node("score", 0.01, gene_id = node)
-		for nameComponents in utils.readTable(drivers_file, header = False):
-			geneID, geneSymbol = self.nameFilter(gene_id = nameComponents[1])
+		for nameComponents in utils.readTable(options.Options().specificDrivers, header=False):
+			geneID = self.nameFilter(gene_id = nameComponents[1])[0]
+
+			self.logger.debug("Adding {0} as specific driver.".format(geneID))
+
+			self.update_node("specificDriver", True, gene_id = geneID)
 			self.update_node("Driver", True, gene_id = geneID)
 			self.update_node("score", 1, gene_id = geneID)
 
@@ -268,12 +268,11 @@ class GeneNetwork(network.Network):
 		methods  = [("Method_id", 18),("Method_id", 696)]
 		methods.extend([ ("Method_id", x) for x in complementation_methods if x not in affinity_methods ])
 
-		seeds = [ x for x in self.nodes() if self._net.node[x]["switch"] or self._net.node[x]["Driver"] ]
+		seeds = [ x for x in self.nodes() if self._net.node[x]["isoformSwitches"] or self._net.node[x]["specificDriver"] ]
 
 		bianaInputType = "geneid"
 
-		if options.Options().inputType == "ensembl":
-			bianaInputType = "ensembl" #es asi el identificador?
+		if options.Options().inputType == "ensembl": bianaInputType = "ensembl"
 
 		session = biana.create_new_session(
 										sessionID="SmartAS", 
