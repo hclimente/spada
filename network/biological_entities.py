@@ -22,14 +22,25 @@ class AminoAcid:
 	def res(self): return self._res
 	@property
 	def genomicPosition(self): return self._genomicPosition
+	def setGenomicPosition(self,genomicPosition): self._genomicPosition = genomicPosition
 	@property
-	def tag(self): return self._tag
+	def tag(self): 
+		"""Returns the mode from the list of tags."""
+		frequency = Counter(self._tag).most_common(1)
+		if frequency:
+			return frequency[0][0]
+		else:
+			return None
+
 	def setTag(self,tag): self._tag.append(tag)
 
+	@property
+	def isoformSpecific(self): 	return self._isoformSpecific
+	
 	def setIsoformSpecific(self,isoformSpecific): self._isoformSpecific=isoformSpecific
 
 class Protein:
-	def __init__(self, tx, uniprot, seq, exons):
+	def __init__(self, tx, uniprot, seq, exons, cds, strand):
 		self.logger = logging.getLogger(__name__)
 		self._tx 				= tx
 		self._uniprot 			= uniprot
@@ -42,7 +53,7 @@ class Protein:
 			for res in range(0, len(self._sequence) ):
 				self._structure.append( AminoAcid(res+1, self._sequence[res]) )
 
-			self.mapResiduesToGenome(exons)
+			self.mapResiduesToGenome(exons, cds, strand)
 
 	@property
 	def tx(self): return self._tx
@@ -78,7 +89,6 @@ class Protein:
 			if oriSeq[lPos] != "-": posOri += 1
 
 		return correspondence
-
 
 	def calculateVolumes(self, interaction, chain, exons):
 
@@ -116,42 +126,76 @@ class Protein:
 				self._structure[a[x]].setTag("B")
 				self._structure[a[x]]._pdbMapping[interaction] = ( chainObj.chain, thisRes.identifier )
 				self.logger.debug("{0}: residue {1}-{2} ({3} in sequence) detected as buried.".format(
-											interaction, chainObj.chain, thisRes.identifier))
+											interaction, chainObj.chain, thisRes.identifier, x))
 			elif thisRes.identifier in non_interacting_surface:
 				self._structure[a[x]].setTag("NIS")
 				self._structure[a[x]]._pdbMapping[interaction] = ( chainObj.chain, thisRes.identifier )
 				self.logger.debug("{0}: residue {1}-{2} ({3} in sequence) detected as non-interacting surface.".format(
-											interaction, chainObj.chain, thisRes.identifier))
+											interaction, chainObj.chain, thisRes.identifier, x))
 			elif thisRes.identifier in interacting_surface:
 				self._structure[a[x]].setTag("IS")
 				self._structure[a[x]]._pdbMapping[interaction] = ( chainObj.chain, thisRes.identifier )
 				self.logger.debug("{0}: residue {1}-{2} ({3} in sequence) detected as interacting surface.".format(
-											interaction, chainObj.chain, thisRes.identifier))
+											interaction, chainObj.chain, thisRes.identifier, x))
 
-	def mapResiduesToGenome(self, exons):
-		j = 0
-		for exonStart,exonEnd in exons:
-			for i in range(exonStart, exonEnd, 3):
-				self._structure[j].setGenomicPosition(i)
-				j += 1
+	def mapResiduesToGenome(self, exons, cds, strand):
+		"""Assign the position of the first nucleotide of the codon to each AminoAcid."""
+
+		genomicPositions = []
+		gap  = 0
+
+		#Generate a list with the genomic position of all codons of the CDS.
+		if strand == "+": 
+			cdsStart = cds[0]
+			cdsEnd 	 = cds[1]
+			
+			for exonStart,exonEnd in exons:
+				if exonEnd < cdsStart or exonStart > cdsEnd: continue
+
+				start = exonStart if exonStart >= cdsStart else cdsStart
+				if gap != 0: start += 3 - gap
+				end = exonEnd if exonEnd <= cdsEnd else cdsEnd
+	
+				for gPos in range(start, end, 3):
+					genomicPositions.append(gPos)
+
+				gap = (end - start)%3
+
+		elif strand == "-": 
+			cdsStart = cds[1]
+			cdsEnd 	 = cds[0]
+
+			for exonEnd,exonStart in [ (x-1,y-1) for x,y in reversed(exons) ]:
+				if exonEnd > cdsStart or exonStart < cdsEnd: continue
+
+				start = exonStart if exonStart <= cdsStart else cdsStart
+				if gap != 0: start -= 3 - gap
+				end = exonEnd if exonEnd >= cdsEnd else cdsEnd
+
+				for gPos in range(start, end, -3):
+					genomicPositions.append(gPos)
+
+				gap = (start - end)%3
+
+		for aminoAcid, gPos in zip(self._structure, genomicPositions[:-1]): #Remove the stop codon
+			aminoAcid.setGenomicPosition(gPos)
 
 	def getAlteredRegions(self, otherIsoform):
-		for a in self._structure:
-			if a.genomicPosition not in [ y.genomicPosition for y in otherIsoform._structure]:
-				a.setIsoformSpecific(True)
+		for thisResidue in self._structure:
+			if thisResidue.genomicPosition not in [ y.genomicPosition for y in otherIsoform._structure]:
+				thisResidue.setIsoformSpecific(True)
 
 	def report(self):
 		seq 	= ""
 		isoSp 	= ""
-		for aa in [ [ Counter(x._tag).most_common(1), x._isoformSpecific] for x in self._structure ]:
-			if not aa[0]: 	seq += "*"
-			else:		
-				if aa[0][0][0] == "NIS":	seq += "S"
-				elif aa[0][0][0] == "IS": 	seq += "I"
-				elif aa[0][0][0] == "B": 	seq += "B"
+		for aResidue in self._structure:
+			if not aResidue.tag: 		seq += "*"
+			elif aResidue.tag == "NIS":	seq += "S"
+			elif aResidue.tag == "IS": 	seq += "I"
+			elif aResidue.tag == "B": 	seq += "B"
 
-			if aa[1]: isoSp += "X"
-			else: isoSp += "-"
+			if aResidue.isoformSpecific: 	isoSp += "X"
+			else: 							isoSp += "-"
 
-		self.logger.info("{0}".format(seq))
-		self.logger.info("{0}".format(isoSp))
+		self.logger.debug("{0},{1}".format(self._tx, seq))
+		self.logger.debug("{0},{1}".format(self._tx, isoSp))
