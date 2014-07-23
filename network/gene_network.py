@@ -15,7 +15,8 @@ class GeneNetwork(network.Network):
 		Id(str) 						Gene Id
 		symbol(str) 					Gene Symbol
 		isoformSwitches(list,[]) 		List of detected isoform switches [[isoN, isoT], [isoN, isoT]]
-		score(float,0.01)				Score between 0.2 and 0.5 dictacted by the number of patients.
+		score(float,0.01)				Score of the gene for GUILD analysis.
+		scoreG(float,None)				Final GUILD score.
 		Driver(bool,False) 				Gene described as a driver.
 		specificDriver(bool,False) 		Gene described as driver in this cancer type.
 		RBP(bool,False) 				Gene described as a RBP.
@@ -74,6 +75,7 @@ class GeneNetwork(network.Network):
 								symbol 					= geneSymbol,
 								isoformSwitches 		= [],
 								score 					= 0.01, 
+								scoreG 					= None,
 								specificDriver 			= False,
 								Driver 					= False, 
 								RBP 					= False, 
