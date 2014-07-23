@@ -25,4 +25,3 @@ class UCSCGeneNetwork(gene_network.GeneNetwork):
 				geneSymbol 	= gene_symbol
 
 		return (geneID, geneSymbol)
-
