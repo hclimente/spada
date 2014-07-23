@@ -3,8 +3,8 @@
 from interface import out_network
 from libs import utils
 from libs import options
-from methods import analyzeInteractions
-from methods import networkAnalysis
+from methods import analyze_interactions
+from methods import network_analysis
 from methods import structural_analysis
 from network import ucsc_gene_network, ucsc_isoform_network
 
@@ -48,13 +48,7 @@ class SmartAS:
 
 	def launchiLoops(self):
 		self.logger.info("Selecting isoforms suitable for {0}".format( options.Options().iLoopsVersion) )
-		utils.pickUniqPatterns( 
-								options.Options().gout,
-								options.Options().qout,
-								options.Options().inputType,
-								options.Options().iLoopsVersion,
-								options.Options().replicates * 0.1
-							  )
+		utils.pickUniqPatterns(self._transcript_network)
 
 		self.logger.info("Sending list to Gaudi and performing the iLoops analysis.")
 		gaudiThread = utils.cmdOut(
@@ -155,7 +149,7 @@ if __name__ == '__main__':
 			exit()
 	else:
 		S.createGeneNetwork(True)
-		S.createTranscriptNetwork(False)
+		S.createTranscriptNetwork(True)
 
 	# if options.Options().initialStep <= 3:
 	# 	S.launchiLoops()

@@ -42,13 +42,13 @@ class OutNetwork:
 				INTERAX.write("{0}\t".format( tx_net._net.node[partnerIso]["median_PSI_T"] ))
 				INTERAX.write("\n")
 
-	def getGUILDInput(self):
+	def getGUILDInput(self, gn_net):
 		with open(options.Options().qout + "guild_nodes.tsv" ) as GUILD_NODES:
-			for node, info in self.nodes(data=True):
+			for node, info in gn_net.nodes(data=True):
 				GUILD_NODES.write("{0}\t{1}\n".format(node, info["score"]))
 
 		with open(options.Options().qout + "guild_edges.tsv" ) as GUILD_EDGES:
-			for node1, node2, info in self.edges(data=True):
+			for node1, node2, info in gn_net.edges(data=True):
 				GUILD_EDGES.write("{0}\t{1}\t{2}\n".format(node1, info["score"], node2))
 
 	def outputDot(self, network, name):

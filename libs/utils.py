@@ -74,6 +74,8 @@ def setEnvironment():
 			cmd("cp", "old/" + o.out + "/RWorkspaces/2_GetCandidates.RData", o.qout + "/RWorkspaces")
 			cmd("cp", "old/" + o.out + "/candidateList.tsv", "old/" + o.out + "/expressedGenes.lst", o.qout)
 			cmd("cp", "old/" + o.out + "/candidates_normal.gtf", "old/" + o.out + "/candidates_tumor.gtf", o.qout)
+			cmd("cp", "old/" + o.out + "/geneNetwork.pkl", "old/" + o.out + "/txNetwork.pkl", o.qout)
+			cmd("cp", "old/" + o.out + "/expression_normal.tsv", "old/" + o.out + "/expression_tumor.tsv", o.qout)
 	else:
 		
 		if o.initialStep == 2:
@@ -146,7 +148,7 @@ def pickUniqPatterns(tx_network):
 
 	loopFamilies = {}
 
-	for tx,family in [ x[0],x[1]["iLoopsFamily"] for x in tx_network.nodes(data=True) if x[1]["iLoopsFamily"] is not None ]:
+	for tx,family in [ (x[0],x[1]["iLoopsFamily"]) for x in tx_network.nodes(data=True) if x[1]["iLoopsFamily"] is not None ]:
 		if family in loopFamilies:
 			loopFamilies[family].add(tx)
 		else:
@@ -163,8 +165,9 @@ def pickUniqPatterns(tx_network):
 			analyze = 0
 			comment = "To analyze."
 
-			if float(line[4]) < 0.1: continue
-			elif line[9] = "False": 
+			if float(line[4]) < 0.1: 
+				continue
+			elif line[9] == "False": 
 				analyze = -1
 				comment = "No CDS change."
 			elif not nFamily or not tFamily:
@@ -184,7 +187,7 @@ def pickUniqPatterns(tx_network):
 				if os.path.isfile("iLoops/{0}/{1}/{2}.tar.gz".format(
 										options.Options().inputType,
 										options.Options().iLoopsVersion,
-										isoform) )
+										isoform) ):
 						analyze = 1
 						comment = "Already analyzed."
 				elif thisLoopPattern in analyzedLoops:
@@ -206,4 +209,11 @@ def pickUniqPatterns(tx_network):
 	cmd("ssh","hectorc@gaudi","'mkdir -p {0}Output'".format(options.Options().gout))
 	cmd("ssh","hectorc@gaudi","'mkdir -p {0}Input'".format(options.Options().gout))
 	cmd("ssh","hectorc@gaudi","'mkdir -p{0}logs'".format(options.Options().gout))
-	cmd("scp","-r","{0}candidatesGaudi.lst".format(options.Options().qout),"hectorc@gaudi.imim.es:{0}".format(options.Options().gout) )
+	sshTransfer("candidatesGaudi.lst")
+	#cmd("scp","-r","{0}candidatesGaudi.lst".format(options.Options().qout),"hectorc@gaudi.imim.es:{0}".format(options.Options().gout) )
+
+def sshTransfer(*args):
+	files = ""
+	for aFile in args:
+		files += " {0}{1}".format( options.Options().qout, aFile )
+	cmd("scp","-r", files,"hectorc@gaudi.imim.es:" + options.Options().gout )

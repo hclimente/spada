@@ -74,10 +74,10 @@ iLoopsVersion = sys.argv[3]
 
 out = "Results/" + inputType + "/"
 
-print("\t* Preparing FASTA files for all transcripts.")
+logging.info("Preparing FASTA files for all transcripts.")
 splitFASTA(out + "allProteome_", inputType, iLoopsVersion)
 
-print("\t* Launching iLoops.")
+logging.info("Launching iLoops.")
 
 for line in utils.readTable(out + "candidatesGaudi.lst", header=False):
 	transcript = line[0]
@@ -91,22 +91,24 @@ for line in utils.readTable(out + "candidatesGaudi.lst", header=False):
  		tag = transcript + "_" + batch
  		getFASTAandPairs(transcript, batch, inputType, out, iLoopsVersion)
  			
-		utils.cmd("/soft/devel/python-2.7/bin/python /sbi/programs/" + iLoopsVersion + "/iLoops.py",
- 			"-f " + out + "Input/" + tag + ".fasta",
- 			"-q " + out + "Input/" + tag + ".net",
- 			"-j " + out + "Output/" + tag,
- 			"-x " + tag + ".xml",
- 			"-v",
- 			"-g all",
- 			"-n 25",
- 			"-Q sbi",
- 			"-c 1,5,6,7,8,9,10,11,12,13,14,15,20,30,40,50",
- 			"2>&1 >" + out + "logs/" + tag + ".log"
- 		   )
+		utils.cmd(
+					"/soft/devel/python-2.7/bin/python",
+					"/sbi/programs/{0}/iLoops.py".format(iLoopsVersion),
+ 					"-f {0}Input/{1}.fasta".format(out,tag),
+ 					"-q {0}Input/{1}.net".format(out,tag),
+ 					"-j {0}Output/{1}".format(out,tag),
+ 					"-x {0}.xml".format(tag),
+ 					"-v",
+ 					"-g all",
+ 					"-n 25",
+ 					"-Q sbi",
+ 					"-c 1,5,6,7,8,9,10,11,12,13,14,15,20,30,40,50",
+ 					"2>&1 >{0}logs/{1}.log".format(out,tag)
+				  )
 
 	p = pruner.iLoopsOutput_pruner(transcript, out + "Output/")
 	p.joinFiles()
 	if p.makeLiteVersion():
 		utils.cmd("scp","-r", out + "Output/" + transcript + ".tar.gz", "hector@einstein.imim.es:~/SmartAS/iLoops/" + inputType + "/" + iLoopsVersion)
 	else:
-		print("Error in generation of file.")
+		logging.error("Error in generation of file.")

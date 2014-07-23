@@ -40,8 +40,6 @@ class AnalyzeInteractions(method.Method):
 															gene, nIso, tIso
 														)
 
-		out_network.Output().getGUILDInput()
-
 	def getAnalyzableCandidates(self):
 		candidatesGaudi = {}
 		for line in utils.readTable(options.Options().qout + "candidatesGaudi.lst"):
