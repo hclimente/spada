@@ -7,9 +7,11 @@ from libs import options
 from interface import iLoops_parser
 from interface import out_network
 
-from os.path import isfile
 import os
+import tarfile
 import time
+
+import pdb
 
 class AnalyzeInteractions(method.Method):
 	def __init__(self, gn_network, tx_network):
@@ -26,19 +28,18 @@ class AnalyzeInteractions(method.Method):
 		
 		#Sort by score: drivers will be first to be analyzed. Then, genes with an isoform switch with 
 		#decreasing patients
+
 		sortedNodes = sorted(self._gene_network.nodes(data=True), key=lambda (a, dct): dct['score'], reverse=True)
-		for gene, properties in sortedNodes:
+		for gene,properties in sortedNodes:
 			if not self._gene_network._net.node[gene]["isoformSwitches"]: continue
-			switch = self._gene_network._net.node[gene]["isoformSwitches"][0]
+			switch = self._gene_network._net.node[gene]["isoformSwitches"][0][0]
 			nIso = switch[0]
 			tIso = switch[1]
+
 			if self.getPredictedInteractions(gene, nIso, tIso):
 				self.calculateGeneInteractions(gene, nIso, tIso)
-				out_network.OutNetwork().interactorsInfo(	
-															self._gene_network, 
-															self._transcript_network, 
-															gene, nIso, tIso
-														)
+				out_network.interactorsInfo(self._gene_network, self._transcript_network, 
+											gene, nIso, tIso )
 
 	def getAnalyzableCandidates(self):
 		candidatesGaudi = {}
@@ -53,7 +54,7 @@ class AnalyzeInteractions(method.Method):
 		return candidatesGaudi
 
 	def getPredictedInteractions(self, gene, nIso, tIso):
-		myParser = iLoops_parser.iLoopsParser()
+		parser = iLoops_parser.iLoopsParser()
 		symbol = self._gene_network._net.node[gene]["symbol"]
 		
 		if not nIso in self._analyzable_candidates and not tIso in self._analyzable_candidates:
@@ -83,15 +84,20 @@ class AnalyzeInteractions(method.Method):
 			
 			self.logger.info("Analyzing {0} predictions ({1} transcript).".format(iso, ori) )
 
-			while not isfile(tarFile):
+			while not os.path.isfile(tarFile):
 				time.sleep(900)
 			
 			tar = tarfile.open(tarFile)
 			xmlFile = tar.getmembers()[0].name
-			tar.extract(xmlFile)
+			tar.extract(xmlFile, path="iLoops/{0}/{1}/".format(options.Options().inputType, 
+																  options.Options().iLoopsVersion ))
 			tar.close()
 
-			interactions = myParser.parseInteractions(
+			xmlFile = "iLoops/{0}/{1}/{2}".format(options.Options().inputType, 
+												  options.Options().iLoopsVersion,
+												  xmlFile )
+
+			interactions = parser.parseInteractions(
 									thisCandidate				  = iso,
 									xmlOutput					  = xmlFile,
 									expressedIsoforms			  = self._expressed_transcripts,
@@ -104,7 +110,7 @@ class AnalyzeInteractions(method.Method):
 									output_interaction_signatures = False,
 									output_RF_results             = True,
 									output_RF_precisions          = True
-													 )
+													)
 			os.remove(xmlFile)
 
 			for partner in interactions:

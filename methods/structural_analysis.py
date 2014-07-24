@@ -1,7 +1,7 @@
 #!/soft/devel/python-2.7/bin/python
 
 from libs import utils
-from network import biological_entities
+from biological_entities import protein
 from network import gene_network, isoform_network
 from methods import method
 
@@ -35,22 +35,22 @@ class StructuralAnalysis(method.Method):
 			nIso = switch[0]
 			tIso = switch[1]
 
-			normalProtein = biological_entities.Protein( 
+			normalProtein = protein.Protein( 
 											nIso, 
 											self._transcript_network._net.node[nIso]["Uniprot"], 
 											self._transcript_network._net.node[nIso]["proteinSequence"], 
 											self._transcript_network._net.node[nIso]["exonStructure"],
 											self._transcript_network._net.node[nIso]["cdsCoords"],
 											self._transcript_network._net.node[nIso]["strand"]
-														)
-			tumorProtein = biological_entities.Protein( 
+											)
+			tumorProtein = protein.Protein( 
 											tIso, 
 											self._transcript_network._net.node[tIso]["Uniprot"], 
 											self._transcript_network._net.node[tIso]["proteinSequence"], 
 											self._transcript_network._net.node[tIso]["exonStructure"],
 											self._transcript_network._net.node[tIso]["cdsCoords"],
 											self._transcript_network._net.node[tIso]["strand"]
-													  )
+										  )
 
 			if self._transcript_network._net.node[nIso]["Uniprot"] is not None:
 				self.analyzeStructuralImpact(normalProtein)
