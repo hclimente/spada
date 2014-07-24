@@ -718,10 +718,10 @@ class ILXMLParser(object):
 
 
                 # INTERACTION LEVEL 1: RANDOM FOREST INFO
-                elif element.tag == "RF_cost"                                : self.get_active_subObj().set_cost(element.text)
-                elif element.tag == "RF_prediction" and element.text == "YES": self.get_active_subObj().set_prediction(True)
-                elif element.tag == "RF_prediction" and element.text == "NO" : self.get_active_subObj().set_prediction(False)
-                elif element.tag == "RF_score"                               : self.get_active_subObj().set_RFscore(element.text)
+                elif element.tag == "RF_cost"                                                          : self.get_active_subObj().set_cost(element.text)
+                elif element.tag == "RF_prediction" and (element.text == "YES" or element.text=='True'): self.get_active_subObj().set_prediction(True)
+                elif element.tag == "RF_prediction" and (element.text == "NO" or element.text=='False'): self.get_active_subObj().set_prediction(False)
+                elif element.tag == "RF_score"                                                         : self.get_active_subObj().set_RFscore(element.text)
 
 
                 # INTERACTION LEVEL 2: UNBALANCE RATIOS AND PRECISIONS INFO
