@@ -69,10 +69,9 @@ def getFASTAandPairs(transcript, batch, inputType, out, iLoopsVersion):
  				THIS_FASTA.write(line)
 
 os.chdir(sys.argv[1])
-inputType = sys.argv[2]
-iLoopsVersion = sys.argv[3]
-
-out = "Results/" + inputType + "/"
+inputType 		= sys.argv[2]
+out 			= sys.argv[3]
+iLoopsVersion 	= sys.argv[4]
 
 logging.info("Preparing FASTA files for all transcripts.")
 splitFASTA(out + "allProteome_", inputType, iLoopsVersion)
