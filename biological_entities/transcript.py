@@ -12,7 +12,7 @@ class Transcript:
 		self._cds 		= []
 		self._utr 		= []
 		
-		if strand == "+": 
+		if self._strand == "+": 
 			cdsStart = self._cds_coordinates[0]
 			cdsEnd 	 = self._cds_coordinates[1]
 			
@@ -26,7 +26,7 @@ class Transcript:
 					else:
 						self._utr.append(gPos)
 
-		elif strand == "-": 
+		elif self._strand == "-": 
 			cdsStart = self._cds_coordinates[1]
 			cdsEnd 	 = self._cds_coordinates[0]
 
