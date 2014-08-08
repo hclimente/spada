@@ -32,7 +32,7 @@ counter <- 1
 
 for (replicate in seq(1,numOfReplicates)){
   
-  candidates[[replicate]] <- data.frame(Gene=as.character(), Genename=as.character(), Switch=as.numeric(), maxdPSI=as.character(), mindPSI=as.character())
+  candidates[[replicate]] <- data.frame(Gene=as.character(), Switch=as.numeric(), maxdPSI=as.character(), mindPSI=as.character())
   
   #Filter by deltaPSI and expression, based on the FPR
   psiThreshold <- abs(intraReplicate[[replicate]]$deltaPSI) > interReplicate[["N"]]$FPR_5
@@ -75,8 +75,7 @@ for (replicate in seq(1,numOfReplicates)){
       next
     }
     
-    replicateCandidates[[aCandidate]] <- data.frame(Genename=intraReplicate[[replicate]]$Genename[thisGeneData & norCandidate], 
-                                                    Gene=aCandidate,
+    replicateCandidates[[aCandidate]] <- data.frame(Gene=aCandidate,
                                                     maxdPSI=intraReplicate[[replicate]]$Transcript[thisGeneData & norCandidate], 
                                                     mindPSI=intraReplicate[[replicate]]$Transcript[thisGeneData & tumCandidate],
                                                     Switch=Switch)
@@ -89,7 +88,7 @@ for (replicate in seq(1,numOfReplicates)){
   
   #Expressed genes: transcripts whose expression are above the expression threshold in any of the conditions
   replicateExpressed[[replicate]] <- data.frame(Transcript=intraReplicate[[replicate]]$Transcript[norExpression | tumExpression],
-                                                Genename=intraReplicate[[replicate]]$Genename[norExpression | tumExpression])
+                                                Gene=intraReplicate[[replicate]]$Gene[norExpression | tumExpression])
   logdebug("%d switches found at patient %d", nrow(candidates[[replicate]]), replicate, logger="getCandidates")
   setTxtProgressBar(candidatesPB, counter)
   counter <- counter + 1
@@ -107,7 +106,7 @@ candidateMask[["T"]] <- do.call('cbind', candidateMask[["T"]])
 for (i in seq(1:inputData$Replicates)){candidates[[i]]$Origin = i}
 
 candidateList <- do.call("rbind", candidates)
-candidateList <- ddply(candidateList,.(Genename,Gene,maxdPSI,mindPSI), summarise, Replicated=length(Genename), Patients=paste(Origin, collapse = ",") )
+candidateList <- ddply(candidateList,.(Gene,maxdPSI,mindPSI), summarise, Replicated=length(Gene), Patients=paste(Origin, collapse = ",") )
 candidateList <- candidateList[with(candidateList, order(-Replicated)), ]
 
 write.table(candidateList, file=paste0(out, "candidateList.tsv"), sep="\t", row.names=F, col.names=F, quote=F)
@@ -123,20 +122,20 @@ save(isoformExpression, intraReplicate, interReplicate, candidates, candidateLis
 suppressMessages(library(gplots)) #Avoid the annoying message
 library(RColorBrewer)
 
-top <- length(candidateList$Genename[candidateList$Replicated >= inputData[["Replicates"]] * 0.2])
+top <- length(candidateList$Gene[candidateList$Replicated >= inputData[["Replicates"]] * 0.2])
 
-topCandidates <- ddply(candidateList,.(Genename), summarise, Replicated=sum(Replicated))
+topCandidates <- ddply(candidateList,.(Gene), summarise, Replicated=sum(Replicated))
 topCandidates <- topCandidates[with(topCandidates, order(-Replicated)), ]
 topCandidates <- head(topCandidates, n=top)
 
-fig <- data.frame(matrix(nrow=length(topCandidates$Genename), ncol=inputData[["Replicates"]]))
-rownames(fig) <- topCandidates$Genename
+fig <- data.frame(matrix(nrow=length(topCandidates$Gene), ncol=inputData[["Replicates"]]))
+rownames(fig) <- topCandidates$Gene
 colnames(fig) <- seq(1,inputData[["Replicates"]])
 
 for (replicate in seq(1,inputData[["Replicates"]])){
-  for (gene in topCandidates$Genename){
-    if (gene %in% candidates[[replicate]]$Genename) {
-      fig[gene, replicate] <- head(candidates[[replicate]]$Switch[candidates[[replicate]]$Genename == gene],1)
+  for (gene in topCandidates$Gene){
+    if (gene %in% candidates[[replicate]]$Gene) {
+      fig[gene, replicate] <- head(candidates[[replicate]]$Switch[candidates[[replicate]]$Gene == gene],1)
     } else {
       fig[gene, replicate] <- 0
     }
