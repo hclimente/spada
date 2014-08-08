@@ -29,6 +29,7 @@ class Protein:
 	def hasPdbs(self): return self._has_pdbs	
 
 	def mapSubsequence(self, querySequence, strict=True):
+
 		#Get alignment
 		alignments = pairwise2.align.globalms(self._sequence, querySequence, 2, -1, -.5, -.1)
 
@@ -40,19 +41,21 @@ class Protein:
 		correspondence = []
 
 		for lPos in range(0, len(subSeq) ):
-			if subSeq[lPos] != "-": 
+
+			if subSeq[lPos] != "-" and posOri < len(self._sequence): 
 				thisRes = querySequence[posSub]
 
-				if not strict:
+				if not strict: 							
 					correspondence.append(posOri)
-				elif self._sequence[posOri] == thisRes:
+				elif self._sequence[posOri] == thisRes: 
 					correspondence.append(posOri)
 				else:
-					self.logger.debug("Unmatched residue {0} != {1}".format(self._sequence[posOri], thisRes))
+					self.logger.debug("Unmatched residue {0} != {1}.".format(self._sequence[posOri], thisRes))
 
 				posSub += 1
 
-			if oriSeq[lPos] != "-": posOri += 1
+			if oriSeq[lPos] != "-": 
+				posOri += 1
 
 		return correspondence
 
@@ -61,9 +64,13 @@ class Protein:
 		self._has_pdbs = True
 
 		#Generate the pdb object, extract the chain of interest and calculate volumes
+
 		pdb = PDB(interaction)
 		chainObj = pdb.get_chain_by_id(chain)
-		chainObj.calculate_dssp()
+		try:
+			chainObj.calculate_dssp()
+		except AttributeError:
+			return False
 		
 		interacting_surface 	= []
 		non_interacting_surface = []
@@ -90,19 +97,21 @@ class Protein:
 
  			if thisRes.identifier in buried:
 				self._structure[a[x]].setTag("B")
-				self._structure[a[x]]._pdbMapping[interaction] = ( chainObj.chain, thisRes.identifier )
+				self._structure[a[x]]._pdbMapping[interaction] = ( chainObj.chain, thisRes.identifier, "B" )
 				self.logger.debug("{0}: residue {1}-{2} ({3} in sequence) detected as buried.".format(
 											interaction, chainObj.chain, thisRes.identifier, x))
 			elif thisRes.identifier in non_interacting_surface:
 				self._structure[a[x]].setTag("NIS")
-				self._structure[a[x]]._pdbMapping[interaction] = ( chainObj.chain, thisRes.identifier )
+				self._structure[a[x]]._pdbMapping[interaction] = ( chainObj.chain, thisRes.identifier, "NIS" )
 				self.logger.debug("{0}: residue {1}-{2} ({3} in sequence) detected as non-interacting surface.".format(
 											interaction, chainObj.chain, thisRes.identifier, x))
 			elif thisRes.identifier in interacting_surface:
 				self._structure[a[x]].setTag("IS")
-				self._structure[a[x]]._pdbMapping[interaction] = ( chainObj.chain, thisRes.identifier )
+				self._structure[a[x]]._pdbMapping[interaction] = ( chainObj.chain, thisRes.identifier, "IS" )
 				self.logger.debug("{0}: residue {1}-{2} ({3} in sequence) detected as interacting surface.".format(
 											interaction, chainObj.chain, thisRes.identifier, x))
+
+		return True
 
 	def mapResiduesToGenome(self, exons, cds, strand):
 		"""Assign the position of the first nucleotide of the codon to each AminoAcid."""
@@ -165,3 +174,27 @@ class Protein:
 
 		self.logger.debug("{0},{1}".format(self._tx, seq))
 		self.logger.debug("{0},{1}".format(self._tx, isoSp))
+
+	def printPDBInfo(self):
+		for pdb in set([ y for x in self._structure for y in x._pdbMapping ]):
+			
+			chainsSet = set([ x._pdbMapping[pdb][0] for x in self._structure if pdb in x._pdbMapping ])
+			chain = set(chainsSet).pop()
+			if len(chainsSet) > 1:
+				self.logger.error("More than one chain for a protein in the PDB {0}, chains {1}.".format(pdb, chainsSet))
+			isoSpec = [ x._pdbMapping[pdb][1][:-1] for x in self._structure if pdb in x._pdbMapping and x.isoformSpecific ]
+			interact = [ x._pdbMapping[pdb][1][:-1] for x in self._structure if pdb in x._pdbMapping and x._pdbMapping[pdb][2]=="IS" ]
+
+			if not isoSpec or not interact:
+				return
+
+			self.logger.debug("{0}, load {1}".format(self._tx,pdb))
+			self.logger.debug("{0}, set bg_rgb=[1,1,1]".format(self._tx))
+			self.logger.debug("{0}, hide all".format(self._tx))
+			self.logger.debug("{0}, show cartoon, all".format(self._tx))
+			self.logger.debug("{0}, color black, all".format(self._tx))
+			self.logger.debug("{0}, color white, chain {1}".format(self._tx,chain))
+			self.logger.debug("{0}, select interact, chain {1} & resi {2}".format(self._tx,chain, "+".join(interact) ))
+			self.logger.debug("{0}, select isoSpecific, chain {1} & resi {2}".format(self._tx,chain, "+".join(isoSpec) ))
+			self.logger.debug("{0}, color orange, isoSpecific".format(self._tx))
+			self.logger.debug("{0}, color red, interact & isoSpecific".format(self._tx))
