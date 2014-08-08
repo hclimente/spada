@@ -4,7 +4,7 @@ from interface import out_network
 from libs import options
 from libs import utils
 from methods import method
-from network import network
+from network import ucsc_gene_network
 
 from libs.guild.src import combine_scores
 from libs.guild.src import create_random_networks_for_netzcore
@@ -13,12 +13,19 @@ import pandas as pd
 import networkx
 
 class NetworkAnalysis(method.Method):
-	def __init__(self, gn_network, tx_network):
-		method.Method.__init__(self, __name__, gn_network, tx_network)
+	def __init__(self, gn_network, tx_network, gn_subnetwork):
+		method.Method.__init__(self, __name__, gn_network, tx_network, gn_subnetwork)
+		self._gene_subnetworks = {}
+
+	def getGeneSubnetwork(self,top):
+		return self._gene_subnetworks[top]
 
 	def run(self, onlyExperimental):
 		self.logger.info("Network analysis.")
 		out_network.getGUILDInput(self._gene_network, onlyExperimental=onlyExperimental)
+
+		self.guildOut = "{0}GUILD_enriched/".format(options.Options().qout)
+		if onlyExperimental: self.guildOut = "{0}GUILD_experimental/".format(options.Options().qout)
 
 		self.runGUILD( method="NetScore", reps=3, iters=2 )
 		self.runGUILD( method="NetZcore", samples=100 )
@@ -26,13 +33,13 @@ class NetworkAnalysis(method.Method):
 		self.runGUILD( method="fFlow", iters=5, min_seed_score=1.0 )
 		self.runGUILD( method="NetRank" )
 
-		netComboInput = [ "{0}GUILD/guild_{1}.out".format(options.Options().qout,x) for x in ["NetScore", "NetZcore", "NetShort"] ]
-		combine_scores.score_combined(netComboInput, options.Options().qout + "GUILD/guild_netCombo.out")
+		netComboInput = [ "{0}guild_{1}.out".format(self.guildOut,x) for x in ["NetScore", "NetZcore", "NetShort"] ]
+		combine_scores.score_combined( netComboInput, "{0}guild_netCombo.out".format(self.guildOut) )
 
-		fullComboInput = [ "{0}GUILD/guild_{1}.out".format(options.Options().qout,x) for x in ["NetScore", "NetZcore", "NetShort", "fFlow", "NetRank"] ]
-		combine_scores.score_combined(fullComboInput, options.Options().qout + "GUILD/guild_fullCombo.out")
+		fullComboInput = [ "{0}guild_{1}.out".format(self.guildOut,x) for x in ["NetScore", "NetZcore", "NetShort", "fFlow", "NetRank"] ]
+		combine_scores.score_combined(fullComboInput, "{0}guild_fullCombo.out".format(self.guildOut) )
 
-		self.readGUILDOutput("GUILD/guild_fullCombo.out")
+		self.readGUILDOutput("guild_fullCombo.out")
 		self.extractTopSubnetwork(1)
 		self.extractTopSubnetwork(5)
 
@@ -43,10 +50,10 @@ class NetworkAnalysis(method.Method):
 		oneLetter = {"NetScore": "s", "NetZcore": "z", "NetShort": "d", "fFlow": "f", "NetRank": "r"}
 
 		guild = ["{0}Pipeline/libs/guild/guild".format(options.Options().wd)]
-		guild.append( "-n {0}GUILD/guild_nodes.tsv".format(options.Options().qout) )
-		guild.append( "-e {0}GUILD/guild_edges.tsv".format(options.Options().qout) )
+		guild.append( "-n {0}guild_nodes.tsv".format(self.guildOut) )
+		guild.append( "-e {0}guild_edges.tsv".format(self.guildOut) )
 		guild.append( "-s {0}".format(oneLetter[method]) )
-		guild.append( "-o {0}GUILD/guild_{1}.out".format(options.Options().qout,method) )
+		guild.append( "-o {0}guild_{1}.out".format(self.guildOut,method) )
 
 		if reps: 			guild.append( "-r {0}".format(str(reps)) )
 		if iters: 			guild.append( "-i {0}".format(str(iters)) )
@@ -56,16 +63,16 @@ class NetworkAnalysis(method.Method):
 		if method == "NetZcore":
 			self.logger.debug("Creating 100 random networks for NetZcore.")
 			create_random_networks_for_netzcore.sample_network_preserving_topology(
-															options.Options().qout + "GUILD/guild_edges.tsv", 
-															samples, 
-															options.Options().qout + "GUILD/guild_edges.tsv."
-														)
-			guild.append("-d {0}GUILD/guild_edges.tsv.".format(options.Options().qout))
+								"{0}guild_edges.tsv".format(self.guildOut), 
+								samples, 
+								"{0}guild_edges.tsv.".format(self.guildOut)
+																				  )
+			guild.append("-d {0}guild_edges.tsv.".format(self.guildOut) )
 
 		utils.cmd(*guild)
 
 	def readGUILDOutput(self, guildResults):
-		guildOut = pd.DataFrame.from_csv(options.Options().qout + guildResults, sep="\t", header=None)
+		guildOut = pd.DataFrame.from_csv("{0}{1}".format(self.guildOut,guildResults), sep="\t", header=None)
 		guildOut.columns = ['Score']
 
 		for Gene,row in guildOut.iterrows():
@@ -89,9 +96,15 @@ class NetworkAnalysis(method.Method):
 				break
 			counter +=1
 
-		topNetwork = networkx.subgraph(self._gene_network._net, topGenes)
+		if options.Options().inputType == "TCGA": 
+			self._gene_subnetworks[x] = ucsc_gene_network.UCSCGeneNetwork()
+			self._gene_subnetworks[x]._net = networkx.subgraph(self._gene_network._net, topGenes)
+			
+		else:
+			self.logger.error("Unrecognized input type {0}.".format(options.Options().inputType))
+			exit()
 
-		out_network.outputDot(topNetwork, "GUILD/guildTop{0}.dot".format(x) )
+		out_network.outputDot(self._gene_subnetworks[x]._net, "{0}guildTop{1}.dot".format(self.guildOut, x) )
 
 if __name__ == '__main__':
 
