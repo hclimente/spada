@@ -26,11 +26,12 @@ class GeneNetwork(network.Network):
 	Edge information:
 		Id1(str) 						Gene id of interactor 1.
 		Id2(str) 						Gene id of interactor 2.
-		score(float,0.01) 				Weight of the itneraction.
+		score(float,0.01) 				Weight of the interaction.
+		deltaRC(float,None)				deltaRC of that interaction.
 		iLoops_prediction(bool,None) 	Interaction predicted by iLoops.
-		experimental(bool,None) 		Interaction found through Y2H or Lumier.
+		experimental(bool,None) 		Interaction found through experiments.
 
-	GUILD score:
+	Scores:
 
 		Nodes:
 			Base: 		0.01
@@ -40,7 +41,7 @@ class GeneNetwork(network.Network):
 		Edges:
 			Base: 		0.01
 			Maximum: 	1
-			iLoops:		?
+			iLoops:		Not introduced yet.
 			KnownPPI:	1 (Lumier, Y2H) - 0.2 (others)
 		
 	"""
@@ -125,6 +126,7 @@ class GeneNetwork(network.Network):
 								node_id1, 
 								node_id2, 
 								score 				= 0.01, 
+								deltaRC 			= None,
 								iLoops_prediction 	= None,
 								experimental 		= None
 							 )
@@ -160,11 +162,9 @@ class GeneNetwork(network.Network):
 				self.update_node( "EpiFactor", True, gene_id = geneID )
 		
 		for line in utils.readTable(options.Options().qout + "expressedGenes.lst", header=False):
-			geneId 	= ""
-			lst 	= [ x for x in self.nodes() if self._net.node[x]["symbol"] == line[1] ]
-			
-			if lst: 
-				geneID = self.nameFilter( gene_id=lst.pop())[0]
+			geneID = self.nameFilter(full_name=line[1])[0]
+						
+			if geneID is not None:				
 				self.update_node( "ExpressedTranscripts", line[0], gene_id=geneID )
 
 	def importCandidates(self):
@@ -176,7 +176,7 @@ class GeneNetwork(network.Network):
 		min_samples = round(samples * 0.1)
 
 		switches = pd.DataFrame.from_csv(options.Options().qout + "candidateList.tsv", sep="\t", header=None, index_col=None)
-		switches.columns = ['Symbol', 'Gene', "Transcript_normal", "Transcript_tumor", "Replicates", "Patients"]
+		switches.columns = ['Gene', "Transcript_normal", "Transcript_tumor", "Replicates", "Patients"]
 		switches.Replicates = switches.Replicates.astype(float)
 		switches.Patients = switches.Patients.str.split(",")
 		switches["Percentage"] = switches.Replicates/samples
