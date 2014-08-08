@@ -74,7 +74,7 @@ for (replicate in seq(1, inputData[["Replicates"]])){
       
     #Read Sailfish table
     isoformExpression[[tag]] <- read.table(inputFile, header=F, sep="\t", stringsAsFactors=F)
-    colnames(isoformExpression[[tag]]) <- c("Gene", "Transcript","Genename","TPM")
+    colnames(isoformExpression[[tag]]) <- c("Gene", "Transcript","TPM")
       
     #Calculate the PSI for each transcript and the total expression of the gene
     vtTPM <- aggregate(TPM ~ Gene, data=isoformExpression[[tag]], FUN = "sum")
@@ -87,7 +87,7 @@ for (replicate in seq(1, inputData[["Replicates"]])){
   nTag <- paste0(replicate, "N")
   tTag <- paste0(replicate, "T")
   
-  intraReplicate[[replicate]] <- merge(isoformExpression[[nTag]], isoformExpression[[tTag]], by=c("Gene", "Transcript", "Genename"), suffixes=c("_N","_T"), all=T)
+  intraReplicate[[replicate]] <- merge(isoformExpression[[nTag]], isoformExpression[[tTag]], by=c("Gene", "Transcript"), suffixes=c("_N","_T"), all=T)
   intraReplicate[[replicate]]$deltaPSI <- intraReplicate[[replicate]]$PSI_N - intraReplicate[[replicate]]$PSI_T
   intraReplicate[[replicate]]$la_tTPM <- 0.5 * (log(intraReplicate[[replicate]]$tTPM_N) + log(intraReplicate[[replicate]]$tTPM_T))
     
@@ -128,7 +128,7 @@ for (sample in inputData[["Conditions"]]){
     if(is.null(interReplicate[[sample]])){
       interReplicate[[sample]] <- intraReplicate[[replicate]]    
     } else {
-      interReplicate[[sample]] <- merge(interReplicate[[sample]], intraReplicate[[replicate]], by=c("Gene", "Transcript", "Genename"), suffixes=c("",paste0("_", replicate_c)), all=T)
+      interReplicate[[sample]] <- merge(interReplicate[[sample]], intraReplicate[[replicate]], by=c("Gene", "Transcript"), suffixes=c("",paste0("_", replicate_c)), all=T)
     }
 
     interReplicate[[sample]] <- interReplicate[[sample]][,!(colnames(interReplicate[[sample]]) %in% delete[[sample]]), drop=FALSE]
@@ -141,7 +141,7 @@ for (sample in inputData[["Conditions"]]){
 
   }
 
-  colnames(interReplicate[[sample]]) <- c("Gene", "Transcript", "Genename", all)
+  colnames(interReplicate[[sample]]) <- c("Gene", "Transcript", all)
 
   interReplicate[[sample]]$Median_PSI <- apply(interReplicate[[sample]][,psiCols], 1, median, na.rm=T)
   interReplicate[[sample]]$MAD_PSI <- calculateMAD(interReplicate[[sample]][,psiCols])
