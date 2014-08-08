@@ -1,8 +1,9 @@
 #!/soft/devel/python-2.7/bin/python
 
+from interface import standarize_input
 from interface import out_network
-from libs import utils
 from libs import options
+from libs import utils
 from methods import analyze_interactions
 from methods import network_analysis
 from methods import structural_analysis
@@ -20,63 +21,75 @@ class SmartAS:
 		self.logger.info("SmartAS - Finding significant AS events")
 		self.logger.info("Hector Climente - GRIB 2014")
 
+		self._gene_network = None
+		self._transcript_network = None
+		self._gene_subnetwork = None
+
+	def importData(self):
+		self.logger.info("Importing data to a compatible format.")
+		standarize_input.standarizeInput()
+		self.logger.info("Done. Relaunch please.")
+
 	def exploreData(self):
 		self.logger.info("Reading and summarizing input files: computing PSI values and intereplicate agreement.")
-		utils.cmd(	
-					"Pipeline/methods/ExploreData.r", 
-					options.Options().qout, 
-					"Data/Input/{0}/{1}/".format(options.Options().inputType, options.Options().tag)
-				 )
+		utils.cmd("Pipeline/methods/ExploreData.r", options.Options().qout, 
+				  "Data/Input/{0}/{1}/".format(options.Options().inputType, options.Options().tag) )
 
 	def getCandidates(self):
 		self.logger.info("Extracting transcripts with high variance and high expression.")
-		utils.cmd(
-					"Pipeline/methods/GetCandidates.r", 
-					options.Options().minExpression, 
-					options.Options().qout, 
-					options.Options().unpairedReplicates
-				 )
+		utils.cmd( "Pipeline/methods/GetCandidates.r", options.Options().minExpression, 
+				   options.Options().qout, options.Options().unpairedReplicates )
 
 		self.createGeneNetwork(False)
 		self.createTranscriptNetwork(False)
 
-		out_network.outputGTF(
-				sorted(self._gene_network.nodes(data=True), key=lambda (a, dct): dct['score'], reverse=True),
-				self._transcript_network
-				)
+		sortedNodes = sorted( self._gene_network.nodes(data=True), key=lambda (a,dct): dct['score'], reverse=True)
+		out_network.outputGTF(sortedNodes, self._transcript_network )
 		out_network.outCandidateList(self._gene_network, self._transcript_network)
 
+	def networkAnalysis(self, onlyExperimental):
+		
+		n = network_analysis.NetworkAnalysis( self._gene_network, self._transcript_network, self._gene_subnetwork )
+		n.run(onlyExperimental=onlyExperimental)
+		self._gene_subnetwork = n.getGeneSubnetwork(1)
+
+		self._gene_subnetwork.saveNetwork("geneSubnetwork.pkl")
+		self._gene_network.saveNetwork("geneNetwork.pkl")
+		self._transcript_network.saveNetwork("txNetwork.pkl")
+
 	def launchiLoops(self):
-		self.logger.info("Selecting isoforms suitable for {0}".format( options.Options().iLoopsVersion) )
-		utils.pickUniqPatterns(self._transcript_network)
+
+		self.logger.info("Selecting isoforms suitable for {0}.".format( options.Options().iLoopsVersion) )
+		utils.pickUniqPatterns(self._transcript_network, self._gene_subnetwork)
 
 		self.logger.info("Sending list to Gaudi and performing the iLoops analysis.")
 		gaudiThread = utils.cmdOut(
 									"ssh", "hectorc@gaudi", \
-									"'{0}Pipeline/methods/CalculateInteractions.py {1} {2} {3}'".format(
+									"'{0}Pipeline/methods/calculate_interactions.py {1} {2} {3} {4}'".format(
 											options.Options().gwd,
 											options.Options().gwd,
 											options.Options().inputType,
+											options.Options().gout,
 											options.Options().iLoopsVersion 
 										 ), 
 									">{0}calculateInteractions.log".format(options.Options().qout)
 								  )
 
-
 	def analyzeInteractions(self):
 
-		a = analyzeInteractions.AnalyzeInteractions( self._gene_network, self._transcript_network )
+		a = analyze_interactions.AnalyzeInteractions( self._gene_network, self._transcript_network, self._gene_subnetwork )
 		a.run()
-
-	def networkAnalysis(self):
 		
-		n = networkAnalysis.NetworkAnalysis( self._gene_network, self._transcript_network )
-		n.run()
+		self._gene_network.saveNetwork("geneNetwork.pkl")
+		self._transcript_network.saveNetwork("txNetwork.pkl")
 
 	def structuralAnalysis(self):
 
-		s = structural_analysis.StructuralAnalysis( self._gene_network, self._transcript_network )
+		s = structural_analysis.StructuralAnalysis( self._gene_network, self._transcript_network, self._gene_subnetwork )
 		s.run()
+		
+		self._gene_network.saveNetwork("geneNetwork.pkl")
+		self._transcript_network.saveNetwork("txNetwork.pkl")
 
 	def createGeneNetwork(self, recover=False):
 
@@ -120,9 +133,12 @@ class SmartAS:
 			self._transcript_network.readTranscriptInfo()
 			self._transcript_network.saveNetwork("txNetwork.pkl")
 
-if __name__ == '__main__':
+	def createGeneSubnetwork(self):
+		self.logger.info("Recovering GUILD gene subnetwork from file.")
+		self._gene_subnetwork = cPickle.load(open(options.Options().qout + "geneSubnetwork.pkl", "r"))
+		self._gene_subnetwork.createLogger()
 
-	utils.setEnvironment()
+if __name__ == '__main__':
 
 	logging.basicConfig(
 							level=logging.DEBUG,
@@ -141,6 +157,12 @@ if __name__ == '__main__':
 
 	S = SmartAS()
 
+	if options.Options().initialStep <= 0:
+		S.importData()
+		exit()
+	else:
+		utils.setEnvironment()
+
 	if options.Options().initialStep <= 1:
 		S.exploreData()
 	if options.Options().initialStep <= 2:
@@ -151,11 +173,14 @@ if __name__ == '__main__':
 		S.createGeneNetwork(True)
 		S.createTranscriptNetwork(True)
 
-	# if options.Options().initialStep <= 3:
-	# 	S.launchiLoops()
+	if options.Options().initialStep <= 3:
+		S.networkAnalysis(True)
+	else:
+		S.createGeneSubnetwork()
 	if options.Options().initialStep <= 4:
-		S.structuralAnalysis()
+		S.launchiLoops()
 	if options.Options().initialStep <= 5:
-		S.analyzeInteractions()
+		S.structuralAnalysis()
 	if options.Options().initialStep <= 6:
-		S.networkAnalysis()
+		S.analyzeInteractions()
+		#S.networkAnalysis(False)
