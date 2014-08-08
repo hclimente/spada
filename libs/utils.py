@@ -1,12 +1,14 @@
 #!/soft/devel/python-2.7/bin/python
 
+from libs import options
+
 from subprocess import call,Popen,PIPE
 from rpy2.robjects import r
 import urllib2
 import os
 import logging
 
-from libs import options
+import pdb
 
 logger = logging.getLogger("utils")
 
@@ -30,9 +32,12 @@ def readTable(path, sep="\t", header=True):
 	counter = 0
 	with open(path) as FILE:
 		for line in FILE:
-			if header and counter is 0:
+			if line[0]=="#": 
+				continue
+			elif header and counter is 0:
 				counter = 1
 				continue
+			
 			yield line.strip().split(sep)
 
 def setEnvironment():
@@ -46,7 +51,9 @@ def setEnvironment():
 	cmd("mv", o.qout, "old/" + o.out )
 	cmd("mkdir -p", "Results/" + o.out + "RWorkspaces")
 	cmd("mkdir", o.qout + "DataExploration")
-	cmd("mkdir", o.qout + o.iLoopsVersion)
+	cmd("mkdir -p", o.qout + "iLoops/" + o.iLoopsVersion)
+	cmd("mkdir", o.qout + "GUILD_experimental")
+	cmd("mkdir", o.qout + "GUILD_enriched")
 
 	if not o.external:
 		if o.initialStep <= 1:
@@ -63,35 +70,39 @@ def setEnvironment():
 
 		if o.initialStep > 1:
 
-			#currentInitialState = o.initialStep
-			#opt = parseParam("old/" + o.out + "/Parameters.cfg")
-			#o.initialStep = currentInitialState
-			#cmd("cp", "old/" + o.out + "/Parameters.cfg", "Results/" + o.out)
 			cmd("cp -r", "old/" + o.out + "/DataExploration", o.qout)
 			cmd("cp", "old/" + o.out + "/RWorkspaces/1_ExploreData.RData", o.qout + "/RWorkspaces")
+			cmd("cp", "old/" + o.out + "smartAS.log", o.qout + "/RWorkspaces")
+			cmd("cp -r", "old/{0}/iLoops".format(o.out), o.qout)
+			#cmd("rm -r", "{0}iLoops/{1}".format(o.qout, o.iLoopsVersion), o.qout)
 
 		if o.initialStep > 2:
 			cmd("cp", "old/" + o.out + "/RWorkspaces/2_GetCandidates.RData", o.qout + "/RWorkspaces")
-			cmd("cp", "old/" + o.out + "/candidateList.tsv", "old/" + o.out + "/expressedGenes.lst", o.qout)
+			cmd("cp", "old/" + o.out + "/candidateList.tsv", "old/" + o.out + "/candidateList_v2.tsv","old/" + o.out + "/expressedGenes.lst", o.qout)
 			cmd("cp", "old/" + o.out + "/candidates_normal.gtf", "old/" + o.out + "/candidates_tumor.gtf", o.qout)
-			cmd("cp", "old/" + o.out + "/geneNetwork.pkl", "old/" + o.out + "/txNetwork.pkl", o.qout)
+			cmd("cp", "old/" + o.out + "/geneNetwork*.pkl", "old/" + o.out + "/txNetwork*.pkl", o.qout)
 			cmd("cp", "old/" + o.out + "/expression_normal.tsv", "old/" + o.out + "/expression_tumor.tsv", o.qout)
 	else:
 		
 		if o.initialStep == 2:
 			oriOut = "_".join(o.out.split("_")[:-1])
 			cmd("cp", "Results/" + oriOut + "/RWorkspaces/1_ExploreData.RData", "Results/" + o.out + "/RWorkspaces")
-			cmd("Pipeline/scripts/InputUnpaired.r", oriOut, o.unpairedReplicates, "Data/Input/TCGA/" + o.tag + "/")
+			cmd("Pipeline/scripts/InputUnpaired.r", oriOut, o.unpairedReplicates, "Data/Input/" + o.out + "/")
 		if o.initialStep == 3:
 			cmd("cp", o.external + ".tsv" , "Results/" + o.out + "/candidateList.tsv")
 			cmd("cp", o.external + "_expressedGenes.lst", "Results/" + o.out + "/expressedGenes.lst")
 
 	if o.initialStep > 3:
-		cmd("cp", "old/" + o.out + "/candidateInteractions.tsv", "old/" + o.out + "/candidateList.top.tsv", o.qout)
+		cmd("cp -r", "old/{0}/GUILD_experimental".format(o.out), o.qout)
+		cmd("cp", "old/{0}/geneSubnetwork.pkl".format(o.out), o.qout)
 	if o.initialStep > 4:
 		cmd("cp", "old/" + o.out + "/candidatesGaudi.lst", o.qout)
 	if o.initialStep > 5:
-		cmd("cp", "old/" + o.out + "/iLoops", o.qout)
+		pass
+		#cmd("cp", "old/{0}".format(options.Options().out), o.qout)
+	if o.initialStep > 6:
+		cmd("cp -r", "old/{0}/GUILD_enriched".format(o.out), o.qout)
+		cmd("cp -r", "old/{0}/iLoops/{1}".format(o.out, o.iLoopsVersion), o.qout)
 
 def getDB():
 	with open("Data/Databases/Intogen.tsv", "w") as Intogen:
@@ -144,7 +155,7 @@ def finish(opt):
 	cmd("rm", "*" + opt["out"] + "*gff", "*" + opt["out"] + "*tsv")
 	os.chdir("/home/hector/SmartAS")
 
-def pickUniqPatterns(tx_network):
+def pickUniqPatterns(tx_network, gn_subnetwork):
 
 	loopFamilies = {}
 
@@ -158,32 +169,37 @@ def pickUniqPatterns(tx_network):
 	with open(options.Options().qout + "candidatesGaudi.lst", "w") as CANDIDATES_GAUDI:
 		for line in readTable(options.Options().qout + "candidateList_v2.tsv"):
 
+			gene = line[0]
 			nIso = line[2]
-			nFamily = tx_network._net.node[nIso]["iLoopsFamily"]
 			tIso = line[3]
-			tFamily = tx_network._net.node[tIso]["iLoopsFamily"]
+			nInfo = tx_network._net.node[nIso]
+			tInfo = tx_network._net.node[tIso]
+
 			analyze = 0
 			comment = "To analyze."
 
-			if float(line[4]) < 0.1: 
+			if float(line[6]) < 0.1: 
 				continue
-			elif line[9] == "False": 
+			elif gene not in gn_subnetwork.nodes():
+				analyze = -1
+				comment = "Gene not in GUILD top."
+			elif line[11] == "False": 
 				analyze = -1
 				comment = "No CDS change."
-			elif not nFamily or not tFamily:
+			elif not nInfo["iLoopsFamily"] or not tInfo["iLoopsFamily"]:
 				analyze = -1
 				comment = "No loops mapped with {0}.".format(options.Options().iLoopsVersion)
-			elif nFamily == tFamily:
+			elif nInfo["iLoopsFamily"] == tInfo["iLoopsFamily"]:
 				analyze = -1
-				comment = "No difference in loops mapped with " + iLoopsVersion + "."
+				comment = "No difference in loops mapped with " + options.Options().iLoopsVersion + "."
 
 			if analyze < 0:
 				CANDIDATES_GAUDI.write("{0}\t{1}\t{2}\n".format(nIso, analyze, comment))
 				CANDIDATES_GAUDI.write("{0}\t{1}\t{2}\n".format(tIso, analyze, comment))
 				continue
 
-			for isoform,thisLoopPattern in zip([nIso,tIso],[nFamily,tFamily]):
-			
+			for isoform,thisLoopPattern in zip([nIso,tIso],[nInfo["iLoopsFamily"],tInfo["iLoopsFamily"]]):
+
 				if os.path.isfile("iLoops/{0}/{1}/{2}.tar.gz".format(
 										options.Options().inputType,
 										options.Options().iLoopsVersion,
@@ -192,25 +208,27 @@ def pickUniqPatterns(tx_network):
 						comment = "Already analyzed."
 				elif thisLoopPattern in analyzedLoops:
 						analyze = 2
-						comment = "Analyzing relative {0}.".format(analyzedLoops[thisLoopPattern])
+						if isoform in analyzedLoops[thisLoopPattern]:
+							comment = "Already being analyzed in this batch."
+						else:
+							comment = "Analyzing relative {0}.".format(analyzedLoops[thisLoopPattern])
 				else:
-					for isoform in loopFamilies[thisLoopPattern]:
-						if os.path.isfile("iLoops/TCGA/" + iLoopsVersion + "/" + isoform + ".tar.gz"):
+					for iso in loopFamilies[thisLoopPattern]:
+						if os.path.isfile("{0}iLoops/TCGA/{1}/{2}.tar.gz".format(options.Options().wd, options.Options().iLoopsVersion,iso) ):
 							analyze = 2
-							comment = "Analyzed relative {0}.".format(isoform)
+							comment = "Analyzed relative {0}.".format(iso)
 							break
 
 				CANDIDATES_GAUDI.write( "{0}\t{1}\t{2}\n".format(isoform, analyze, comment))
 
-				if analyze == 0:
+				if analyze == 0: 
 					analyzedLoops[thisLoopPattern] = isoform
 
 	cmd("ssh","hectorc@gaudi", "'rm -r {0}'".format(options.Options().gout))
 	cmd("ssh","hectorc@gaudi","'mkdir -p {0}Output'".format(options.Options().gout))
-	cmd("ssh","hectorc@gaudi","'mkdir -p {0}Input'".format(options.Options().gout))
-	cmd("ssh","hectorc@gaudi","'mkdir -p{0}logs'".format(options.Options().gout))
+	cmd("ssh","hectorc@gaudi","'mkdir {0}Input'".format(options.Options().gout))
+	cmd("ssh","hectorc@gaudi","'mkdir {0}logs'".format(options.Options().gout))
 	sshTransfer("candidatesGaudi.lst")
-	#cmd("scp","-r","{0}candidatesGaudi.lst".format(options.Options().qout),"hectorc@gaudi.imim.es:{0}".format(options.Options().gout) )
 
 def sshTransfer(*args):
 	files = ""
