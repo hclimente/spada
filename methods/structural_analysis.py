@@ -1,7 +1,6 @@
 #!/soft/devel/python-2.7/bin/python
 
 from libs import utils
-from biological_entities import protein
 from methods import method
 
 from collections import Counter
@@ -17,24 +16,13 @@ class StructuralAnalysis(method.Method):
 
 		sortedNodes = sorted(self._gene_network.nodes(data=True), key=lambda (a, dct): dct['score'], reverse=True)
 		for gene, properties in sortedNodes:
-			if not self._gene_network._net.node[gene]["isoformSwitches"]: continue
+			if not properties["isoformSwitches"]: continue
 			self.logger.debug("Searching structural information for gene {0}.".format(gene))
-			switch = self._gene_network._net.node[gene]["isoformSwitches"][0][0]
-			nIso = switch[0]
-			tIso = switch[1]
-
-			normalProtein = protein.Protein(nIso, 
-											self._transcript_network._net.node[nIso]["Uniprot"], 
-											self._transcript_network._net.node[nIso]["proteinSequence"], 
-											self._transcript_network._net.node[nIso]["exonStructure"],
-											self._transcript_network._net.node[nIso]["cdsCoords"],
-											self._transcript_network._net.node[nIso]["strand"] )
-			tumorProtein = protein.Protein( tIso, 
-											self._transcript_network._net.node[tIso]["Uniprot"], 
-											self._transcript_network._net.node[tIso]["proteinSequence"], 
-											self._transcript_network._net.node[tIso]["exonStructure"],
-											self._transcript_network._net.node[tIso]["cdsCoords"],
-											self._transcript_network._net.node[tIso]["strand"] )
+			switch = properties["isoformSwitches"][0][0]
+			nIso = switch.nTx
+			tIso = switch.tTx
+			normalProtein = switch.nIsoform
+			tumorProtein = switch.tIsoform
 
 			if self._transcript_network._net.node[nIso]["Uniprot"] is not None:
 				self.analyzeStructuralImpact(normalProtein)

@@ -1,4 +1,3 @@
-from biological_entities import transcript
 from libs import options
 
 import math
@@ -73,7 +72,7 @@ def getGUILDInput(gn_net, onlyExperimental=False):
 				GUILD_EDGES.write("{0} {1} {2}\n".format(node1, info["score"], node2))
 
 def outputDot(network, path):
-	networkx.write_dot(network, path)
+	networkx.write_dot(network._net, path)
 
 def outputGTF(nodesOfInterest, tx_network):
 	logging.info("Writing GTF files.")
@@ -86,11 +85,8 @@ def outputGTF(nodesOfInterest, tx_network):
 		for gene, properties in nodesOfInterest:
 			if not properties["isoformSwitches"]: continue
 
-			for switch,score,patients in properties["isoformSwitches"]:
-				nIso 	= switch[0]
-				tIso 	= switch[1]
-
-				switchesInfo.append([(nIso, tIso), score])
+			for switch in properties["isoformSwitches"]:
+				switchesInfo.append([(switch.nTx, switch.tTx), switch.score])
 
 		for line in ALLTRANSCRIPTS:
 			for switch in switchesInfo:
@@ -110,20 +106,20 @@ def outCandidateList(gn_network, tx_network):
 		for gene, geneProperties in sortedNodes:
 			if not geneProperties["isoformSwitches"]: continue
 
-			for switch,score,patients in geneProperties["isoformSwitches"]:
+			for switch in geneProperties["isoformSwitches"]:
 
-				nIso = transcript.Transcript( switch[0], tx_network._net.node[switch[0]] )
-				tIso = transcript.Transcript( switch[1], tx_network._net.node[switch[1]] )
+				nIso = switch.nTranscript
+				tIso = switch.tTranscript
 
-				nUniprot 	= tx_network._net.node[switch[0]]["Uniprot"]
-				tUniprot 	= tx_network._net.node[switch[1]]["Uniprot"]
+				nUniprot 	= tx_network._net.node[switch.nTx]["Uniprot"]
+				tUniprot 	= tx_network._net.node[switch.tTx]["Uniprot"]
 				cds 		= False
 				cdsChange 	= False
 				utrChange 	= False
 
 				if nIso.cds or tIso.cds: 	cds 		= True
-				if nIso.get_cdsDiff(tIso): 	cdsChange 	= True
-				if nIso.get_utrDiff(tIso): 	utrChange 	= True
+				if switch.cds_diff: 	 	cdsChange 	= True
+				if switch.utr_diff: 		utrChange 	= True
 
 				cList.write("{0}\t{1}\t".format( gene, geneProperties["symbol"] ))
 				cList.write("{0}\t{1}\t".format( nIso.name, tIso.name ))
@@ -141,13 +137,19 @@ def outTSV(network,path):
 			NODES.write("\t"+col)
 		NODES.write("\n")
 
-		import pdb
-		pdb.set_trace()
-
 		for node,properties in network.nodes(data=True):
 			NODES.write(node)
 			for key in properties:
-				NODES.write("\t"+str(properties[key]))
+				value = ""
+				if isinstance(properties[key],set) or isinstance(properties[key],list):
+					for thing in properties[key]:
+						if isinstance(thing,list) or isinstance(thing,set):
+							value += "#" + ";".join(thing)
+						else:
+							value += str(thing) + ";"
+				else:
+					value = str(properties[key])
+				NODES.write("\t"+value)
 			NODES.write("\n")
 
 	with open(path + "_edges.tsv", "w") as EDGES:
