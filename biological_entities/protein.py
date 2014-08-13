@@ -6,11 +6,12 @@ from Bio import pairwise2
 import logging
 
 class Protein:
-	def __init__(self, tx, uniprot, seq, exons, cds, strand):
+	def __init__(self, tx, txInfo):
+
 		self.logger 			= logging.getLogger(__name__)
 		self._tx 				= tx
-		self._uniprot 			= uniprot
-		self._sequence 			= seq
+		self._uniprot 			= txInfo["Uniprot"]
+		self._sequence 			= txInfo["proteinSequence"]
 		self._structure			= []
 		self._residueCorresp	= {}
 		self._has_pdbs			= False
@@ -19,7 +20,7 @@ class Protein:
 			for res in range(0, len(self._sequence) ):
 				self._structure.append( aminoacid.AminoAcid(res+1, self._sequence[res]) )
 
-			self.mapResiduesToGenome(exons, cds, strand)
+			self.mapResiduesToGenome(txInfo["exonStructure"], txInfo["cdsCoords"], txInfo["strand"])
 
 	@property
 	def tx(self): return self._tx
