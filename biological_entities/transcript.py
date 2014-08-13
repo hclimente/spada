@@ -9,8 +9,8 @@ class Transcript:
 		self._strand 			= properties["strand"]
 
 		#Create two lists, containing all the nucleotides from the transcript, classified in CDS and UTR.
-		self._cds 		= []
-		self._utr 		= []
+		self._cds 		= {}
+		self._utr 		= {}
 		
 		if self._strand == "+": 
 			cdsStart = self._cds_coordinates[0]
@@ -20,11 +20,11 @@ class Transcript:
 				for gPos in range(exonStart, exonEnd):
 					if self._cds_coordinates:
 						if gPos >= cdsStart and gPos <= cdsEnd:
-							self._cds.append(gPos)
+							self._cds.setdefault(gPos, None)
 						else:
-							self._utr.append(gPos)
+							self._utr.setdefault(gPos, None)
 					else:
-						self._utr.append(gPos)
+						self._utr.setdefault(gPos, None)
 
 		elif self._strand == "-": 
 			cdsStart = self._cds_coordinates[1]
@@ -36,11 +36,11 @@ class Transcript:
 				for gPos in range(exonStart, exonEnd,-1):
 					if self._cds_coordinates:
 						if gPos <= cdsStart and gPos >= cdsEnd:
-							self._cds.append(gPos)
+							self._cds.setdefault(gPos, None)
 						else:
-							self._utr.append(gPos)
+							self._utr.setdefault(gPos, None)
 					else:
-						self._utr.append(gPos)
+						self._utr.setdefault(gPos, None)
 
 	@property
 	def name(self): return self._name
@@ -48,29 +48,12 @@ class Transcript:
 	def utr(self): return self._utr
 	@property
 	def cds(self): return self._cds
-
-	def get_cdsDiff(self, otherTranscript):
-		"""Makes a list with the genomic position not shared between the CDS of two transcripts."""
-		cdsDiffs = []
-		for gPos in self._cds:
-			if gPos not in otherTranscript.cds:
-				cdsDiffs.append(gPos)
-
-		for gPos in otherTranscript.cds:
-			if gPos not in self._cds:
-				cdsDiffs.append(gPos)
-		
-		return cdsDiffs
-
-	def get_utrDiff(self, otherTranscript):
-		"""Makes a list with the genomic position not shared between the UTR of two transcripts."""
-		utrDiffs = []
-		for gPos in self._utr:
-			if gPos not in otherTranscript.utr:
-				utrDiffs.append(gPos)
-
-		for gPos in otherTranscript.utr:
-			if gPos not in self._utr:
-				utrDiffs.append(gPos)
-
-		return utrDiffs
+	@property
+	def cds_exclusive(self): 
+		exclusive = sum([ 1 for x in self._cds if not self._cds[x] ])
+		nonExclusive = sum([ 1 for x in self._cds if self._cds[x] ])
+		try:
+			return exclusive/(exclusive+nonExclusive)
+		except ZeroDivisionError:
+			return None
+	
