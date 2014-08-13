@@ -30,12 +30,12 @@ class SmartAS:
 
 	def exploreData(self):
 		self.logger.info("Reading and summarizing input files: computing PSI values and intereplicate agreement.")
-		utils.cmd("Pipeline/methods/ExploreData.r", options.Options().qout, 
+		utils.cmd("Pipeline/methods/explore_data.r", options.Options().qout, 
 				  "Data/Input/{0}/{1}/".format(options.Options().inputType, options.Options().tag) )
 
 	def getCandidates(self):
 		self.logger.info("Extracting transcripts with high variance and high expression.")
-		utils.cmd( "Pipeline/methods/GetCandidates.r", options.Options().minExpression, 
+		utils.cmd( "Pipeline/methods/get_candidates.r", options.Options().minExpression, 
 				   options.Options().qout, options.Options().unpairedReplicates )
 
 		self.createTranscriptNetwork(False)
