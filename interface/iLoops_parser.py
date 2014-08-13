@@ -1,6 +1,10 @@
-import libs.iLoops_xml_parser
+from libs import iLoops_xml_parser
+from libs import options
 
-class iLoopsParser(libs.iLoops_xml_parser.ILXMLParser):
+import tarfile
+import os
+
+class iLoopsParser(iLoops_xml_parser.ILXMLParser):
 	def custom_protein_output(self, protein_object, **kwds): 
 		return protein_object
 
@@ -11,7 +15,7 @@ class iLoopsParser(libs.iLoops_xml_parser.ILXMLParser):
 		parsedLoops = {}
 
 		for resultItem in self.results_parser(xml_file=xmlOutput, report_level=0, **kwds): 
-			if isinstance(resultItem, libs.iLoops_xml_parser.ILXMLProtein):
+			if isinstance(resultItem, iLoops_xml_parser.ILXMLProtein):
 				if resultItem.get_loops():
 					loopList = [ aLoop.get_code() for aLoop in resultItem.get_loops() ]
 					loopList.sort() # sorted list by loop name
@@ -23,33 +27,49 @@ class iLoopsParser(libs.iLoops_xml_parser.ILXMLParser):
 		noLoops = []
 		
 		for resultItem in self.results_parser(xml_file=xmlOutput, report_level=0, **kwds): 
-			if isinstance(resultItem, libs.iLoops_xml_parser.ILXMLProtein):
+			if isinstance(resultItem, iLoops_xml_parser.ILXMLProtein):
 				noLoops.append(resultItem.get_name())
 
 		return noLoops
 
-	def parseInteractions(self, thisCandidate, expressedIsoforms, xmlOutput, **kwds):
-		maxCost = {}
+	def parseInteractions(self,myProtein):
+		interactions = {}
+		partner = ""
+		tmpRC = 0
 
-		for resultItem in self.results_parser(xml_file=xmlOutput, report_level=0, **kwds): 
-			if isinstance(resultItem, libs.iLoops_xml_parser.ILXMLInteraction):
-				intPartner = resultItem.get_i2name()
-				if intPartner == thisCandidate:
-					intPartner = resultItem.get_i1name()
+		tarFile = "iLoops/{0}/{1}/{2}.tar.gz".format(
+												options.Options().inputType, 
+												options.Options().iLoopsVersion, 
+												myProtein
+											 )
+		xmlFile = options.Options().qout + myProtein + ".ips"
 
-				if intPartner not in expressedIsoforms:
-					continue
-				
-				maxCost.setdefault(intPartner, 0)
-				for RFResult in resultItem.get_RFResults(): 
-					if RFResult.get_prediction() and RFResult.get_cost() > maxCost[intPartner]:
-						maxCost[intPartner] = int(RFResult.get_cost())
+		tar = tarfile.open(tarFile)
+		tar.extract(myProtein+".ips", path=options.Options().qout)
 
-		return maxCost
+		tar.close()
+		with open(xmlFile) as FILE:
+			for line in FILE:
+				strippedLine = line.strip()
+				if strippedLine == "<interaction>":
+					partner = ""
+					tmpRC = 0
+				elif "RF_cost" in strippedLine:
+					if int(strippedLine[9:-10]) > tmpRC:
+						tmpRC = int(strippedLine[9:-10])
+				elif "RF_prediction" in strippedLine:
+					if "True" in strippedLine and tmpRC > interactions[partner]:
+						interactions[partner] = tmpRC
+				elif ("P1ID" in strippedLine or "P2ID" in strippedLine) and myProtein not in strippedLine:
+					partner = strippedLine[6:-7]
+					interactions.setdefault(partner, 0)
+		os.remove(xmlFile)
+
+		return interactions
 
 	def makeProteinsLite(self, xmlOutput, xmlOriginal, **kwds):
 		for resultItem in self.results_parser(xml_file=xmlOriginal, report_level=0, **kwds):
-			if not isinstance(resultItem, libs.iLoops_xml_parser.ILXMLProtein):continue
+			if not isinstance(resultItem, iLoops_xml_parser.ILXMLProtein):continue
 
 			xmlOutput.getWriter().startTag("protein")
 
@@ -88,7 +108,7 @@ class iLoopsParser(libs.iLoops_xml_parser.ILXMLParser):
 
 	def makeInteractionsLite(self, xmlOutput, xmlOriginal, **kwds):
 		for resultItem in self.results_parser(xml_file=xmlOriginal, report_level=0, **kwds):
-			if not isinstance(resultItem, libs.iLoops_xml_parser.ILXMLInteraction):
+			if not isinstance(resultItem, iLoops_xml_parser.ILXMLInteraction):
 				continue
 
 			xmlOutput.getWriter().startTag("interaction")
