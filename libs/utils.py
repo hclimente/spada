@@ -155,7 +155,7 @@ def finish(opt):
 	cmd("rm", "*" + opt["out"] + "*gff", "*" + opt["out"] + "*tsv")
 	os.chdir("/home/hector/SmartAS")
 
-def pickUniqPatterns(tx_network, gn_subnetwork):
+def pickUniqPatterns(tx_network, gn_network):
 
 	loopFamilies = {}
 
@@ -166,63 +166,67 @@ def pickUniqPatterns(tx_network, gn_subnetwork):
 			loopFamilies[family] = set(tx)
 
 	analyzedLoops = {}
+
 	with open(options.Options().qout + "candidatesGaudi.lst", "w") as CANDIDATES_GAUDI:
-		for line in readTable(options.Options().qout + "candidateList_v2.tsv"):
+		sortedNodes = sorted(gn_network.nodes(data=True), key=lambda (a, dct): dct['score'], reverse=True)
+		for gene,gInfo in sortedNodes:
+			for switch in properties["isoformSwitches"]:
+				nIso = switch.nTx
+				tIso = switch.tTx
+				nInfo = tx_network._net.node[nIso]
+				tInfo = tx_network._net.node[tIso]
 
-			gene = line[0]
-			nIso = line[2]
-			tIso = line[3]
-			nInfo = tx_network._net.node[nIso]
-			tInfo = tx_network._net.node[tIso]
+				analyze = 0
+				comment = "To analyze."
 
-			analyze = 0
-			comment = "To analyze."
+				if switch.score < 0.1: 
+					continue
+				elif abs(gInfo["diffExpression_logFC"]) > 0.5 or gInfo["diffExpression_p"] < 0.05:
+					analyze = -1
+					comment = "Gene differentially expressed between conditions."
+				elif switch.cds_diff == "False": 
+					analyze = -1
+					comment = "No CDS change."
+				elif switch.cds_overlap == "False": 
+					analyze = -1
+					comment = "No overlap between CDS."
+				elif not nInfo["iLoopsFamily"] or not tInfo["iLoopsFamily"]:
+					analyze = -1
+					comment = "No loops mapped by {0}.".format(options.Options().iLoopsVersion)
+				elif nInfo["iLoopsFamily"] == tInfo["iLoopsFamily"]:
+					analyze = -1
+					comment = "No different loops mapped by {0}.".format(options.Options().iLoopsVersion)
 
-			if float(line[6]) < 0.1: 
-				continue
-			elif gene not in gn_subnetwork.nodes():
-				analyze = -1
-				comment = "Gene not in GUILD top."
-			elif line[11] == "False": 
-				analyze = -1
-				comment = "No CDS change."
-			elif not nInfo["iLoopsFamily"] or not tInfo["iLoopsFamily"]:
-				analyze = -1
-				comment = "No loops mapped with {0}.".format(options.Options().iLoopsVersion)
-			elif nInfo["iLoopsFamily"] == tInfo["iLoopsFamily"]:
-				analyze = -1
-				comment = "No difference in loops mapped with " + options.Options().iLoopsVersion + "."
+				if analyze < 0:
+					CANDIDATES_GAUDI.write("{0}\t{1}\t{2}\n".format(nIso, analyze, comment))
+					CANDIDATES_GAUDI.write("{0}\t{1}\t{2}\n".format(tIso, analyze, comment))
+					continue
 
-			if analyze < 0:
-				CANDIDATES_GAUDI.write("{0}\t{1}\t{2}\n".format(nIso, analyze, comment))
-				CANDIDATES_GAUDI.write("{0}\t{1}\t{2}\n".format(tIso, analyze, comment))
-				continue
+				for isoform,thisLoopPattern in zip([nIso,tIso],[nInfo["iLoopsFamily"],tInfo["iLoopsFamily"]]):
 
-			for isoform,thisLoopPattern in zip([nIso,tIso],[nInfo["iLoopsFamily"],tInfo["iLoopsFamily"]]):
-
-				if os.path.isfile("iLoops/{0}/{1}/{2}.tar.gz".format(
-										options.Options().inputType,
-										options.Options().iLoopsVersion,
-										isoform) ):
-						analyze = 1
-						comment = "Already analyzed."
-				elif thisLoopPattern in analyzedLoops:
-						analyze = 2
-						if isoform in analyzedLoops[thisLoopPattern]:
-							comment = "Already being analyzed in this batch."
-						else:
-							comment = "Analyzing relative {0}.".format(analyzedLoops[thisLoopPattern])
-				else:
-					for iso in loopFamilies[thisLoopPattern]:
-						if os.path.isfile("{0}iLoops/TCGA/{1}/{2}.tar.gz".format(options.Options().wd, options.Options().iLoopsVersion,iso) ):
+					if os.path.isfile("iLoops/{0}/{1}/{2}.tar.gz".format(
+											options.Options().inputType,
+											options.Options().iLoopsVersion,
+											isoform) ):
+							analyze = 1
+							comment = "Already analyzed."
+					elif thisLoopPattern in analyzedLoops:
 							analyze = 2
-							comment = "Analyzed relative {0}.".format(iso)
-							break
+							if isoform in analyzedLoops[thisLoopPattern]:
+								comment = "Already being analyzed in this batch."
+							else:
+								comment = "Analyzing relative {0}.".format(analyzedLoops[thisLoopPattern])
+					else:
+						for iso in loopFamilies[thisLoopPattern]:
+							if os.path.isfile("{0}iLoops/TCGA/{1}/{2}.tar.gz".format(options.Options().wd, options.Options().iLoopsVersion,iso) ):
+								analyze = 2
+								comment = "Analyzed relative {0}.".format(iso)
+								break
 
-				CANDIDATES_GAUDI.write( "{0}\t{1}\t{2}\n".format(isoform, analyze, comment))
+					CANDIDATES_GAUDI.write( "{0}\t{1}\t{2}\n".format(isoform, analyze, comment))
 
-				if analyze == 0: 
-					analyzedLoops[thisLoopPattern] = isoform
+					if analyze == 0: 
+						analyzedLoops[thisLoopPattern] = isoform
 
 	cmd("ssh","hectorc@gaudi", "'rm -r {0}'".format(options.Options().gout))
 	cmd("ssh","hectorc@gaudi","'mkdir -p {0}Output'".format(options.Options().gout))
