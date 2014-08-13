@@ -104,7 +104,8 @@ class NetworkAnalysis(method.Method):
 			self.logger.error("Unrecognized input type {0}.".format(options.Options().inputType))
 			exit()
 
-		out_network.outputDot(self._gene_subnetworks[x]._net, "{0}guildTop{1}.dot".format(self.guildOut, x) )
+		out_network.outputDot(self._gene_subnetworks[x],"{0}guildTop{1}.dot".format(self.guildOut, x) )
+		out_network.outTSV(self._gene_subnetworks[x],"{0}guildTop{1}".format(self.guildOut, x))
 
 if __name__ == '__main__':
 
