@@ -2,6 +2,7 @@ import network
 from libs import utils
 from libs import options
 from libs import biana
+from biological_entities import switch
 
 import numpy as np
 import pandas as pd
@@ -22,6 +23,8 @@ class GeneNetwork(network.Network):
 		RBP(bool,False) 				Gene described as a RBP.
 		EpiFactor(bool,False) 			Gene described as epigenetic factor.
 		ExpressedTranscripts(set,()) 	Set with transcripts with a significant expression.
+		diffExpression_logFC(float,None)Log FC of differential expression.
+		diffExpression_p(float,None)	Adjusted p-value of differential expression.
 
 	Edge information:
 		Id1(str) 						Gene id of interactor 1.
@@ -81,7 +84,9 @@ class GeneNetwork(network.Network):
 								Driver 					= False, 
 								RBP 					= False, 
 								EpiFactor				= False, 
-								ExpressedTranscripts 	= set()
+								ExpressedTranscripts 	= set(),
+								diffExpression_logFC	= None,
+								diffExpression_p		= None
 							  )
 
 			return True
@@ -199,7 +204,8 @@ class GeneNetwork(network.Network):
 			Score 		= row["Percentage"]
 			Patients 	= row["Patients"]
 
-			self.update_node("isoformSwitches", ((nIso, tIso), Score, Patients), full_name=Gene)
+			isoSwitch = switch.IsoformSwitch(nIso, tIso, Score, Patients)
+			self.update_node("isoformSwitches", isoSwitch, full_name=Gene)
 
 	def importSpecificDrivers(self):
 		self.logger.debug("Importing specific drivers.")
@@ -211,6 +217,14 @@ class GeneNetwork(network.Network):
 			self.update_node("specificDriver", True, gene_id = geneID)
 			self.update_node("Driver", True, gene_id = geneID)
 			self.update_node("score", 1, gene_id = geneID)
+
+	def importDiffExpression(self):
+		self.logger.debug("Importing differential expression information.")
+		for line in utils.readTable("Data/TCGA/Rawdata/{0}_gene_diffexp_paired-filtered.txt".format(options.Options().tag)):
+			geneID = self.nameFilter(full_name=line[1])[0]
+
+			self.update_node("diffExpression_logFC", float(line[11]), gene_id=geneID)
+			self.update_node("diffExpression_p", float(line[12]), gene_id=geneID)
 
 	def importKnownInteractions(self):
 
@@ -270,7 +284,7 @@ class GeneNetwork(network.Network):
 		methods  = [("Method_id", 18),("Method_id", 696)]
 		methods.extend([ ("Method_id", x) for x in complementation_methods if x not in affinity_methods ])
 
-		seeds = [ x for x in self.nodes() if self._net.node[x]["isoformSwitches"] or self._net.node[x]["specificDriver"] ]
+		seeds = [ x for x,props in self.nodes(data=True) if props["isoformSwitches"] or props["specificDriver"] ]
 
 		bianaInputType = "geneid"
 
