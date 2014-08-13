@@ -12,8 +12,6 @@ from network import ucsc_gene_network, ucsc_isoform_network
 import cPickle
 import logging
 
-import pdb
-
 class SmartAS:
 	def __init__(self):
 		self.logger = logging.getLogger()
@@ -40,8 +38,8 @@ class SmartAS:
 		utils.cmd( "Pipeline/methods/GetCandidates.r", options.Options().minExpression, 
 				   options.Options().qout, options.Options().unpairedReplicates )
 
-		self.createGeneNetwork(False)
 		self.createTranscriptNetwork(False)
+		self.createGeneNetwork(False)
 
 		sortedNodes = sorted( self._gene_network.nodes(data=True), key=lambda (a,dct): dct['score'], reverse=True)
 		out_network.outputGTF(sortedNodes, self._transcript_network )
@@ -60,7 +58,7 @@ class SmartAS:
 	def launchiLoops(self):
 
 		self.logger.info("Selecting isoforms suitable for {0}.".format( options.Options().iLoopsVersion) )
-		utils.pickUniqPatterns(self._transcript_network, self._gene_subnetwork)
+		utils.pickUniqPatterns(self._transcript_network, self._gene_network)
 
 		self.logger.info("Sending list to Gaudi and performing the iLoops analysis.")
 		gaudiThread = utils.cmdOut(
@@ -108,11 +106,18 @@ class SmartAS:
 			
 			self.logger.debug("Reading gene info.")
 			self._gene_network.readGeneInfo()
+			self._gene_network.importDiffExpression()
 			if options.Options().specificDrivers:
 				self._gene_network.importSpecificDrivers()
 			
 			self._gene_network.importKnownInteractions()
 			self._gene_network.importCandidates()
+
+			for switch in [ p["isoformSwitches"] for x,p in self._gene_network.nodes(data=True) ]:
+				nInfo = self._transcript_network.net.node[switch.nTx]
+				tInfo = self._transcript_network.net.node[switch.tTx]
+				switch.addTxs(nInfo,tInfo)
+				switch.addIsos(nInfo,tInfo)
 
 			self._gene_network.saveNetwork("geneNetwork.pkl")
 
@@ -168,10 +173,11 @@ if __name__ == '__main__':
 	if options.Options().initialStep <= 2:
 	 	S.getCandidates()
 		if not options.Options().external:
+			options.Options().printToFile(initialStep=3)
 			exit()
 	else:
-		S.createGeneNetwork(True)
 		S.createTranscriptNetwork(True)
+		S.createGeneNetwork(True)
 
 	if options.Options().initialStep <= 3:
 		S.networkAnalysis(True)
