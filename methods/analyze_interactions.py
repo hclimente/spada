@@ -102,10 +102,10 @@ class AnalyzeInteractions(method.Method):
 			while not os.path.isfile(tarFile):
 				time.sleep(900)
 			
-			interactions = parser.parseInteractions(self._analyzable_candidates[iso])
+			interactions = parser.parseInteractions(self._analyzable_candidates[iso],self._expressed_transcripts)
 
 			for partner in interactions:
-				partnerSameLoops = [ x[0] for x in self._transcript_network.nodes(data=True) if x[1]["iLoopsFamily"] == self._transcript_network._net.node[partner]["iLoopsFamily"] ]
+				partnerSameLoops = [ x[0] for x in self._transcript_network.nodes(data=True) if x[1]["iLoopsFamily"] == self._transcript_network._net.node[partner]["iLoopsFamily"] and x[0] in self._expressed_transcripts ]
 				for iso2 in partnerSameLoops:
 					self._transcript_network.add_edge( iso, iso2 )
 					self._transcript_network.update_edge( iso, iso2, "iLoops_prediction", True )

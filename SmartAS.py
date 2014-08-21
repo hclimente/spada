@@ -113,9 +113,11 @@ class SmartAS:
 			self._gene_network.importKnownInteractions()
 			self._gene_network.importCandidates()
 
-			for switch in [ p["isoformSwitches"] for x,p in self._gene_network.nodes(data=True) ]:
-				nInfo = self._transcript_network.net.node[switch.nTx]
-				tInfo = self._transcript_network.net.node[switch.tTx]
+			isoSwitches = []
+			[ isoSwitches.extend(p["isoformSwitches"]) for x,p in self._gene_network.nodes(data=True) ]
+			for switch in isoSwitches:
+				nInfo = self._transcript_network._net.node[switch.nTx]
+				tInfo = self._transcript_network._net.node[switch.tTx]
 				switch.addTxs(nInfo,tInfo)
 				switch.addIsos(nInfo,tInfo)
 
@@ -180,11 +182,11 @@ if __name__ == '__main__':
 		S.createGeneNetwork(True)
 
 	if options.Options().initialStep <= 3:
+		S.launchiLoops()
+	if options.Options().initialStep <= 4:
 		S.networkAnalysis(True)
 	else:
 		S.createGeneSubnetwork()
-	if options.Options().initialStep <= 4:
-		S.launchiLoops()
 	if options.Options().initialStep <= 5:
 		S.structuralAnalysis()
 	if options.Options().initialStep <= 6:

@@ -54,6 +54,7 @@ def setEnvironment():
 	cmd("mkdir -p", o.qout + "iLoops/" + o.iLoopsVersion)
 	cmd("mkdir", o.qout + "GUILD_experimental")
 	cmd("mkdir", o.qout + "GUILD_enriched")
+	cmd("mkdir", o.qout + "structural_analysis")
 
 	if not o.external:
 		if o.initialStep <= 1:
@@ -93,13 +94,12 @@ def setEnvironment():
 			cmd("cp", o.external + "_expressedGenes.lst", "Results/" + o.out + "/expressedGenes.lst")
 
 	if o.initialStep > 3:
+		cmd("cp", "old/" + o.out + "/candidatesGaudi.lst", o.qout)
+	if o.initialStep > 4:
 		cmd("cp -r", "old/{0}/GUILD_experimental".format(o.out), o.qout)
 		cmd("cp", "old/{0}/geneSubnetwork.pkl".format(o.out), o.qout)
-	if o.initialStep > 4:
-		cmd("cp", "old/" + o.out + "/candidatesGaudi.lst", o.qout)
 	if o.initialStep > 5:
-		pass
-		#cmd("cp", "old/{0}".format(options.Options().out), o.qout)
+		cmd("cp -r", "old/{0}/structural_analysis".format(options.Options().out), o.qout)
 	if o.initialStep > 6:
 		cmd("cp -r", "old/{0}/GUILD_enriched".format(o.out), o.qout)
 		cmd("cp -r", "old/{0}/iLoops/{1}".format(o.out, o.iLoopsVersion), o.qout)
@@ -170,7 +170,7 @@ def pickUniqPatterns(tx_network, gn_network):
 	with open(options.Options().qout + "candidatesGaudi.lst", "w") as CANDIDATES_GAUDI:
 		sortedNodes = sorted(gn_network.nodes(data=True), key=lambda (a, dct): dct['score'], reverse=True)
 		for gene,gInfo in sortedNodes:
-			for switch in properties["isoformSwitches"]:
+			for switch in gInfo["isoformSwitches"]:
 				nIso = switch.nTx
 				tIso = switch.tTx
 				nInfo = tx_network._net.node[nIso]

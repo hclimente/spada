@@ -71,9 +71,6 @@ def getGUILDInput(gn_net, onlyExperimental=False):
 			else:
 				GUILD_EDGES.write("{0} {1} {2}\n".format(node1, info["score"], node2))
 
-def outputDot(network, path):
-	networkx.write_dot(network._net, path)
-
 def outputGTF(nodesOfInterest, tx_network):
 	logging.info("Writing GTF files.")
 	with open(options.Options().qout + "/candidates_normal.gtf", 'w') as nGTF, \
@@ -124,10 +121,10 @@ def outCandidateList(gn_network, tx_network):
 				cList.write("{0}\t{1}\t".format( gene, geneProperties["symbol"] ))
 				cList.write("{0}\t{1}\t".format( nIso.name, tIso.name ))
 				cList.write("{0}\t{1}\t".format( nUniprot, tUniprot ))
-				cList.write("{0}\t{1}\t".format( score, geneProperties["Driver"] ))
+				cList.write("{0}\t{1}\t".format( switch.score, geneProperties["Driver"] ))
 				cList.write("{0}\t{1}\t".format( geneProperties["EpiFactor"], geneProperties["RBP"] ))
 				cList.write("{0}\t{1}\t".format( cds, cdsChange ))
-				cList.write("{0}\t{1}\n".format( utrChange, ",".join(patients) ))
+				cList.write("{0}\t{1}\n".format( utrChange, ",".join(switch.patients) ))
 
 def outTSV(network,path):
 	with open(path + "_nodes.tsv", "w") as NODES:

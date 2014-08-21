@@ -14,8 +14,8 @@ class Options(object):
 
         self._config_file           = options.config_file
         self._initial_step          = options.initial_step
-        self._wd                    = options.wd + "/"
-        self._gwd                   = options.gwd + "/"
+        self._wd                    = options.wd if options.wd[-1]== "/" else options.wd + "/"
+        self._gwd                   = options.gwd if options.gwd[-1]== "/" else options.gwd + "/"
         self._minExpression         = options.minExpression
         self._inputType             = options.inputType
         self._replicates            = options.replicates
@@ -77,7 +77,7 @@ class Options(object):
         parser.add_argument('-wd', '--working-directory', dest='wd', action='store', default='/home/hector/SmartAS/',
                             help='Root file of SmartAS folder in the current machine.')
         parser.add_argument('-gwd', '--gaudi-wd', dest='gwd', action='store', 
-                            default='/sbi/users/hectorc/SmartAS', help='Root file of SmartAS folder in Gaudi.')
+                            default='/sbi/users/hectorc/SmartAS/', help='Root file of SmartAS folder in Gaudi.')
         parser.add_argument('-m', '--minimum-expression', dest='minExpression', action='store', default='0',
                             type=float, help='Minimum expression to consider a transcript not residual.')
         parser.add_argument('-i', '--input-type', dest='inputType', action='store', default='TCGA',

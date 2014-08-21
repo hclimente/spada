@@ -49,7 +49,7 @@ class IsoformNetwork(network.Network):
 		geneID = self.genenameFilter( full_name=gene_full_name )[0]
 
 		if geneID is None:
-			self.logger.error("Could not add transcript {0}, from gene {1}.".format(tx, geneID))
+			self.logger.error("No gene could be extracted for transcript {0}, gene {1}.".format(tx, gene_full_name))
 			return False
 		
 		return self._net.add_node( 

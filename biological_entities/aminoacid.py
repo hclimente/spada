@@ -7,7 +7,7 @@ class AminoAcid:
 		pdbMapping: dictionary with the topological information (B, IS or NIS) of that residue (value)
 		in a particular PDB (key).
 		"""
-		self.logger 			= logging.getLogger(__name__)
+
 		self._num 				= resNum
 		self._res 				= resName
 		self._tag 				= []

@@ -32,7 +32,7 @@ class iLoopsParser(iLoops_xml_parser.ILXMLParser):
 
 		return noLoops
 
-	def parseInteractions(self,myProtein):
+	def parseInteractions(self,myProtein,expressedTranscripts):
 		interactions = {}
 		partner = ""
 		tmpRC = 0
@@ -65,7 +65,9 @@ class iLoopsParser(iLoops_xml_parser.ILXMLParser):
 					interactions.setdefault(partner, 0)
 		os.remove(xmlFile)
 
-		return interactions
+		realInteractions = {k: interactions[k] for k in expressedTranscripts if k in interactions }
+
+		return realInteractions
 
 	def makeProteinsLite(self, xmlOutput, xmlOriginal, **kwds):
 		for resultItem in self.results_parser(xml_file=xmlOriginal, report_level=0, **kwds):

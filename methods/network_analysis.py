@@ -35,10 +35,9 @@ class NetworkAnalysis(method.Method):
 
 		netComboInput = [ "{0}guild_{1}.out".format(self.guildOut,x) for x in ["NetScore", "NetZcore", "NetShort"] ]
 		combine_scores.score_combined( netComboInput, "{0}guild_netCombo.out".format(self.guildOut) )
-
 		fullComboInput = [ "{0}guild_{1}.out".format(self.guildOut,x) for x in ["NetScore", "NetZcore", "NetShort", "fFlow", "NetRank"] ]
 		combine_scores.score_combined(fullComboInput, "{0}guild_fullCombo.out".format(self.guildOut) )
-
+		
 		self.readGUILDOutput("guild_fullCombo.out")
 		self.extractTopSubnetwork(1)
 		self.extractTopSubnetwork(5)
@@ -104,7 +103,6 @@ class NetworkAnalysis(method.Method):
 			self.logger.error("Unrecognized input type {0}.".format(options.Options().inputType))
 			exit()
 
-		out_network.outputDot(self._gene_subnetworks[x],"{0}guildTop{1}.dot".format(self.guildOut, x) )
 		out_network.outTSV(self._gene_subnetworks[x],"{0}guildTop{1}".format(self.guildOut, x))
 
 if __name__ == '__main__':
