@@ -1,5 +1,7 @@
 #!/soft/devel/python-2.7/bin/python
 
+from interface import interpro_analysis
+from libs import options
 from libs import utils
 from methods import method
 
@@ -14,29 +16,32 @@ class StructuralAnalysis(method.Method):
 	def run(self):
 		self.logger.info("Structural analysis.")
 
+		self.findBrokenSurfaces()
+		self.interProAnalysis()
+		self.disorderAnalysis()
+
+	def findBrokenSurfaces(self):
+
+		self.logger.info("Searching Interactome3D broken surfaces.")
+
+		I3D_REPORT = open(options.Options().qout+"structural_analysis/I3D_analysis.tsv","w")
+		I3D_REPORT.write("Gene\tTranscript\tUniprot\tPercent_affected_by_AS\t")
+		I3D_REPORT.write("Fisher_p-value\tResidue_information\tIsoform_specific_residues\n")
+
 		sortedNodes = sorted(self._gene_network.nodes(data=True), key=lambda (a, dct): dct['score'], reverse=True)
 		for gene, properties in sortedNodes:
+
 			if not properties["isoformSwitches"]: continue
 			self.logger.debug("Searching structural information for gene {0}.".format(gene))
-			switch = properties["isoformSwitches"][0][0]
-			nIso = switch.nTx
-			tIso = switch.tTx
+			switch = properties["isoformSwitches"][0]
 			normalProtein = switch.nIsoform
 			tumorProtein = switch.tIsoform
-
-			if self._transcript_network._net.node[nIso]["Uniprot"] is not None:
-				self.analyzeStructuralImpact(normalProtein)
-			if self._transcript_network._net.node[tIso]["Uniprot"] is not None:
-				self.analyzeStructuralImpact(tumorProtein)
 			
-			if not normalProtein.hasPdbs and not tumorProtein.hasPdbs:
-				self.logger.debug("No Uniprot for {0} or {1}".format(nIso, tIso))
-				continue
+			if not (normalProtein and tumorProtein): continue
+			elif not normalProtein.hasPdbs and not tumorProtein.hasPdbs: continue
 			
-			self.logger.debug("Structural information found for gene {0}.".format(gene))
-			normalProtein.getAlteredRegions(tumorProtein)
-			tumorProtein.getAlteredRegions(normalProtein)
-
+			self.logger.debug("I3D information found for gene {0}.".format(gene))
+		
 			nIsoSpecific = bool([ x for x in normalProtein._structure if x.isoformSpecific ])
 			tIsoSpecific = bool([ x for x in tumorProtein._structure if x.isoformSpecific ])
 
@@ -44,44 +49,15 @@ class StructuralAnalysis(method.Method):
 				self.logger.debug("Isoform specific residues were not found exclusively in one isoform.")
 				continue
 
-			if normalProtein.hasPdbs and nIsoSpecific:
-				pval,percent = self.getStatistics(normalProtein)
-				if percent >= 10:
-					self.logger.info("{0}% of interaction alteration at gene {1}, normal isoform {2} (Uniprot {3}).".format(percent,gene,nIso,normalProtein.uniprot))
-				self.logger.debug("{0}% of interaction alteration at gene {1}, nIso {2},  Uniprot {3}: pval {4}.".format(percent,gene,nIso,normalProtein.uniprot,pval))
-				normalProtein.report()
-				normalProtein.printPDBInfo()
-			if tumorProtein.hasPdbs and tIsoSpecific:
-				pval,percent = self.getStatistics(tumorProtein) 
-				if percent >= 10:
-					self.logger.info("{0}% of interaction alteration at gene {1}, tormal isoform {2} (Uniprot {3}).".format(percent,gene,tIso,normalProtein.uniprot))
-				self.logger.debug("{0}% of interaction alteration at gene {1}, tIso {2},  Uniprot {3}: pval {4}.".format(percent,gene,tIso,normalProtein.uniprot,pval))
-				tumorProtein.report()
-				tumorProtein.printPDBInfo()
+			for protein,hasIsoSp in zip([normalProtein,tumorProtein],[nIsoSpecific,tIsoSpecific]):
+				if protein.hasPdbs and hasIsoSp:
+					pval,percent = self.getStatistics(protein)
+					isoInfo,isoSpec = protein.report()
+					I3D_REPORT.write("{0}\t{1}\t{2}\t".format(gene,protein.tx,protein.uniprot))
+					I3D_REPORT.write("{0}\t{1}\t{2}\t{3}\n".format(percent,pval,isoInfo,isoSpec))
+					protein.printPDBInfo()
 
-	def analyzeStructuralImpact(self, protein):
-
-		noInteractions = True
-
-		for line in utils.readTable("Data/Databases/Interactome3D/2014_01/interactions.dat"):
-			interactionPdb 	= "Data/Databases/Interactome3D/2014_01/interactions/" + line[21]
-
-			if protein.uniprot == line[0]:
-				self.logger.debug("Relevant interaction for {0} at {1}.".format(
-															protein.tx, interactionPdb))
-				if protein.calculateVolumes(interactionPdb, "A", self._transcript_network._net.node[protein.tx]["exonStructure"]):
-					noInteractions = False
-			elif protein.uniprot == line[1]:
-				self.logger.debug("Relevant interaction for {0} at {1}.".format(
-															protein.tx, interactionPdb))
-				if protein.calculateVolumes(interactionPdb, "B", self._transcript_network._net.node[protein.tx]["exonStructure"]):
-					noInteractions = False
-
-		if noInteractions:
-			self.logger.debug("No relevant structures found for {0}, {1}.".format(protein.tx,protein.uniprot))
-			return False
-
-		return True
+		I3D_REPORT.close()
 
 	def getStatistics(self, protein):
 
@@ -124,5 +100,57 @@ class StructuralAnalysis(method.Method):
 
 		return (pval,percent)
 
+	def interProAnalysis(self):
+
+		self.logger.info("Studying InterPro domain information.")
+
+		sortedNodes = sorted(self._gene_network.nodes(data=True), key=lambda (a, dct): dct['score'], reverse=True)
+		for gene, properties in sortedNodes:
+			if not properties["isoformSwitches"]: continue
+
+			self.logger.debug("Searching structural information for gene {0}.".format(gene))
+			switch = properties["isoformSwitches"][0]
+			normalProtein = switch.nIsoform
+			tumorProtein = switch.tIsoform
+
+			for protein in [normalProtein,tumorProtein]:
+				if not protein: continue
+
+				out = interpro_analysis.InterproAnalysis().launchAnalysis(protein.tx, protein.seq)
+				protein.readInterpro(out)
+
+			if not normalProtein or not tumorProtein: continue
+			if not normalProtein._features and not tumorProtein._features: continue
+
+			nIsoFeatures = Counter([ x["accession"] for x in normalProtein._features ])
+			tIsoFeatures = Counter([ x["accession"] for x in tumorProtein._features ])
+
+			uniqNIsoFeats = [ (x,nIsoFeatures[x]-tIsoFeatures.get(x,0)) for x in nIsoFeatures if nIsoFeatures[x]-tIsoFeatures.get(x,0) > 0 ]
+			uniqTIsoFeats = [ (x,tIsoFeatures[x]-nIsoFeatures.get(x,0)) for x in tIsoFeatures if tIsoFeatures[x]-nIsoFeatures.get(x,0) > 0 ]
+
+			filename = "{0}structural_analysis/IP_{1}_{2}.tsv".format(options.Options().qout,gene,properties["symbol"])
+			with open(filename,"a") as INTERPRO_REPORT:
+				if uniqNIsoFeats:
+					INTERPRO_REPORT.write("#Normal_isoform_specific_features\n")
+					for feat,reps in uniqNIsoFeats:
+						INTERPRO_REPORT.write("\t#{0}\t{1}\n".format(feat,reps))
+
+				if uniqTIsoFeats:
+					INTERPRO_REPORT.write("#Tumor_isoform_specific_features\n")
+					for feat,reps in uniqTIsoFeats:
+						INTERPRO_REPORT.write("\t#{0}\t{1}\n".format(feat,reps))
+
+				for protein in [normalProtein,tumorProtein]:
+					for featInfo in protein._features:
+		
+						INTERPRO_REPORT.write("{0}\t{1}\t".format(protein.tx,featInfo["accession"]))
+						INTERPRO_REPORT.write("{0}\t{1}\t".format(featInfo["analysis"],featInfo["description"]))
+						INTERPRO_REPORT.write("{0}\n".format(featInfo["percentAffected"]))
+
+	def disorderAnalysis(self):
+		sortedNodes = sorted(self._gene_network.nodes(data=True), key=lambda (a, dct): dct['score'], reverse=True)
+		for gene, properties in sortedNodes:
+			if not properties["isoformSwitches"]: continue
+		
 if __name__ == '__main__':
 	pass
