@@ -14,12 +14,14 @@ class IsoformSwitch:
 		self._tumor_protein 			= None
 		
 	@property
-	def nTx(self): return self._normal_transcript
+	def nTx(self): return self._normal_transcript_name
 	@property
-	def tTx(self): return self._tumor_transcript
+	def tTx(self): return self._tumor_transcript_name
 	@property
 	def score(self): return self._percent
-
+	@property
+	def patients(self): return self._patients
+	
 	@property 
 	def nIsoform(self): return self._normal_protein
 	@property 
@@ -58,8 +60,15 @@ class IsoformSwitch:
 		self.get_utrDiff()
 
 	def addIsos(self, nInfo, tInfo):
-		self._normal_protein 	= protein.Protein( self._normal_transcript_name, nInfo)
-		self._tumor_protein 	= protein.Protein( self._tumor_transcript_name, tInfo)
+		if nInfo["Uniprot"]:
+			self._normal_protein = protein.Protein( self._normal_transcript_name, nInfo)
+			self._normal_protein.checkInteractome3DStructures()
+		if tInfo["Uniprot"]:
+			self._tumor_protein  = protein.Protein( self._tumor_transcript_name, tInfo)
+			self._tumor_protein.checkInteractome3DStructures()
+
+		if self._normal_protein and self._tumor_protein:
+			self.getAlteredRegions()
 
 	def get_cdsDiff(self):
 		"""Makes a list with the genomic position not shared between the CDS of two transcripts."""
@@ -88,3 +97,12 @@ class IsoformSwitch:
 				self._tumor_transcript.utr[gPos] = True
 			else:
 				self._tumor_transcript.utr[gPos] = False
+
+	def getAlteredRegions(self):
+		for res in self._normal_protein._structure:
+			if res.genomicPosition not in [ y.genomicPosition for y in self._tumor_protein._structure]:
+				res.setIsoformSpecific(True)
+
+		for res in self._tumor_protein._structure:
+			if res.genomicPosition not in [ y.genomicPosition for y in self._normal_protein._structure]:
+				res.setIsoformSpecific(True)
