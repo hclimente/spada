@@ -71,19 +71,13 @@ def getGUILDInput(gn_net, onlyExperimental=False):
 			else:
 				GUILD_EDGES.write("{0} {1} {2}\n".format(node1, info["score"], node2))
 
-def outputGTF(nodesOfInterest, tx_network):
+def outputGTF(gn_network, tx_network):
 	logging.info("Writing GTF files.")
 	with open(options.Options().qout + "/candidates_normal.gtf", 'w') as nGTF, \
 		 open(options.Options().qout + "/candidates_tumor.gtf", 'w') as tGTF, \
 		 open("Data/" + options.Options().inputType + "/annotation.gtf", "r") as ALLTRANSCRIPTS:
 	
-		switchesInfo = []
-
-		for gene, properties in nodesOfInterest:
-			if not properties["isoformSwitches"]: continue
-
-			for switch in properties["isoformSwitches"]:
-				switchesInfo.append([(switch.nTx, switch.tTx), switch.score])
+		switchesInfo = [ [(z.nTx,z.tTx),z.score] for x,y,z in utils.iterate_switches_ScoreWise(gn_network) ]
 
 		for line in ALLTRANSCRIPTS:
 			for switch in switchesInfo:
@@ -94,37 +88,32 @@ def outputGTF(nodesOfInterest, tx_network):
 
 def outCandidateList(gn_network, tx_network):
 	logging.info("Writing candidateList_v2.")
-	sortedNodes = sorted(gn_network.nodes(data=True), key=lambda (a, dct): dct['score'], reverse=True)
 	with open(options.Options().qout + "candidateList_v2.tsv", "w") as cList:
 		cList.write("GeneId\tSymbol\tNormal_transcript\tTumor_transcript\tNormal_protein\t")
 		cList.write("Tumor_protein\tPatient_percentage\tDriver\tEpigenetic_factor\tRBP\t")
 		cList.write("CDS\tCDS_change\tUTR_change\tPatients_affected\n")
 		
-		for gene, geneProperties in sortedNodes:
-			if not geneProperties["isoformSwitches"]: continue
+		for gene,info,switch in utils.iterate_switches_ScoreWise(gn_network):
+			nIso = switch.nTranscript
+			tIso = switch.tTranscript
 
-			for switch in geneProperties["isoformSwitches"]:
+			nUniprot 	= tx_network._net.node[switch.nTx]["Uniprot"]
+			tUniprot 	= tx_network._net.node[switch.tTx]["Uniprot"]
+			cds 		= False
+			cdsChange 	= False
+			utrChange 	= False
 
-				nIso = switch.nTranscript
-				tIso = switch.tTranscript
+			if nIso.cds or tIso.cds: 	cds 		= True
+			if switch.cds_diff: 	 	cdsChange 	= True
+			if switch.utr_diff: 		utrChange 	= True
 
-				nUniprot 	= tx_network._net.node[switch.nTx]["Uniprot"]
-				tUniprot 	= tx_network._net.node[switch.tTx]["Uniprot"]
-				cds 		= False
-				cdsChange 	= False
-				utrChange 	= False
-
-				if nIso.cds or tIso.cds: 	cds 		= True
-				if switch.cds_diff: 	 	cdsChange 	= True
-				if switch.utr_diff: 		utrChange 	= True
-
-				cList.write("{0}\t{1}\t".format( gene, geneProperties["symbol"] ))
-				cList.write("{0}\t{1}\t".format( nIso.name, tIso.name ))
-				cList.write("{0}\t{1}\t".format( nUniprot, tUniprot ))
-				cList.write("{0}\t{1}\t".format( switch.score, geneProperties["Driver"] ))
-				cList.write("{0}\t{1}\t".format( geneProperties["EpiFactor"], geneProperties["RBP"] ))
-				cList.write("{0}\t{1}\t".format( cds, cdsChange ))
-				cList.write("{0}\t{1}\n".format( utrChange, ",".join(switch.patients) ))
+			cList.write("{0}\t{1}\t".format( gene, info["symbol"] ))
+			cList.write("{0}\t{1}\t".format( nIso.name, tIso.name ))
+			cList.write("{0}\t{1}\t".format( nUniprot, tUniprot ))
+			cList.write("{0}\t{1}\t".format( switch.score, info["Driver"] ))
+			cList.write("{0}\t{1}\t".format( info["EpiFactor"], info["RBP"] ))
+			cList.write("{0}\t{1}\t".format( cds, cdsChange ))
+			cList.write("{0}\t{1}\n".format( utrChange, ",".join(switch.patients) ))
 
 def outTSV(network,path):
 	with open(path + "_nodes.tsv", "w") as NODES:
