@@ -1,4 +1,5 @@
 from biological_entities import aminoacid
+from interface import interpro_analysis
 from libs import utils
 from libs.SBI.structure import PDB
 from libs.SBI.structure.contacts import Complex
@@ -220,44 +221,6 @@ class Protein:
 			logging.debug("{0}, color orange, isoSpecific".format(self._tx))
 			logging.debug("{0}, color red, interact & isoSpecific".format(self._tx))
 
-	def readInterpro(self,interproOut):
-
-		for cols in utils.readTable(interproOut, header=False):
-			# https://code.google.com/p/interproscan/wiki/OutputFormats#Tab-separated_values_format_%28TSV%29
-		    protein_accession 	= cols[0] #Protein Accession
-		    md5_digest 			= cols[1] #Sequence MD5 digest
-		    seq_length 			= cols[2] #Sequence Length
-		    analysis 			= cols[3] #Analysis
-		    signature_accession = cols[4] #Signature Accession
-		    signature_descript 	= cols[5] #Signature Description
-		    start 				= int(cols[6]) #Start location
-		    stop 				= int(cols[7]) #Stop location
-		    try:
-		    	score 			= float(cols[8]) #Score - is the e-value of the match reported by member database method
-		    except ValueError:
-		    	score 			= None
-		    status 				= True if cols[9] == "T" else False #Status - is the status of the match (T: true)
-		    date 				= cols[10] #Date - is the date of the run
-		    if len(cols) > 11:
-		    	interpro_annotation	= cols[11] #(InterPro annotations - accession)
-		    if len(cols) > 12:
-		    	interpro_descript	= cols[12] #(InterPro annotations - description)
-		    if len(cols) > 13:
-		    	go_annotation		= cols[13] #(GO annotations)
-		    if len(cols) > 14:
-		    	pathway_annotation 	= cols[14] #(Pathways annotations)
-
-			if score and score > 0.01: continue
-
-			isoSpecificRes = set([ x._num for x in self._structure if x.isoformSpecific ])
-			featureRes = set(range(start,stop+1))
-			overlapRes = isoSpecificRes | featureRes
-
-			featInfo = {}
-			featInfo["region"] 			= [start,stop]
-			featInfo["accession"] 		= signature_accession
-			featInfo["description"] 	= signature_descript
-			featInfo["analysis"]		= analysis
-			featInfo["percentAffected"]	= len(overlapRes)/len(featureRes) * 100
-
+	def getFeatures(self,interproOut):
+		for featInfo in interpro_analysis.InterproAnalysis().readInterpro(interproOut,self):
 			self._features.append(featInfo)
