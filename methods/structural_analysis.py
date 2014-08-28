@@ -28,18 +28,14 @@ class StructuralAnalysis(method.Method):
 		I3D_REPORT.write("Gene\tTranscript\tUniprot\tPercent_affected_by_AS\t")
 		I3D_REPORT.write("Fisher_p-value\tResidue_information\tIsoform_specific_residues\n")
 
-		sortedNodes = sorted(self._gene_network.nodes(data=True), key=lambda (a, dct): dct['score'], reverse=True)
-		for gene, properties in sortedNodes:
-
-			if not properties["isoformSwitches"]: continue
+		for gene,info,switch in utils.iterate_switches_ScoreWise(self._gene_network):
 			self.logger.debug("Searching structural information for gene {0}.".format(gene))
-			switch = properties["isoformSwitches"][0]
 			normalProtein = switch.nIsoform
 			tumorProtein = switch.tIsoform
-			
-			if not (normalProtein and tumorProtein): continue
+
+			if not normalProtein or not tumorProtein: continue
 			elif not normalProtein.hasPdbs and not tumorProtein.hasPdbs: continue
-			
+
 			self.logger.debug("I3D information found for gene {0}.".format(gene))
 		
 			nIsoSpecific = bool([ x for x in normalProtein._structure if x.isoformSpecific ])
@@ -104,12 +100,12 @@ class StructuralAnalysis(method.Method):
 
 		self.logger.info("Studying InterPro domain information.")
 
-		sortedNodes = sorted(self._gene_network.nodes(data=True), key=lambda (a, dct): dct['score'], reverse=True)
-		for gene, properties in sortedNodes:
-			if not properties["isoformSwitches"]: continue
+		IP_REPORT = open("{0}structural_analysis/InterPro_report.tsv".format(options.Options().qout),"w")
+		IP_REPORT.write("Gene\tGene_symbol\tTranscript\tAnalysis\tFeature_accesion\t")
+		IP_REPORT.write("Feature\t(Additional) repetitions\tPercent affected\n")
 
+		for gene,info,switch in utils.iterate_switches_ScoreWise(self._gene_network):
 			self.logger.debug("Searching structural information for gene {0}.".format(gene))
-			switch = properties["isoformSwitches"][0]
 			normalProtein = switch.nIsoform
 			tumorProtein = switch.tIsoform
 
@@ -117,7 +113,7 @@ class StructuralAnalysis(method.Method):
 				if not protein: continue
 
 				out = interpro_analysis.InterproAnalysis().launchAnalysis(protein.tx, protein.seq)
-				protein.readInterpro(out)
+				protein.getFeatures(out)
 
 			if not normalProtein or not tumorProtein: continue
 			if not normalProtein._features and not tumorProtein._features: continue
@@ -128,29 +124,109 @@ class StructuralAnalysis(method.Method):
 			uniqNIsoFeats = [ (x,nIsoFeatures[x]-tIsoFeatures.get(x,0)) for x in nIsoFeatures if nIsoFeatures[x]-tIsoFeatures.get(x,0) > 0 ]
 			uniqTIsoFeats = [ (x,tIsoFeatures[x]-nIsoFeatures.get(x,0)) for x in tIsoFeatures if tIsoFeatures[x]-nIsoFeatures.get(x,0) > 0 ]
 
-			filename = "{0}structural_analysis/IP_{1}_{2}.tsv".format(options.Options().qout,gene,properties["symbol"])
-			with open(filename,"a") as INTERPRO_REPORT:
-				if uniqNIsoFeats:
-					INTERPRO_REPORT.write("#Normal_isoform_specific_features\n")
-					for feat,reps in uniqNIsoFeats:
-						INTERPRO_REPORT.write("\t#{0}\t{1}\n".format(feat,reps))
+			for uniqFeat,protein in zip([uniqNIsoFeats,uniqTIsoFeats],[normalProtein,tumorProtein]):
 
-				if uniqTIsoFeats:
-					INTERPRO_REPORT.write("#Tumor_isoform_specific_features\n")
-					for feat,reps in uniqTIsoFeats:
-						INTERPRO_REPORT.write("\t#{0}\t{1}\n".format(feat,reps))
+				for feat,reps in uniqFeat:
 
-				for protein in [normalProtein,tumorProtein]:
-					for featInfo in protein._features:
-		
-						INTERPRO_REPORT.write("{0}\t{1}\t".format(protein.tx,featInfo["accession"]))
-						INTERPRO_REPORT.write("{0}\t{1}\t".format(featInfo["analysis"],featInfo["description"]))
-						INTERPRO_REPORT.write("{0}\n".format(featInfo["percentAffected"]))
+					featInfo = [ x for x in protein._features if x["accession"]==feat ][0]
+	
+					IP_REPORT.write("{0}\t{1}\t".format(gene, info["symbol"]))
+					IP_REPORT.write("{0}\t{1}\t".format(protein.tx,featInfo["analysis"]))
+					IP_REPORT.write("{0}\t{1}\t".format(featInfo["accession"],featInfo["description"]))
+					IP_REPORT.write("{0}\t{1}\n".format(reps,featInfo["percentAffected"]))
+
+		IP_REPORT.close()
 
 	def disorderAnalysis(self):
-		sortedNodes = sorted(self._gene_network.nodes(data=True), key=lambda (a, dct): dct['score'], reverse=True)
-		for gene, properties in sortedNodes:
-			if not properties["isoformSwitches"]: continue
+
+		self.logger.info("Searching IUPred predicted disordered regions.")
+
+		IUPRED_REPORT = open(options.Options().qout+"structural_analysis/iupred_analysis.tsv","w")
+		IUPRED_REPORT.write("Gene\tTranscript\tAnalysis\tPercent_affected_by_AS\t")
+		IUPRED_REPORT.write("Motifs\t#aa_Isoform_specific_ordered\t")
+		IUPRED_REPORT.write("#aa_Non_isoform_specific_ordered\t")
+		IUPRED_REPORT.write("#aa_Isoform_specific_disordered\t")
+		IUPRED_REPORT.write("#aa_Non_isoform_specific_disordered\n")
+
+		for gene,info,switch in utils.iterate_switches_ScoreWise(self._gene_network):
+			self.logger.debug("Searching structural information for gene {0}.".format(gene))
+			normalProtein = switch.nIsoform
+			tumorProtein = switch.tIsoform
+
+			for protein in [normalProtein,tumorProtein]:
+				if not protein: continue
+
+				with open("protein.fa","w") as FASTA:
+					FASTA.write(">{0}\n{1}\n".format(protein.tx,protein.seq))
+
+				for mode in ["short","long"]:
+
+					counter = {	"specific" 	: { "ordered": 0.0,"disordered":0.0}, 
+								"unspecific": { "ordered": 0.0,"disordered":0.0} }
+
+					motif 	= ""
+					motifs 	= []
+					gap 	= ""
+
+					proc = utils.cmdOut(options.Options().wd+"Pipeline/libs/bin/iupred/iupred","protein.fa",mode)
+
+					for line in [ x.strip().split(" ") for x in proc.stdout if "#" not in x ]:
+						resNum  = int(line[0])
+						residue	= line[1]
+						score 	= float(line[-1])
+
+						thisRes = protein._structure[resNum-1]
+						thisRes.set_iuPredScore(score)
+
+						res = residue.upper() if thisRes.isoformSpecific else residue.lower()
+
+						#Extract motifs in isoform specific, disordered regions.
+						#A gap of 2 can be allowed.
+						if thisRes.isDisordered:
+							if gap and motif: #Check that there is a preexisting motif
+								motif += gap
+								gap	  =  ""
+							
+							motif += res
+						elif len(gap) < 2: #Max allowed gap
+							gap += res
+						else: 
+							if len(motif) > 1:
+								motifs.append(motif)
+							motif = ""
+
+						if thisRes.isDisordered:
+							if thisRes.isoformSpecific:
+								counter["specific"]["disordered"] 	+= 1
+							else: 
+								counter["unspecific"]["disordered"] += 1
+						else:
+							if thisRes.isoformSpecific:
+								counter["specific"]["ordered"] 		+= 1
+							else: 
+								counter["unspecific"]["ordered"] 	+= 1
+
+					if len(motif) > 1:
+						motifs.append(motif)
+
+					usefulMotifs = set()
+					for motif in motifs:
+						isoSp 	= float(sum(1 for c in motif if c.isupper()))
+						nonIsoS = float(sum(1 for c in motif if c.islower()))
+
+						ratio = isoSp/(isoSp+nonIsoS)
+
+						if ratio >= 0.2:
+							usefulMotifs.add(motif)
+				
+					IUPRED_REPORT.write("{0}\t{1}\t".format(gene,protein.tx))
+					IUPRED_REPORT.write("{0}\t{1}\t".format(mode,",".join(usefulMotifs)))
+					IUPRED_REPORT.write("{0}\t".format(int(counter["specific"]["ordered"])) )
+					IUPRED_REPORT.write("{0}\t".format(int(counter["unspecific"]["ordered"])) )
+					IUPRED_REPORT.write("{0}\t".format(int(counter["specific"]["disordered"])) )
+					IUPRED_REPORT.write("{0}\n".format(int(counter["unspecific"]["disordered"])) )
+
+		IUPRED_REPORT.close()
 		
 if __name__ == '__main__':
 	pass
