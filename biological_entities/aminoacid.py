@@ -14,12 +14,21 @@ class AminoAcid:
 		self._isoformSpecific 	= False
 		self._pdbMapping 		= {}
 		self._genomicPosition 	= None
+		self._iuPred_score 		= None
 
 	@property
 	def res(self): return self._res
 	@property
 	def genomicPosition(self): return self._genomicPosition
 	def setGenomicPosition(self,genomicPosition): self._genomicPosition = genomicPosition
+	@property
+	def isDisordered(self):
+		if self._iuPred_score < 0.5:
+			return False
+		else:
+			return True
+	def set_iuPredScore(self, value): self._iuPred_score = value
+	
 	@property
 	def tag(self): 
 		"""Returns the mode from the list of tags."""
