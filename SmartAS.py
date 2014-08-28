@@ -41,8 +41,7 @@ class SmartAS:
 		self.createTranscriptNetwork(False)
 		self.createGeneNetwork(False)
 
-		sortedNodes = sorted( self._gene_network.nodes(data=True), key=lambda (a,dct): dct['score'], reverse=True)
-		out_network.outputGTF(sortedNodes, self._transcript_network )
+		out_network.outputGTF(self._gene_network, self._transcript_network )
 		out_network.outCandidateList(self._gene_network, self._transcript_network)
 
 	def networkAnalysis(self, onlyExperimental):
