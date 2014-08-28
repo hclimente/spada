@@ -33,6 +33,8 @@ class IsoformSwitch:
 
 	@property 
 	def cds_overlap(self):
+		"""Returns True if there is an overlap between the transcripts coding sequence."""
+		#Check that is not None and thad the exclusive region is not the whole CDS.
 		if self._normal_transcript.cds_exclusive and self._normal_transcript.cds_exclusive < 1:
 			return True
 		elif self._tumor_transcript.cds_exclusive and self._tumor_transcript.cds_exclusive < 1:
@@ -71,32 +73,34 @@ class IsoformSwitch:
 			self.getAlteredRegions()
 
 	def get_cdsDiff(self):
-		"""Makes a list with the genomic position not shared between the CDS of two transcripts."""
+		"""Changes the values of the CDS dictionary of the transcripts to
+			a bool, indicating if they are transcript specific or not."""
 		for gPos in self._normal_transcript.cds:
 			if gPos not in self._tumor_transcript.cds: 	
-				self._normal_transcript.cds[gPos] = True
+				self._normal_transcript._cds[gPos] = True
 			else: 										
-				self._normal_transcript.cds[gPos] = False
+				self._normal_transcript._cds[gPos] = False
 
 		for gPos in self._tumor_transcript.cds:
 			if gPos not in self._normal_transcript.cds:
-				self._normal_transcript.cds[gPos] = True
+				self._normal_transcript._cds[gPos] = True
 			else:
-				self._normal_transcript.cds[gPos] = False
+				self._normal_transcript._cds[gPos] = False
 
 	def get_utrDiff(self):
-		"""Makes a list with the genomic position not shared between the UTR of two transcripts."""
+		"""Changes the values of the UTR dictionary of the transcripts to
+			a bool, indicating if they are transcript specific or not."""
 		for gPos in self._normal_transcript.utr:
 			if gPos not in self._tumor_transcript.utr:
-				self._normal_transcript.utr[gPos] = True
+				self._normal_transcript._utr[gPos] = True
 			else:
-				self._normal_transcript.utr[gPos] = False
+				self._normal_transcript._utr[gPos] = False
 
 		for gPos in self._tumor_transcript.utr:
 			if gPos not in self._normal_transcript.utr:
-				self._tumor_transcript.utr[gPos] = True
+				self._tumor_transcript._utr[gPos] = True
 			else:
-				self._tumor_transcript.utr[gPos] = False
+				self._tumor_transcript._utr[gPos] = False
 
 	def getAlteredRegions(self):
 		for res in self._normal_protein._structure:
