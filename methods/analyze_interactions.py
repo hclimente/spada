@@ -27,12 +27,9 @@ class AnalyzeInteractions(method.Method):
 		
 		#Sort by score: drivers will be first to be analyzed. Then, genes with an isoform switch with 
 		#decreasing number of patients
-		sortedNodes = sorted(self._gene_subnetwork.nodes(data=True), key=lambda (a, dct): dct['score'], reverse=True)
-		for gene,properties in sortedNodes:
-			if not properties["isoformSwitches"]: continue
-
-			nIso = properties["isoformSwitches"][0].nTx
-			tIso = properties["isoformSwitches"][0].tTx
+		for gene,info,switch in utils.iterate_switches_ScoreWise(self._gene_network,only_first=True):
+			nIso = switch.nTx
+			tIso = switch.tTx
 
 			status = self.getPredictedInteractions(gene, nIso, tIso, analyzedTxs)
 

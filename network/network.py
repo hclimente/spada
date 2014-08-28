@@ -81,8 +81,9 @@ class Network:
 		return True
 
 	def saveNetwork(self, filename):
-		#Unattach logger to allow saving
+		
 		self.logger.debug("Saving network at {0}{1}.".format(options.Options().qout,filename))
+		#Unattach logger to save without thread problems
 		self.removeLogger()
 		with open(options.Options().qout + filename, "wb") as NET_DUMP:
 			cPickle.dump(self, NET_DUMP, -1)

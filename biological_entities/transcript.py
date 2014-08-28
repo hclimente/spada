@@ -8,9 +8,10 @@ class Transcript:
 		self._tx_coordinates 	= properties["txCoords"]
 		self._strand 			= properties["strand"]
 
-		#Create two lists, containing all the nucleotides from the transcript, classified in CDS and UTR.
-		self._cds 		= {}
-		self._utr 		= {}
+		#Create two dicts, clasifying all the nucleotides in CDS and UTR
+		#Value: isoform specific in this switch
+		self._cds = {}
+		self._utr = {}
 		
 		if self._strand == "+": 
 			cdsStart = self._cds_coordinates[0]
@@ -50,8 +51,8 @@ class Transcript:
 	def cds(self): return self._cds
 	@property
 	def cds_exclusive(self): 
-		exclusive = sum([ 1 for x in self._cds if not self._cds[x] ])
-		nonExclusive = sum([ 1 for x in self._cds if self._cds[x] ])
+		exclusive = float(sum([ 1 for x in self._cds if self._cds[x] ]))
+		nonExclusive = float(sum([ 1 for x in self._cds if not self._cds[x] ]))
 		try:
 			return exclusive/(exclusive+nonExclusive)
 		except ZeroDivisionError:

@@ -50,6 +50,7 @@ def iterate_switches_ScoreWise(gene_network,only_first=False):
 		only_first(bool): if True, only the first switch (the most 
 			common) will be returned for each gene.
 		"""
+
 	sortedNodes = sorted(gene_network.nodes(data=True), key=lambda (a, dct): dct['score'], reverse=True)
 	for gene,info in sortedNodes:
 		if not info["isoformSwitches"]: continue
