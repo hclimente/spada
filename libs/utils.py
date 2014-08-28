@@ -2,13 +2,10 @@
 
 from libs import options
 
-from subprocess import call,Popen,PIPE
+import subprocess
 from rpy2.robjects import r
-import urllib2
 import os
 import logging
-
-import pdb
 
 logger = logging.getLogger("utils")
 
@@ -18,17 +15,21 @@ def cmd(base, *args):
 		command += " " + str(arg)
 
 	logger.debug(command)
-	call(command, shell=True)
+	subprocess.call(command, shell=True)
 
-def cmdOut(base, *args):
-	command = base
-	for arg in args:
-		command += " " + str(arg)
+def cmdOut(*args):
+	command = [ str(x) for x in args ]
 
 	logger.debug(command)
-	return Popen(command, shell=True, stdout=PIPE)
+	return subprocess.Popen(command, stdout=subprocess.PIPE)
 
 def readTable(path, sep="\t", header=True):
+	"""Read a table in a file, and generate a list of strings per row. 
+	Skips rows starting with "#".
+
+	sep (str): field separator.
+	header (bool): presence of a header, to discard the first row.
+	"""
 	counter = 0
 	with open(path) as FILE:
 		for line in FILE:
@@ -39,6 +40,25 @@ def readTable(path, sep="\t", header=True):
 				continue
 			
 			yield line.strip().split(sep)
+
+def iterate_switches_ScoreWise(gene_network,only_first=False):
+	"""Iterate through the isoform switches of a gene network, and
+		generate a list of (gene,geneInformation,isoformSwitch).
+		Only return those switches with an overlap between the CDS 
+		of the transcripts.
+
+		only_first(bool): if True, only the first switch (the most 
+			common) will be returned for each gene.
+		"""
+	sortedNodes = sorted(gene_network.nodes(data=True), key=lambda (a, dct): dct['score'], reverse=True)
+	for gene,info in sortedNodes:
+		if not info["isoformSwitches"]: continue
+		if only_first:
+			if info["isoformSwitches"][0].cds_overlap:
+				yield gene,info,info["isoformSwitches"][0]
+		else:
+			for switch in [ x for x in info["isoformSwitches"] if x.cds_overlap ]:
+				yield gene,info,switch
 
 def setEnvironment():
 
@@ -66,8 +86,6 @@ def setEnvironment():
 			r('inputData[["Conditions"]] <- c("N", "T")')
 			r('inputData[["Replicates"]] <- ' + str(options.Options().replicates))
 			r('save.image("' + options.Options().qout + 'RWorkspaces/0_InitialEnvironment.RData")')
-			
-			#getDB()
 
 		if o.initialStep > 1:
 
@@ -103,57 +121,6 @@ def setEnvironment():
 	if o.initialStep > 6:
 		cmd("cp -r", "old/{0}/GUILD_enriched".format(o.out), o.qout)
 		cmd("cp -r", "old/{0}/iLoops/{1}".format(o.out, o.iLoopsVersion), o.qout)
-
-def getDB():
-	with open("Data/Databases/Intogen.tsv", "w") as Intogen:
-	
-		query="""
-		DEFINE
-			intogen='/data/project/gene',
-			genes='https://bitbucket.org/intogen/intogen-sources.git?ensembl/hsa/genes',
-			projects='/data/projects'
-		ON
-			'https://bitbucket.org/intogen/intogen-mutations.git'
-		SELECT
-			genes (GENE_ID, SYMBOL),
-			projects (PROJECT_NAME),
-			intogen (SAMPLE_PROP, FM_QVALUE, CLUST_QVALUE)
-		FROM
-			intogen
-		WHERE
-			(
-				intogen.FM_QVALUE < '0.05'
-				OR
-				intogen.CLUST_QVALUE < '0.05'
-			)
-			"""
-			
-		req = urllib2.Request("http://www.intogen.org/oql")
-		res = urllib2.urlopen(req, query)
-		Intogen.write(res.read())
-
-def finish(opt):
-	
-	print("* Moving files to the Results directory and creating a summary tar file.")
-	    
-	outFolder = "/home/hector/Results/" + opt["out"]
-	outTag = opt["tag1"] + "_mE" + str(opt["minExpression"])
-
-	if not cmdOut("mkdir -p", outFolder).stdout.read().strip():
-		overwrite = raw_input("\tDirectory exists. Do you want to overwrite it? (y/n)")
-		if not overwrite == "y":
-			return
-
-	cmd("cp", "Results/" + opt["out"] + "/candidates_normal.gtf", outFolder + "/" + "candidates_normal." + outTag + ".gtf")
-	cmd("cp", "Results/" + opt["out"] + "/candidates_tumor.gtf", outFolder + "/" + "candidates_tumor." + outTag + ".gtf")
-	cmd("cp", "Results/" + opt["out"] + "/candidateList.top.tsv", outFolder + "/" + "candidateList." + outTag + ".tsv")
-
-	os.chdir(outFolder)
-	cmd("cp -r", "../SmartAS/Results/" + opt["out"] + "/* .")
-
-	cmd("tar -czvf", outTag + ".tar.gz candidates_normal." + outTag + ".gtf candidates_tumor." + outTag + ".gtf candidateList." + outTag + ".tsv")
-	cmd("rm", "*" + opt["out"] + "*gff", "*" + opt["out"] + "*tsv")
-	os.chdir("/home/hector/SmartAS")
 
 def pickUniqPatterns(tx_network, gn_network):
 
@@ -232,10 +199,5 @@ def pickUniqPatterns(tx_network, gn_network):
 	cmd("ssh","hectorc@gaudi","'mkdir -p {0}Output'".format(options.Options().gout))
 	cmd("ssh","hectorc@gaudi","'mkdir {0}Input'".format(options.Options().gout))
 	cmd("ssh","hectorc@gaudi","'mkdir {0}logs'".format(options.Options().gout))
-	sshTransfer("candidatesGaudi.lst")
-
-def sshTransfer(*args):
-	files = ""
-	for aFile in args:
-		files += " {0}{1}".format( options.Options().qout, aFile )
-	cmd("scp","-r", files,"hectorc@gaudi.imim.es:" + options.Options().gout )
+	cmd("scp", "-r", options.Options().qout + "{0}candidatesGaudi.lst",
+		"hectorc@gaudi.imim.es:" + options.Options().gout)
