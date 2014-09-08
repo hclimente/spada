@@ -36,11 +36,13 @@ def standarizeInput():
 
 		for line in utils.readTable(inputFile):
 			numberOfPatients = (len(line) - 1)/2
-			for patient in range(1, numberOfPatients+1):
-				if options.Options().unpairedReplicates:
+			
+			if options.Options().unpairedReplicates:
+				for patient in range(1, numberOfPatients+1):
 					patientFiles.append(open("{0}{1}_T.tsv".format(outDir, patient), "w"))
-				else:
-					for sampleType in ["N", "T"]:
+			else:
+				for sampleType in ["N", "T"]:
+					for patient in range(1, numberOfPatients+1):
 						patientFiles.append(open("{0}{1}_{2}.tsv".format(outDir, patient, sampleType), "w"))
 			break
 

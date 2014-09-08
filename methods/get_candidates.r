@@ -9,10 +9,10 @@ load(paste0(args[2], "RWorkspaces/1_ExploreData.RData"))
 unpairedReplicates <- as.numeric(args[3])
 numOfReplicates <- inputData[["Replicates"]]
 
-logger <- getLogger(name="getCandidates", level=10) #Level debug
+logger <- getLogger(name="get_candidates", level=10) #Level debug
 
-addHandler(writeToConsole, logger="getCandidates", level='INFO')
-addHandler(writeToFile, logger="getCandidates", file=paste0(out, "rSmartAS.log"), level='DEBUG')
+addHandler(writeToConsole, logger="get_candidates", level='INFO')
+addHandler(writeToFile, logger="get_candidates", file=paste0(out, "rSmartAS.log"), level='DEBUG')
 
 if (unpairedReplicates != 0) {  
   load(paste0(args[2], "RWorkspaces/1_Tumor_Intereplicate.RData"))
@@ -25,7 +25,7 @@ candidateMask <- list()
 candidateMask[["N"]] <- list()
 candidateMask[["T"]] <- list()
 
-loginfo("Searching isoform switches in %d patients.", numOfReplicates, logger="getCandidates")
+loginfo("Searching isoform switches in %d patients.", numOfReplicates, logger="get_candidates")
 
 candidatesPB <- txtProgressBar(min=1, max=numOfReplicates, initial = 1, style=3)
 counter <- 1
@@ -89,7 +89,7 @@ for (replicate in seq(1,numOfReplicates)){
   #Expressed genes: transcripts whose expression are above the expression threshold in any of the conditions
   replicateExpressed[[replicate]] <- data.frame(Transcript=intraReplicate[[replicate]]$Transcript[norExpression | tumExpression],
                                                 Gene=intraReplicate[[replicate]]$Gene[norExpression | tumExpression])
-  logdebug("%d switches found at patient %d", nrow(candidates[[replicate]]), replicate, logger="getCandidates")
+  logdebug("%d switches found at patient %d", nrow(candidates[[replicate]]), replicate, logger="get_candidates")
   setTxtProgressBar(candidatesPB, counter)
   counter <- counter + 1
   

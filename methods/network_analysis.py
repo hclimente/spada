@@ -106,5 +106,4 @@ class NetworkAnalysis(method.Method):
 		out_network.outTSV(self._gene_subnetworks[x],"{0}guildTop{1}".format(self.guildOut, x))
 
 if __name__ == '__main__':
-
 	pass

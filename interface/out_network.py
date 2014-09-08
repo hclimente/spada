@@ -1,4 +1,5 @@
 from libs import options
+from libs import utils
 
 import math
 import networkx
@@ -56,14 +57,14 @@ def interactorsInfo(gn_net, tx_net, gene, nIso, tIso):
 
 def getGUILDInput(gn_net, onlyExperimental=False):
 	logging.info("Writing GUILD input files.")
-	outputFolder = "{0}GUILD_enriched/".format(options.Options().qout)
-	if onlyExperimental: outputFolder = "{0}GUILD_experimental/".format(options.Options().qout)
+	outFolder = "{0}GUILD_enriched/".format(options.Options().qout)
+	if onlyExperimental: outFolder = "{0}GUILD_experimental/".format(options.Options().qout)
 
-	with open("{0}guild_nodes.tsv".format(outputFolder), "w" ) as GUILD_NODES:
+	with open("{0}guild_nodes.tsv".format(outFolder), "w" ) as GUILD_NODES:
 		for node,info in gn_net.nodes(data=True):
 			GUILD_NODES.write("{0} {1}\n".format(node, info["score"]))
 
-	with open("{0}guild_edges.tsv".format(outputFolder), "w" ) as GUILD_EDGES:
+	with open("{0}guild_edges.tsv".format(outFolder), "w" ) as GUILD_EDGES:
 		for node1,node2,info in gn_net.edges(data=True):
 			if onlyExperimental:
 				if info["experimental"]:
