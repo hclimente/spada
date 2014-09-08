@@ -45,15 +45,17 @@ def iterate_switches_ScoreWise(gene_network,only_first=False):
 	"""Iterate through the isoform switches of a gene network, and
 		generate a list of (gene,geneInformation,isoformSwitch).
 		Only return those switches with an overlap between the CDS 
-		of the transcripts.
+		of the transcripts, and with no differential expression.
 
 		only_first(bool): if True, only the first switch (the most 
 			common) will be returned for each gene.
-		"""
+	"""
 
 	sortedNodes = sorted(gene_network.nodes(data=True), key=lambda (a, dct): dct['score'], reverse=True)
 	for gene,info in sortedNodes:
 		if not info["isoformSwitches"]: continue
+		elif abs(info["diffExpression_logFC"]) > 0.5 or info["diffExpression_p"] < 0.05: continue
+
 		if only_first:
 			if info["isoformSwitches"][0].cds_overlap:
 				yield gene,info,info["isoformSwitches"][0]
@@ -76,6 +78,7 @@ def setEnvironment():
 	cmd("mkdir", o.qout + "GUILD_experimental")
 	cmd("mkdir", o.qout + "GUILD_enriched")
 	cmd("mkdir", o.qout + "structural_analysis")
+	cmd("mkdir", o.qout + "neighborhood_analysis")
 
 	if not o.external:
 		if o.initialStep <= 1:
@@ -102,6 +105,8 @@ def setEnvironment():
 			cmd("cp", "old/" + o.out + "/candidates_normal.gtf", "old/" + o.out + "/candidates_tumor.gtf", o.qout)
 			cmd("cp", "old/" + o.out + "/geneNetwork*.pkl", "old/" + o.out + "/txNetwork*.pkl", o.qout)
 			cmd("cp", "old/" + o.out + "/expression_normal.tsv", "old/" + o.out + "/expression_tumor.tsv", o.qout)
+			cmd("cp", "old/" + o.out + "/msInput.txt", o.qout)
+			
 	else:
 		
 		if o.initialStep == 2:
@@ -122,6 +127,8 @@ def setEnvironment():
 	if o.initialStep > 6:
 		cmd("cp -r", "old/{0}/GUILD_enriched".format(o.out), o.qout)
 		cmd("cp -r", "old/{0}/iLoops/{1}".format(o.out, o.iLoopsVersion), o.qout)
+	if o.initialStep > 7:
+		cmd("cp -r", "old/{0}/neighborhood_analysis".format(o.out), o.qout)
 
 def pickUniqPatterns(tx_network, gn_network):
 

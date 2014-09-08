@@ -2,9 +2,11 @@
 
 from interface import standarize_input
 from interface import out_network
+from interface import export2MSAnalysis
 from libs import options
 from libs import utils
 from methods import analyze_interactions
+from methods import neighborhood_analysis
 from methods import network_analysis
 from methods import structural_analysis
 from network import ucsc_gene_network, ucsc_isoform_network
@@ -14,35 +16,33 @@ import logging
 
 class SmartAS:
 	def __init__(self):
+
 		self.logger = logging.getLogger()
 
 		self.logger.info("SmartAS - Finding significant AS events")
 		self.logger.info("Hector Climente - GRIB 2014")
 
-		self._gene_network = None
-		self._transcript_network = None
-		self._gene_subnetwork = None
+		self._gene_network 			= None
+		self._transcript_network 	= None
+		self._gene_subnetwork 		= None
 
 	def importData(self):
+
 		self.logger.info("Importing data to a compatible format.")
 		standarize_input.standarizeInput()
 		self.logger.info("Done. Relaunch please.")
 
 	def exploreData(self):
+
 		self.logger.info("Reading and summarizing input files: computing PSI values and intereplicate agreement.")
 		utils.cmd("Pipeline/methods/explore_data.r", options.Options().qout, 
 				  "Data/Input/{0}/{1}/".format(options.Options().inputType, options.Options().tag) )
 
 	def getCandidates(self):
+
 		self.logger.info("Extracting transcripts with high variance and high expression.")
 		utils.cmd( "Pipeline/methods/get_candidates.r", options.Options().minExpression, 
 				   options.Options().qout, options.Options().unpairedReplicates )
-
-		self.createTranscriptNetwork(False)
-		self.createGeneNetwork(False)
-
-		out_network.outputGTF(self._gene_network, self._transcript_network )
-		out_network.outCandidateList(self._gene_network, self._transcript_network)
 
 	def networkAnalysis(self, onlyExperimental):
 		
@@ -84,6 +84,14 @@ class SmartAS:
 
 		s = structural_analysis.StructuralAnalysis( self._gene_network, self._transcript_network, self._gene_subnetwork )
 		s.run()
+		
+		self._gene_network.saveNetwork("geneNetwork.pkl")
+		self._transcript_network.saveNetwork("txNetwork.pkl")
+
+	def neighborhoodAnalysis(self):
+
+		n = neighborhood_analysis.NeighborhoodAnalysis( self._gene_network, self._transcript_network, self._gene_subnetwork )
+		n.run()
 		
 		self._gene_network.saveNetwork("geneNetwork.pkl")
 		self._transcript_network.saveNetwork("txNetwork.pkl")
@@ -173,12 +181,22 @@ if __name__ == '__main__':
 		S.exploreData()
 	if options.Options().initialStep <= 2:
 	 	S.getCandidates()
+	 	
+	 	S.createTranscriptNetwork(False)
+		S.createGeneNetwork(False)
+		
+		out_network.outputGTF(S._gene_network, S._transcript_network )
+		out_network.outCandidateList(S._gene_network, S._transcript_network)
+		export2MSAnalysis.export2MSAnalysis().generateFile(S._gene_network)
+
 		if not options.Options().external:
 			options.Options().printToFile(initialStep=3)
 			exit()
 	else:
 		S.createTranscriptNetwork(True)
 		S.createGeneNetwork(True)
+		#quitar tras correr braka
+		export2MSAnalysis.export2MSAnalysis().generateFile(S._gene_network)
 
 	if options.Options().initialStep <= 3:
 		S.launchiLoops()
@@ -190,4 +208,6 @@ if __name__ == '__main__':
 		S.structuralAnalysis()
 	if options.Options().initialStep <= 6:
 		S.analyzeInteractions()
-		#S.networkAnalysis(False)
+		S.networkAnalysis(False)
+	if options.Options().initialStep <= 7:
+		S.neighborhoodAnalysis()
