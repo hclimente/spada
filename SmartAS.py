@@ -2,7 +2,6 @@
 
 from interface import standarize_input
 from interface import out_network
-from interface import export2MSAnalysis
 from libs import options
 from libs import utils
 from methods import analyze_interactions
@@ -187,7 +186,6 @@ if __name__ == '__main__':
 		
 		out_network.outputGTF(S._gene_network, S._transcript_network )
 		out_network.outCandidateList(S._gene_network, S._transcript_network)
-		export2MSAnalysis.export2MSAnalysis().generateFile(S._gene_network)
 
 		if not options.Options().external:
 			options.Options().printToFile(initialStep=3)
@@ -195,8 +193,6 @@ if __name__ == '__main__':
 	else:
 		S.createTranscriptNetwork(True)
 		S.createGeneNetwork(True)
-		#quitar tras correr braka
-		export2MSAnalysis.export2MSAnalysis().generateFile(S._gene_network)
 
 	if options.Options().initialStep <= 3:
 		S.launchiLoops()
