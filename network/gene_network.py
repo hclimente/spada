@@ -181,9 +181,10 @@ class GeneNetwork(network.Network):
 		min_samples = round(samples * 0.1)
 
 		switches = pd.DataFrame.from_csv(options.Options().qout + "candidateList.tsv", sep="\t", header=None, index_col=None)
-		switches.columns = ['Gene', "Transcript_normal", "Transcript_tumor", "Replicates", "Patients"]
+		switches.columns = ["Gene","Transcript_normal","Transcript_tumor","Replicates","Patients","pvalue"]
 		switches.Replicates = switches.Replicates.astype(float)
 		switches.Patients = switches.Patients.str.split(",")
+		switches.pvalue = switches.pvalue.astype(float)
 		switches["Percentage"] = switches.Replicates/samples
 
 		switches = switches[ switches.Percentage >= 0.1 ]
@@ -203,8 +204,9 @@ class GeneNetwork(network.Network):
 			tIso 		= row["Transcript_tumor"]
 			Score 		= row["Percentage"]
 			Patients 	= row["Patients"]
+			pvalue 		= row["pvalue"]
 
-			isoSwitch = switch.IsoformSwitch(nIso, tIso, Score, Patients)
+			isoSwitch = switch.IsoformSwitch(nIso, tIso, Score, Patients, pvalue)
 			self.update_node("isoformSwitches", isoSwitch, full_name=Gene)
 
 	def importSpecificDrivers(self):

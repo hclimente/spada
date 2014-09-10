@@ -2,11 +2,12 @@ import protein
 import transcript
 
 class IsoformSwitch:
-	def __init__(self, nTx, tTx, score, patients):
+	def __init__(self, nTx, tTx, score, patients, pval):
 		self._normal_transcript_name 	= nTx
 		self._tumor_transcript_name 	= tTx
 		self._percent 					= score
 		self._patients 					= patients
+		self._p 						= pval
 
 		self._normal_transcript 		= None
 		self._tumor_transcript 			= None
@@ -21,6 +22,8 @@ class IsoformSwitch:
 	def score(self): return self._percent
 	@property
 	def patients(self): return self._patients
+	@property
+	def p(self): return self._p
 	
 	@property 
 	def nIsoform(self): return self._normal_protein
