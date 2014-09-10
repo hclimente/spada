@@ -9,7 +9,7 @@ import fnmatch
 
 def standarizeInput():
 	numberOfPatients = 0
-	outDir = "Data/Input/{0}/{1}/".format(options.Options().inputType, options.Options().tag)
+	outDir = "Data2/Input/{0}/{1}/".format(options.Options().inputType, options.Options().tag)
 
 	if options.Options().inputType == "GENCODE":
 		utils.cmd("rm -r", outDir, "; mkdir -p", outDir)
@@ -27,37 +27,49 @@ def standarizeInput():
 
 	elif options.Options().inputType == "TCGA":
 		utils.cmd("rm -r", outDir, "; mkdir -p", outDir)
-		patientFiles = []
-
-		inputFile = "Data/TCGA/Rawdata/{0}_iso_tpm_paired-filtered.txt".format(options.Options().tag)
-
+		patientFiles 		 = []
+		unpairedPatientFiles = []
+		pairedPatients 	 	 = set()
+		unpairedPatients 	 = set()
+		tag = options.Options().tag 
 		if options.Options().unpairedReplicates:
-			inputFile = "Data/TCGA/Rawdata/{0}_iso_tpm_tumor-filtered.txt".format(options.Options().tag)
+			tag = tag[2:]
 
-		for line in utils.readTable(inputFile):
-			numberOfPatients = (len(line) - 1)/2
-			
-			if options.Options().unpairedReplicates:
-				for patient in range(1, numberOfPatients+1):
-					patientFiles.append(open("{0}{1}_T.tsv".format(outDir, patient), "w"))
-			else:
-				for sampleType in ["N", "T"]:
-					for patient in range(1, numberOfPatients+1):
-						patientFiles.append(open("{0}{1}_{2}.tsv".format(outDir, patient, sampleType), "w"))
+		inputFile = "Data/TCGA/Rawdata/{0}_iso_tpm_paired-filtered.txt".format(tag)
+
+		for line in utils.readTable(inputFile,header=False):
+			pairedPatients = set([ x[:-1] for x in line ])
+			patientFiles = [ open("{0}{1}_{2}.tsv".format(outDir,line[p][:-1],s),"w") for s in ["N", "T"] for p in range(len(pairedPatients)) ]
 			break
 
 		for line in utils.readTable(inputFile):
 			identifiers = line[0].split(",")
-				
 			gene = identifiers[0]
 			transcript = identifiers[1]
-				
-			currentCol = 1
-			for patient in patientFiles:
-				patient.write( "{0}\t{1}\t{2}\n".format(gene, transcript, line[currentCol]) )
-				currentCol += 1
+
+			for i in range(len(patientFiles)):
+				patientFiles[i].write( "{0}\t{1}\t{2}\n".format(gene, transcript, line[i+1]) )
 		
 		for patient in patientFiles:
 			patient.close()
 
-	options.Options().printToFile(initialStep=1,replicates=numberOfPatients)
+		if options.Options().unpairedReplicates:
+			inputFile = "Data/TCGA/Rawdata/{0}_iso_tpm_tumor-filtered.txt".format(tag)
+
+			for line in utils.readTable(inputFile,header=False):
+				unpairedPatients = set([ x[:-1] for x in line ])
+				unpairedPatientFiles = [ open("{0}{1}_T.tsv".format(outDir,line[p][:-1]),"w") for p in range(len(unpairedPatients)) ]
+				break
+
+			for line in utils.readTable(inputFile):
+				identifiers = line[0].split(",")
+				gene = identifiers[0]
+				transcript = identifiers[1]
+
+				for i in range(len(unpairedPatientFiles)):
+					unpairedPatientFiles[i].write( "{0}\t{1}\t{2}\n".format(gene, transcript, line[i+1]) )
+
+			for patient in unpairedPatientFiles:
+				patient.close()
+
+	options.Options().printToFile(initialStep=1,replicates=pairedPatients,unpairedReplicates=unpairedPatients)
