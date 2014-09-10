@@ -6,17 +6,25 @@ suppressMessages( library(logging) )
 args <- commandArgs(trailingOnly = TRUE)
 minExpression <- as.numeric(args[1])
 load(paste0(args[2], "RWorkspaces/1_ExploreData.RData"))
-unpairedReplicates <- as.numeric(args[3])
-numOfReplicates <- inputData[["Replicates"]]
+
+patientSet <- inputData$Replicates
+if (length(inputData$unpairedReplicates) > 0) {
+  patientSet <- inputData$unpairedReplicates
+}
+
+numOfReplicates <- length(patientSet)
 
 logger <- getLogger(name="get_candidates", level=10) #Level debug
 
 addHandler(writeToConsole, logger="get_candidates", level='INFO')
 addHandler(writeToFile, logger="get_candidates", file=paste0(out, "rSmartAS.log"), level='DEBUG')
 
-if (unpairedReplicates != 0) {  
-  load(paste0(args[2], "RWorkspaces/1_Tumor_Intereplicate.RData"))
-  numOfReplicates <- unpairedReplicates
+binomialTest <- function(x){
+
+  successes <- as.numeric(x[4])
+  a <- binom.test(successes,numOfReplicates,p = 0.05,alternative = "greater",conf.level = 0.95)
+  return(unlist(a["p.value"]))
+
 }
 
 candidates <- list()
@@ -30,7 +38,7 @@ loginfo("Searching isoform switches in %d patients.", numOfReplicates, logger="g
 candidatesPB <- txtProgressBar(min=1, max=numOfReplicates, initial = 1, style=3)
 counter <- 1
 
-for (replicate in seq(1,numOfReplicates)){
+for (replicate in patientSet){
   
   candidates[[replicate]] <- data.frame(Gene=as.character(), Switch=as.numeric(), maxdPSI=as.character(), mindPSI=as.character())
   
@@ -64,11 +72,6 @@ for (replicate in seq(1,numOfReplicates)){
     minDeltaPsi <- min(intraReplicate[[replicate]]$deltaPSI[thisGeneData & tumTranscripts], na.rm=T)
     tumCandidate <- intraReplicate[[replicate]]$deltaPSI == minDeltaPsi
 
-    if (unpairedReplicates != 0) {
-      norCandidate <- intraReplicate[[replicate]]$deltaPSI <= 0.05
-      tumCandidate <- intraReplicate[[replicate]]$deltaPSI <= 0.05
-    }
-    
     Switch <- maxDeltaPsi - minDeltaPsi
     
     if (Switch < 0.2){
@@ -89,7 +92,7 @@ for (replicate in seq(1,numOfReplicates)){
   #Expressed genes: transcripts whose expression are above the expression threshold in any of the conditions
   replicateExpressed[[replicate]] <- data.frame(Transcript=intraReplicate[[replicate]]$Transcript[norExpression | tumExpression],
                                                 Gene=intraReplicate[[replicate]]$Gene[norExpression | tumExpression])
-  logdebug("%d switches found at patient %d", nrow(candidates[[replicate]]), replicate, logger="get_candidates")
+  logdebug("%d switches found at patient %s", nrow(candidates[[replicate]]), replicate, logger="get_candidates")
   setTxtProgressBar(candidatesPB, counter)
   counter <- counter + 1
   
@@ -103,16 +106,17 @@ allExpressedTranscripts <- allExpressedTranscripts[with(allExpressedTranscripts,
 candidateMask[["N"]] <- do.call('cbind', candidateMask[["N"]])
 candidateMask[["T"]] <- do.call('cbind', candidateMask[["T"]])
 
-for (i in seq(1:inputData$Replicates)){candidates[[i]]$Origin = i}
+for (i in inputData$Replicates){candidates[[i]]$Origin = i}
 
 candidateList <- do.call("rbind", candidates)
 candidateList <- ddply(candidateList,.(Gene,maxdPSI,mindPSI), summarise, Replicated=length(Gene), Patients=paste(Origin, collapse = ",") )
 candidateList <- candidateList[with(candidateList, order(-Replicated)), ]
+candidateList$pval <- apply(candidateList,1,binomialTest)
 
 write.table(candidateList, file=paste0(out, "candidateList.tsv"), sep="\t", row.names=F, col.names=F, quote=F)
 write.table(allExpressedTranscripts, paste0(out, "expressedGenes.lst"), sep="\t", row.names=F, col.names=F, quote=F)
 
-cols <- c( paste0("TPM_", seq(1,inputData$Replicates )), paste0("PSI_", seq(1,inputData$Replicates )), paste0("tTPM_", seq(1,inputData$Replicates )), "FPR_4MAD" )
+cols <- c( paste0("TPM_",inputData$Replicates), paste0("PSI_",inputData$Replicates), paste0("tTPM_",inputData$Replicates), "FPR_4MAD" )
 write.table(interReplicate[["N"]][,!(colnames(interReplicate$N) %in% cols)], file=paste0(out, "expression_normal.tsv"), sep="\t", row.names=F, quote=F)
 write.table(interReplicate[["T"]][,!(colnames(interReplicate$T) %in% cols)], file=paste0(out, "expression_tumor.tsv"), sep="\t", row.names=F, quote=F)
 
@@ -122,17 +126,17 @@ save(isoformExpression, intraReplicate, interReplicate, candidates, candidateLis
 suppressMessages(library(gplots)) #Avoid the annoying message
 library(RColorBrewer)
 
-top <- length(candidateList$Gene[candidateList$Replicated >= inputData[["Replicates"]] * 0.2])
+top <- length(candidateList$Gene[candidateList$Replicated >= inputData$Replicates * 0.2])
 
 topCandidates <- ddply(candidateList,.(Gene), summarise, Replicated=sum(Replicated))
 topCandidates <- topCandidates[with(topCandidates, order(-Replicated)), ]
 topCandidates <- head(topCandidates, n=top)
 
-fig <- data.frame(matrix(nrow=length(topCandidates$Gene), ncol=inputData[["Replicates"]]))
+fig <- data.frame(matrix(nrow=length(topCandidates$Gene), ncol=numOfReplicates))
 rownames(fig) <- topCandidates$Gene
-colnames(fig) <- seq(1,inputData[["Replicates"]])
+colnames(fig) <- inputData$Replicates
 
-for (replicate in seq(1,inputData[["Replicates"]])){
+for (replicate in inputData$Replicates){
   for (gene in topCandidates$Gene){
     if (gene %in% candidates[[replicate]]$Gene) {
       fig[gene, replicate] <- head(candidates[[replicate]]$Switch[candidates[[replicate]]$Gene == gene],1)
