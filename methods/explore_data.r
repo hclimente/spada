@@ -37,6 +37,17 @@ simplePlot <- function(x, y, title, xLab, yLab, pngName){
   graphics.off()
 }
 
+getThresholds <- function(x){
+  psiCols  <- paste0("PSI_",inputData$Replicates)
+  
+  diffMatrix <- abs(outer(as.numeric(x),as.numeric(x),"-"))
+  subtraction <- diffMatrix[lower.tri(diffMatrix, diag = FALSE)]
+  fpr1 <- as.numeric( quantile(subtraction, 0.99, na.rm=T) )
+  fpr5 <- as.numeric( quantile(subtraction, 0.95, na.rm=T) )
+  
+  return(list(fpr1=fpr1,fpr5=fpr5))
+}
+
 calculateMAD <- function(x){
 
   result <- apply(x, 1, mad, na.rm=T)
@@ -51,18 +62,16 @@ calculateMAD <- function(x){
 
 }
 
-loginfo("Importing data from %d patients.",inputData[["Replicates"]],logger="explore_data")
-explorationPB <- txtProgressBar(min=1, max=inputData[["Replicates"]], initial=1, style=3)
+loginfo("Importing data from %d paired samples.",length(inputData$Replicates),logger="explore_data")
+explorationPB <- txtProgressBar(min=1, max=length(inputData$Replicates), initial=1, style=3)
 counter <- 1
 
-for (replicate in seq(1, inputData[["Replicates"]])){
-
-  for (sample in inputData[["Conditions"]]){
+for (replicate in inputData$Replicates){
+  for (sample in inputData$Conditions){
 
     tag <- paste0(replicate, sample)
     inputFile=paste0(inputPath, replicate, "_", sample, ".tsv")
-    outputFile=paste0(out, replicate, "_", sample, ".tsv")
-      
+          
     #Read expression table
     isoformExpression[[tag]] <- read.table(inputFile, header=F, sep="\t", stringsAsFactors=F)
     colnames(isoformExpression[[tag]]) <- c("Gene", "Transcript","TPM")
@@ -100,9 +109,9 @@ for (replicate in seq(1, inputData[["Replicates"]])){
 
 close(explorationPB)
 
-tpmCols  <- paste0("TPM_", seq(1,inputData[["Replicates"]]) )
-tTpmCols <- paste0("tTPM_", seq(1,inputData[["Replicates"]]) )
-psiCols  <- paste0("PSI_", seq(1,inputData[["Replicates"]]) )
+tpmCols  <- paste0("TPM_",inputData$Replicates)
+tTpmCols <- paste0("tTPM_",inputData$Replicates)
+psiCols  <- paste0("PSI_",inputData$Replicates)
 
 all <- c(rbind(tpmCols, tTpmCols, psiCols))
 
@@ -110,12 +119,12 @@ delete <- list()
 delete[["N"]] <- c("TPM_T","tTPM_T", "PSI_T", "deltaPSI", "la_tTPM")
 delete[["T"]] <- c("TPM_N","tTPM_N", "PSI_N", "deltaPSI", "la_tTPM")
 
-loginfo("Summarizing data from %d patients.",inputData[["Replicates"]],logger="explore_data")
-patientSumPB <- txtProgressBar(min=1, max=inputData[["Replicates"]] * 2, initial=1, style=3)
+loginfo("Summarizing data from %d paired samples.",length(inputData$Replicates),logger="explore_data")
+pairedPatientSumPB <- txtProgressBar(min=1, max=length(inputData$Replicates) * 2, initial=1, style=3)
 counter <- 1
 
-for (sample in inputData[["Conditions"]]){
-  for (replicate in seq(1,inputData[["Replicates"]])){
+for (sample in inputData$Conditions){
+  for (replicate in inputData$Replicates){
 
     replicate_c <- as.character(replicate)
         
@@ -132,7 +141,7 @@ for (sample in inputData[["Conditions"]]){
     simplePlot(intraReplicate[[replicate]]$la_tTPM, intraReplicate[[replicate]]$deltaPSI, replicate, "0.5·(log(sum tTPM_N) + log(sum tTPM_T) )", 
                "deltaPSI", paste0(out, "DataExploration/latTPM_PSI_intrarreplicate",replicate,"_", sample,".png"))
 
-    setTxtProgressBar(patientSumPB, counter)
+    setTxtProgressBar(pairedPatientSumPB, counter)
     counter <- counter + 1
 
   }
@@ -148,51 +157,47 @@ for (sample in inputData[["Conditions"]]){
 
 }
 
-close(patientSumPB)
+close(pairedPatientSumPB)
 
-fpr1   <- numeric()
-fpr5   <- numeric()
-fprMAD <- numeric()
+#Input unpaired samples, if any
+if (length(inputData$unpairedReplicates) > 0){
 
-loginfo("Summarizing data from %d transcripts.",length(interReplicate[["N"]]$Transcript),logger="explore_data")
+  loginfo("Importing data from %d unpaired samples.",length(inputData$unpairedReplicates),logger="explore_data")
+  unpairedPatientSumPB <- txtProgressBar(min=1, max=length(inputData$unpairedReplicates), initial=1, style=3)
+  counter <- 1
 
-sampleSumPB <- txtProgressBar(min = 1, max = length(interReplicate[["N"]]$Transcript), initial = 1, style=3)
-counter <- 1
+  for (replicate in inputData$unpairedReplicates){
+    inputFile=paste0(inputPath, replicate, "_T.tsv")
+    
+    intraReplicate[[replicate]] <- read.table(inputFile, header=F, sep="\t", stringsAsFactors=F)
+    colnames(intraReplicate[[replicate]]) <- c("Gene","Transcript","TPM_T")
+    vtTPM <- aggregate(TPM_T ~ Gene, data = intraReplicate[[replicate]], FUN = "sum")
+    colnames(vtTPM) <- c("Gene", "tTPM_T")
+    intraReplicate[[replicate]] <- merge(intraReplicate[[replicate]], vtTPM,by="Gene")
+    intraReplicate[[replicate]] <- transform(intraReplicate[[replicate]], PSI_T = TPM_T / tTPM_T)
 
-for (tx in interReplicate[["N"]]$Transcript){
-  thisTranscript <- interReplicate[["N"]][interReplicate[["N"]]$Transcript==tx,psiCols]
-  this4MAD <- 4 * interReplicate[["N"]]$MAD_PSI[interReplicate[["N"]]$Transcript==tx]
-  
-  diffMatrix <- abs(outer(as.numeric(thisTranscript),as.numeric(thisTranscript),"-"))
-  subtraction <- diffMatrix[lower.tri(diffMatrix, diag = FALSE)]
-  fpr1 <- c(fpr1, as.numeric( quantile(subtraction, 0.99, na.rm=T) ) )
-  fpr5 <- c(fpr5, as.numeric( quantile(subtraction, 0.95, na.rm=T) ) )
-  if ( any( !is.na(subtraction) ) ) {
-    fprMAD <- c(fprMAD, 1 - ecdf(subtraction)(this4MAD) )
-  } else {
-    fprMAD <- c(fprMAD, NA)
+    intraReplicate[[replicate]]$TPM_N = 9999
+
+    intraReplicate[[replicate]] <- merge(intraReplicate[[replicate]], interReplicate[["N"]][,c("Gene","Transcript","Median_PSI")], by=c("Gene","Transcript") )
+    names(intraReplicate[[replicate]])[names(intraReplicate[[replicate]])=="Median_PSI"] <- "PSI_N"
+    #Calculare a deltaPSI, the difference between the PSI in the tumor and the median PSI
+    #for normal transcripts.
+    intraReplicate[[replicate]]$deltaPSI <- intraReplicate[[replicate]]$PSI_N - intraReplicate[[replicate]]$PSI_T
+
+
+    setTxtProgressBar(unpairedPatientSumPB, counter)
+    counter <- counter + 1
   }
 
-  setTxtProgressBar(sampleSumPB, counter)
-  counter <- counter + 1
+  close(unpairedPatientSumPB)
 }
 
-getThresholds <- function(x){
-  psiCols  <- paste0("PSI_", seq(1,inputData[["Replicates"]]) )
-  
-  diffMatrix <- abs(outer(as.numeric(x[,psiCols]),as.numeric(x[,psiCols]),"-"))
-  subtraction <- diffMatrix[lower.tri(diffMatrix, diag = FALSE)]
-  fpr1 <- as.numeric( quantile(subtraction, 0.99, na.rm=T) )
-  fpr5 <- as.numeric( quantile(subtraction, 0.95, na.rm=T) )
+loginfo("Summarizing data from %d transcripts.",length(interReplicate[["N"]]$Transcript),logger="explore_data")
+fprThresholds <- apply(interReplicate[["N"]][,psiCols],1,getThresholds)
+dfFprThresholds <- do.call(rbind, fprThresholds)
 
-  return(fpr1,frp5)
-}
-
-close(sampleSumPB)
-
-interReplicate[["N"]]$FPR_1 <- fpr1
-interReplicate[["N"]]$FPR_5 <- fpr5
-interReplicate[["N"]]$FPR_4MAD <- fprMAD
+interReplicate[["N"]]$FPR_1 <- as.numeric(dfFprThresholds[,1])
+interReplicate[["N"]]$FPR_5 <- as.numeric(dfFprThresholds[,2])
 
 simplePlot(interReplicate[["N"]]$Median_PSI, interReplicate[["N"]]$MAD, "InterReplicate_N", "Median PSI", "MAD", paste0(out, "DataExploration/Interreplicate_mean_MAD_N.png"))
 simplePlot(interReplicate[["N"]]$Median_PSI, interReplicate[["N"]]$FPR_1, "InterReplicate_N", "Median PSI", "FPR 1%", paste0(out, "DataExploration/Interreplicate_medianPSI_FRP1_N.png"))
