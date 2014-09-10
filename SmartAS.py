@@ -1,5 +1,6 @@
 #!/soft/devel/python-2.7/bin/python
 
+from interface import export_to_MSAnalysis
 from interface import standarize_input
 from interface import out_network
 from libs import options
@@ -21,9 +22,9 @@ class SmartAS:
 		self.logger.info("SmartAS - Finding significant AS events")
 		self.logger.info("Hector Climente - GRIB 2014")
 
-		self._gene_network 			= None
-		self._transcript_network 	= None
-		self._gene_subnetwork 		= None
+		self._gene_network 		 = None
+		self._transcript_network = None
+		self._gene_subnetwork 	 = None
 
 	def importData(self):
 
@@ -35,13 +36,13 @@ class SmartAS:
 
 		self.logger.info("Reading and summarizing input files: computing PSI values and intereplicate agreement.")
 		utils.cmd("Pipeline/methods/explore_data.r", options.Options().qout, 
-				  "Data/Input/{0}/{1}/".format(options.Options().inputType, options.Options().tag) )
+				  "Data2/Input/{0}/{1}/".format(options.Options().inputType, options.Options().tag) )
 
 	def getCandidates(self):
 
 		self.logger.info("Extracting transcripts with high variance and high expression.")
 		utils.cmd( "Pipeline/methods/get_candidates.r", options.Options().minExpression, 
-				   options.Options().qout, options.Options().unpairedReplicates )
+				   options.Options().qout )
 
 	def networkAnalysis(self, onlyExperimental):
 		
@@ -153,12 +154,13 @@ class SmartAS:
 
 if __name__ == '__main__':
 
+	#Can produce an error if path doesn't exist
 	logging.basicConfig(
-							level=logging.DEBUG,
-							format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-							datefmt='%m-%d %H:%M',
-	                    	filename=options.Options().qout + 'smartAS.log',
-	                    	filemode='w'
+						level=logging.DEBUG,
+						format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+						datefmt='%m-%d %H:%M',
+	                   	filename=options.Options().qout + 'smartAS.log',
+	                   	filemode='w'
 					   )
 
 	console = logging.StreamHandler()
@@ -186,6 +188,7 @@ if __name__ == '__main__':
 		
 		out_network.outputGTF(S._gene_network, S._transcript_network )
 		out_network.outCandidateList(S._gene_network, S._transcript_network)
+		export_to_MSAnalysis.Export2MSAnalysis().generateFile(S._gene_network)
 
 		if not options.Options().external:
 			options.Options().printToFile(initialStep=3)
