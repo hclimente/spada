@@ -18,17 +18,20 @@ class Options(object):
         self._gwd                   = options.gwd if options.gwd[-1]== "/" else options.gwd + "/"
         self._minExpression         = options.minExpression
         self._inputType             = options.inputType
-        self._replicates            = options.replicates
+        self._replicates            = set(options.replicates.split(",")) if options.replicates else set()
         self._iLoopsVersion         = options.iLoopsVersion
-        self._unpairedReplicates    = options.unpairedReplicates
-        self._tag                   = options.tag
+        self._unpairedReplicates    = set(options.unpairedReplicates.split(",")) if options.unpairedReplicates else set()
+        self._tag                   = options.tag 
+        if self._unpairedReplicates and options.tag[:1] != "u_":
+            self._tag = "u_"+options.tag
         self._external              = options.external
         self._specificDrivers       = options.specificDrivers
         if self._external:
-            if self._unpairedReplicates == 0:
-                self._out           = self._inputType + "/" + self._tag + "/"
+            if not self._unpairedReplicates:
+                self._out           = "{0}/{1}/".format(self._inputType,self._tag)
         else:
-            self._out               = self._inputType + "/" + self._tag + "_mE" + str(self._minExpression) + "/"
+            self._out               = "{0}/{1}_mE{2}/".format(self._inputType,self._tag,self._minExpression)
+
         self._gOut                  = self._gwd + "Results/" + self._out
         self._quickOut              = self._wd + "Results/" + self._out
 
@@ -82,12 +85,12 @@ class Options(object):
                             type=float, help='Minimum expression to consider a transcript not residual.')
         parser.add_argument('-i', '--input-type', dest='inputType', action='store', default='TCGA',
                             help='Origin of the data.')
-        parser.add_argument('-r', '--replicates', dest='replicates', action='store', default='0',
-                            type=int, help='Number of patients or biological replicates.')
+        parser.add_argument('-r', '--replicates', dest='replicates', action='store',
+                            help='Number of patients or biological replicates.')
         parser.add_argument('-v', '--iloops-version', dest='iLoopsVersion', action='store', 
                             default='iLoops13', help='Version of iLoops to run.')
         parser.add_argument('-u', '--unpaired-replicates', dest='unpairedReplicates', action='store', 
-                            default='0', type=int, help='Number of unpaired samples.')
+                            help='Number of unpaired samples.')
         parser.add_argument('-t', '--tag', dest='tag', action='store', default='20',
                             help='Tag of the files.')
         parser.add_argument('-e', '--external', dest='external', action='store', default='',
@@ -103,62 +106,67 @@ class Options(object):
         options     = parser.parse_args(["@" + config_opt.config_file])
         return options
 
-    def printToFile(self, initialStep=None, wd=None, gwd=None,minExpression=None,inputType=None,replicates=None,iLoopsVersion=None,unpairedReplicates=None,tag=None,external=None,specificDrivers=None):
+    def printToFile(self, initialStep=None, wd=None, gwd=None, minExpression=None, inputType=None, replicates=None, iLoopsVersion=None, unpairedReplicates=None, tag=None, external=None, specificDrivers=None):
         with open(self._tag + ".cfg", "w") as CONFIG:
-            if self._initial_step != 0:
-                CONFIG.write("initial-step=" + str(self._initial_step) + "\n")
-            elif initialStep:
+
+
+            if initialStep:
                 CONFIG.write("initial-step=" + str(initialStep) + "\n")
+            elif self._initial_step != 0:
+                CONFIG.write("initial-step=" + str(self._initial_step) + "\n")
             
-            if self._wd != '/home/hector/SmartAS/':
-                CONFIG.write("working-directory=" + self._wd + "\n")
-            elif wd:
+            if wd:
                 CONFIG.write("working-directory=" + wd + "\n")
+            elif self._wd != '/home/hector/SmartAS/':
+                CONFIG.write("working-directory=" + self._wd + "\n")
             
-            if self._gwd != '/sbi/users/hectorc/SmartAS':
-                CONFIG.write("gaudi-wd=" + self._gwd + "\n")
-            elif gwd:
+            if gwd:
                 CONFIG.write("gaudi-wd=" + gwd + "\n")
+            elif self._gwd != '/sbi/users/hectorc/SmartAS':
+                CONFIG.write("gaudi-wd=" + self._gwd + "\n")
             
-            if self._minExpression != 0.0:         
-                CONFIG.write("minimum-expression=" + str(self._minExpression) + "\n")
-            elif minExpression:
+            if minExpression:
                 CONFIG.write("minimum-expression=" + str(minExpression) + "\n")
+            elif self._minExpression != 0.0:         
+                CONFIG.write("minimum-expression=" + str(self._minExpression) + "\n")
             
-            if self._inputType != "TCGA":
-                CONFIG.write("input-type=" + self._inputType + "\n")
-            elif inputType:
+            if inputType:
                 CONFIG.write("input-type=" + inputType + "\n")
+            elif self._inputType != "TCGA":
+                CONFIG.write("input-type=" + self._inputType + "\n")
             
-            if self._replicates != 0:            
-                CONFIG.write("replicates=" + str(self._replicates) + "\n")
-            elif replicates:
-                CONFIG.write("replicates=" + str(replicates) + "\n")
+            if replicates:
+                CONFIG.write("replicates=" + ",".join(replicates) + "\n")
+            elif self._replicates:
+                CONFIG.write("replicates=" + ",".join(self._replicates) + "\n")
             
-            if self._iLoopsVersion != "iLoops13":
-                CONFIG.write("iloops-version=" + self._iLoopsVersion + "\n")
-            elif iLoopsVersion:
+            if iLoopsVersion:
                 CONFIG.write("iloops-version=" + iLoopsVersion + "\n")
+            elif self._iLoopsVersion != "iLoops13":
+                CONFIG.write("iloops-version=" + self._iLoopsVersion + "\n")
             
-            if self._unpairedReplicates != 0:
-                CONFIG.write("unpaired-replicates=" + str(self._unpairedReplicates) + "\n")
-            elif unpairedReplicates:
-                CONFIG.write("unpaired-replicates=" + str(unpairedReplicates) + "\n")
+            if unpairedReplicates:
+                CONFIG.write("unpaired-replicates=" + ",".join(unpairedReplicates) + "\n")
+            elif self._unpairedReplicates:
+                CONFIG.write("unpaired-replicates=" + ",".join(self._unpairedReplicates) + "\n")
             
-            if self._tag:
-                CONFIG.write("tag=" + self._tag + "\n")
-            elif tag:
+            if tag:
                 CONFIG.write("tag=" + tag + "\n")
+            elif self._tag:
+                if self._tag[:2]=="u_":
+                    CONFIG.write("tag=" + self._tag[2:] + "\n")
+                else:
+                    CONFIG.write("tag=" + self._tag + "\n")
             
-            if self._external:              
-                CONFIG.write("external=" + self._external + "\n")
-            elif external:
+            if external:
                 CONFIG.write("external=" + external + "\n")
+            elif self._external:              
+                CONFIG.write("external=" + self._external + "\n")
             
-            if self._specificDrivers:
-                CONFIG.write("specific-drivers=" + self._specificDrivers + "\n")
-            elif specificDrivers:
+            if specificDrivers:
                 CONFIG.write("specific-drivers=" + specificDrivers + "\n")
+            elif self._specificDrivers:
+                CONFIG.write("specific-drivers=" + self._specificDrivers + "\n")
             #if self._out:                   CONFIG.write("out=" + self._out + "\n")
             #if self._gOut:                  CONFIG.write("gOut=" + self._gOut + "\n")
 

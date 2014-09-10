@@ -69,6 +69,12 @@ def setEnvironment():
 	o.printToFile()
 
 	logger.info("Preparing the environment.")
+
+	if not os.path.exists("old/" + o.out):
+		cmd("mkdir","-p","old/" + o.out)
+	if not os.path.exists("old2/" + o.out):
+		cmd("mkdir","-p","old2/" + o.out)
+
 	cmd("rm -r old2/" + o.out )
 	cmd("mv", "old/" + o.out, "old2/" + o.out )
 	cmd("mv", o.qout, "old/" + o.out )
@@ -84,41 +90,43 @@ def setEnvironment():
 		if o.initialStep <= 1:
 			
 			#Set R workspace
-			r("wd <- \"" + options.Options().wd + "\"")
-			r("out <- \"Results/" + options.Options().out + "\"")
+			r("wd <- \"{0}\"".format(options.Options().wd))
+			r("out <- \"{0}\"".format(options.Options().qout))
 			r("inputData <- list()")	
 			r('inputData[["Conditions"]] <- c("N", "T")')
-			r('inputData[["Replicates"]] <- ' + str(options.Options().replicates))
+			reps = ",".join(set([ "\"" + x + "\"" for x in options.Options().replicates ]))
+			r('inputData[["Replicates"]] <- c({0})'.format (reps))
+			ureps = ",".join(set([ "\"" + x + "\"" for x in options.Options().unpairedReplicates ]))
+			r('inputData[["unpairedReplicates"]] <- c({0})'.format (ureps))
 			r('save.image("' + options.Options().qout + 'RWorkspaces/0_InitialEnvironment.RData")')
 
 		if o.initialStep > 1:
 
-			cmd("cp -r", "old/" + o.out + "/DataExploration", o.qout)
-			cmd("cp", "old/" + o.out + "/RWorkspaces/1_ExploreData.RData", o.qout + "/RWorkspaces")
+			cmd("cp -r", "old/" + o.out + "DataExploration", o.qout)
+			cmd("cp", "old/" + o.out + "RWorkspaces/1_ExploreData.RData", o.qout + "/RWorkspaces")
 			cmd("cp", "old/" + o.out + "smartAS.log", o.qout + "/RWorkspaces")
 			cmd("cp -r", "old/{0}/iLoops".format(o.out), o.qout)
-			#cmd("rm -r", "{0}iLoops/{1}".format(o.qout, o.iLoopsVersion), o.qout)
 
 		if o.initialStep > 2:
-			cmd("cp", "old/" + o.out + "/RWorkspaces/2_GetCandidates.RData", o.qout + "/RWorkspaces")
-			cmd("cp", "old/" + o.out + "/candidateList.tsv", "old/" + o.out + "/candidateList_v2.tsv","old/" + o.out + "/expressedGenes.lst", o.qout)
-			cmd("cp", "old/" + o.out + "/candidates_normal.gtf", "old/" + o.out + "/candidates_tumor.gtf", o.qout)
-			cmd("cp", "old/" + o.out + "/geneNetwork*.pkl", "old/" + o.out + "/txNetwork*.pkl", o.qout)
-			cmd("cp", "old/" + o.out + "/expression_normal.tsv", "old/" + o.out + "/expression_tumor.tsv", o.qout)
-			cmd("cp", "old/" + o.out + "/msInput.txt", o.qout)
+			cmd("cp", "old/" + o.out + "RWorkspaces/2_GetCandidates.RData", o.qout + "/RWorkspaces")
+			cmd("cp", "old/" + o.out + "candidateList.tsv", "old/" + o.out + "candidateList_v2.tsv","old/" + o.out + "expressedGenes.lst", o.qout)
+			cmd("cp", "old/" + o.out + "candidates_normal.gtf", "old/" + o.out + "candidates_tumor.gtf", o.qout)
+			cmd("cp", "old/" + o.out + "geneNetwork*.pkl", "old/" + o.out + "txNetwork*.pkl", o.qout)
+			cmd("cp", "old/" + o.out + "expression_normal.tsv", "old/" + o.out + "expression_tumor.tsv", o.qout)
+			cmd("cp", "old/" + o.out + "msInput.txt", o.qout)
 			
 	else:
 		
 		if o.initialStep == 2:
 			oriOut = "_".join(o.out.split("_")[:-1])
-			cmd("cp", "Results/" + oriOut + "/RWorkspaces/1_ExploreData.RData", "Results/" + o.out + "/RWorkspaces")
-			cmd("Pipeline/scripts/InputUnpaired.r", oriOut, o.unpairedReplicates, "Data/Input/" + o.out + "/")
+			cmd("cp", "Results/" + oriOut + "/RWorkspaces/1_ExploreData.RData", "Results/" + o.out + "RWorkspaces")
+			cmd("Pipeline/scripts/InputUnpaired.r", oriOut, o.unpairedReplicates, "Data/Input/" + o.out + "")
 		if o.initialStep == 3:
-			cmd("cp", o.external + ".tsv" , "Results/" + o.out + "/candidateList.tsv")
-			cmd("cp", o.external + "_expressedGenes.lst", "Results/" + o.out + "/expressedGenes.lst")
+			cmd("cp", o.external + ".tsv" , "Results/" + o.out + "candidateList.tsv")
+			cmd("cp", o.external + "_expressedGenes.lst", "Results/" + o.out + "expressedGenes.lst")
 
 	if o.initialStep > 3:
-		cmd("cp", "old/" + o.out + "/candidatesGaudi.lst", o.qout)
+		cmd("cp", "old/" + o.out + "candidatesGaudi.lst", o.qout)
 	if o.initialStep > 4:
 		cmd("cp -r", "old/{0}/GUILD_experimental".format(o.out), o.qout)
 		cmd("cp", "old/{0}/geneSubnetwork.pkl".format(o.out), o.qout)
