@@ -58,11 +58,13 @@ class iLoopsParser(iLoops_xml_parser.ILXMLParser):
 					if int(strippedLine[9:-10]) > tmpRC:
 						tmpRC = int(strippedLine[9:-10])
 				elif "RF_prediction" in strippedLine:
+					interactions.setdefault(partner, 0)
 					if "True" in strippedLine and tmpRC > interactions[partner]:
 						interactions[partner] = tmpRC
-				elif ("P1ID" in strippedLine or "P2ID" in strippedLine) and myProtein not in strippedLine:
-					partner = strippedLine[6:-7]
-					interactions.setdefault(partner, 0)
+				elif ("P1ID" in strippedLine or "P2ID" in strippedLine):
+					if not partner or partner == myProtein:
+						partner = strippedLine[6:-7]
+
 		os.remove(xmlFile)
 
 		realInteractions = {k: interactions[k] for k in expressedTranscripts if k in interactions }
