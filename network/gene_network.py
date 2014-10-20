@@ -4,9 +4,10 @@ from libs import options
 from libs import biana
 from biological_entities import switch
 
+import abc
 import numpy as np
 import pandas as pd
-import abc
+import subprocess
 
 class GeneNetwork(network.Network):
 	"""docstring for GeneNetwork
@@ -25,6 +26,7 @@ class GeneNetwork(network.Network):
 		ExpressedTranscripts(set,()) 	Set with transcripts with a significant expression.
 		diffExpression_logFC(float,None)Log FC of differential expression.
 		diffExpression_p(float,None)	Adjusted p-value of differential expression.
+		neighborhoods(dictionary,{})	Adjusted p-value of differential expression.
 
 	Edge information:
 		Id1(str) 						Gene id of interactor 1.
@@ -86,14 +88,15 @@ class GeneNetwork(network.Network):
 								EpiFactor				= False, 
 								ExpressedTranscripts 	= set(),
 								diffExpression_logFC	= None,
-								diffExpression_p		= None
+								diffExpression_p		= None,
+								neighborhoods			= {}
 							  )
 
 			return True
 
 		return False
 
-	def update_node(self, key, value, full_name = "", gene_id = ""):
+	def update_node(self, key, value,full_name = "",gene_id = "",secondKey=""):
 		"""Changes the value of a node attribute, specified by the key argument. 
 		Returns True if succesful; else, returns False."""
 
@@ -107,7 +110,7 @@ class GeneNetwork(network.Network):
 		if key is "score":
 			finalValue = min(1.0, self._net.node[geneID]["score"] + value)
 
-		return self._update_node(geneID, key, finalValue)
+		return self._update_node(geneID,key,finalValue,secondKey)
 
 	def add_edge(self, full_name1 = "", gene_id1 = "", full_name2 = "", gene_id2 = ""):
 		"""Adds an edge to the network. Return True if succesful; else, return False.
@@ -177,7 +180,9 @@ class GeneNetwork(network.Network):
 		"""
 		self.logger.debug("Retrieving calculated isoform switches.")
 
-		samples = options.Options().replicates
+		samples = len(options.Options().replicates)
+		if options.Options().unpairedReplicates:
+			samples = len(options.Options().unpairedReplicates)
 		min_samples = round(samples * 0.1)
 
 		switches = pd.DataFrame.from_csv(options.Options().qout + "candidateList.tsv", sep="\t", header=None, index_col=None)
@@ -187,7 +192,7 @@ class GeneNetwork(network.Network):
 		switches.pvalue = switches.pvalue.astype(float)
 		switches["Percentage"] = switches.Replicates/samples
 
-		switches = switches[ switches.Percentage >= 0.1 ]
+		switches = switches[ switches.pvalue <= 0.001 ]
 				
 		switches_groupedByGene = switches[ ["Gene", "Replicates"] ]
 		switches_groupedByGene = switches_groupedByGene.groupby("Gene").sum()
@@ -211,8 +216,12 @@ class GeneNetwork(network.Network):
 
 	def importSpecificDrivers(self):
 		self.logger.debug("Importing specific drivers.")
+
 		for nameComponents in utils.readTable(options.Options().specificDrivers, header=False):
-			geneID = self.nameFilter(gene_id = nameComponents[1])[0]
+
+			geneID = self.nameFilter(gene_symbol = nameComponents[0])[0]
+
+			if not geneID: continue
 
 			self.logger.debug("Adding {0} as specific driver.".format(geneID))
 
@@ -222,7 +231,12 @@ class GeneNetwork(network.Network):
 
 	def importDiffExpression(self):
 		self.logger.debug("Importing differential expression information.")
-		for line in utils.readTable("Data/TCGA/Rawdata/{0}_gene_diffexp_paired-filtered.txt".format(options.Options().tag)):
+
+		tag = options.Options().tag
+		if options.Options().unpairedReplicates:
+			tag = options.Options().tag[2:]
+
+		for line in utils.readTable("Data/TCGA/Rawdata/{0}_gene_diffexp_paired-filtered.txt".format(tag)):
 			geneID = self.nameFilter(full_name=line[1])[0]
 
 			self.update_node("diffExpression_logFC", float(line[11]), gene_id=geneID)
@@ -307,7 +321,6 @@ class GeneNetwork(network.Network):
 														id_type 								= bianaInputType,
 														new_user_entity_set_id					= "proteome",
 													  )
-
 		session.create_network( 
 								user_entity_set_id 					= "proteome", 
 								level 								= 5, 

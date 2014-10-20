@@ -25,7 +25,7 @@ class Network:
 	def nodes(self, **kwds): 	return self._net.nodes(**kwds)
 	def edges(self, **kwds):	return self._net.edges(**kwds)
 
-	def _update_node(self, nodeId, key, value):
+	def _update_node(self, nodeId, key, value, secondKey=""):
 
 		finalValue = value
 
@@ -37,6 +37,10 @@ class Network:
 			self._net.node[nodeId][key].append( finalValue )
 		elif isinstance( self._net.node[nodeId][key], set):
 			self._net.node[nodeId][key].add( finalValue )
+		elif isinstance( self._net.node[nodeId][key], dict):
+			if secondKey not in self._net.node[nodeId][key]:
+				self._net.node[nodeId][key].setdefault(secondKey,set())
+			self._net.node[nodeId][key][secondKey].add(finalValue)
 		else: 
 			if key is "score":
 				finalValue = min(1.0, self._net.node[nodeId]["score"] + finalValue)
