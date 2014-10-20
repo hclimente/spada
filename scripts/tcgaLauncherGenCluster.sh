@@ -38,6 +38,34 @@ function getSpecificDrivers {
 	cut -f1  kk4.tmp | sed 's/_ENST.\+//' | sort | uniq -c | sort -nr | head -n30 | sed 's/^[^A-Z]\+//' >Data/TCGA/specificDrivers/"$cancerType"Drivers.txt
 }
 
+function launchQ{
+
+	tag=$1
+
+	echo '#!/bin/sh' >$tag.sh
+	echo '# SmartAS launch' >$tag.sh
+	echo '#$ -q test' >$tag.sh
+	echo '#$ -cwd' >$tag.sh
+	echo "#$ -e /data/users/hector/esmartas_$tag.1.txt" >$tag.sh
+	echo "#$ -o /data/users/hector/osmartas_$tag.1.txt" >$tag.sh
+
+	echo "/data/users/hector/Pipeline/SmartAS.py -f $tag.cfg" >$tag.sh
+
+	qsub -N $tag $tag.sh
+
+	echo '#!/bin/sh' >$tag.2.sh
+	echo '# SmartAS launch' >$tag.2.sh
+	echo '#$ -q test' >$tag.2.sh
+	echo '#$ -cwd' >$tag.2.sh
+	echo "#$ -e /data/users/hector/esmartas_$tag.2.txt" >$tag.2.sh
+	echo "#$ -o /data/users/hector/osmartas_$tag.2.txt" >$tag.2.sh
+
+	echo "/data/users/hector/Pipeline/SmartAS.py -f $tag.cfg" >$tag.2.sh
+
+	qsub -hold_jid $tag $2.sh
+
+}
+
 while read fullTag
 do
 
@@ -53,11 +81,10 @@ do
 	echo tag=$fullTag >>$fullTag.cfg
 	echo specific-drivers=Data/"$fullTag"Drivers.txt >>$fullTag.cfg
 
-	SmartAS.py -f $fullTag.cfg
-	SmartAS.py -f $fullTag.cfg
-	SmartAS.py -f $fullTag.cfg
-	rm $fullTag.cfg
+	launchQ u_$fullTag
 
+	break
+	
 	echo unpaired
 	mkdir -p Results/TCGA/u_"$fullTag"_mE-1.0
 
@@ -68,9 +95,6 @@ do
 	echo unpaired-replicates=Yes >>u_$fullTag.cfg
 	echo specific-drivers=Data/"$fullTag"Drivers.txt >>u_$fullTag.cfg	
 	
-	SmartAS.py -f u_$fullTag.cfg
-	SmartAS.py -f u_$fullTag.cfg
-	SmartAS.py -f u_$fullTag.cfg
-	rm u_$fullTag.cfg
+	launchQ u_$fullTag
 
 done < "$fileList"
