@@ -3,16 +3,28 @@ import transcript
 
 class IsoformSwitch:
 	def __init__(self, nTx, tTx, score, patients, pval):
-		self._normal_transcript_name 	= nTx
-		self._tumor_transcript_name 	= tTx
-		self._percent 					= score
-		self._patients 					= patients
-		self._p 						= pval
+		self._normal_transcript_name= nTx
+		self._tumor_transcript_name = tTx
+		self._percent 				= score
+		self._patients 				= patients
+		self._p 					= pval
 
-		self._normal_transcript 		= None
-		self._tumor_transcript 			= None
-		self._normal_protein 			= None
-		self._tumor_protein 			= None
+		self._normal_transcript 	= None
+		self._tumor_transcript 		= None
+		self._normal_protein 		= None
+		self._tumor_protein 		= None
+
+		#Structural analysis
+		self._functional_change 	= None
+		self._disorder_change 		= None
+		self._broken_surfaces 		= None
+		#Network analysis
+		self._guild_top1 			= None
+		self._guild_top5 			= None
+		#Neighborhood analysis
+		self._neighborhood_change 	= None
+		#iLoops analysis
+		self._iloops_change 		= None
 		
 	@property
 	def nTx(self): return self._normal_transcript_name
@@ -33,6 +45,21 @@ class IsoformSwitch:
 	def nTranscript(self): return self._normal_transcript
 	@property
 	def tTranscript(self): return self._tumor_transcript
+
+	@property
+	def functionalChange(self): return self._functional_change
+	@property
+	def disorderChange(self): return self._disorder_change
+	@property
+	def brokenSurfaces(self): return self._broken_surfaces
+	@property
+	def guildTop1(self): return self._guild_top1
+	@property
+	def guildTop5(self): return self._guild_top5
+	@property
+	def neighborhoodChange(self): return self._neighborhood_change
+	@property
+	def iloopsChange(self): return self._iloops_change
 
 	@property 
 	def cds_overlap(self):
