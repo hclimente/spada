@@ -3,8 +3,6 @@ from libs import utils
 
 import base64, os, SOAPpy, time
 
-import pdb
-
 class InterproAnalysis:
     def __init__(self):
         SOAPpy.Client.SOAPUserAgent = self.SOAPUserAgent

@@ -8,7 +8,6 @@ from network import gene_network, isoform_network
 from methods import method
 
 import os
-import tarfile
 import time
 
 class AnalyzeInteractions(method.Method):

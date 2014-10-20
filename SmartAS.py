@@ -9,6 +9,7 @@ from methods import analyze_interactions
 from methods import neighborhood_analysis
 from methods import network_analysis
 from methods import structural_analysis
+from methods import result_summary
 from network import ucsc_gene_network, ucsc_isoform_network
 
 import cPickle
@@ -36,7 +37,7 @@ class SmartAS:
 
 		self.logger.info("Reading and summarizing input files: computing PSI values and intereplicate agreement.")
 		utils.cmd("Pipeline/methods/explore_data.r", options.Options().qout, 
-				  "Data2/Input/{0}/{1}/".format(options.Options().inputType, options.Options().tag) )
+				  "Data/Input/{0}/{1}/".format(options.Options().inputType, options.Options().tag) )
 
 	def getCandidates(self):
 
@@ -59,18 +60,18 @@ class SmartAS:
 		self.logger.info("Selecting isoforms suitable for {0}.".format( options.Options().iLoopsVersion) )
 		utils.pickUniqPatterns(self._transcript_network, self._gene_network)
 
-		self.logger.info("Sending list to Gaudi and performing the iLoops analysis.")
-		gaudiThread = utils.cmdOut(
-									"ssh", "hectorc@gaudi", \
-									"'{0}Pipeline/methods/calculate_interactions.py {1} {2} {3} {4}'".format(
-											options.Options().gwd,
-											options.Options().gwd,
-											options.Options().inputType,
-											options.Options().gout,
-											options.Options().iLoopsVersion 
-										 ), 
-									">{0}calculateInteractions.log".format(options.Options().qout)
-								  )
+		# self.logger.info("Sending list to Gaudi and performing the iLoops analysis.")
+		# gaudiThread = utils.cmdOut(
+		# 							"ssh", "hectorc@gaudi", \
+		# 							"'{0}Pipeline/methods/calculate_interactions.py {1} {2} {3} {4}'".format(
+		# 									options.Options().gwd,
+		# 									options.Options().gwd,
+		# 									options.Options().inputType,
+		# 									options.Options().gout,
+		# 									options.Options().iLoopsVersion 
+		# 								 ), 
+		# 							">{0}calculateInteractions.log".format(options.Options().qout)
+		# 						  )
 
 	def analyzeInteractions(self):
 
@@ -96,6 +97,11 @@ class SmartAS:
 		self._gene_network.saveNetwork("geneNetwork.pkl")
 		self._transcript_network.saveNetwork("txNetwork.pkl")
 
+	def summarizeResults(self):
+
+		s = result_summary.ResultSummary( self._gene_network, self._transcript_network, self._gene_subnetwork )
+		s.run()
+
 	def createGeneNetwork(self, recover=False):
 
 		if recover:
@@ -117,8 +123,8 @@ class SmartAS:
 			if options.Options().specificDrivers:
 				self._gene_network.importSpecificDrivers()
 			
-			self._gene_network.importKnownInteractions()
 			self._gene_network.importCandidates()
+			self._gene_network.importKnownInteractions()
 
 			isoSwitches = []
 			[ isoSwitches.extend(p["isoformSwitches"]) for x,p in self._gene_network.nodes(data=True) ]
@@ -154,12 +160,11 @@ class SmartAS:
 
 if __name__ == '__main__':
 
-	#Can produce an error if path doesn't exist
 	logging.basicConfig(
 						level=logging.DEBUG,
 						format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
 						datefmt='%m-%d %H:%M',
-	                   	filename=options.Options().qout + 'smartAS.log',
+	                   	filename=options.Options().tag + '_smartAS.log',
 	                   	filemode='w'
 					   )
 
@@ -206,7 +211,10 @@ if __name__ == '__main__':
 	if options.Options().initialStep <= 5:
 		S.structuralAnalysis()
 	if options.Options().initialStep <= 6:
-		S.analyzeInteractions()
-		S.networkAnalysis(False)
+		#S.analyzeInteractions()
+		#S.networkAnalysis(False)
+		pass
 	if options.Options().initialStep <= 7:
 		S.neighborhoodAnalysis()
+	if options.Options().initialStep <= 8:
+		S.summarizeResults()

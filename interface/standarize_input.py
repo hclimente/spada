@@ -9,7 +9,7 @@ import fnmatch
 
 def standarizeInput():
 	numberOfPatients = 0
-	outDir = "Data2/Input/{0}/{1}/".format(options.Options().inputType, options.Options().tag)
+	outDir = "Data/Input/{0}/{1}/".format(options.Options().inputType, options.Options().tag)
 
 	if options.Options().inputType == "GENCODE":
 		utils.cmd("rm -r", outDir, "; mkdir -p", outDir)

@@ -25,7 +25,13 @@ class Options(object):
         if self._unpairedReplicates and options.tag[:1] != "u_":
             self._tag = "u_"+options.tag
         self._external              = options.external
-        self._specificDrivers       = options.specificDrivers
+        if self._tag[:2]=="u_":
+            self._specificDrivers = "{0}Data/{1}/specificDrivers/{2}Drivers.txt".format(
+                                            self._wd,self._inputType,self._tag[2:])
+        else:
+            self._specificDrivers = "{0}Data/{1}/specificDrivers/{2}Drivers.txt".format(
+                                            self._wd,self._inputType,self._tag)
+        
         if self._external:
             if not self._unpairedReplicates:
                 self._out           = "{0}/{1}/".format(self._inputType,self._tag)
@@ -122,7 +128,7 @@ class Options(object):
             
             if gwd:
                 CONFIG.write("gaudi-wd=" + gwd + "\n")
-            elif self._gwd != '/sbi/users/hectorc/SmartAS':
+            elif self._gwd != '/sbi/users/hectorc/SmartAS/':
                 CONFIG.write("gaudi-wd=" + self._gwd + "\n")
             
             if minExpression:

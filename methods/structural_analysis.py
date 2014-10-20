@@ -25,7 +25,7 @@ class StructuralAnalysis(method.Method):
 		self.logger.info("Searching Interactome3D broken surfaces.")
 
 		I3D_REPORT = open(options.Options().qout+"structural_analysis/I3D_analysis.tsv","w")
-		I3D_REPORT.write("Gene\tTranscript\tUniprot\tPercent_affected_by_AS\t")
+		I3D_REPORT.write("Gene\tSymbol\tTranscript\tUniprot\tPercent_affected_by_AS\t")
 		I3D_REPORT.write("Fisher_p-value\tResidue_information\tIsoform_specific_residues\n")
 
 		for gene,info,switch in utils.iterate_switches_ScoreWise(self._gene_network):
@@ -45,13 +45,15 @@ class StructuralAnalysis(method.Method):
 				self.logger.debug("Isoform specific residues were not found exclusively in one isoform.")
 				continue
 
-			for protein,hasIsoSp in zip([normalProtein,tumorProtein],[nIsoSpecific,tIsoSpecific]):
-				if protein.hasPdbs and hasIsoSp:
+			for protein,hasIsoSpecificResidues in zip([normalProtein,tumorProtein],[nIsoSpecific,tIsoSpecific]):
+				if protein.hasPdbs and hasIsoSpecificResidues:
 					pval,percent = self.getStatistics(protein)
 					isoInfo,isoSpec = protein.report()
-					I3D_REPORT.write("{0}\t{1}\t{2}\t".format(gene,protein.tx,protein.uniprot))
+					I3D_REPORT.write("{0}\t{1}\t{2}\t{3}\t".format(gene,info["symbol"],protein.tx,protein.uniprot))
 					I3D_REPORT.write("{0}\t{1}\t{2}\t{3}\n".format(percent,pval,isoInfo,isoSpec))
 					protein.printPDBInfo()
+
+					switch._broken_surfaces = True
 
 		I3D_REPORT.close()
 
@@ -121,19 +123,26 @@ class StructuralAnalysis(method.Method):
 			nIsoFeatures = Counter([ x["accession"] for x in normalProtein._features ])
 			tIsoFeatures = Counter([ x["accession"] for x in tumorProtein._features ])
 
-			uniqNIsoFeats = [ (x,nIsoFeatures[x]-tIsoFeatures.get(x,0)) for x in nIsoFeatures if nIsoFeatures[x]-tIsoFeatures.get(x,0) > 0 ]
-			uniqTIsoFeats = [ (x,tIsoFeatures[x]-nIsoFeatures.get(x,0)) for x in tIsoFeatures if tIsoFeatures[x]-nIsoFeatures.get(x,0) > 0 ]
+			nIso_uniqFeats = [ (x,nIsoFeatures[x]-tIsoFeatures.get(x,0)) for x in nIsoFeatures if nIsoFeatures[x]-tIsoFeatures.get(x,0) > 0 ]
+			tIso_uniqFeats = [ (x,tIsoFeatures[x]-nIsoFeatures.get(x,0)) for x in tIsoFeatures if tIsoFeatures[x]-nIsoFeatures.get(x,0) > 0 ]
 
-			for uniqFeat,protein in zip([uniqNIsoFeats,uniqTIsoFeats],[normalProtein,tumorProtein]):
+			iterationZip = zip([nIso_uniqFeats,tIso_uniqFeats],[normalProtein,tumorProtein],["Lost in tumor","Gained in tumor"])
 
+			for uniqFeat,protein,whatsHappening in iterationZip:
 				for feat,reps in uniqFeat:
-
 					featInfo = [ x for x in protein._features if x["accession"]==feat ][0]
 	
 					IP_REPORT.write("{0}\t{1}\t".format(gene, info["symbol"]))
-					IP_REPORT.write("{0}\t{1}\t".format(protein.tx,featInfo["analysis"]))
-					IP_REPORT.write("{0}\t{1}\t".format(featInfo["accession"],featInfo["description"]))
-					IP_REPORT.write("{0}\t{1}\n".format(reps,featInfo["percentAffected"]))
+					IP_REPORT.write("{0}\t{1}\t".format(protein.tx,whatsHappening))
+					IP_REPORT.write("{0}\t{1}\t".format(featInfo["analysis"],featInfo["accession"]))
+					IP_REPORT.write("{0}\t{1}\t".format(featInfo["description"],reps))
+					IP_REPORT.write("{0}\n".format(featInfo["percentAffected"]))
+
+					if switch._functional_change is None:
+						switch._functional_change = set()
+
+					toSave = [featInfo["analysis"],featInfo["accession"],featInfo["description"],reps]
+					switch._functional_change.add(toSave)
 
 		IP_REPORT.close()
 
@@ -170,6 +179,7 @@ class StructuralAnalysis(method.Method):
 
 					proc = utils.cmdOut(options.Options().wd+"Pipeline/libs/bin/iupred/iupred","protein.fa",mode)
 
+					#Parse iupred output
 					for line in [ x.strip().split(" ") for x in proc.stdout if "#" not in x ]:
 						resNum  = int(line[0])
 						residue	= line[1]
@@ -182,19 +192,23 @@ class StructuralAnalysis(method.Method):
 
 						#Extract motifs in isoform specific, disordered regions.
 						#A gap of 2 can be allowed.
+
 						if thisRes.isDisordered:
-							if gap and motif: #Check that there is a preexisting motif
+							if gap: #Check if there is a preexisting motif
 								motif += gap
-								gap	  =  ""
+								gap	   = ""
 							
 							motif += res
-						elif len(gap) < 2: #Max allowed gap
-							gap += res
-						else: 
-							if len(motif) > 1:
-								motifs.append(motif)
-							motif = ""
+						elif motif:
+							if len(gap) < 2: #Max allowed gap
+								gap += res
+							else: 
+								if len(motif) > 1:
+									motifs.append(motif)
+								motif 	= ""
+								gap 	= ""
 
+						#Count disordered and ordered residues, based on isoform specificity
 						if thisRes.isDisordered:
 							if thisRes.isoformSpecific:
 								counter["specific"]["disordered"] 	+= 1
@@ -211,16 +225,20 @@ class StructuralAnalysis(method.Method):
 
 					usefulMotifs = set()
 					for motif in motifs:
-						isoSp 	= float(sum(1 for c in motif if c.isupper()))
-						nonIsoS = float(sum(1 for c in motif if c.islower()))
+						isoSpecResidues 	= float(sum(1 for c in motif if c.isupper()))
+						nonIsoSpecResidues 	= float(sum(1 for c in motif if c.islower()))
 
-						ratio = isoSp/(isoSp+nonIsoS)
+						ratio = isoSpecResidues/(isoSpecResidues+nonIsoSpecResidues)	
 
 						if ratio >= 0.2:
 							usefulMotifs.add(motif)
+							if switch.disorderChange is None:
+								switch._disorder_change = []
+							switch._disorder_change.append(motif)
 				
-					IUPRED_REPORT.write("{0}\t{1}\t".format(gene,protein.tx))
-					IUPRED_REPORT.write("{0}\t{1}\t".format(mode,",".join(usefulMotifs)))
+					IUPRED_REPORT.write("{0}\t{1}\t".format(gene,info["symbol"]))
+					IUPRED_REPORT.write("{0}\t{1}\t".format(protein.tx,mode))
+					IUPRED_REPORT.write("{0}\t".format(",".join(usefulMotifs)))
 					IUPRED_REPORT.write("{0}\t".format(int(counter["specific"]["ordered"])) )
 					IUPRED_REPORT.write("{0}\t".format(int(counter["unspecific"]["ordered"])) )
 					IUPRED_REPORT.write("{0}\t".format(int(counter["specific"]["disordered"])) )

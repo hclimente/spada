@@ -100,11 +100,10 @@ def setEnvironment():
 			r('inputData[["unpairedReplicates"]] <- c({0})'.format (ureps))
 			r('save.image("' + options.Options().qout + 'RWorkspaces/0_InitialEnvironment.RData")')
 
-		if o.initialStep > 1:
+		if o.initialStep >= 1:
 
 			cmd("cp -r", "old/" + o.out + "DataExploration", o.qout)
 			cmd("cp", "old/" + o.out + "RWorkspaces/1_ExploreData.RData", o.qout + "/RWorkspaces")
-			cmd("cp", "old/" + o.out + "smartAS.log", o.qout + "/RWorkspaces")
 			cmd("cp -r", "old/{0}/iLoops".format(o.out), o.qout)
 
 		if o.initialStep > 2:
@@ -215,5 +214,5 @@ def pickUniqPatterns(tx_network, gn_network):
 	cmd("ssh","hectorc@gaudi","'mkdir -p {0}Output'".format(options.Options().gout))
 	cmd("ssh","hectorc@gaudi","'mkdir {0}Input'".format(options.Options().gout))
 	cmd("ssh","hectorc@gaudi","'mkdir {0}logs'".format(options.Options().gout))
-	cmd("scp", "-r", options.Options().qout + "{0}candidatesGaudi.lst",
+	cmd("scp", "-r", options.Options().qout + "candidatesGaudi.lst",
 		"hectorc@gaudi.imim.es:" + options.Options().gout)
