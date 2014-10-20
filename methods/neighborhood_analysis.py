@@ -22,43 +22,53 @@ class NeighborhoodAnalysis(method.Method):
 		#C6 Oncogenic signatures
 		self.searchEnrichment("oncogenic_signatures", "c6.all.v4.0.entrez.gmt","greater")
 
+		#Look for enrichment in genes known to be involved in AS in cancer
+		self.searchEnrichment("asAffectedGenes_Angiogenesis","asAffected_Angiogenesis_list.csv","greater")
+		self.searchEnrichment("asAffectedGenes_Genes_with_cancer_AS_events","asAffected_Genes_with_cancer_AS_events_list.csv","greater")
+		self.searchEnrichment("asAffectedGenes_Apoptosis","asAffected_Apoptosis_list.csv","greater")
+		self.searchEnrichment("asAffectedGenes_InvasionAndMetastasis","asAffected_Invasion_&_Metastasis_list.csv","greater")
+		self.searchEnrichment("asAffectedGenes_Cancer_Therapy","asAffected_Cancer_Therapy_list.csv","greater")
+		self.searchEnrichment("asAffectedGenes_Proliferation","asAffected_Proliferation_list.csv","greater")
+		self.searchEnrichment("asAffectedGenes_DNA_damage","asAffected_DNA_damage_list.csv","greater")
+
 		exit()
 
 	def searchEnrichment(self, sTag, sSetFile,H1):
 
-		dGeneSets = {}
-		sGeneSetFile = "{0}Data/Databases/{1}".format(options.Options().wd,sSetFile)
+		geneSets = {}
+		geneSetFile = "{0}Data/Databases/{1}".format(options.Options().wd,sSetFile)
 
-		for line in utils.readTable(sGeneSetFile,header=False):
-			sGroup = line[0]
-			lGenes = line[2:]
-			dGeneSets[sGroup] = {}
-			dGeneSets[sGroup]["allGenes"] = lGenes
+		for line in utils.readTable(geneSetFile,header=False):
+			geneSet = line[0]
+			genes = line[2:]
+			geneSets[geneSet] = {}
+			geneSets[geneSet]["allGenes"] = genes
 
-		for sGeneSet in dGeneSets:
+		for geneSet in geneSets:
 
-			sInGeneSet_withSwitches		= set()
-			sInGeneSet_withoutSwitches	= set()
-			sOutGeneSet_withSwitches 	= set()
-			sOutGeneSet_withoutSwitches = set()
+			inGeneSet_withSwitches		= set()
+			inGeneSet_withoutSwitches	= set()
+			outGeneSet_withSwitches 	= set()
+			outGeneSet_withoutSwitches 	= set()
 
 			#Iterate over the genes that are expressed in the tissue
 			for gene,info in [ (x,y) for x,y in self._gene_network.nodes(data=True) if y["ExpressedTranscripts"]]:
-				if gene not in dGeneSets[sGeneSet]["allGenes"]:
+				if gene not in geneSets[geneSet]["allGenes"]:
 					if info["isoformSwitches"]:
-						sOutGeneSet_withSwitches.add(info["symbol"])
+						outGeneSet_withSwitches.add(gene)
 					else:
-						sOutGeneSet_withoutSwitches.add(info["symbol"])
+						outGeneSet_withoutSwitches.add(gene)
 				else:
 					if info["isoformSwitches"]:
-						sInGeneSet_withSwitches.add(info["symbol"])
+						self._gene_network.update_node("neighborhoods",geneSet,gene_id=gene,secondKey=sTag)
+						inGeneSet_withSwitches.add(gene)
 					else:
-						sInGeneSet_withoutSwitches.add(info["symbol"])
+						inGeneSet_withoutSwitches.add(gene)
 		
-			iInGeneSet_withSwitches 	= len(sInGeneSet_withSwitches)
-			iInGeneSet_withoutSwitches 	= len(sInGeneSet_withoutSwitches)
-			iOutGeneSet_withSwitches 	= len(sOutGeneSet_withSwitches)
-			iOutGeneSet_withoutSwitches = len(sOutGeneSet_withoutSwitches)
+			iInGeneSet_withSwitches 	= len(inGeneSet_withSwitches)
+			iInGeneSet_withoutSwitches 	= len(inGeneSet_withoutSwitches)
+			iOutGeneSet_withSwitches 	= len(outGeneSet_withSwitches)
+			iOutGeneSet_withoutSwitches = len(outGeneSet_withoutSwitches)
 
 			lContingencyTable = [
 									[iInGeneSet_withSwitches,iInGeneSet_withoutSwitches],
@@ -66,19 +76,54 @@ class NeighborhoodAnalysis(method.Method):
 								]
 			fOddsRatio,fPval = fisher_exact(lContingencyTable,H1)
 
-			dGeneSets[sGeneSet]["pval"] = fPval
-			dGeneSets[sGeneSet]["oddsRatio"] = fOddsRatio
-			dGeneSets[sGeneSet]["switchGenes"] = sInGeneSet_withSwitches
+			geneSets[geneSet]["pval"] = fPval
+			geneSets[geneSet]["oddsRatio"] = fOddsRatio
+			geneSets[geneSet]["switchGenes"] = inGeneSet_withSwitches
 
 		stats = importr('stats')
-		p_adjust = stats.p_adjust(FloatVector([dGeneSets[x]["pval"] for x in dGeneSets]), method='BH')
+		p_adjust = stats.p_adjust(FloatVector([geneSets[x]["pval"] for x in geneSets]), method='BH')
 
 		with open("{0}neighborhood_analysis/{1}.txt".format(options.Options().qout,sTag),"w") as OUT:
 			OUT.write("GeneSet\tpval\tqval\tSwitchingGenes\tOddsRatio\n")
-			for sGeneSet,adj_p in zip(dGeneSets,p_adjust):
-				OUT.write("{0}\t{1}\t".format(sGeneSet,dGeneSets[sGeneSet]["pval"]))
-				OUT.write("{0}\t{1}\t".format(adj_p,",".join(dGeneSets[sGeneSet]["switchGenes"])))
-				OUT.write("{0}\n".format(dGeneSets[sGeneSet]["oddsRatio"]))
+			for geneSet,adj_p in zip(geneSets,p_adjust):
+
+				switchGenes = ",".set([ x["symbol"] for x in geneSets[geneSet]["switchGenes"] ])
+
+				OUT.write("{0}\t{1}\t".format(geneSet,geneSets[geneSet]["pval"]))
+				OUT.write("{0}\t{1}\t".format(adj_p,switchGenes))
+				OUT.write("{0}\n".format(geneSets[geneSet]["oddsRatio"]))
+
+				if adj_p <= 0.05:
+					for gene in geneSets[geneSet]["switchGenes"]:
+						for switch in gene["isoformSwitches"]:
+							if switch._neighborhood_change is None:
+								switch._neighborhood_change = set()
+							switch._neighborhood_change.add([sTag,geneSet])
+
+	def findAffectedPathways(self,sTag,sSetFile):
+		affectedPathway = {}
+		geneSetFile = "{0}Data/Databases/{1}".format(options.Options().wd,sSetFile)
+
+		for line in utils.readTable(geneSetFile,header=False):
+			geneSet = line[0]
+			genes = line[2:]
+			geneSets[geneSet] = {}
+			geneSets[geneSet]["allGenes"] = genes
+
+		for geneSet in geneSets:
+			affectedPathway[geneSet] = [0]*len(options.Options().replicates)
+
+			for gene,info,switch in utils.iterate_switches_ScoreWise(self._gene_network):
+				if gene not in geneSets[geneSet]: continue
+				
+				switchSpread = [ 1 if x in switch.patients else 0 for x in options.Options().replicates ]
+				affectedPathway[geneSet] = [ x+y for x,y in zip(affectedPathway[geneSet],switchSpread)]
+
+		with open("{0}neighborhood_analysis/{1}_patientAffectation.txt".format(options.Options().qout,sTag),"w") as OUT:
+			OUT.write("GeneSet\t{0}\n".format('\t'.join(map(str,options.Options().replicates) ) ) )
+
+			for geneSet in affectedPathway:
+				OUT.write("{0}\t{1}\n".format(geneSet,'\t'.join(map(str,affectedPathway[geneSet]))))
 
 if __name__ == '__main__':
 	pass
