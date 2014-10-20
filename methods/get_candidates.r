@@ -106,7 +106,7 @@ allExpressedTranscripts <- allExpressedTranscripts[with(allExpressedTranscripts,
 candidateMask[["N"]] <- do.call('cbind', candidateMask[["N"]])
 candidateMask[["T"]] <- do.call('cbind', candidateMask[["T"]])
 
-for (i in inputData$Replicates){candidates[[i]]$Origin = i}
+for (i in patientSet){candidates[[i]]$Origin = i}
 
 candidateList <- do.call("rbind", candidates)
 candidateList <- ddply(candidateList,.(Gene,maxdPSI,mindPSI), summarise, Replicated=length(Gene), Patients=paste(Origin, collapse = ",") )
@@ -116,7 +116,7 @@ candidateList$pval <- apply(candidateList,1,binomialTest)
 write.table(candidateList, file=paste0(out, "candidateList.tsv"), sep="\t", row.names=F, col.names=F, quote=F)
 write.table(allExpressedTranscripts, paste0(out, "expressedGenes.lst"), sep="\t", row.names=F, col.names=F, quote=F)
 
-cols <- c( paste0("TPM_",inputData$Replicates), paste0("PSI_",inputData$Replicates), paste0("tTPM_",inputData$Replicates), "FPR_4MAD" )
+cols <- c( paste0("TPM_",patientSet), paste0("PSI_",patientSet), paste0("tTPM_",patientSet), "FPR_4MAD" )
 write.table(interReplicate[["N"]][,!(colnames(interReplicate$N) %in% cols)], file=paste0(out, "expression_normal.tsv"), sep="\t", row.names=F, quote=F)
 write.table(interReplicate[["T"]][,!(colnames(interReplicate$T) %in% cols)], file=paste0(out, "expression_tumor.tsv"), sep="\t", row.names=F, quote=F)
 
@@ -126,7 +126,7 @@ save(isoformExpression, intraReplicate, interReplicate, candidates, candidateLis
 suppressMessages(library(gplots)) #Avoid the annoying message
 library(RColorBrewer)
 
-top <- length(candidateList$Gene[candidateList$Replicated >= inputData$Replicates * 0.2])
+top <- length(candidateList$Gene[candidateList$Replicated >= patientSet * 0.2])
 
 topCandidates <- ddply(candidateList,.(Gene), summarise, Replicated=sum(Replicated))
 topCandidates <- topCandidates[with(topCandidates, order(-Replicated)), ]
@@ -134,9 +134,9 @@ topCandidates <- head(topCandidates, n=top)
 
 fig <- data.frame(matrix(nrow=length(topCandidates$Gene), ncol=numOfReplicates))
 rownames(fig) <- topCandidates$Gene
-colnames(fig) <- inputData$Replicates
+colnames(fig) <- patientSet
 
-for (replicate in inputData$Replicates){
+for (replicate in patientSet){
   for (gene in topCandidates$Gene){
     if (gene %in% candidates[[replicate]]$Gene) {
       fig[gene, replicate] <- head(candidates[[replicate]]$Switch[candidates[[replicate]]$Gene == gene],1)
