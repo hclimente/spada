@@ -36,33 +36,36 @@ function getSpecificDrivers {
 	fi
 
 	cut -f1  kk4.tmp | sed 's/_ENST.\+//' | sort | uniq -c | sort -nr | head -n30 | sed 's/^[^A-Z]\+//' >Data/TCGA/specificDrivers/"$cancerType"Drivers.txt
+
+	rm kk4.tmp 
 }
 
-function launchQ{
+function launchQ {
+
+	source ~/.bashrc
 
 	tag=$1
-
 	echo '#!/bin/sh' >$tag.sh
-	echo '# SmartAS launch' >$tag.sh
-	echo '#$ -q test' >$tag.sh
-	echo '#$ -cwd' >$tag.sh
-	echo "#$ -e /data/users/hector/esmartas_$tag.1.txt" >$tag.sh
-	echo "#$ -o /data/users/hector/osmartas_$tag.1.txt" >$tag.sh
+	echo '# SmartAS launch' >>$tag.sh
+	echo '#$ -q normal' >>$tag.sh
+	echo '#$ -cwd' >>$tag.sh
+	echo "#$ -e /data/users/hector/esmartas_$tag.1.txt" >>$tag.sh
+	echo "#$ -o /data/users/hector/osmartas_$tag.1.txt" >>$tag.sh
 
-	echo "/data/users/hector/Pipeline/SmartAS.py -f $tag.cfg" >$tag.sh
+	echo "/data/users/hector/Pipeline/SmartAS.py -f $tag.cfg" >>$tag.sh
 
-	qsub -N $tag $tag.sh
+	qsub -V -N $tag $tag.sh
 
 	echo '#!/bin/sh' >$tag.2.sh
-	echo '# SmartAS launch' >$tag.2.sh
-	echo '#$ -q test' >$tag.2.sh
-	echo '#$ -cwd' >$tag.2.sh
-	echo "#$ -e /data/users/hector/esmartas_$tag.2.txt" >$tag.2.sh
-	echo "#$ -o /data/users/hector/osmartas_$tag.2.txt" >$tag.2.sh
+	echo '# SmartAS launch' >>$tag.2.sh
+	echo '#$ -q normal' >>$tag.2.sh
+	echo '#$ -cwd' >>$tag.2.sh
+	echo "#$ -e /data/users/hector/esmartas_$tag.2.txt" >>$tag.2.sh
+	echo "#$ -o /data/users/hector/osmartas_$tag.2.txt" >>$tag.2.sh
 
-	echo "/data/users/hector/Pipeline/SmartAS.py -f $tag.cfg" >$tag.2.sh
+	echo "/data/users/hector/Pipeline/SmartAS.py -f $tag.cfg" >>$tag.2.sh
 
-	qsub -hold_jid $tag $2.sh
+	qsub -V -N $tag.2 -hold_jid $tag  $tag.2.sh
 
 }
 
@@ -80,11 +83,10 @@ do
 	echo minimum-expression=-1.0 >>$fullTag.cfg
 	echo tag=$fullTag >>$fullTag.cfg
 	echo specific-drivers=Data/"$fullTag"Drivers.txt >>$fullTag.cfg
+	echo working-directory=/data/users/hector/ >>$fullTag.cfg
 
-	launchQ u_$fullTag
+	launchQ $fullTag &
 
-	break
-	
 	echo unpaired
 	mkdir -p Results/TCGA/u_"$fullTag"_mE-1.0
 
@@ -93,8 +95,9 @@ do
 	echo tag=$fullTag >>u_$fullTag.cfg
 	echo specific-drivers=Data/TCGA/specificDrivers/"$cancerTag"Drivers.txt >>u_$fullTag.cfg
 	echo unpaired-replicates=Yes >>u_$fullTag.cfg
-	echo specific-drivers=Data/"$fullTag"Drivers.txt >>u_$fullTag.cfg	
+	echo specific-drivers=Data/"$fullTag"Drivers.txt >>u_$fullTag.cfg
+	echo working-directory=/data/users/hector/ >>u_$fullTag.cfg
 	
-	launchQ u_$fullTag
+	launchQ u_$fullTag &
 
 done < "$fileList"
