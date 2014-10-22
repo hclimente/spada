@@ -62,6 +62,37 @@ calculateMAD <- function(x){
 
 }
 
+makeInterReplicateComparisons <- function(condition, samples){
+
+  interRepComp <- NULL
+
+  loginfo(paste("Summarizing data from",condition,as.character(length(samples)),"samples."),logger="explore_data")
+  pairedPatientSumPB <- txtProgressBar(min=1, max=length(samples), initial=1, style=3)
+  counter <- 1
+
+  delete <- c(paste(c("TPM","tTPM", "PSI"),"T",sep="_"), "deltaPSI", "la_tTPM")
+
+  for (replicate in samples){
+    if(is.null(interRepComp)){
+      interRepComp <- intraReplicate[[replicate]]    
+    } else {
+      interRepComp <- merge(interRepComp, intraReplicate[[replicate]],by=c("Gene", "Transcript"), 
+                            all=TRUE,suffixes=c("",paste0("_", as.character(replicate))))
+    }
+
+    interRepComp <- interRepComp[,!(colnames(interRepComp) %in% delete), drop=FALSE]
+
+    simplePlot(intraReplicate[[replicate]]$la_tTPM, intraReplicate[[replicate]]$deltaPSI, replicate, "0.5·(log(sum tTPM_N) + log(sum tTPM_T) )", 
+               "deltaPSI", paste0(out, "DataExploration/latTPM_PSI_intrarreplicate",replicate,"_", condition,".png"))
+
+    setTxtProgressBar(pairedPatientSumPB, counter)
+    counter <- counter + 1
+
+  }
+  close(pairedPatientSumPB)
+  return(interRepComp)
+}
+
 loginfo("Importing data from %d paired samples.",length(inputData$Replicates),logger="explore_data")
 explorationPB <- txtProgressBar(min=1, max=length(inputData$Replicates), initial=1, style=3)
 counter <- 1
@@ -115,49 +146,20 @@ psiCols  <- paste0("PSI_",inputData$Replicates)
 
 all <- c(rbind(tpmCols, tTpmCols, psiCols))
 
-delete <- list()
-delete[["N"]] <- c("TPM_T","tTPM_T", "PSI_T", "deltaPSI", "la_tTPM")
-delete[["T"]] <- c("TPM_N","tTPM_N", "PSI_N", "deltaPSI", "la_tTPM")
+for (condition in inputData$Conditions){
 
-loginfo("Summarizing data from %d paired samples.",length(inputData$Replicates),logger="explore_data")
-pairedPatientSumPB <- txtProgressBar(min=1, max=length(inputData$Replicates) * 2, initial=1, style=3)
-counter <- 1
+  interReplicate[[condition]] <- makeInterReplicateComparisons(condition,inputData$Replicates)
 
-for (sample in inputData$Conditions){
-  for (replicate in inputData$Replicates){
+  colnames(interReplicate[[condition]]) <- c("Gene", "Transcript", all)
 
-    replicate_c <- as.character(replicate)
-        
-    if(is.null(interReplicate[[sample]])){
-      interReplicate[[sample]] <- intraReplicate[[replicate]]    
-    } else {
-      interReplicate[[sample]] <- merge(interReplicate[[sample]], intraReplicate[[replicate]], 
-                                        by=c("Gene", "Transcript"), all=T,
-                                        suffixes=c("",paste0("_", replicate_c)))
-    }
-
-    interReplicate[[sample]] <- interReplicate[[sample]][,!(colnames(interReplicate[[sample]]) %in% delete[[sample]]), drop=FALSE]
-
-    simplePlot(intraReplicate[[replicate]]$la_tTPM, intraReplicate[[replicate]]$deltaPSI, replicate, "0.5·(log(sum tTPM_N) + log(sum tTPM_T) )", 
-               "deltaPSI", paste0(out, "DataExploration/latTPM_PSI_intrarreplicate",replicate,"_", sample,".png"))
-
-    setTxtProgressBar(pairedPatientSumPB, counter)
-    counter <- counter + 1
-
-  }
-
-  colnames(interReplicate[[sample]]) <- c("Gene", "Transcript", all)
-
-  interReplicate[[sample]]$Median_PSI <- apply(interReplicate[[sample]][,psiCols], 1, median, na.rm=T)
-  interReplicate[[sample]]$MAD_PSI <- calculateMAD(interReplicate[[sample]][,psiCols])
-  interReplicate[[sample]]$Median_TPM <- apply(interReplicate[[sample]][,tpmCols], 1, median, na.rm=T)
-  interReplicate[[sample]]$MAD_TPM <- calculateMAD(interReplicate[[sample]][,tpmCols])
-  interReplicate[[sample]]$Median_tTPM <- apply(interReplicate[[sample]][,tTpmCols], 1, median, na.rm=T)
-  interReplicate[[sample]]$MAD_tTPM <- calculateMAD(interReplicate[[sample]][,tTpmCols])
+  interReplicate[[condition]]$Median_PSI <- apply(interReplicate[[condition]][,psiCols], 1, median, na.rm=T)
+  interReplicate[[condition]]$MAD_PSI <- calculateMAD(interReplicate[[condition]][,psiCols])
+  interReplicate[[condition]]$Median_TPM <- apply(interReplicate[[condition]][,tpmCols], 1, median, na.rm=T)
+  interReplicate[[condition]]$MAD_TPM <- calculateMAD(interReplicate[[condition]][,tpmCols])
+  interReplicate[[condition]]$Median_tTPM <- apply(interReplicate[[condition]][,tTpmCols], 1, median, na.rm=T)
+  interReplicate[[condition]]$MAD_tTPM <- calculateMAD(interReplicate[[condition]][,tTpmCols])
 
 }
-
-close(pairedPatientSumPB)
 
 #Input unpaired samples, if any
 if (length(inputData$unpairedReplicates) > 0){
@@ -176,20 +178,20 @@ if (length(inputData$unpairedReplicates) > 0){
     intraReplicate[[replicate]] <- merge(intraReplicate[[replicate]], vtTPM,by="Gene")
     intraReplicate[[replicate]] <- transform(intraReplicate[[replicate]], PSI_T = TPM_T / tTPM_T)
 
-    intraReplicate[[replicate]]$TPM_N = 9999
-
-    intraReplicate[[replicate]] <- merge(intraReplicate[[replicate]], interReplicate[["N"]][,c("Gene","Transcript","Median_PSI")], by=c("Gene","Transcript") )
+    intraReplicate[[replicate]] <- merge(intraReplicate[[replicate]], interReplicate[["N"]][,c("Gene","Transcript","Median_PSI","Median_TPM")], by=c("Gene","Transcript") )
     names(intraReplicate[[replicate]])[names(intraReplicate[[replicate]])=="Median_PSI"] <- "PSI_N"
-    #Calculare a deltaPSI, the difference between the PSI in the tumor and the median PSI
+    names(intraReplicate[[replicate]])[names(intraReplicate[[replicate]])=="Median_TPM"] <- "TPM_N"
+    #Calculare a deltaPSI, the difference txtProgressBaretween the PSI in the tumor and the median PSI
     #for normal transcripts.
     intraReplicate[[replicate]]$deltaPSI <- intraReplicate[[replicate]]$PSI_N - intraReplicate[[replicate]]$PSI_T
-
 
     setTxtProgressBar(unpairedPatientSumPB, counter)
     counter <- counter + 1
   }
 
   close(unpairedPatientSumPB)
+
+  interReplicate[["T"]] <- makeInterReplicateComparisons("T",inputData$unpairedReplicates)
 }
 
 loginfo("Summarizing data from %d transcripts.",length(interReplicate[["N"]]$Transcript),logger="explore_data")
