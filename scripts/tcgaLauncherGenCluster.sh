@@ -49,8 +49,8 @@ function launchQ {
 	echo '# SmartAS import data' >>$tag.sh
 	echo '#$ -q normal' >>$tag.sh
 	echo '#$ -cwd' >>$tag.sh
-	echo "#$ -e /data/users/hector/esmartas_$tag.1.txt" >>$tag.sh
-	echo "#$ -o /data/users/hector/osmartas_$tag.1.txt" >>$tag.sh
+	echo "#$ -e /genomics/users/hector/SmartAS/esmartas_$tag.1.txt" >>$tag.sh
+	echo "#$ -o /genomics/users/hector/SmartAS/osmartas_$tag.1.txt" >>$tag.sh
 
 	echo "/data/users/hector/Pipeline/SmartAS.py -f $tag.cfg" >>$tag.sh
 
@@ -60,8 +60,8 @@ function launchQ {
 	echo '# SmartAS getCandidates' >>$tag.2.sh
 	echo '#$ -q normal' >>$tag.2.sh
 	echo '#$ -cwd' >>$tag.2.sh
-	echo "#$ -e /data/users/hector/esmartas_$tag.2.txt" >>$tag.2.sh
-	echo "#$ -o /data/users/hector/osmartas_$tag.2.txt" >>$tag.2.sh
+	echo "#$ -e /genomics/users/hector/SmartAS/esmartas_$tag.2.txt" >>$tag.2.sh
+	echo "#$ -o /genomics/users/hector/SmartAS/osmartas_$tag.2.txt" >>$tag.2.sh
 
 	echo "/data/users/hector/Pipeline/SmartAS.py -f $tag.cfg" >>$tag.2.sh
 
@@ -83,7 +83,7 @@ do
 	echo minimum-expression=-1.0 >>$fullTag.cfg
 	echo tag=$fullTag >>$fullTag.cfg
 	echo specific-drivers=Data/"$fullTag"Drivers.txt >>$fullTag.cfg
-	echo working-directory=/data/users/hector/ >>$fullTag.cfg
+	echo working-directory=/genomics/users/hector/SmartAS >>$fullTag.cfg
 
 	launchQ $fullTag &
 
@@ -96,7 +96,7 @@ do
 	echo specific-drivers=Data/TCGA/specificDrivers/"$cancerTag"Drivers.txt >>u_$fullTag.cfg
 	echo unpaired-replicates=Yes >>u_$fullTag.cfg
 	echo specific-drivers=Data/"$fullTag"Drivers.txt >>u_$fullTag.cfg
-	echo working-directory=/data/users/hector/ >>u_$fullTag.cfg
+	echo working-directory=/genomics/users/hector/SmartAS >>u_$fullTag.cfg
 	
 	launchQ u_$fullTag &
 
