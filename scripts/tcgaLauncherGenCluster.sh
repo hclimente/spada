@@ -46,7 +46,7 @@ function launchQ {
 
 	tag=$1
 	echo '#!/bin/sh' >$tag.sh
-	echo '# SmartAS launch' >>$tag.sh
+	echo '# SmartAS import data' >>$tag.sh
 	echo '#$ -q normal' >>$tag.sh
 	echo '#$ -cwd' >>$tag.sh
 	echo "#$ -e /data/users/hector/esmartas_$tag.1.txt" >>$tag.sh
@@ -57,7 +57,7 @@ function launchQ {
 	qsub -V -N $tag $tag.sh
 
 	echo '#!/bin/sh' >$tag.2.sh
-	echo '# SmartAS launch' >>$tag.2.sh
+	echo '# SmartAS getCandidates' >>$tag.2.sh
 	echo '#$ -q normal' >>$tag.2.sh
 	echo '#$ -cwd' >>$tag.2.sh
 	echo "#$ -e /data/users/hector/esmartas_$tag.2.txt" >>$tag.2.sh

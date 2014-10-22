@@ -316,10 +316,10 @@ class GeneNetwork(network.Network):
 									)
 
 		proteome = session.create_new_user_entity_set(
-														identifier_description_list 			= seeds,
-														attribute_restriction_list 				= [("taxid", "9606")],
-														id_type 								= bianaInputType,
-														new_user_entity_set_id					= "proteome",
+												identifier_description_list = seeds,
+												attribute_restriction_list 	= [("taxid", "9606")],
+												id_type 					= bianaInputType,
+												new_user_entity_set_id		= "proteome",
 													  )
 		session.create_network( 
 								user_entity_set_id 					= "proteome", 
