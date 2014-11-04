@@ -8,10 +8,11 @@ import os
 import fnmatch
 
 def standarizeInput():
-	numberOfPatients = 0
-	outDir = "Data/Input/{0}/{1}/".format(options.Options().inputType, options.Options().tag)
+	outDir = "{0}Data/Input/{1}/{2}/".format( options.Options().wd,
+					options.Options().inputType, options.Options().tag)
 
 	if options.Options().inputType == "GENCODE":
+		numberOfPatients = 0
 		utils.cmd("rm -r", outDir, "; mkdir -p", outDir)
 		Conditions = {"10": "N", "7": "T"}
 		for condition in Conditions.keys():
