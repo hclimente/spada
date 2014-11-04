@@ -61,6 +61,13 @@ class IsoformSwitch:
 	@property
 	def iloopsChange(self): return self._iloops_change
 
+	@property
+	def is_relevant(self):
+		if self.cds_overlap and (self.iloopsChange or self.brokenSurfaces or self.functionalChange):
+			return True
+		else:
+			return False
+
 	@property 
 	def cds_overlap(self):
 		"""Returns True if there is an overlap between the transcripts coding sequence."""
@@ -74,14 +81,14 @@ class IsoformSwitch:
 
 	@property 
 	def cds_diff(self):
-		cdsDiff = [ x for x in self._normal_transcript.cds if self._normal_transcript.cds[x] ]
-		cdsDiff.extend( [ x for x in self._tumor_transcript.cds if self._tumor_transcript.cds[x] ])
+		cdsDiff = [ x for x in self._normal_transcript.cds if x not in self._tumor_transcript.cds ]
+		cdsDiff.extend( [ x for x in self._tumor_transcript.cds if x not in self._normal_transcript.cds ])
 		return cdsDiff
 
 	@property 
 	def utr_diff(self):
-		utrDiff = [ x for x in self._normal_transcript.utr if self._normal_transcript.utr[x] ]
-		utrDiff.extend( [ x for x in self._tumor_transcript.utr if self._tumor_transcript.utr[x] ])
+		utrDiff = [ x for x in self._normal_transcript.utr if x not in self._tumor_transcript.utr ]
+		utrDiff.extend( [ x for x in self._tumor_transcript.utr if x not in self._normal_transcript.utr ])
 		return utrDiff
 
 	def addTxs(self, nInfo, tInfo):
