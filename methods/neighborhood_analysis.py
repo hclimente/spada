@@ -31,8 +31,6 @@ class NeighborhoodAnalysis(method.Method):
 		self.searchEnrichment("asAffectedGenes_Proliferation","asAffected_Proliferation_list.csv","greater")
 		self.searchEnrichment("asAffectedGenes_DNA_damage","asAffected_DNA_damage_list.csv","greater")
 
-		exit()
-
 	def searchEnrichment(self, sTag, sSetFile,H1):
 
 		geneSets = {}
@@ -87,7 +85,7 @@ class NeighborhoodAnalysis(method.Method):
 			OUT.write("GeneSet\tpval\tqval\tSwitchingGenes\tOddsRatio\n")
 			for geneSet,adj_p in zip(geneSets,p_adjust):
 
-				switchGenes = ",".set([ x["symbol"] for x in geneSets[geneSet]["switchGenes"] ])
+				switchGenes = ",".join([ self._gene_network._net.node[x]["symbol"] for x in geneSets[geneSet]["switchGenes"] ])
 
 				OUT.write("{0}\t{1}\t".format(geneSet,geneSets[geneSet]["pval"]))
 				OUT.write("{0}\t{1}\t".format(adj_p,switchGenes))
@@ -95,10 +93,10 @@ class NeighborhoodAnalysis(method.Method):
 
 				if adj_p <= 0.05:
 					for gene in geneSets[geneSet]["switchGenes"]:
-						for switch in gene["isoformSwitches"]:
+						for switch in self._gene_network._net.node[x]["isoformSwitches"]:
 							if switch._neighborhood_change is None:
 								switch._neighborhood_change = set()
-							switch._neighborhood_change.add([sTag,geneSet])
+							switch._neighborhood_change.add((sTag,geneSet))
 
 	def findAffectedPathways(self,sTag,sSetFile):
 		affectedPathway = {}
