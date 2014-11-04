@@ -153,33 +153,51 @@ getDeltaPSI <- function(){
   return(result)
 }
 
-#args <- commandArgs(trailingOnly = TRUE)
-#load(paste0(args[1],"RWorkspaces/2_GetCandidates.RData"))
+args <- commandArgs(trailingOnly = TRUE)
+load(paste0(args[1],"RWorkspaces/2_GetCandidates.RData"))
+tag <- args[2]
 
 deltaPsis <- getDeltaPSI()
-precision <- numeric()
-sensitivity <- numeric()
-pval <- numeric()
 
-for (gene in unique(candidateList$Gene)){
-#for (gene in c('FBLN2|2199')){
+precisionKmeans <- numeric()
+sensitivityKmeans <- numeric()
+pvalKmeans <- numeric()
+
+precisionHclust <- numeric()
+sensitivityHclust <- numeric()
+pvalHclust <- numeric()
+
+for (gene in unique(candidateList[candidateList$pval <= 0.001,"Gene"])){
 	switches <- candidateList[candidateList$Gene==gene & candidateList$pval <= 0.001,c("Gene","maxdPSI","mindPSI","Patients","pval")]
   
-	#kk <- apply(switches,1,createSubpopulations)
-	kk <- apply(switches,1,createSubpopulationsKmeans)
+	kmeans <- apply(switches,1,createSubpopulations)
+  
+	precisionKmeans <- c(precisionKmeans,kmeans[1])
+	sensitivityKmeans <- c(sensitivityKmeans,kmeans[2])
+	pvalKmeans <- c(pvalKmeans,kmeans[3])
+  
+	Hclust <- apply(switches,1,createSubpopulationsKmeans)
 	
-  precision <- c(precision,kk[1])
-	sensitivity <- c(sensitivity,kk[2])
-	pval <- c(pval,kk[3])
+  precisionHclust <- c(precisionHclust,Hclust[1])
+	sensitivityHclust <- c(sensitivityHclust,Hclust[2])
+	pvalHclust <- c(pvalHclust,Hclust[3])
 }
 
-corrPP <- cor(precision,pval,use="complete.obs",method="spearman")
-corrSP <- cor(sensitivity,pval,use="complete.obs",method="spearman")
-meanP <- mean(precision,na.rm=T)
-meanS <- mean(sensitivity,na.rm=T)
+corrPPKmeans <- cor(precisionKmeans,pvalKmeans,use="complete.obs",method="spearman")
+corrSPKmeans <- cor(sensitivityKmeans,pvalKmeans,use="complete.obs",method="spearman")
+meanPKmeans <- mean(precisionKmeans,na.rm=T)
+meanSKmeans <- mean(sensitivityKmeans,na.rm=T)
 
-plot(precision,pval)
-plot(sensitivity,pval)
+corrPPHclust <- cor(precisionHclust,pvalHclust,use="complete.obs",method="spearman")
+corrSPHclust <- cor(sensitivityHclust,pvalHclust,use="complete.obs",method="spearman")
+meanPHclust <- mean(precisionHclust,na.rm=T)
+meanSHclust <- mean(sensitivityHclust,na.rm=T)
 
-results <- data.frame(c("corrPP","corrSP","meanPrecision","meanSensitivity"),c(corrPP,corrSP,meanP,meanS))
-write.table(results, paste0(args[1],"/classificationDescription.tsv"), sep="\t", row.names=F,col.names=F, quote=F)
+#plot(precision,pval)
+#plot(sensitivity,pval)
+
+df <- data.frame(cancer=c(tag,tag),precision=c(meanPKmeans,meanPHclust),sensitivity=c(meanSKmeans,meanSHclust),precision_pval=c(corrPPKmeans,corrPPHclust),sensitivity_pval=c(corrSPKmeans,corrSPHclust))
+
+rownames(df) <- c("kmeans","hclust")
+
+write.table(df, paste0(args[1],"/result_summary/accuracy.tsv"), sep="\t", quote=F)
