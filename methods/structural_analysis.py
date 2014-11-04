@@ -142,9 +142,9 @@ class StructuralAnalysis(method.Method):
 						switch._functional_change = set()
 
 					toSave = [featInfo["analysis"],featInfo["accession"],featInfo["description"],reps]
-					import pdb
-					pdb.set_trace()
-					switch._functional_change.add(toSave)
+					if not switch._functional_change:
+						switch._functional_change = []
+					switch._functional_change.append(toSave)
 
 		IP_REPORT.close()
 
