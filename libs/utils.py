@@ -51,16 +51,19 @@ def iterate_switches_ScoreWise(gene_network,only_first=False):
 			common) will be returned for each gene.
 	"""
 
-	sortedNodes = sorted(gene_network.nodes(data=True), key=lambda (a, dct): dct['score'], reverse=True)
+	sortedNodes = sorted(gene_network.nodes(data=True), 
+						 key=lambda (a, dct): dct['score'], 
+						 reverse=True)
+	
 	for gene,info in sortedNodes:
 		if not info["isoformSwitches"]: continue
 		elif abs(info["diffExpression_logFC"]) > 0.5 or info["diffExpression_p"] < 0.05: continue
 
 		if only_first:
-			if info["isoformSwitches"][0].cds_overlap:
+			if info["isoformSwitches"][0].is_relevant:
 				yield gene,info,info["isoformSwitches"][0]
 		else:
-			for switch in [ x for x in info["isoformSwitches"] if x.cds_overlap ]:
+			for switch in [ x for x in info["isoformSwitches"] if x.is_relevant ]:
 				yield gene,info,switch
 
 def setEnvironment():
@@ -70,14 +73,14 @@ def setEnvironment():
 
 	logger.info("Preparing the environment.")
 
-	if not os.path.exists("old/" + o.out):
-		cmd("mkdir","-p","old/" + o.out)
-	if not os.path.exists("old2/" + o.out):
-		cmd("mkdir","-p","old2/" + o.out)
+	if not os.path.exists(".old/" + o.out):
+		cmd("mkdir","-p",".old/" + o.out)
+	if not os.path.exists(".old2/" + o.out):
+		cmd("mkdir","-p",".old2/" + o.out)
 
-	cmd("rm -r old2/" + o.out )
-	cmd("mv", "old/" + o.out, "old2/" + o.out )
-	cmd("mv", o.qout, "old/" + o.out )
+	cmd("rm -r .old2/" + o.out )
+	cmd("mv", ".old/" + o.out, ".old2/" + o.out )
+	cmd("mv", o.qout, ".old/" + o.out )
 	cmd("mkdir -p", "Results/" + o.out + "RWorkspaces")
 	cmd("mkdir", o.qout + "DataExploration")
 	cmd("mkdir -p", o.qout + "iLoops/" + o.iLoopsVersion)
@@ -85,6 +88,7 @@ def setEnvironment():
 	cmd("mkdir", o.qout + "GUILD_enriched")
 	cmd("mkdir", o.qout + "structural_analysis")
 	cmd("mkdir", o.qout + "neighborhood_analysis")
+	cmd("mkdir", o.qout + "result_summary")
 
 	if not o.external:
 		if o.initialStep <= 1:
@@ -102,17 +106,17 @@ def setEnvironment():
 
 		if o.initialStep >= 1:
 
-			cmd("cp -r", "old/" + o.out + "DataExploration", o.qout)
-			cmd("cp", "old/" + o.out + "RWorkspaces/1_ExploreData.RData", o.qout + "/RWorkspaces")
-			cmd("cp -r", "old/{0}/iLoops".format(o.out), o.qout)
+			cmd("cp -r", ".old/" + o.out + "DataExploration", o.qout)
+			cmd("cp", ".old/" + o.out + "RWorkspaces/1_ExploreData.RData", o.qout + "/RWorkspaces")
+			cmd("cp -r", ".old/{0}/iLoops".format(o.out), o.qout)
 
 		if o.initialStep > 2:
-			cmd("cp", "old/" + o.out + "RWorkspaces/2_GetCandidates.RData", o.qout + "/RWorkspaces")
-			cmd("cp", "old/" + o.out + "candidateList.tsv", "old/" + o.out + "candidateList_v2.tsv","old/" + o.out + "expressedGenes.lst", o.qout)
-			cmd("cp", "old/" + o.out + "candidates_normal.gtf", "old/" + o.out + "candidates_tumor.gtf", o.qout)
-			cmd("cp", "old/" + o.out + "geneNetwork*.pkl", "old/" + o.out + "txNetwork*.pkl", o.qout)
-			cmd("cp", "old/" + o.out + "expression_normal.tsv", "old/" + o.out + "expression_tumor.tsv", o.qout)
-			cmd("cp", "old/" + o.out + "msInput.txt", o.qout)
+			cmd("cp", ".old/" + o.out + "RWorkspaces/2_GetCandidates.RData", o.qout + "/RWorkspaces")
+			cmd("cp", ".old/" + o.out + "candidateList.tsv", ".old/" + o.out + "candidateList_v2.tsv",".old/" + o.out + "expressedGenes.lst", o.qout)
+			cmd("cp", ".old/" + o.out + "candidates_normal.gtf", ".old/" + o.out + "candidates_tumor.gtf", o.qout)
+			cmd("cp", ".old/" + o.out + "geneNetwork*.pkl", ".old/" + o.out + "txNetwork*.pkl", o.qout)
+			cmd("cp", ".old/" + o.out + "expression_normal.tsv", ".old/" + o.out + "expression_tumor.tsv", o.qout)
+			cmd("cp", ".old/" + o.out + "msInput.txt", o.qout)
 			
 	else:
 		
@@ -125,17 +129,19 @@ def setEnvironment():
 			cmd("cp", o.external + "_expressedGenes.lst", "Results/" + o.out + "expressedGenes.lst")
 
 	if o.initialStep > 3:
-		cmd("cp", "old/" + o.out + "candidatesGaudi.lst", o.qout)
+		cmd("cp", ".old/" + o.out + "candidatesGaudi.lst", o.qout)
 	if o.initialStep > 4:
-		cmd("cp -r", "old/{0}/GUILD_experimental".format(o.out), o.qout)
-		cmd("cp", "old/{0}/geneSubnetwork.pkl".format(o.out), o.qout)
+		cmd("cp -r", ".old/{0}/GUILD_experimental".format(o.out), o.qout)
+		cmd("cp", ".old/{0}/geneSubnetwork.pkl".format(o.out), o.qout)
 	if o.initialStep > 5:
-		cmd("cp -r", "old/{0}/structural_analysis".format(options.Options().out), o.qout)
+		cmd("cp -r", ".old/{0}/neighborhood_analysis".format(o.out), o.qout)
 	if o.initialStep > 6:
-		cmd("cp -r", "old/{0}/GUILD_enriched".format(o.out), o.qout)
-		cmd("cp -r", "old/{0}/iLoops/{1}".format(o.out, o.iLoopsVersion), o.qout)
+		cmd("cp -r", ".old/{0}/GUILD_enriched".format(o.out), o.qout)
+		cmd("cp -r", ".old/{0}/iLoops/{1}".format(o.out, o.iLoopsVersion), o.qout)
 	if o.initialStep > 7:
-		cmd("cp -r", "old/{0}/neighborhood_analysis".format(o.out), o.qout)
+		cmd("cp -r", ".old/{0}/structural_analysis".format(options.Options().out), o.qout)
+	if o.initialStep > 8:
+		cmd("cp -r", ".old/{0}/result_summary".format(o.out), o.qout)
 
 def pickUniqPatterns(tx_network, gn_network):
 
