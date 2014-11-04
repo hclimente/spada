@@ -62,7 +62,7 @@ calculateMAD <- function(x){
 
 }
 
-makeInterReplicateComparisons <- function(condition, samples){
+makeInterReplicateComparisons <- function(condition, samples,intraReplicate){
 
   interRepComp <- NULL
 
@@ -148,7 +148,7 @@ all <- c(rbind(tpmCols, tTpmCols, psiCols))
 
 for (condition in inputData$Conditions){
 
-  interReplicate[[condition]] <- makeInterReplicateComparisons(condition,inputData$Replicates)
+  interReplicate[[condition]] <- makeInterReplicateComparisons(condition,inputData$Replicates,intraReplicate)
 
   colnames(interReplicate[[condition]]) <- c("Gene", "Transcript", all)
 
@@ -185,13 +185,20 @@ if (length(inputData$unpairedReplicates) > 0){
     #for normal transcripts.
     intraReplicate[[replicate]]$deltaPSI <- intraReplicate[[replicate]]$PSI_N - intraReplicate[[replicate]]$PSI_T
 
+    #Estimate of la_TPM in N and la_TPM
+    vtTPM <- aggregate(TPM_N ~ Gene, data=intraReplicate[[replicate]], FUN = "sum")
+    colnames(vtTPM) <- c("Gene", "tTPM_N")
+    intraReplicate[[replicate]] <- merge(intraReplicate[[replicate]],vtTPM,by="Gene")
+    
+    intraReplicate[[replicate]]$la_tTPM <- 0.5 * (log(intraReplicate[[replicate]]$tTPM_N) + log(intraReplicate[[replicate]]$tTPM_T))
+
     setTxtProgressBar(unpairedPatientSumPB, counter)
     counter <- counter + 1
   }
 
   close(unpairedPatientSumPB)
 
-  interReplicate[["T"]] <- makeInterReplicateComparisons("T",inputData$unpairedReplicates)
+  interReplicate[["T"]] <- makeInterReplicateComparisons("T",inputData$unpairedReplicates,intraReplicate)
 }
 
 loginfo("Summarizing data from %d transcripts.",length(interReplicate[["N"]]$Transcript),logger="explore_data")
