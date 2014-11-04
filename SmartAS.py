@@ -209,12 +209,12 @@ if __name__ == '__main__':
 	else:
 		S.createGeneSubnetwork()
 	if options.Options().initialStep <= 5:
-		S.structuralAnalysis()
+		S.neighborhoodAnalysis()
 	if options.Options().initialStep <= 6:
 		#S.analyzeInteractions()
 		#S.networkAnalysis(False)
 		pass
 	if options.Options().initialStep <= 7:
-		S.neighborhoodAnalysis()
+		S.structuralAnalysis()
 	if options.Options().initialStep <= 8:
 		S.summarizeResults()
