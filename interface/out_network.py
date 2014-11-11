@@ -92,7 +92,7 @@ def outCandidateList(gn_network, tx_network):
 	with open(options.Options().qout + "candidateList_v3.tsv", "w") as cList:
 		cList.write("GeneId\tSymbol\tNormal_transcript\tTumor_transcript\t")
 		cList.write("Normal_protein\tTumor_protein\tPatient_percentage\t")
-		cList.write("Precision\tSensitivity\tDriver\tEpigenetic_factor\t
+		cList.write("Precision\tSensitivity\tDriver\tEpigenetic_factor\t")
 		cList.write("RBP\tCDS\tCDS_change\tUTR_change\tPatients_affected\n")
 		
 		for gene,info,switch in utils.iterate_switches_ScoreWise(gn_network):
