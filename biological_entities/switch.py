@@ -2,12 +2,13 @@ import protein
 import transcript
 
 class IsoformSwitch:
-	def __init__(self, nTx, tTx, score, patients, pval):
+	def __init__(self, nTx, tTx, score, patients,precision,sensitivity):
 		self._normal_transcript_name= nTx
 		self._tumor_transcript_name = tTx
 		self._percent 				= score
 		self._patients 				= patients
-		self._p 					= pval
+		self._precision 			= precision
+		self._sensitivity 			= sensitivity
 
 		self._normal_transcript 	= None
 		self._tumor_transcript 		= None
@@ -35,7 +36,9 @@ class IsoformSwitch:
 	@property
 	def patients(self): return self._patients
 	@property
-	def p(self): return self._p
+	def precision(self): return self._precision
+	@property
+	def sensitivity(self): return self._sensitivity
 	
 	@property 
 	def nIsoform(self): return self._normal_protein
@@ -63,7 +66,7 @@ class IsoformSwitch:
 
 	@property
 	def is_relevant(self):
-		if self.cds_overlap and (self.iloopsChange or self.brokenSurfaces or self.functionalChange):
+		if self.cds_overlap and (self.disorderChange or self.iloopsChange or self.brokenSurfaces or self.functionalChange):
 			return True
 		else:
 			return False

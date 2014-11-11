@@ -186,14 +186,13 @@ class GeneNetwork(network.Network):
 		min_samples = round(samples * 0.1)
 
 		switches = pd.DataFrame.from_csv(options.Options().qout + "candidateList.tsv", sep="\t", header=None, index_col=None)
-		switches.columns = ["Gene","Transcript_normal","Transcript_tumor","Replicates","Patients","pvalue"]
+		switches.columns = ["Gene","Transcript_normal","Transcript_tumor","Replicates","Patients","Precision","Sensitivity"]
 		switches.Replicates = switches.Replicates.astype(float)
 		switches.Patients = switches.Patients.str.split(",")
-		switches.pvalue = switches.pvalue.astype(float)
+		switches.Precision = switches.Precision.astype(float)
+		switches.Sensitivity = switches.Sensitivity.astype(float)
 		switches["Percentage"] = switches.Replicates/samples
-
-		switches = switches[ switches.pvalue <= 0.001 ]
-				
+		
 		switches_groupedByGene = switches[ ["Gene", "Replicates"] ]
 		switches_groupedByGene = switches_groupedByGene.groupby("Gene").sum()
 		switches_groupedByGene.Replicates = 0.2 + 0.3 * (switches_groupedByGene.Replicates - min_samples)/(samples - min_samples)
@@ -209,9 +208,11 @@ class GeneNetwork(network.Network):
 			tIso 		= row["Transcript_tumor"]
 			Score 		= row["Percentage"]
 			Patients 	= row["Patients"]
-			pvalue 		= row["pvalue"]
+			Precision 	= row["Precision"]
+			Sensitivity = row["Sensitivity"]
 
-			isoSwitch = switch.IsoformSwitch(nIso, tIso, Score, Patients, pvalue)
+			isoSwitch = switch.IsoformSwitch(nIso,tIso,Score,Patients,
+											 Precision,Sensitivity)
 			self.update_node("isoformSwitches", isoSwitch, full_name=Gene)
 
 	def importSpecificDrivers(self):
