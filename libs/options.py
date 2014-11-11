@@ -22,24 +22,12 @@ class Options(object):
         self._iLoopsVersion         = options.iLoopsVersion
         self._unpairedReplicates    = set(options.unpairedReplicates.split(",")) if options.unpairedReplicates else set()
         self._tag                   = options.tag 
-        if self._unpairedReplicates and options.tag[:1] != "u_":
-            self._tag = "u_"+options.tag
-        self._external              = options.external
-        if self._tag[:2]=="u_":
-            self._specificDrivers = "{0}Data/{1}/specificDrivers/{2}Drivers.txt".format(
-                                            self._wd,self._inputType,self._tag[2:])
-        else:
-            self._specificDrivers = "{0}Data/{1}/specificDrivers/{2}Drivers.txt".format(
+        self._specificDrivers = "{0}Data/{1}/specificDrivers/{2}Drivers.txt".format(
                                             self._wd,self._inputType,self._tag)
-        
-        if self._external:
-            if not self._unpairedReplicates:
-                self._out           = "{0}/{1}/".format(self._inputType,self._tag)
-        else:
-            self._out               = "{0}/{1}_mE{2}/".format(self._inputType,self._tag,self._minExpression)
+        self._out           = "{0}/{1}/".format(self._inputType,self._tag)
 
-        self._gOut                  = self._gwd + "Results/" + self._out
-        self._quickOut              = self._wd + "Results/" + self._out
+        self._gOut                  = self._gwd + "testResults/" + self._out
+        self._quickOut              = self._wd + "testResults/" + self._out
 
     # Getters ##
     @property
@@ -66,8 +54,6 @@ class Options(object):
     @property
     def tag(self):                  return self._tag
     @property
-    def external(self):             return self._external
-    @property
     def out(self):                  return self._out
     @property
     def gout(self):                 return self._gOut
@@ -81,13 +67,13 @@ class Options(object):
 
         parser.add_argument('-f','--config-file', dest='config_file', action = 'store', 
                             default='Parameters.cfg', help = 'Input file with the parameters')
-        parser.add_argument('-s', '--initial-step', dest='initial_step', action='store', default='0',
-                            type=int, help='Where should SmartAS start.')
+        parser.add_argument('-s', '--initial-step', dest='initial_step', action='store', default='import_data',
+                            type=str, help='Where should SmartAS start.')
         parser.add_argument('-wd', '--working-directory', dest='wd', action='store', default='/home/hector/SmartAS/',
                             help='Root file of SmartAS folder in the current machine.')
         parser.add_argument('-gwd', '--gaudi-wd', dest='gwd', action='store', 
                             default='/sbi/users/hectorc/SmartAS/', help='Root file of SmartAS folder in Gaudi.')
-        parser.add_argument('-m', '--minimum-expression', dest='minExpression', action='store', default='0',
+        parser.add_argument('-m', '--minimum-expression', dest='minExpression', action='store', default='-1',
                             type=float, help='Minimum expression to consider a transcript not residual.')
         parser.add_argument('-i', '--input-type', dest='inputType', action='store', default='TCGA',
                             help='Origin of the data.')
@@ -99,10 +85,8 @@ class Options(object):
                             help='Number of unpaired samples.')
         parser.add_argument('-t', '--tag', dest='tag', action='store', default='20',
                             help='Tag of the files.')
-        parser.add_argument('-e', '--external', dest='external', action='store', default='',
-                            help='Path of external data.')
         parser.add_argument('-o', '--output', dest='out', action='store', default='',
-                            help='Path of output data, under the Results/ directory.')
+                            help='Path of output data, under the testResults/ directory.')
         parser.add_argument('-go', '--goutput', dest='gout', action='store', default='',
                             help='Path of output data in Gaudi.')
         parser.add_argument('-d', '--specific-drivers', dest='specificDrivers', action='store', default='',
@@ -112,10 +96,10 @@ class Options(object):
         options     = parser.parse_args(["@" + config_opt.config_file])
         return options
 
-    def printToFile(self, initialStep=None, wd=None, gwd=None, minExpression=None, inputType=None, replicates=None, iLoopsVersion=None, unpairedReplicates=None, tag=None, external=None, specificDrivers=None):
+    def printToFile(self, initialStep=None, wd=None, gwd=None, minExpression=None, inputType=None, replicates=None, iLoopsVersion=None, unpairedReplicates=None, tag=None, specificDrivers=None):
+        """Print the config to a new file, only those values that are different 
+        than the default ones. Overwrite those that are passed as arguments."""
         with open(self._tag + ".cfg", "w") as CONFIG:
-
-
             if initialStep:
                 CONFIG.write("initial-step=" + str(initialStep) + "\n")
             elif self._initial_step != 0:
@@ -133,7 +117,7 @@ class Options(object):
             
             if minExpression:
                 CONFIG.write("minimum-expression=" + str(minExpression) + "\n")
-            elif self._minExpression != 0.0:         
+            elif self._minExpression != -1.0:         
                 CONFIG.write("minimum-expression=" + str(self._minExpression) + "\n")
             
             if inputType:
@@ -159,15 +143,7 @@ class Options(object):
             if tag:
                 CONFIG.write("tag=" + tag + "\n")
             elif self._tag:
-                if self._tag[:2]=="u_":
-                    CONFIG.write("tag=" + self._tag[2:] + "\n")
-                else:
-                    CONFIG.write("tag=" + self._tag + "\n")
-            
-            if external:
-                CONFIG.write("external=" + external + "\n")
-            elif self._external:              
-                CONFIG.write("external=" + self._external + "\n")
+                CONFIG.write("tag=" + self._tag + "\n")
             
             if specificDrivers:
                 CONFIG.write("specific-drivers=" + specificDrivers + "\n")

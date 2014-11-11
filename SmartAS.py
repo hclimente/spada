@@ -33,17 +33,19 @@ class SmartAS:
 		standarize_input.standarizeInput()
 		self.logger.info("Done. Relaunch please.")
 
-	def exploreData(self):
+	def getCandidates(self):
 
 		self.logger.info("Reading and summarizing input files: computing PSI values and intereplicate agreement.")
 		utils.cmd("Pipeline/methods/explore_data.r", options.Options().qout, 
 				  "Data/Input/{0}/{1}/".format(options.Options().inputType, options.Options().tag) )
 
-	def getCandidates(self):
 
 		self.logger.info("Extracting transcripts with high variance and high expression.")
 		utils.cmd( "Pipeline/methods/get_candidates.r", options.Options().minExpression, 
 				   options.Options().qout )
+
+		self.logger.info("Filtering switches with clustering measures.")
+		utils.cmd( "Pipeline/methods/switch_validation.r", options.Options().qout )
 
 	def networkAnalysis(self, onlyExperimental):
 		
@@ -164,7 +166,7 @@ if __name__ == '__main__':
 						level=logging.DEBUG,
 						format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
 						datefmt='%m-%d %H:%M',
-	                   	filename=options.Options().tag + '_smartAS.log',
+	                   	filename=options.Options().tag + '_smartAS_devel.log',
 	                   	filemode='w'
 					   )
 
@@ -176,16 +178,13 @@ if __name__ == '__main__':
 	logging.getLogger().addHandler(console)
 
 	S = SmartAS()
+	utils.setEnvironment()
 
-	if options.Options().initialStep <= 0:
+	if options.Options().initialStep == "import-data":
 		S.importData()
-		exit()
-	else:
-		utils.setEnvironment()
-
-	if options.Options().initialStep <= 1:
-		S.exploreData()
-	if options.Options().initialStep <= 2:
+	
+	# Get and characterize switches
+	elif options.Options().initialStep == "get-switches":
 	 	S.getCandidates()
 	 	
 	 	S.createTranscriptNetwork(False)
@@ -195,26 +194,25 @@ if __name__ == '__main__':
 		out_network.outCandidateList(S._gene_network, S._transcript_network)
 		export_to_MSAnalysis.Export2MSAnalysis().generateFile(S._gene_network)
 
-		if not options.Options().external:
-			options.Options().printToFile(initialStep=3)
-			exit()
+		options.Options().printToFile(initialStep="get-relevant-switches")
 	else:
 		S.createTranscriptNetwork(True)
 		S.createGeneNetwork(True)
 
-	if options.Options().initialStep <= 3:
-		S.launchiLoops()
-	if options.Options().initialStep <= 4:
-		S.networkAnalysis(True)
-	else:
-		S.createGeneSubnetwork()
-	if options.Options().initialStep <= 5:
-		S.neighborhoodAnalysis()
-	if options.Options().initialStep <= 6:
-		#S.analyzeInteractions()
-		#S.networkAnalysis(False)
-		pass
-	if options.Options().initialStep <= 7:
+	# analyze switches
+	if options.Options().initialStep == "get-relevant-switches":
 		S.structuralAnalysis()
-	if options.Options().initialStep <= 8:
+	elif options.Options().initialStep == "launch-iloops":
+		S.launchiLoops()
+	elif options.Options().initialStep == "predicted-network-analysis":
+		S.networkAnalysis(True)
+	elif options.Options().initialStep == "neighborhood-analysis":
+		S.neighborhoodAnalysis()
+	elif options.Options().initialStep == "experimental-network-analysis":
+		S.analyzeInteractions()
+		S.networkAnalysis(False)
+
+	# summarize results
+	elif options.Options().initialStep == "summary":
 		S.summarizeResults()
+	

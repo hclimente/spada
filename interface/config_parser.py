@@ -25,8 +25,6 @@ class ConfigParser():
 						  type=int, help='Number of unpaired samples.')
 		self._parser.add_argument('-t', '--tag', dest='tag', action='store', default='20',
 						  help='Tag of the files.')
-		self._parser.add_argument('-e', '--external', dest='external', action='store', default='',
-						  help='Path of external data.')
 
 		options = self._parser.parse_args()
 		repr(options)
