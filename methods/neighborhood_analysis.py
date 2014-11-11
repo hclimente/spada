@@ -52,12 +52,12 @@ class NeighborhoodAnalysis(method.Method):
 			#Iterate over the genes that are expressed in the tissue
 			for gene,info in [ (x,y) for x,y in self._gene_network.nodes(data=True) if y["ExpressedTranscripts"]]:
 				if gene not in geneSets[geneSet]["allGenes"]:
-					if info["isoformSwitches"]:
+					if [ x for x in info["isoformSwitches"] if x.is_relevant]:
 						outGeneSet_withSwitches.add(gene)
 					else:
 						outGeneSet_withoutSwitches.add(gene)
 				else:
-					if info["isoformSwitches"]:
+					if [ x for x in info["isoformSwitches"] if x.is_relevant]:
 						self._gene_network.update_node("neighborhoods",geneSet,gene_id=gene,secondKey=sTag)
 						inGeneSet_withSwitches.add(gene)
 					else:
