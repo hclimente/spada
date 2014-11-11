@@ -14,7 +14,7 @@ do
     fi
 done < "Parameters.cfg"
 
-resultsDir=~/Results/GENECODE19
+resultsDir=~/testResults/GENECODE19
 outFolder=e"$minExpresion"p"$minPSI"
 
 mkdir -p $resultsDir/$outFolder

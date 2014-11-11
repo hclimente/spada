@@ -1,11 +1,14 @@
 library(gplots)
 
+all_drivers <- read.delim("~/Downloads/all_drivers.tsv")
+dgidb_export_all_drivers_bygene_results <- read.delim("~/Downloads/dgidb_export_all_drivers_bygene_results.tsv", dec=",")
+
 kk <- NULL
 patientOrigin = data.frame(Patient=character(),Cancer=character())
-for (folder in list.files(path="~/SmartAS/Results/TCGA")){
+for (folder in list.files(path="~/SmartAS/testResults/TCGA")){
   if (folder=="analysis"){next}
   
-  relevantSwitches <- read.delim(paste0("~/SmartAS/Results/TCGA/",folder,"/result_summary/relevantSwitches.tsv"))
+  relevantSwitches <- read.delim(paste0("~/SmartAS/testResults/TCGA/",folder,"/result_summary/relevantSwitches.tsv"))
   if (is.null(kk)){
     kk <- relevantSwitches
   } else {
@@ -20,7 +23,9 @@ kk[is.na(kk)] <- 0
 rownames(kk) <- kk$Genes
 kk <- kk[,-1]
 
-cancerColor<-read.delim("known_cancer_colour")  #I am reading here the seperate file that I sent you for cancer colours.
+kk <- kk[rowSums(kk) > 10,]
+
+cancerColor<-read.delim("~/Downloads/known_cancer_colour")  #I am reading here the seperate file that I sent you for cancer colours.
 cancerColor$color<-as.character(cancerColor$color)
 
 cancer = unlist(lapply(strsplit(colnames(kk),"\\."),"[[",1))
@@ -38,11 +43,30 @@ for (can in cancer){
 
 kk <- as.matrix(kk)
 
-heatmap.2(as.matrix(kk),col=colorpanel(2,"white", "blue"), trace="none", Rowv=FALSE,Colv=FALSE,na.rm=TRUE,
-          labRow = rownames(kk), labCol = colnames(kk),
-          xlab = NULL, ylab = NULL,dendrogram='none',
-          ColSideColors = color,cexRow=0.6, 
-          key = FALSE,
-          main= "Relevant genes affection")
+geneColors <- rep('white',nrow(kk))
 
-legend(x="bottomleft",legend=cancerColor$cancer,fill=cancerColor$color, cex=1.3, border=FALSE)
+drivers <- rownames(kk) %in% all_drivers$Input.symbol | rownames(kk) %in% all_drivers$Approves.symbol
+druggable <- rownames(kk) %in% dgidb_export_all_drivers_bygene_results$Search.Term
+
+geneColors[drivers] <- "red"
+geneColors[druggable] <- "black"
+
+png("~/Downloads/relevantGenesPerPatient.png", width=1500, height=1500)
+heatmap.2(as.matrix(kk),col=colorpanel(2,"white", "blue"), trace="none", Rowv=FALSE,Colv=FALSE,na.rm=TRUE,
+          labRow = rownames(kk), labCol = FALSE,
+          xlab = NULL, ylab = NULL,dendrogram='none',margins = c(5, 13),
+          ColSideColors = color, RowSideColors=geneColors, cexRow=2,key = FALSE,
+          main= "Relevant genes affection")
+legend(x="topleft",legend=cancerColor$cancer,fill=cancerColor$color, border=FALSE)
+graphics.off()
+
+png("~/Downloads/relevantGenesPerPatient_wDendrogram.png", width=1500, height=1500)
+heatmap.2(as.matrix(kk),col=colorpanel(2,"white", "blue"), trace="none", na.rm=TRUE,
+          labRow = rownames(kk), labCol = FALSE,
+          distfun = function(x) dist(x, method = 'euclidean'),
+          hclustfun = function(x) hclust(x, method = 'ward'),
+          xlab = NULL, ylab = NULL,dendrogram='both',
+          ColSideColors = color,RowSideColors=geneColors, cexRow=2,margins = c(5, 13), 
+          key = FALSE,main= "Relevant genes affection")
+legend(x="topleft",legend=c("Driver","Druggable"),fill=c("red","black"), border=FALSE)
+graphics.off()

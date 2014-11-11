@@ -21,5 +21,5 @@ for michalFile in listdir("."):
 	if ans != "y":
 		kansurType = ans
 
-	cmd("ln", "-s", "/home/hector/SmartAS/Results/TCGA/" + kansurType + "_mE-1.0/expressedGenes.lst", 
+	cmd("ln", "-s", "/home/hector/SmartAS/testResults/TCGA/" + kansurType + "_mE-1.0/expressedGenes.lst", 
 		"/home/hector/SmartAS/Data/TCGA/External/" + core + "_expressedGenes.lst"	)

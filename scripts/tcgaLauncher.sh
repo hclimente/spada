@@ -46,7 +46,7 @@ do
 	getSpecificDrivers $fullTag
 
 	echo paired
-	mkdir -p Results/TCGA/"$fullTag"_mE-1.0
+	mkdir -p testResults/TCGA/"$fullTag"_mE-1.0
 
 	echo initial-step=0  >$fullTag.cfg
 	echo minimum-expression=-1.0 >>$fullTag.cfg
@@ -59,7 +59,7 @@ do
 	rm $fullTag.cfg
 
 	echo unpaired
-	mkdir -p Results/TCGA/u_"$fullTag"_mE-1.0
+	mkdir -p testResults/TCGA/u_"$fullTag"_mE-1.0
 
 	echo initial-step=0  >u_$fullTag.cfg
 	echo minimum-expression=-1.0 >>u_$fullTag.cfg

@@ -2,8 +2,8 @@
 
 args <- commandArgs(trailingOnly = TRUE)
 
-load(paste0("Results/", args[1], "/RWorkspaces/1_ExploreData.RData"))
-out <- paste0("Results/", args[1], "_unpaired/")
+load(paste0("testResults/", args[1], "/RWorkspaces/1_ExploreData.RData"))
+out <- paste0("testResults/", args[1], "_unpaired/")
 unpairedReplicates <- as.numeric(args[2])
 inputPath <- args[3]
 

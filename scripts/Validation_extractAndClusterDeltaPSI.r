@@ -38,8 +38,6 @@ createSubpopulations <- function(x){
 	colnames(relevantDf) <- unlist(relevantDf[1,])
 	relevantDf <- relevantDf[-1, ]
   
-
-  
 	# Ward Hierarchical Clustering
 	d <- dist(relevantDf, method="euclidean") # distance matrix
 	fit <- tryCatch({
@@ -123,10 +121,7 @@ createSubpopulationsKmeans <- function(x){
     }
     precision = TP/(TP+FP)
     sensitivity = TP/(TP+FN)
-    
-    #library(cluster)
-    #clusplot(mydata, fit$cluster, color=TRUE, shade=TRUE,labels=2, lines=0)
-    
+      
   },error = function(e){},
   finally={
     if (!exists("precision")){

@@ -1,4 +1,4 @@
-load("~/SmartAS/Results/TCGA/luad_mE0.0_mCE-1.0/RWorkspaces/2_GetCandidates.RData")
+load("~/SmartAS/testResults/TCGA/luad_mE0.0_mCE-1.0/RWorkspaces/2_GetCandidates.RData")
 
 library(ggplot2)
 

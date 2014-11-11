@@ -2,7 +2,7 @@ library(ggplot2)
 library(reshape)
 library(RColorBrewer)
 
-load("~/SmartAS/Results/TCGA/luad_mE-1.0/RWorkspaces/2_GetCandidates.RData")
+load("~/SmartAS/testResults/TCGA/luad_mE-1.0/RWorkspaces/2_GetCandidates.RData")
 setwd("~/SmartAS")
 nmb <- as.numeric(inputData["Replicates"])
 
