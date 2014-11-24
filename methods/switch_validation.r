@@ -166,8 +166,13 @@ deltaPsis <- cbind(transcripts,psis)
 clustVals = apply(candidateList,1,getSensitivityAndPrecision)
 clustVals = do.call('rbind',clustVals)
 
-candidateList$precision = mean(c(clustVals$precisionKmeans,clustVals$precisionHclust),na.rm=T)
-candidateList$sensitivity = mean(c(clustVals$sensitivityKmeans,clustVals$sensitivityHclust),na.rm=T)
+candidateList$precision = apply(cbind(clustVals$precisionKmeans,clustVals$precisionHclust),1,mean,na.rm=T)
+candidateList$sensitivity = apply(cbind(clustVals$sensitivityKmeans,clustVals$sensitivityHclust),1,mean,na.rm=T)
+
+candidateList$precisionKmeans = clustVals$precisionKmeans
+candidateList$precisionHclust = clustVals$precisionHclust
+candidateList$sensitivityKmeans = clustVals$sensitivityKmeans
+candidateList$sensitivityHclust = clustVals$sensitivityHclust
 
 write.table(candidateList, file=paste0(out, "candidateList_v2.tsv"), sep="\t", row.names=F, col.names=F, quote=F)
 
