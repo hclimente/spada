@@ -182,11 +182,11 @@ class GeneNetwork(network.Network):
 
 		samples = len(options.Options().replicates)
 		if options.Options().unpairedReplicates:
-			samples = len(options.Options().unpairedReplicates)
+			samples = samples + len(options.Options().unpairedReplicates)
 		min_samples = round(samples * 0.1)
 
 		switches = pd.DataFrame.from_csv(options.Options().qout + "candidateList.tsv", sep="\t", header=None, index_col=None)
-		switches.columns = ["Gene","Transcript_normal","Transcript_tumor","Replicates","Patients","Precision","Sensitivity"]
+		switches.columns = ["Gene","Transcript_normal","Transcript_tumor","Replicates","Patients","Precision","Sensitivity","PrecisionKmeans","PrecisionHclust","SensitivityKmeans","SensitivityHclust"]
 		switches.Replicates = switches.Replicates.astype(float)
 		switches.Patients = switches.Patients.str.split(",")
 		switches.Precision = switches.Precision.astype(float)
@@ -233,11 +233,7 @@ class GeneNetwork(network.Network):
 	def importDiffExpression(self):
 		self.logger.debug("Importing differential expression information.")
 
-		tag = options.Options().tag
-		if options.Options().unpairedReplicates:
-			tag = options.Options().tag[2:]
-
-		for line in utils.readTable("Data/TCGA/Rawdata/{0}_gene_diffexp_paired-filtered.txt".format(tag)):
+		for line in utils.readTable("Data/TCGA/Rawdata/{0}_gene_diffexp_paired-filtered.txt".format(options.Options().tag)):
 			geneID = self.nameFilter(full_name=line[1])[0]
 
 			self.update_node("diffExpression_logFC", float(line[11]), gene_id=geneID)
