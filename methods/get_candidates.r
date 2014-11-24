@@ -54,8 +54,9 @@ for (replicate in patientSet){
   data <- merge(intraReplicate[[replicate]][,c("Transcript", "deltaPSI")],interReplicate[["N"]][,c("Transcript","Median_dPSI","MAD_dPSI","MeAD_dPSI")])
 
   intraReplicate[[replicate]]$p <- apply(data,1,getRobustZscore)
-  intraReplicate[[replicate]]$padj <- p.adjust(intraReplicate[[replicate]]$p, method="fdr")
-  significant <- intraReplicate[[replicate]]$padj < 0.05 | intraReplicate[[replicate]]$padj > 0.95 
+  intraReplicate[[replicate]]$padj_up <- p.adjust(1-intraReplicate[[replicate]]$p, method="fdr")
+  intraReplicate[[replicate]]$padj_dw <- p.adjust(intraReplicate[[replicate]]$p, method="fdr")
+  significant <- intraReplicate[[replicate]]$padj_up < 0.05 | intraReplicate[[replicate]]$padj_dw < 0.05 
   significant[is.na(significant)] <- FALSE
   
   norExpression <- log(intraReplicate[[replicate]]$TPM_N) > minExpression
@@ -79,9 +80,9 @@ for (replicate in patientSet){
     
     #Calculate max difference between the transcripts and choose the candidates
     #     deltaPSI = PSI_alt - PSI_ref
-    # MaxDeltaPsiCond: predominant transcript in the normal sample
-    # MinDeltaPsiCond: predominant transcript in the tumor sample
-    maxP <- norTranscripts$padj == max(norTranscripts$padj, na.rm=T)
+    # MaxDeltaPsi: predominant transcript in the tumor sample
+    # MinDeltaPsi: predominant transcript in the normal sample
+    maxP <- norTranscripts$padj_dw == min(norTranscripts$padj_dw, na.rm=T)
     if (sum(maxP) > 1){
       maxTPM <- norTranscripts$TPM_N == max(norTranscripts$TPM_N, na.rm=T)
       norCandidate <- norTranscripts$Transcript[maxP & maxTPM]  
@@ -89,7 +90,7 @@ for (replicate in patientSet){
       norCandidate <- norTranscripts$Transcript[maxP]
     }
     
-    minP <- tumTranscripts$padj == max(tumTranscripts$padj, na.rm=T)
+    minP <- tumTranscripts$padj_up == min(tumTranscripts$padj_up, na.rm=T)
     if (sum(minP) > 1){
       minTPM <- tumTranscripts$TPM_T == max(tumTranscripts$TPM_T, na.rm=T)
       tumCandidate <- tumTranscripts$Transcript[minP & minTPM]
