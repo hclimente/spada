@@ -140,9 +140,10 @@ save(isoformExpression, intraReplicate, interReplicate, candidates, candidateLis
 
 #Plot heatmap
 suppressMessages(library(gplots)) #Avoid the annoying message
-library(RColorBrewer)
+library(RColorBrewer) 
 
-top <- length(candidateList$Gene[candidateList$Replicated >= patientSet * 0.2])
+library(RColorBrewer) 
+top <- length(candidateList$Gene[candidateList$Replicated >= length(patientSet) * 0.2])
 
 topCandidates <- ddply(candidateList,.(Gene), summarise, Replicated=sum(Replicated))
 topCandidates <- topCandidates[with(topCandidates, order(-Replicated)), ]
