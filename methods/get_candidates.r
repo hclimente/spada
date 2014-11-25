@@ -17,6 +17,7 @@ addHandler(writeToFile, logger="get_candidates", file=paste0(out, "rSmartAS.log"
 
 getRobustZscore <- function(x){
 
+  tx     <- x[1]
   s      <- as.numeric(x[2])
   median <- as.numeric(x[3])
   mad    <- as.numeric(x[4])
@@ -37,7 +38,7 @@ getRobustZscore <- function(x){
   }
   pvalue = pnorm(z)
 
-  return(pvalue)
+  return(data.frame(Transcript=tx,p=pvalue))
 }
 
 candidates <- list()
@@ -53,7 +54,10 @@ for (replicate in patientSet){
   #Filter by deltaPSI and expression, based on the FPR
   data <- merge(intraReplicate[[replicate]][,c("Transcript", "deltaPSI")],interReplicate[["N"]][,c("Transcript","Median_dPSI","MAD_dPSI","MeAD_dPSI")])
 
-  intraReplicate[[replicate]]$p <- apply(data,1,getRobustZscore)
+  pvals <- apply(data,1,getRobustZscore)
+  pvals <- do.call(rbind,pvals)
+  intraReplicate[[replicate]] <- merge(intraReplicate[[replicate]],pvals,by="Transcript")
+  
   intraReplicate[[replicate]]$padj_up <- p.adjust(1-intraReplicate[[replicate]]$p, method="fdr")
   intraReplicate[[replicate]]$padj_dw <- p.adjust(intraReplicate[[replicate]]$p, method="fdr")
   significant <- intraReplicate[[replicate]]$padj_up < 0.05 | intraReplicate[[replicate]]$padj_dw < 0.05 
@@ -84,19 +88,18 @@ for (replicate in patientSet){
     # MinDeltaPsi: predominant transcript in the normal sample
     maxP <- norTranscripts$padj_dw == min(norTranscripts$padj_dw, na.rm=T)
     if (sum(maxP) > 1){
-      maxTPM <- norTranscripts$TPM_N == max(norTranscripts$TPM_N, na.rm=T)
-      norCandidate <- norTranscripts$Transcript[maxP & maxTPM]  
-    } else {
-      norCandidate <- norTranscripts$Transcript[maxP]
-    }
+      highExpression <- norTranscripts$TPM_N == max(norTranscripts$TPM_N, na.rm=T)
+      maxP <- maxP & highExpression
+    } 
     
     minP <- tumTranscripts$padj_up == min(tumTranscripts$padj_up, na.rm=T)
     if (sum(minP) > 1){
-      minTPM <- tumTranscripts$TPM_T == max(tumTranscripts$TPM_T, na.rm=T)
-      tumCandidate <- tumTranscripts$Transcript[minP & minTPM]
-    } else {
-      tumCandidate <- tumTranscripts$Transcript[minP]
+      highExpression <- tumTranscripts$TPM_T == max(tumTranscripts$TPM_T, na.rm=T)
+      minP <- minP & highExpression
     }
+
+    norCandidate <- norTranscripts$Transcript[maxP]
+    tumCandidate <- tumTranscripts$Transcript[minP]
     
     if (sum(!is.na(norCandidate)) == 0 || sum(!is.na(tumCandidate)) == 0){
       next
@@ -138,37 +141,3 @@ write.table(interReplicate[["N"]][,cols], file=paste0(out, "expression_normal.ts
 write.table(interReplicate[["T"]][,cols], file=paste0(out, "expression_tumor.tsv"), sep="\t", row.names=F, quote=F)
 
 save(isoformExpression, intraReplicate, interReplicate, candidates, candidateList, inputData, allExpressedTranscripts, wd, out, file=paste0(out, "RWorkspaces/2_GetCandidates.RData"))
-
-#Plot heatmap
-suppressMessages(library(gplots)) #Avoid the annoying message
-library(RColorBrewer) 
-
-library(RColorBrewer) 
-top <- length(candidateList$Gene[candidateList$Replicated >= length(patientSet) * 0.2])
-
-topCandidates <- ddply(candidateList,.(Gene), summarise, Replicated=sum(Replicated))
-topCandidates <- topCandidates[with(topCandidates, order(-Replicated)), ]
-topCandidates <- head(topCandidates, n=top)
-
-fig <- data.frame(matrix(nrow=length(topCandidates$Gene), ncol=numOfReplicates))
-rownames(fig) <- topCandidates$Gene
-colnames(fig) <- patientSet
-
-for (replicate in patientSet){
-  for (gene in topCandidates$Gene){
-    if (gene %in% candidates[[replicate]]$Gene) {
-      fig[gene, replicate] <- head(candidates[[replicate]]$Switch[candidates[[replicate]]$Gene == gene],1)
-    } else {
-      fig[gene, replicate] <- 0
-    }
-  }
-}
-
-png(paste0(out, "DataExploration/topCandidateSwitch.png"), width=960, height=960)
-myPalette <- colorRampPalette(c("white", "firebrick2"))(n = 14)
-heatmap.2(as.matrix(fig), trace="none", scale="none", col=myPalette, na.col="grey", 
-          breaks=seq(0, max(fig, na.rm=T), length.out=15), main="PSI Switch")
-          
-graphics.off()
-
-save(isoformExpression, intraReplicate, interReplicate, candidates, candidateList, inputData, allExpressedTranscripts, wd, out, fig, file=paste0(out, "RWorkspaces/2_GetCandidates.RData"))
