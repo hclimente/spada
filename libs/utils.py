@@ -117,14 +117,18 @@ def setEnvironment():
 	if o.initialStep == "get-switches":
 		
 		#Set R workspace
-		r("wd <- \"{0}\"".format(options.Options().wd))
-		r("out <- \"{0}\"".format(options.Options().qout))
-		r("inputData <- list()")	
+		r('wd <- \"{0}\"'.format(options.Options().wd))
+		r('out <- \"{0}\"'.format(options.Options().qout))
+		r('inputData <- list()')	
 		r('inputData[["Conditions"]] <- c("N", "T")')
+		
 		reps = ",".join(set([ "\"" + x + "\"" for x in options.Options().replicates ]))
-		r('inputData[["Replicates"]] <- c({0})'.format (reps))
 		ureps = ",".join(set([ "\"" + x + "\"" for x in options.Options().unpairedReplicates ]))
+
+		r('inputData[["Replicates"]] <- c({0})'.format (reps))
 		r('inputData[["unpairedReplicates"]] <- c({0})'.format (ureps))
+
+		r('inputData[["minExpression"]] <- {0}'.format(options.Options().minExpression))
 		r('save.image("' + options.Options().qout + 'RWorkspaces/0_InitialEnvironment.RData")')
 
 	if o.initialStep not in ["import-data","get-switches"]:

@@ -4,8 +4,7 @@ library(plyr)
 suppressMessages( library(logging) )
 
 args <- commandArgs(trailingOnly = TRUE)
-minExpression <- as.numeric(args[1])
-load(paste0(args[2], "RWorkspaces/1_ExploreData.RData"))
+load(paste0(args[1], "RWorkspaces/1_ExploreData.RData"))
 
 patientSet <- c(inputData$Replicates,inputData$unpairedReplicates)
 numOfReplicates <- length(patientSet)
@@ -63,8 +62,8 @@ for (replicate in patientSet){
   significant <- intraReplicate[[replicate]]$padj_up < 0.05 | intraReplicate[[replicate]]$padj_dw < 0.05 
   significant[is.na(significant)] <- FALSE
   
-  norExpression <- log(intraReplicate[[replicate]]$TPM_N) > minExpression
-  tumExpression <- log(intraReplicate[[replicate]]$TPM_T) > minExpression
+  norExpression <- log(intraReplicate[[replicate]]$TPM_N) > inputData$minExpression
+  tumExpression <- log(intraReplicate[[replicate]]$TPM_T) > inputData$minExpression
   
   replicateCandidates <- vector('list', length(unique(intraReplicate[[replicate]]$Gene[significant]))) 
   

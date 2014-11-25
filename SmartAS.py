@@ -41,8 +41,7 @@ class SmartAS:
 
 
 		self.logger.info("Extracting transcripts with high variance and high expression.")
-		utils.cmd( "Pipeline/methods/get_candidates.r", options.Options().minExpression, 
-				   options.Options().qout )
+		utils.cmd( "Pipeline/methods/get_candidates.r", options.Options().qout )
 
 		self.logger.info("Filtering switches with clustering measures.")
 		utils.cmd( "Pipeline/methods/switch_validation.r", options.Options().qout )

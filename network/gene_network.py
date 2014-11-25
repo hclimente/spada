@@ -20,6 +20,7 @@ class GeneNetwork(network.Network):
 		score(float,0.01)				Score of the gene for GUILD analysis.
 		scoreG(float,None)				Final GUILD score.
 		Driver(bool,False) 				Gene described as a driver.
+		Druggable(bool,False) 			Gene described as druggable.
 		specificDriver(bool,False) 		Gene described as driver in this cancer type.
 		RBP(bool,False) 				Gene described as a RBP.
 		EpiFactor(bool,False) 			Gene described as epigenetic factor.
@@ -84,6 +85,7 @@ class GeneNetwork(network.Network):
 								scoreG 					= None,
 								specificDriver 			= False,
 								Driver 					= False, 
+								Druggable 				= False, 
 								RBP 					= False, 
 								EpiFactor				= False, 
 								ExpressedTranscripts 	= set(),
@@ -168,6 +170,14 @@ class GeneNetwork(network.Network):
 				self.update_node( "RBP", True, gene_id = geneID )
 			if "yes" in [line[6]]:
 				self.update_node( "EpiFactor", True, gene_id = geneID )
+
+		for line in utils.readTable("Data/Databases/dgidb_export_all_drivers_bygene_results.tsv"):
+			geneSymbol = line[0]
+				
+			for gene,info in gene_network.nodes(data=True):
+				if info["symbol"] == geneSymbol:
+					self.update_node("Druggable",True,gene_id=gene )
+					break
 		
 		for line in utils.readTable(options.Options().qout + "expressedGenes.lst", header=False):
 			geneID = self.nameFilter(full_name=line[1])[0]
