@@ -124,5 +124,6 @@ class NeighborhoodAnalysis(method.Method):
 			for geneSet in affectedPathway:
 				OUT.write("{0}\t{1}\n".format(geneSet,'\t'.join(map(str,affectedPathway[geneSet]))))
 
+
 if __name__ == '__main__':
 	pass

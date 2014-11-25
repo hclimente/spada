@@ -159,7 +159,7 @@ def setEnvironment():
 	if o.initialStep != "summary" and o.initialStep not in ["import-data","get-switches"]:
 		cmd("cp -r", ".testOld/{0}/result_summary".format(o.out), o.qout)
 
-def pickUniqPatterns(tx_network, gn_network):
+def selectIloopsSwitches(tx_network,gn_network,prop):
 
 	loopFamilies = {}
 
@@ -174,6 +174,12 @@ def pickUniqPatterns(tx_network, gn_network):
 	with open(options.Options().qout + "candidatesGaudi.lst", "w") as CANDIDATES_GAUDI:
 		sortedNodes = sorted(gn_network.nodes(data=True), key=lambda (a, dct): dct['score'], reverse=True)
 		for gene,gInfo in sortedNodes:
+
+			# genes that dont have a property or are related to one who
+			#  does e.g. driver, are not considered
+			if not gInfo[prop] or not [ x for x,y in gn_network._net.neighbors(gene) if y[prop] ]:
+				break
+
 			for switch in gInfo["isoformSwitches"]:
 				nIso = switch.nTx
 				tIso = switch.tTx
