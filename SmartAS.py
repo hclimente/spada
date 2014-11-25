@@ -59,7 +59,7 @@ class SmartAS:
 	def launchiLoops(self):
 
 		self.logger.info("Selecting isoforms suitable for {0}.".format( options.Options().iLoopsVersion) )
-		utils.pickUniqPatterns(self._transcript_network, self._gene_network)
+		utils.selectIloopsSwitches(self._transcript_network,self._gene_network,"Driver")
 
 		# self.logger.info("Sending list to Gaudi and performing the iLoops analysis.")
 		# gaudiThread = utils.cmdOut(
@@ -214,4 +214,3 @@ if __name__ == '__main__':
 	# summarize results
 	elif options.Options().initialStep == "summary":
 		S.summarizeResults()
-	
