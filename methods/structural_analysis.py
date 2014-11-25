@@ -16,9 +16,24 @@ class StructuralAnalysis(method.Method):
 	def run(self):
 		self.logger.info("Structural analysis.")
 
+		self.findDiffLoops()
 		self.findBrokenSurfaces()
 		self.interProAnalysis()
 		self.disorderAnalysis()
+
+	def findDiffLoops(self):
+
+		self.logger.info("Classifying loops based on iLoops changes.")
+
+		for gene,info,switch in utils.iterate_switches_ScoreWise(self._gene_network):
+			nLoops = self._transcript_network._net.node[switch.nTx]["iLoopsFamily"]
+			tLoops = self._transcript_network._net.node[switch.tTx]["iLoopsFamily"]
+
+			if nLoops != tLoops:
+				switch._iloops_change = True
+			else:
+				switch._iloops_change = False
+			
 
 	def findBrokenSurfaces(self):
 

@@ -31,7 +31,7 @@ class NeighborhoodAnalysis(method.Method):
 		self.searchEnrichment("asAffectedGenes_Proliferation","asAffected_Proliferation_list.csv","greater")
 		self.searchEnrichment("asAffectedGenes_DNA_damage","asAffected_DNA_damage_list.csv","greater")
 
-	def searchEnrichment(self, sTag, sSetFile,H1):
+	def searchEnrichment(self,sTag,sSetFile,H1):
 
 		geneSets = {}
 		geneSetFile = "{0}Data/Databases/{1}".format(options.Options().wd,sSetFile)
@@ -91,6 +91,7 @@ class NeighborhoodAnalysis(method.Method):
 				OUT.write("{0}\t{1}\t".format(adj_p,switchGenes))
 				OUT.write("{0}\n".format(geneSets[geneSet]["oddsRatio"]))
 
+				# fill switch property in the positives
 				if adj_p <= 0.05:
 					for gene in geneSets[geneSet]["switchGenes"]:
 						for switch in self._gene_network._net.node[x]["isoformSwitches"]:

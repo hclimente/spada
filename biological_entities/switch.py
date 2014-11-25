@@ -66,6 +66,19 @@ class IsoformSwitch:
 
 	@property
 	def is_relevant(self):
+		"""We define as relevant a switch that:
+			* Is considered significant in the statistical analysis.
+			* There is an overlap in the CDS regions, so the switch
+		 	  can be attributed to splicing.
+			* Involves a change in the CDS or in the UTR.
+			* Involves one change in:
+				* Disordered regions.
+				* Loops mapped with iLoops.
+				* I3D Interaction surfaces altered.
+				* Differences in mapped structural features.
+		"""
+		#cds_diff is required if there is any feature
+		#utr_diff only is impossible if a feature change is required
 		if self.cds_overlap and (self.disorderChange or self.iloopsChange or self.brokenSurfaces or self.functionalChange):
 			return True
 		else:
@@ -84,17 +97,21 @@ class IsoformSwitch:
 
 	@property 
 	def cds_diff(self):
+		"""Returns a list with the differencen between the transcripts coding sequences."""
 		cdsDiff = [ x for x in self._normal_transcript.cds if x not in self._tumor_transcript.cds ]
 		cdsDiff.extend( [ x for x in self._tumor_transcript.cds if x not in self._normal_transcript.cds ])
 		return cdsDiff
 
 	@property 
 	def utr_diff(self):
+		"""Returns True if there is a difference between the transcripts utr sequences."""
 		utrDiff = [ x for x in self._normal_transcript.utr if x not in self._tumor_transcript.utr ]
 		utrDiff.extend( [ x for x in self._tumor_transcript.utr if x not in self._normal_transcript.utr ])
 		return utrDiff
 
 	def addTxs(self, nInfo, tInfo):
+		"""Creates the transcript objects for the transcripts involved
+		in the switch and calculates UTR and CDS differences."""
 		self._normal_transcript = transcript.Transcript( self._normal_transcript_name, nInfo )
 		self._tumor_transcript 	= transcript.Transcript( self._tumor_transcript_name, tInfo )
 
@@ -102,6 +119,9 @@ class IsoformSwitch:
 		self.get_utrDiff()
 
 	def addIsos(self, nInfo, tInfo):
+		"""Creates the isoform objects for the transcripts involved
+		in the switch if they have an UniProt identifier. If both do,
+		it calculates the shared and specific regions."""
 		if nInfo["Uniprot"]:
 			self._normal_protein = protein.Protein( self._normal_transcript_name, nInfo)
 			self._normal_protein.checkInteractome3DStructures()
@@ -143,6 +163,8 @@ class IsoformSwitch:
 				self._tumor_transcript._utr[gPos] = False
 
 	def getAlteredRegions(self):
+		"""Calculates the specific and non-specific residues of the isoforms 
+		involved in an isoform switch."""
 		for res in self._normal_protein._structure:
 			if res.genomicPosition not in [ y.genomicPosition for y in self._tumor_protein._structure]:
 				res.setIsoformSpecific(True)

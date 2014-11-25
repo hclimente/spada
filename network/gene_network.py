@@ -185,7 +185,7 @@ class GeneNetwork(network.Network):
 			samples = samples + len(options.Options().unpairedReplicates)
 		min_samples = round(samples * 0.1)
 
-		switches = pd.DataFrame.from_csv(options.Options().qout + "candidateList.tsv", sep="\t", header=None, index_col=None)
+		switches = pd.DataFrame.from_csv(options.Options().qout + "candidateList_v2.tsv", sep="\t", header=None, index_col=None)
 		switches.columns = ["Gene","Transcript_normal","Transcript_tumor","Replicates","Patients","Precision","Sensitivity","PrecisionKmeans","PrecisionHclust","SensitivityKmeans","SensitivityHclust"]
 		switches.Replicates = switches.Replicates.astype(float)
 		switches.Patients = switches.Patients.str.split(",")

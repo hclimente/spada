@@ -184,10 +184,10 @@ def pickUniqPatterns(tx_network, gn_network):
 				elif abs(gInfo["diffExpression_logFC"]) > 0.5 or gInfo["diffExpression_p"] < 0.05:
 					analyze = -1
 					comment = "Gene differentially expressed between conditions."
-				elif switch.cds_diff == "False": 
+				elif not switch.cds_diff: 
 					analyze = -1
 					comment = "No CDS change."
-				elif switch.cds_overlap == "False": 
+				elif not switch.cds_overlap: 
 					analyze = -1
 					comment = "No overlap between CDS."
 				elif not nInfo["iLoopsFamily"] or not tInfo["iLoopsFamily"]:
