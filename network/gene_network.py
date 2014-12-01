@@ -174,7 +174,7 @@ class GeneNetwork(network.Network):
 		for line in utils.readTable("Data/Databases/dgidb_export_all_drivers_bygene_results.tsv"):
 			geneSymbol = line[0]
 				
-			for gene,info in gene_network.nodes(data=True):
+			for gene,info in self.nodes(data=True):
 				if info["symbol"] == geneSymbol:
 					self.update_node("Druggable",True,gene_id=gene )
 					break
