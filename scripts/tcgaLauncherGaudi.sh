@@ -12,7 +12,7 @@ function launchQ {
 
 	echo '#!/bin/sh' >$thisTag.sh
 	echo '# SmartAS launch' >>$thisTag.sh
-	echo '#$ -q sbi' >>$thisTag.sh
+	echo '#$ -q bigmem' >>$thisTag.sh
 	echo '#$ -cwd' >>$thisTag.sh
 	echo "#$ -e /sbi/users/hectorc/SmartAS_experimental/esmartas_$thisTag.txt" >>$thisTag.sh
 	echo "#$ -o /sbi/users/hectorc/SmartAS_experimental/osmartas_$thisTag.txt" >>$thisTag.sh
@@ -50,11 +50,8 @@ do
 	printFile $fullTag get-relevant-switches
 	launchQ $fullTag get-relevant-switches get-switches
 
-    printFile $fullTag predicted-network-analysis
-    launchQ $fullTag predicted-network-analysis get-relevant-switches
-
     printFile $fullTag neighborhood-analysis
-    launchQ $fullTag neighborhood-analysis predicted-network-analysis
+    launchQ $fullTag neighborhood-analysis get-relevant-switches
 
     printFile $fullTag experimental-network-analysis
     launchQ $fullTag experimental-network-analysis neighborhood-analysis
