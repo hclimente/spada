@@ -170,12 +170,18 @@ class Protein:
 
 			if self.uniprot == line[0]:
 				logging.debug("Relevant interaction for {0} at {1}.".format(self.tx, pdbFile))
-				if self.calculateVolumes(pdbFile, "A"):
-					noInteractions = False
+				try:
+					if self.calculateVolumes(pdbFile, "A"):
+						noInteractions = False
+				except IndexError:
+					logging.debug("Error when calculating volumes at {0}.".format(pdbFile))
 			elif self.uniprot == line[1]:
 				logging.debug("Relevant interaction for {0} at {1}.".format(self.tx, pdbFile))
-				if self.calculateVolumes(pdbFile, "B"):
-					noInteractions = False
+				try:
+					if self.calculateVolumes(pdbFile, "B"):
+						noInteractions = False
+				except IndexError:
+					logging.debug("Error when calculating volumes at {0}.".format(pdbFile))
 
 		if noInteractions:
 			logging.debug("No relevant structures found for {0}, {1}.".format(self.tx,self.uniprot))
