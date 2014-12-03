@@ -19,7 +19,7 @@ function launchQ {
 	echo "#$ -V" >>$thisTag.sh
 	echo "#$ -N $thisTag" >>$thisTag.sh
 
-	echo "/sbi/users/hectorc/SmartAS_experimental/Pipeline/SmartAS.py -f $thisTag.cfg" >>$thisTag.sh
+	echo "/sbi/users/hectorc/SmartAS_experimental/Pipeline/gSmartAS.py -f $thisTag.cfg" >>$thisTag.sh
 
 	qsub -hold_jid $prevTag $thisTag.sh
 
@@ -27,8 +27,8 @@ function launchQ {
 
 function printFile {
 
-	fullTag = $1
-	action = $2
+	fullTag=$1
+	action=$2
 	cancerTag=`echo $fullTag | cut -d'-' -f1`
 
 	echo initial-step=$action  >$fullTag$action.cfg
