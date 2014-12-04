@@ -15,6 +15,7 @@ from network import ucsc_gene_network, ucsc_isoform_network
 import cPickle
 import gridmap
 import logging
+import os
 
 class SmartAS:
 	def __init__(self):
@@ -48,12 +49,20 @@ class SmartAS:
 		allPatients = options.Options().replicates.union(options.Options().unpairedReplicates)
 		jobs = []
 
-		for patient in allPatients:
-			arguments = ["Pipeline/methods/get_candidates_for_patient.r",options.Options().qout,patient]
-			job = gridmap.job.Job(utils.cmd,arguments,queue="normal")
-			jobs.append(job)
+		keepTrying = True
+
+		while keepTrying:
+			for patient in allPatients:
+				if not os.path.isfile(options.Options().qout+'/RWorkspaces/'+patient+'_more.RData'):
+					arguments = ["Pipeline/methods/get_candidates_for_patient.r",options.Options().qout,patient]
+					job = gridmap.job.Job(utils.cmd,arguments,queue="normal")
+					jobs.append(job)
 		
-		gridmap.process_jobs(jobs,temp_dir=options.Options().qout+'/tmp/')
+			try:
+				gridmap.process_jobs(jobs,temp_dir=options.Options().qout+'/tmp/')
+				keepTrying = False
+			except:
+				pass
 
 		self.logger.info("Filtering switches with clustering measures.")
 		arguments = ["Pipeline/methods/switch_validation.r",options.Options().qout]

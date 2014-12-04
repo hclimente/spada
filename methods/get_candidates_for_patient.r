@@ -98,4 +98,4 @@ patientExpressed <- data.frame(Transcript=patientInfo$Transcript[norExpression |
                         Gene=patientInfo$Gene[norExpression | tumExpression])
 
 save(patientCandidates,patientExpressed,file=paste0(args[1],"/RWorkspaces/",patient,"_candidates_expressed.RData"))
-save(patientInfo,file=paste0(args[1],"/RWorkspaces/",patient,".RData"))
+save(patientInfo,file=paste0(args[1],"/RWorkspaces/",patient,"_more.RData"))

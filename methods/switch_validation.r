@@ -161,7 +161,7 @@ psiList <- list()
 
 for (patient in inputData$Replicates){
   load(paste0(args[1],"RWorkspaces/",patient,"_candidates_expressed.RData"))
-  load(paste0(args[1],"RWorkspaces/",patient,".RData"))
+  load(paste0(args[1],"RWorkspaces/",patient,"_more.RData"))
     
   candidates[[patient]] <- patientCandidates
   expressed[[patient]] <- patientExpressed
