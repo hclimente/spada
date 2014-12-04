@@ -21,6 +21,8 @@ class NeighborhoodAnalysis(method.Method):
 		self.searchEnrichment("go_biological_process", "c5.bp.v4.0.entrez.gmt","two-sided")
 		#C6 Oncogenic signatures
 		self.searchEnrichment("oncogenic_signatures", "c6.all.v4.0.entrez.gmt","greater")
+		#C7 Immunologic signatures
+		self.searchEnrichment("immunologic_signatures", "c7.all.v4.0.entrez.gmt","greater")
 
 		#Look for enrichment in genes known to be involved in AS in cancer
 		self.searchEnrichment("asAffectedGenes_Angiogenesis","asAffected_Angiogenesis_list.csv","greater")

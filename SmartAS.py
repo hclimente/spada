@@ -13,6 +13,7 @@ from methods import result_summary
 from network import ucsc_gene_network, ucsc_isoform_network
 
 import cPickle
+import gridmap
 import logging
 
 class SmartAS:
@@ -36,15 +37,28 @@ class SmartAS:
 	def getCandidates(self):
 
 		self.logger.info("Reading and summarizing input files: computing PSI values and intereplicate agreement.")
-		utils.cmd("Pipeline/methods/explore_data.r", options.Options().qout, 
-				  "Data/Input/{0}/{1}/".format(options.Options().inputType, options.Options().tag) )
-
+		
+		arguments = ["Pipeline/methods/explore_data.r",options.Options().qout]
+		arguments.append("Data/Input/{0}/{1}/".format(options.Options().inputType, options.Options().tag) )
+		job = gridmap.job.Job(utils.cmd,arguments,queue="normal")
+		gridmap.process_jobs([job],temp_dir=options.Options().qout+'/tmp/')
 
 		self.logger.info("Extracting transcripts with high variance and high expression.")
-		utils.cmd( "Pipeline/methods/get_candidates.r", options.Options().qout )
+		
+		allPatients = options.Options().replicates.union(options.Options().unpairedReplicates)
+		jobs = []
+
+		for patient in allPatients:
+			arguments = ["Pipeline/methods/get_candidates_for_patient.r",options.Options().qout,patient]
+			job = gridmap.job.Job(utils.cmd,arguments,queue="normal")
+			jobs.append(job)
+		
+		gridmap.process_jobs(jobs,temp_dir=options.Options().qout+'/tmp/')
 
 		self.logger.info("Filtering switches with clustering measures.")
-		utils.cmd( "Pipeline/methods/switch_validation.r", options.Options().qout )
+		arguments = ["Pipeline/methods/switch_validation.r",options.Options().qout]
+		job = gridmap.job.Job(utils.cmd,arguments,queue="normal")
+		gridmap.process_jobs([job],temp_dir=options.Options().qout+'/tmp/')
 
 	def networkAnalysis(self, onlyExperimental):
 		

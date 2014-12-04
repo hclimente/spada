@@ -56,16 +56,17 @@ function launchQ {
 
 	qsub -V -N $tag $tag.sh
 
-	echo '#!/bin/sh' >$tag.2.sh
-	echo '# SmartAS getCandidates' >>$tag.2.sh
-	echo '#$ -q normal' >>$tag.2.sh
-	echo '#$ -cwd' >>$tag.2.sh
-	echo "#$ -e /data/users/hector/esmartas_$tag.2.txt" >>$tag.2.sh
-	echo "#$ -o /data/users/hector/osmartas_$tag.2.txt" >>$tag.2.sh
+	# echo '#!/bin/sh' >$tag.2.sh
+	# echo '# SmartAS getCandidates' >>$tag.2.sh
+	# echo '#$ -q long' >>$tag.2.sh
+	# echo '#$ -cwd' >>$tag.2.sh
+	# echo "#$ -e /data/users/hector/esmartas_$tag.2.txt" >>$tag.2.sh
+	# echo "#$ -o /data/users/hector/osmartas_$tag.2.txt" >>$tag.2.sh
 
-	echo "/data/users/hector/Pipeline/SmartAS.py -f $tag.cfg" >>$tag.2.sh
+	# echo "/data/users/hector/Pipeline/SmartAS.py -f $tag.cfg" >>$tag.2.sh
 
-	qsub -V -N $tag.2 -hold_jid $tag  $tag.2.sh
+	# #qsub -V -N $tag.2 -hold_jid $tag  $tag.2.sh
+	# qsub -V -N $tag.2 $tag.2.sh
 
 }
 
@@ -74,16 +75,18 @@ do
 
 	echo $fullTag 
 	cancerTag=`echo $fullTag | cut -d'-' -f1`
-	getSpecificDrivers $fullTag
+	#getSpecificDrivers $fullTag
 
-	mkdir -p testResults/TCGA/$fullTag
+	# mkdir -p testResults/TCGA/$fullTag
 
-	echo initial-step=import-data  >$fullTag.cfg
-	echo tag=$fullTag >>$fullTag.cfg
-	echo specific-drivers=Data/"$fullTag"Drivers.txt >>$fullTag.cfg
-	echo unpaired-replicates=Yes >>$fullTag.cfg
-	echo working-directory=/data/users/hector >>$fullTag.cfg
+	# echo initial-step=import-data  >$fullTag.cfg
+	# echo tag=$fullTag >>$fullTag.cfg
+	# echo specific-drivers=Data/"$fullTag"Drivers.txt >>$fullTag.cfg
+	# echo unpaired-replicates=Yes >>$fullTag.cfg
+	# echo working-directory=/data/users/hector >>$fullTag.cfg
 
-	launchQ $fullTag &
+	# launchQ $fullTag &
+
+	screen -S $fullTag -d -m Pipeline/SmartAS.py -f $fulltag.cfg
 
 done < "$fileList"

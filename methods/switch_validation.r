@@ -144,24 +144,47 @@ getSensitivityAndPrecision <- function(x){
                     precisionHclust=precisionHclust,sensitivityHclust=sensitivityHclust))
 }
 
+library(plyr)
 suppressMessages( library(logging) )
 
 args <- commandArgs(trailingOnly = TRUE)
-load(paste0(args[1],"RWorkspaces/2_GetCandidates.RData"))
+load(paste0(args[1],"RWorkspaces/0_InitialEnvironment.RData"))
 
 logger <- getLogger(name="filter_switches", level=10) #Level debug
 
 addHandler(writeToConsole, logger="filter_switches", level='INFO')
 addHandler(writeToFile, logger="filter_switches", file=paste0(out, "rSmartAS.log"), level='DEBUG')
 
-transcripts = data.frame(Gene=as.character(intraReplicate[[inputData$Replicates[1]]]$Gene),Tx=intraReplicate[[inputData$Replicates[1]]]$Transcript)
-  
+candidates <- list()
+expressed <- list()
 psiList <- list()
+
 for (patient in inputData$Replicates){
-  psiList[[patient]] <- intraReplicate[[patient]]$deltaPSI
-}  
+  load(paste0(args[1],"RWorkspaces/",patient,"_candidates_expressed.RData"))
+  load(paste0(args[1],"RWorkspaces/",patient,".RData"))
+    
+  candidates[[patient]] <- patientCandidates
+  expressed[[patient]] <- patientExpressed
+  psiList[[patient]] <- patientInfo$deltaPSI 
+}
+
+allExpressedTranscripts <- unique(do.call('rbind', expressed))
+allExpressedTranscripts <- allExpressedTranscripts[with(allExpressedTranscripts, order(Transcript)), ]
 psis <- do.call("cbind",psiList)
 deltaPsis <- cbind(transcripts,psis)
+
+for (i in inputData$Replicates){candidates[[i]]$Origin = i}
+
+candidateList <- do.call("rbind", candidates)
+candidateList <- ddply(candidateList,.(Gene,Normal_isoform,Tumor_isoform), summarise, Replicated=length(Gene), Patients=paste(Origin, collapse = ",") )
+candidateList <- candidateList[with(candidateList, order(-Replicated)), ]
+
+write.table(candidateList, file=paste0(out, "candidateList.tsv"), sep="\t", row.names=F, col.names=F, quote=F)
+write.table(allExpressedTranscripts, paste0(out, "expressedGenes.lst"), sep="\t", row.names=F, col.names=F, quote=F)
+
+load(paste0(args[1],"RWorkspaces/",inputData$Replicates[1],".RData"))
+
+transcripts = data.frame(Gene=as.character(patientInfo$Gene),Tx=patientInfo$Transcript)
 
 clustVals = apply(candidateList,1,getSensitivityAndPrecision)
 clustVals = do.call('rbind',clustVals)
@@ -176,4 +199,4 @@ candidateList$sensitivityHclust = clustVals$sensitivityHclust
 
 write.table(candidateList, file=paste0(out, "candidateList_v2.tsv"), sep="\t", row.names=F, col.names=F, quote=F)
 
-save(isoformExpression, intraReplicate, interReplicate, candidates, candidateList, inputData, allExpressedTranscripts, wd, out, file=paste0(out, "RWorkspaces/3_ClusteringFilter.RData"))
+save(candidateList, allExpressedTranscripts, file=paste0(out, "RWorkspaces/3_ClusteringFilter.RData"))

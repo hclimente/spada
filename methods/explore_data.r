@@ -189,7 +189,18 @@ interReplicate[["T"]]$Median_tTPM <- apply(interReplicate[["T"]][,tTpmCols], 1, 
 interReplicate[["T"]]$MAD_tTPM <- apply(interReplicate[["T"]][,tTpmCols], 1, mad, na.rm=T)
 interReplicate[["T"]]$MeAD_tTPM <- apply(interReplicate[["T"]][,tTpmCols], 1, function(x) mad(x,center=mean(as.numeric(x),na.rm=T), na.rm=TRUE))
 
+cols <- c("Gene","Transcript","Median_PSI","MAD_PSI","MeAD_PSI","Median_TPM","MAD_TPM","MeAD_TPM","Median_tTPM","MAD_tTPM","MeAD_tTPM")
+write.table(interReplicate[["N"]][,cols], file=paste0(out, "expression_normal.tsv"), sep="\t", row.names=F, quote=F)
+write.table(interReplicate[["T"]][,cols], file=paste0(out, "expression_tumor.tsv"), sep="\t", row.names=F, quote=F)
+
 save(isoformExpression, intraReplicate, interReplicate, inputData, wd, out, file=paste0(out, "RWorkspaces/1_ExploreData.RData"))
+
+cohortInfo <- interReplicate[["N"]]
+save(cohortInfo,file=paste0(out,"RWorkspaces/cohortInfo.RData"))
+for ( patient in names(intraReplicate)){
+  patientInfo <- intraReplicate[[patient]]
+  save(patientInfo,file=paste0(out,"RWorkspaces/",patient,".RData"))
+}
 
 ### Plot data
 printTPMHist <- function(x, xLab, pngName){

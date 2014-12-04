@@ -133,10 +133,7 @@ def setEnvironment():
 
 	if o.initialStep not in ["import-data","get-switches"]:
 		cmd("cp -r", ".testOld/" + o.out + "DataExploration", o.qout)
-		cmd("cp", ".testOld/" + o.out + "RWorkspaces/0_InitialEnvironment.RData", o.qout + "/RWorkspaces")
-		cmd("cp", ".testOld/" + o.out + "RWorkspaces/1_ExploreData.RData", o.qout + "/RWorkspaces")
-		cmd("cp", ".testOld/" + o.out + "RWorkspaces/2_GetCandidates.RData", o.qout + "/RWorkspaces")
-		cmd("cp", ".testOld/" + o.out + "RWorkspaces/3_ClusteringFilter.RData", o.qout + "/RWorkspaces")
+		cmd("cp", ".testOld/" + o.out + "RWorkspaces/*.RData", o.qout + "/RWorkspaces")
 		
 		cmd("cp", ".testOld/" + o.out + "expression_normal.tsv", ".testOld/" + o.out + "expression_tumor.tsv", o.qout)
 		cmd("cp", ".testOld/" + o.out + "candidateList.tsv", ".testOld/" + o.out + "candidateList_v2.tsv",".testOld/" + o.out + "candidateList_v3.tsv",".testOld/" + o.out + "expressedGenes.lst", o.qout)
@@ -158,6 +155,23 @@ def setEnvironment():
 		cmd("cp -r", ".testOld/{0}/structural_analysis".format(options.Options().out), o.qout)
 	if o.initialStep != "summary" and o.initialStep not in ["import-data","get-switches"]:
 		cmd("cp -r", ".testOld/{0}/result_summary".format(o.out), o.qout)
+
+def geneclusterLaunch(tag,base,*args):
+	command = base
+	for argument in args:
+		command += " " + argument
+
+	with open(tag+".sh","w") as configFile:
+		configFile.write('#!/bin/sh\n')
+		configFile.write('#$ -q normal\n')
+		configFile.write('#$ -cwd\n')
+		configFile.write("#$ -e /data/users/hector/{0}.log\n".format(tag))
+		configFile.write("#$ -o /data/users/hector/{0}.log\n".format(tag))
+
+		configFile.write("source ~/.bashrc\n")
+		configFile.write(command+"\n")
+
+	cmd("qsub","-N",tag,tag+".sh")
 
 def selectIloopsSwitches(tx_network,gn_network,prop):
 
