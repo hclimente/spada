@@ -42,7 +42,16 @@ class SmartAS:
 		arguments = ["Pipeline/methods/explore_data.r",options.Options().qout]
 		arguments.append("Data/Input/{0}/{1}/".format(options.Options().inputType, options.Options().tag) )
 		job = gridmap.job.Job(utils.cmd,arguments,queue="normal")
-		gridmap.process_jobs([job],temp_dir=options.Options().qout+'/tmp/')
+		keepTrying = True
+		while keepTrying:
+			try:
+				gridmap.process_jobs([job],temp_dir=options.Options().qout+'/tmp/')
+				keepTrying = False
+			except:
+				try:
+					session.control(gridmap.conf.JOB_IDS_SESSION_ALL,gridmap.drmaa.JobControlAction.TERMINATE)
+				except:
+					utils.cmd("qdel","-u","hector")
 
 		self.logger.info("Extracting transcripts with high variance and high expression.")
 		
@@ -62,12 +71,24 @@ class SmartAS:
 				gridmap.process_jobs(jobs,temp_dir=options.Options().qout+'/tmp/')
 				keepTrying = False
 			except:
-				utils.cmd("qdel","-u","hector")
+				try:
+					session.control(gridmap.conf.JOB_IDS_SESSION_ALL,gridmap.drmaa.JobControlAction.TERMINATE)
+				except:
+					utils.cmd("qdel","-u","hector")
 
 		self.logger.info("Filtering switches with clustering measures.")
 		arguments = ["Pipeline/methods/switch_validation.r",options.Options().qout]
 		job = gridmap.job.Job(utils.cmd,arguments,queue="normal")
-		gridmap.process_jobs([job],temp_dir=options.Options().qout+'/tmp/')
+		keepTrying = True
+		while keepTrying:
+			try:
+				gridmap.process_jobs([job],temp_dir=options.Options().qout+'/tmp/')
+				keepTrying = False
+			except:
+				try:
+					session.control(gridmap.conf.JOB_IDS_SESSION_ALL,gridmap.drmaa.JobControlAction.TERMINATE)
+				except:
+					utils.cmd("qdel","-u","hector")
 
 	def networkAnalysis(self, onlyExperimental):
 		
