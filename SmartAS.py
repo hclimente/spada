@@ -62,7 +62,7 @@ class SmartAS:
 				gridmap.process_jobs(jobs,temp_dir=options.Options().qout+'/tmp/')
 				keepTrying = False
 			except:
-				pass
+				utils.cmd("qdel","-u","hector")
 
 		self.logger.info("Filtering switches with clustering measures.")
 		arguments = ["Pipeline/methods/switch_validation.r",options.Options().qout]
