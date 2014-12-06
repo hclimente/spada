@@ -37,58 +37,32 @@ class SmartAS:
 
 	def getCandidates(self):
 
-		self.logger.info("Reading and summarizing input files: computing PSI values and intereplicate agreement.")
-		
-		arguments = ["Pipeline/methods/explore_data.r",options.Options().qout]
-		arguments.append("Data/Input/{0}/{1}/".format(options.Options().inputType, options.Options().tag) )
-		job = gridmap.job.Job(utils.cmd,arguments,queue="normal")
-		keepTrying = True
-		while keepTrying:
-			try:
-				gridmap.process_jobs([job],temp_dir=options.Options().qout+'/tmp/')
-				keepTrying = False
-			except:
-				try:
-					session.control(gridmap.conf.JOB_IDS_SESSION_ALL,gridmap.drmaa.JobControlAction.TERMINATE)
-				except:
-					utils.cmd("qdel","-u","hector")
+		self.logger.info("Reading and summarizing input files: computing PSI values and intereplicate agreement.")		
+		#utils.cmd("Pipeline/methods/explore_data.r",options.Options().qout,"Data/Input/{0}/{1}/".format(options.Options().inputType, options.Options().tag))
 
 		self.logger.info("Extracting transcripts with high variance and high expression.")
-		
 		allPatients = options.Options().replicates.union(options.Options().unpairedReplicates)
-		jobs = []
 
-		keepTrying = True
+		for patient in allPatients:
+			with open(patient+".sh","w") as PATIENT:
+				PATIENT.write()
+				echo '#!/bin/sh' >$thisTag.sh
+				PATIENT.write('# '+patient)
+				PATIENT.write('#$ -q normal')
+				PATIENT.write('#$ -cwd')
+				PATIENT.write("#$ -e {0}/esmartas_{1}.txt".format(options.Options().qout,patient))
+				PATIENT.write("#$ -o {0}/osmartas_{1}.txt".format(options.Options().qout,patient))
+				PATIENT.write("#$ -V")
+				PATIENT.write("#$ -N " + patient)
 
-		while keepTrying:
-			for patient in allPatients:
-				if not os.path.isfile(options.Options().qout+'/RWorkspaces/'+patient+'_more.RData'):
-					arguments = ["Pipeline/methods/get_candidates_for_patient.r",options.Options().qout,patient]
-					job = gridmap.job.Job(utils.cmd,arguments,queue="normal")
-					jobs.append(job)
+				PATIENT.write("Pipeline/methods/get_candidates_for_patient.r {0} {1}".format(options.Options().qout,patient))
+
+			utils.cmd("qsub",patient+".sh")
 		
-			try:
-				gridmap.process_jobs(jobs,temp_dir=options.Options().qout+'/tmp/')
-				keepTrying = False
-			except:
-				try:
-					session.control(gridmap.conf.JOB_IDS_SESSION_ALL,gridmap.drmaa.JobControlAction.TERMINATE)
-				except:
-					utils.cmd("qdel","-u","hector")
+		exit()
 
 		self.logger.info("Filtering switches with clustering measures.")
-		arguments = ["Pipeline/methods/switch_validation.r",options.Options().qout]
-		job = gridmap.job.Job(utils.cmd,arguments,queue="normal")
-		keepTrying = True
-		while keepTrying:
-			try:
-				gridmap.process_jobs([job],temp_dir=options.Options().qout+'/tmp/')
-				keepTrying = False
-			except:
-				try:
-					session.control(gridmap.conf.JOB_IDS_SESSION_ALL,gridmap.drmaa.JobControlAction.TERMINATE)
-				except:
-					utils.cmd("qdel","-u","hector")
+		utils.cmd("Pipeline/methods/switch_validation.r",options.Options().qout)
 
 	def networkAnalysis(self, onlyExperimental):
 		
