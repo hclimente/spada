@@ -69,12 +69,24 @@ class SmartAS:
 
 				PATIENT.write("Pipeline/methods/get_candidates_for_patient.r {0} {1}".format(options.Options().qout,patient))
 
-			utils.cmd("qsub",patient+".sh")
+			#utils.cmd("qsub",patient+".sh")
 		
-		exit()
+		#exit()
 
 		self.logger.info("Filtering switches with clustering measures.")
-		utils.cmd("Pipeline/methods/switch_validation.r",options.Options().qout)
+		with open("validate_{0}.sh".format(options.Options().tag),"w") as VAL:
+			VAL.write('#!/bin/sh\n')
+			VAL.write('# validate\n')
+			VAL.write('#$ -q normal\n')
+			VAL.write('#$ -cwd\n')
+			VAL.write("#$ -e {0}/esmartas_validate_{1}.txt\n".format(options.Options().qout,options.Options().tag))
+			VAL.write("#$ -o {0}/osmartas_validate_{1}.txt\n".format(options.Options().qout,options.Options().tag))
+			VAL.write("#$ -V\n")
+			VAL.write("#$ -N val{0}\n".format(options.Options().tag))
+
+			VAL.write("Pipeline/methods/switch_validation.r " + options.Options().qout)
+		
+		utils.cmd("qsub","validate_{0}.sh".format(options.Options().tag))
 
 	def networkAnalysis(self, onlyExperimental):
 		
