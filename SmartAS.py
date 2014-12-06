@@ -38,22 +38,33 @@ class SmartAS:
 	def getCandidates(self):
 
 		self.logger.info("Reading and summarizing input files: computing PSI values and intereplicate agreement.")		
-		#utils.cmd("Pipeline/methods/explore_data.r",options.Options().qout,"Data/Input/{0}/{1}/".format(options.Options().inputType, options.Options().tag))
+		with open("explore_{0}.sh".format(options.Options().tag),"w") as EXPLORE:
+			EXPLORE.write('#!/bin/sh\n')
+			EXPLORE.write('# explore\n')
+			EXPLORE.write('#$ -q normal\n')
+			EXPLORE.write('#$ -cwd\n')
+			EXPLORE.write("#$ -e {0}/esmartas_{1}.txt\n".format(options.Options().qout,patient))
+			EXPLORE.write("#$ -o {0}/osmartas_{1}.txt\n".format(options.Options().qout,patient))
+			EXPLORE.write("#$ -V\n")
+			EXPLORE.write("#$ -N explore\n" + patient)
+
+			EXPLORE.write("Pipeline/methods/explore_data.r " + options.Options().qout)
+			EXPLORE.write("Data/Input/{0}/{1}/ ".format(options.Options().inputType,options.Options().tag))
+		utils.cmd("qsub","explore_{0}.sh".format(options.Options().tag))
 
 		self.logger.info("Extracting transcripts with high variance and high expression.")
 		allPatients = options.Options().replicates.union(options.Options().unpairedReplicates)
 
 		for patient in allPatients:
 			with open(patient+".sh","w") as PATIENT:
-				PATIENT.write()
-				echo '#!/bin/sh' >$thisTag.sh
-				PATIENT.write('# '+patient)
-				PATIENT.write('#$ -q normal')
-				PATIENT.write('#$ -cwd')
-				PATIENT.write("#$ -e {0}/esmartas_{1}.txt".format(options.Options().qout,patient))
-				PATIENT.write("#$ -o {0}/osmartas_{1}.txt".format(options.Options().qout,patient))
-				PATIENT.write("#$ -V")
-				PATIENT.write("#$ -N " + patient)
+				PATIENT.write('#!/bin/sh\n')
+				PATIENT.write('# {0}\n'.format(patient) )
+				PATIENT.write('#$ -q normal\n')
+				PATIENT.write('#$ -cwd\n')
+				PATIENT.write("#$ -e {0}/esmartas_{1}.txt\n".format(options.Options().qout,patient))
+				PATIENT.write("#$ -o {0}/osmartas_{1}.txt\n".format(options.Options().qout,patient))
+				PATIENT.write("#$ -V\n")
+				PATIENT.write("#$ -N {0}\n".format(patient) )
 
 				PATIENT.write("Pipeline/methods/get_candidates_for_patient.r {0} {1}".format(options.Options().qout,patient))
 
