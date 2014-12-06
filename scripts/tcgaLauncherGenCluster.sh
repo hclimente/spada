@@ -85,8 +85,8 @@ do
 	# echo unpaired-replicates=Yes >>$fullTag.cfg
 	# echo working-directory=/data/users/hector >>$fullTag.cfg
 
-	# launchQ $fullTag &
+	launchQ $fullTag &
 
-	screen -S $fullTag -d -m Pipeline/SmartAS.py -f $fulltag.cfg
+	#screen -S $fullTag -d -m Pipeline/SmartAS.py -f $fulltag.cfg
 
 done < "$fileList"
