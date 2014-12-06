@@ -87,6 +87,10 @@ do
 
 	#launchQ $fullTag &
 
+<<<<<<< HEAD
 	Pipeline/SmartAS.py -f $fullTag.cfg
+=======
+	Pipeline/SmartAS.py -f $fulltag.cfg &
+>>>>>>> b0c63c2535d74aa164bb15a1ce43861eb9da4011
 
 done < "$fileList"
