@@ -43,10 +43,10 @@ class SmartAS:
 			EXPLORE.write('# explore\n')
 			EXPLORE.write('#$ -q normal\n')
 			EXPLORE.write('#$ -cwd\n')
-			EXPLORE.write("#$ -e {0}/esmartas_{1}.txt\n".format(options.Options().qout,patient))
-			EXPLORE.write("#$ -o {0}/osmartas_{1}.txt\n".format(options.Options().qout,patient))
+			EXPLORE.write("#$ -e {0}/esmartas_explore_{1}.txt\n".format(options.Options().qout,options.Options().tag))
+			EXPLORE.write("#$ -o {0}/osmartas_explore_{1}.txt\n".format(options.Options().qout,options.Options().tag))
 			EXPLORE.write("#$ -V\n")
-			EXPLORE.write("#$ -N explore\n" + patient)
+			EXPLORE.write("#$ -N explore\n")
 
 			EXPLORE.write("Pipeline/methods/explore_data.r " + options.Options().qout)
 			EXPLORE.write("Data/Input/{0}/{1}/ ".format(options.Options().inputType,options.Options().tag))
