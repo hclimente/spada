@@ -79,14 +79,14 @@ do
 
 	# mkdir -p testResults/TCGA/$fullTag
 
-	# echo initial-step=import-data  >$fullTag.cfg
-	# echo tag=$fullTag >>$fullTag.cfg
-	# echo specific-drivers=Data/"$fullTag"Drivers.txt >>$fullTag.cfg
-	# echo unpaired-replicates=Yes >>$fullTag.cfg
-	# echo working-directory=/data/users/hector >>$fullTag.cfg
+	#echo initial-step=import-data  >$fullTag.cfg
+	#echo tag=$fullTag >>$fullTag.cfg
+	#echo specific-drivers=Data/"$fullTag"Drivers.txt >>$fullTag.cfg
+	#echo unpaired-replicates=Yes >>$fullTag.cfg
+	#echo working-directory=/data/users/hector >>$fullTag.cfg
 
-	launchQ $fullTag &
+	#launchQ $fullTag &
 
-	#screen -S $fullTag -d -m Pipeline/SmartAS.py -f $fulltag.cfg
+	Pipeline/SmartAS.py -f $fullTag.cfg
 
 done < "$fileList"

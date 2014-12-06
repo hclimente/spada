@@ -49,8 +49,9 @@ class SmartAS:
 			EXPLORE.write("#$ -N explore\n")
 
 			EXPLORE.write("Pipeline/methods/explore_data.r " + options.Options().qout)
-			EXPLORE.write("Data/Input/{0}/{1}/ ".format(options.Options().inputType,options.Options().tag))
-		utils.cmd("qsub","explore_{0}.sh".format(options.Options().tag))
+			EXPLORE.write(" Data/Input/{0}/{1}/ ".format(options.Options().inputType,options.Options().tag))
+		#utils.cmd("qsub","explore_{0}.sh".format(options.Options().tag))
+		#exit()
 
 		self.logger.info("Extracting transcripts with high variance and high expression.")
 		allPatients = options.Options().replicates.union(options.Options().unpairedReplicates)
@@ -64,7 +65,7 @@ class SmartAS:
 				PATIENT.write("#$ -e {0}/esmartas_{1}.txt\n".format(options.Options().qout,patient))
 				PATIENT.write("#$ -o {0}/osmartas_{1}.txt\n".format(options.Options().qout,patient))
 				PATIENT.write("#$ -V\n")
-				PATIENT.write("#$ -N {0}\n".format(patient) )
+				PATIENT.write("#$ -N p{0}\n".format(patient) )
 
 				PATIENT.write("Pipeline/methods/get_candidates_for_patient.r {0} {1}".format(options.Options().qout,patient))
 

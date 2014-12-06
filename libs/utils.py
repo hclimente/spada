@@ -131,7 +131,7 @@ def setEnvironment():
 		r('inputData[["minExpression"]] <- {0}'.format(options.Options().minExpression))
 		r('save.image("' + options.Options().qout + 'RWorkspaces/0_InitialEnvironment.RData")')
 
-	if o.initialStep not in ["import-data","get-switches"]:
+	if o.initialStep not in ["import-data"]:
 		cmd("cp -r", ".testOld/" + o.out + "DataExploration", o.qout)
 		cmd("cp", ".testOld/" + o.out + "RWorkspaces/*.RData", o.qout + "/RWorkspaces")
 		
