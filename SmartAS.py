@@ -87,6 +87,7 @@ class SmartAS:
 			VAL.write("Pipeline/methods/switch_validation.r " + options.Options().qout)
 		
 		utils.cmd("qsub","validate_{0}.sh".format(options.Options().tag))
+		exit()
 
 	def networkAnalysis(self, onlyExperimental):
 		
