@@ -69,9 +69,9 @@ class SmartAS:
 
 				PATIENT.write("Pipeline/methods/get_candidates_for_patient.r {0} {1}".format(options.Options().qout,patient))
 
-			#utils.cmd("qsub",patient+".sh")
+			utils.cmd("qsub",patient+".sh")
 		
-		#exit()
+		exit()
 
 		self.logger.info("Filtering switches with clustering measures.")
 		with open("validate_{0}.sh".format(options.Options().tag),"w") as VAL:
