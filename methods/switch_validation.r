@@ -171,7 +171,6 @@ for (patient in inputData$Replicates){
 allExpressedTranscripts <- unique(do.call('rbind', expressed))
 allExpressedTranscripts <- allExpressedTranscripts[with(allExpressedTranscripts, order(Transcript)), ]
 psis <- do.call("cbind",psiList)
-deltaPsis <- cbind(transcripts,psis)
 
 for (i in inputData$Replicates){candidates[[i]]$Origin = i}
 
@@ -185,6 +184,7 @@ write.table(allExpressedTranscripts, paste0(out, "expressedGenes.lst"), sep="\t"
 load(paste0(args[1],"RWorkspaces/",inputData$Replicates[1],".RData"))
 
 transcripts = data.frame(Gene=as.character(patientInfo$Gene),Tx=patientInfo$Transcript)
+deltaPsis <- cbind(transcripts,psis)
 
 clustVals = apply(candidateList,1,getSensitivityAndPrecision)
 clustVals = do.call('rbind',clustVals)
