@@ -184,6 +184,7 @@ write.table(allExpressedTranscripts, paste0(out, "expressedGenes.lst"), sep="\t"
 load(paste0(args[1],"RWorkspaces/",inputData$Replicates[1],".RData"))
 
 transcripts = data.frame(Gene=as.character(patientInfo$Gene),Tx=patientInfo$Transcript)
+save(transcripts,deltaPsis,file="txandpsis.RData")
 deltaPsis <- cbind(transcripts,psis)
 
 clustVals = apply(candidateList,1,getSensitivityAndPrecision)
