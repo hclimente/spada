@@ -37,56 +37,57 @@ class SmartAS:
 
 	def getCandidates(self):
 
-		self.logger.info("Reading and summarizing input files: computing PSI values and intereplicate agreement.")		
-		with open("explore_{0}.sh".format(options.Options().tag),"w") as EXPLORE:
-			EXPLORE.write('#!/bin/sh\n')
-			EXPLORE.write('# explore\n')
-			EXPLORE.write('#$ -q normal\n')
-			EXPLORE.write('#$ -cwd\n')
-			EXPLORE.write("#$ -e {0}/esmartas_explore_{1}.txt\n".format(options.Options().qout,options.Options().tag))
-			EXPLORE.write("#$ -o {0}/osmartas_explore_{1}.txt\n".format(options.Options().qout,options.Options().tag))
-			EXPLORE.write("#$ -V\n")
-			EXPLORE.write("#$ -N explore\n")
+		operation = 3
+		if operation == 1:
+			self.logger.info("Reading and summarizing input files: computing PSI values and intereplicate agreement.")		
+			with open("explore_{0}.sh".format(options.Options().tag),"w") as EXPLORE:
+				EXPLORE.write('#!/bin/sh\n')
+				EXPLORE.write('# explore\n')
+				EXPLORE.write('#$ -q normal\n')
+				EXPLORE.write('#$ -cwd\n')
+				EXPLORE.write("#$ -e {0}/esmartas_explore_{1}.txt\n".format(options.Options().qout,options.Options().tag))
+				EXPLORE.write("#$ -o {0}/osmartas_explore_{1}.txt\n".format(options.Options().qout,options.Options().tag))
+				EXPLORE.write("#$ -V\n")
+				EXPLORE.write("#$ -N explore\n")
 
-			EXPLORE.write("Pipeline/methods/explore_data.r " + options.Options().qout)
-			EXPLORE.write(" Data/Input/{0}/{1}/ ".format(options.Options().inputType,options.Options().tag))
-		#utils.cmd("qsub","explore_{0}.sh".format(options.Options().tag))
-		#exit()
+				EXPLORE.write("Pipeline/methods/explore_data.r " + options.Options().qout)
+				EXPLORE.write(" Data/Input/{0}/{1}/ ".format(options.Options().inputType,options.Options().tag))
+			utils.cmd("qsub","explore_{0}.sh".format(options.Options().tag))
 
-		self.logger.info("Extracting transcripts with high variance and high expression.")
-		allPatients = options.Options().replicates.union(options.Options().unpairedReplicates)
+		elif operation == 2:
+			self.logger.info("Extracting transcripts with high variance and high expression.")
+			allPatients = options.Options().replicates.union(options.Options().unpairedReplicates)
 
-		for patient in allPatients:
-			with open(patient+".sh","w") as PATIENT:
-				PATIENT.write('#!/bin/sh\n')
-				PATIENT.write('# {0}\n'.format(patient) )
-				PATIENT.write('#$ -q normal\n')
-				PATIENT.write('#$ -cwd\n')
-				PATIENT.write("#$ -e {0}/esmartas_{1}.txt\n".format(options.Options().qout,patient))
-				PATIENT.write("#$ -o {0}/osmartas_{1}.txt\n".format(options.Options().qout,patient))
-				PATIENT.write("#$ -V\n")
-				PATIENT.write("#$ -N p{0}\n".format(patient) )
+			for patient in allPatients:
+				with open(patient+".sh","w") as PATIENT:
+					PATIENT.write('#!/bin/sh\n')
+					PATIENT.write('# {0}\n'.format(patient) )
+					PATIENT.write('#$ -q normal\n')
+					PATIENT.write('#$ -cwd\n')
+					PATIENT.write("#$ -e {0}/esmartas_{1}.txt\n".format(options.Options().qout,patient))
+					PATIENT.write("#$ -o {0}/osmartas_{1}.txt\n".format(options.Options().qout,patient))
+					PATIENT.write("#$ -V\n")
+					PATIENT.write("#$ -N p{0}\n".format(patient) )
 
-				PATIENT.write("Pipeline/methods/get_candidates_for_patient.r {0} {1}".format(options.Options().qout,patient))
+					PATIENT.write("Pipeline/methods/get_candidates_for_patient.r {0} {1}".format(options.Options().qout,patient))
 
-			utils.cmd("qsub",patient+".sh")
+				utils.cmd("qsub",patient+".sh")
+		elif operation == 3:
+			self.logger.info("Filtering switches with clustering measures.")
+			with open("validate_{0}.sh".format(options.Options().tag),"w") as VAL:
+				VAL.write('#!/bin/sh\n')
+				VAL.write('# validate\n')
+				VAL.write('#$ -q normal\n')
+				VAL.write('#$ -cwd\n')
+				VAL.write("#$ -e {0}/esmartas_validate_{1}.txt\n".format(options.Options().qout,options.Options().tag))
+				VAL.write("#$ -o {0}/osmartas_validate_{1}.txt\n".format(options.Options().qout,options.Options().tag))
+				VAL.write("#$ -V\n")
+				VAL.write("#$ -N val{0}\n".format(options.Options().tag))
+
+				VAL.write("Pipeline/methods/switch_validation.r " + options.Options().qout)
+			
+			utils.cmd("qsub","validate_{0}.sh".format(options.Options().tag))
 		
-		exit()
-
-		self.logger.info("Filtering switches with clustering measures.")
-		with open("validate_{0}.sh".format(options.Options().tag),"w") as VAL:
-			VAL.write('#!/bin/sh\n')
-			VAL.write('# validate\n')
-			VAL.write('#$ -q normal\n')
-			VAL.write('#$ -cwd\n')
-			VAL.write("#$ -e {0}/esmartas_validate_{1}.txt\n".format(options.Options().qout,options.Options().tag))
-			VAL.write("#$ -o {0}/osmartas_validate_{1}.txt\n".format(options.Options().qout,options.Options().tag))
-			VAL.write("#$ -V\n")
-			VAL.write("#$ -N val{0}\n".format(options.Options().tag))
-
-			VAL.write("Pipeline/methods/switch_validation.r " + options.Options().qout)
-		
-		utils.cmd("qsub","validate_{0}.sh".format(options.Options().tag))
 		exit()
 
 	def networkAnalysis(self, onlyExperimental):
