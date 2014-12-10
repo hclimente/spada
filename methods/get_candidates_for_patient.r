@@ -81,14 +81,14 @@ for (gene in unique(patientInfo$Gene[significant])){
   norCandidate <- norTranscripts$Transcript[maxP]
   tumCandidate <- tumTranscripts$Transcript[minP]
   
-  if (sum(!is.na(norCandidate)) == 0 || sum(!is.na(tumCandidate)) == 0){
+  if (sum(!is.na(norCandidate)) != 1 || sum(!is.na(tumCandidate)) != 1){
     next
   }
 
   Switch <- norTranscripts$deltaPSI[norTranscripts$Transcript==norCandidate] - tumTranscripts$deltaPSI[tumTranscripts$Transcript==tumCandidate]
 
   candidates[[gene]] <- data.frame(Gene=gene,Normal_isoform=norCandidate, 
-                                            Tumor_isoform=tumCandidate,Switch=Switch)
+                                   Tumor_isoform=tumCandidate,Switch=Switch)
 }
 
 patientCandidates <- do.call('rbind', candidates)
