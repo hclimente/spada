@@ -27,60 +27,60 @@ countCols <- function(tree,count){
 }
 
 withHclust <- function(x){
-
-	withSwitch <- strsplit(as.character(x[4]),",")[[1]]
-	withoutSwitch <- inputData$Replicates[!inputData$Replicates %in% withSwitch]
-   
-	relevantDf <- deltaPsis[deltaPsis$Gene==x[1],-1]
-	relevantDf <- as.data.frame(t(relevantDf))
-	colnames(relevantDf) <- unlist(relevantDf[1,])
-	relevantDf <- relevantDf[-1, ]
   
-	# Ward Hierarchical Clustering
-	d <- dist(relevantDf, method="euclidean") # distance matrix
-	fit <- tryCatch({
-	                  fit <- hclust(d, method="ward")
-	                  fit <- as.dendrogram(fit)
-	                  
-	                  refit <- dendrapply(fit,colLeafs,withSwitch,withoutSwitch)
-	                  oneBranch <- countCols(refit[[1]])
-	                  otherBranch <- countCols(refit[[2]])
-	                  
-	                  oneBranchPositives = sum(withSwitch %in% oneBranch)/length(oneBranch)
-	                  otherBranchPositives = sum(withSwitch %in% otherBranch)/length(otherBranch)
-	                  
-	                  if (oneBranchPositives > otherBranchPositives){
-                      TP <- sum(withSwitch %in% oneBranch)
-                      FP <- sum(withSwitch %in% otherBranch)
-                      TN <- sum(withoutSwitch %in% otherBranch)
-	                    FN <- sum(withoutSwitch %in% oneBranch)
-	                    
-	                  } else {
-	                    TP <- sum(withSwitch %in% otherBranch)
-	                    FP <- sum(withSwitch %in% oneBranch)
-	                    TN <- sum(withoutSwitch %in% otherBranch)
-	                    FN <- sum(withoutSwitch %in% oneBranch)
-	                  }
-	                  precision = TP/(TP+FP)
-	                  sensitivity = TP/(TP+FN)
-	                  
-	                  #plot(refit,main=paste(x[1],x[2],x[3],sep="_")) # display dendogram
-	                  #cat(paste(x[1],x[2],x[3],sep="_"),"\tSpecificity:",precision,"\tsensitivity:",sensitivity,"\n") # display dendogram
-                  },error = function(e){},
-                  finally={
-                    if (!exists("precision")){
-                      precision <- NA
-                      sensitivity <- NA
-                    }
-                  })
-	return(c(precision,sensitivity))
+  withSwitch <- strsplit(as.character(x[4]),",")[[1]]
+  withoutSwitch <- allPatients[!allPatients %in% withSwitch]
+  
+  relevantDf <- deltaPsis[deltaPsis$Gene==x[1],-1]
+  relevantDf <- as.data.frame(t(relevantDf))
+  colnames(relevantDf) <- unlist(relevantDf[1,])
+  relevantDf <- relevantDf[-1, ]
+  
+  # Ward Hierarchical Clustering
+  d <- dist(relevantDf, method="euclidean") # distance matrix
+  fit <- tryCatch({
+    fit <- hclust(d, method="ward")
+    fit <- as.dendrogram(fit)
+    
+    refit <- dendrapply(fit,colLeafs,withSwitch,withoutSwitch)
+    oneBranch <- countCols(refit[[1]])
+    otherBranch <- countCols(refit[[2]])
+    
+    oneBranchPositives = sum(withSwitch %in% oneBranch)/length(oneBranch)
+    otherBranchPositives = sum(withSwitch %in% otherBranch)/length(otherBranch)
+    
+    if (oneBranchPositives > otherBranchPositives){
+      TP <- sum(withSwitch %in% oneBranch)
+      FP <- sum(withSwitch %in% otherBranch)
+      TN <- sum(withoutSwitch %in% otherBranch)
+      FN <- sum(withoutSwitch %in% oneBranch)
+      
+    } else {
+      TP <- sum(withSwitch %in% otherBranch)
+      FP <- sum(withSwitch %in% oneBranch)
+      TN <- sum(withoutSwitch %in% otherBranch)
+      FN <- sum(withoutSwitch %in% oneBranch)
+    }
+    precision = TP/(TP+FP)
+    sensitivity = TP/(TP+FN)
+    
+    #plot(refit,main=paste(x[1],x[2],x[3],sep="_")) # display dendogram
+    #cat(paste(x[1],x[2],x[3],sep="_"),"\tSpecificity:",precision,"\tsensitivity:",sensitivity,"\n") # display dendogram
+  },error = function(e){},
+  finally={
+    if (!exists("precision")){
+      precision <- NA
+      sensitivity <- NA
+    }
+  })
+  return(c(precision,sensitivity))
 }
 
 withKmeans <- function(x){
   
   withSwitch <- strsplit(as.character(x[4]),",")[[1]]
-  withoutSwitch <- inputData$Replicates[!inputData$Replicates %in% withSwitch]
-   
+  withoutSwitch <- allPatients[!allPatients %in% withSwitch]
+  
   relevantDf <- deltaPsis[deltaPsis$Gene==x[1],-1]
   relevantDf <- as.data.frame(t(relevantDf))
   colnames(relevantDf) <- unlist(relevantDf[1,])
@@ -103,7 +103,7 @@ withKmeans <- function(x){
     oneBranchPositives = sum(withSwitch %in% oneBranch)/length(oneBranch)
     otherBranchPositives = sum(withSwitch %in% otherBranch)/length(otherBranch)
     
-    if (oneBranchPositives > otherBranchPositives){
+    if (oneBranchPositives >= otherBranchPositives){
       TP <- sum(withSwitch %in% oneBranch)
       FP <- sum(withSwitch %in% otherBranch)
       TN <- sum(withoutSwitch %in% otherBranch)
@@ -117,7 +117,7 @@ withKmeans <- function(x){
     }
     precision = TP/(TP+FP)
     sensitivity = TP/(TP+FN)
-       
+    
   },error = function(e){},
   finally={
     if (!exists("precision")){
@@ -131,7 +131,7 @@ withKmeans <- function(x){
 
 getSensitivityAndPrecision <- function(x){
   switches <- x[c("Gene","maxdPSI","mindPSI","Patients","pval")]
-
+  
   kmeansV = withKmeans(switches)
   hclustV = withHclust(switches)
   
@@ -139,7 +139,7 @@ getSensitivityAndPrecision <- function(x){
   sensitivityKmeans = kmeansV[2]
   precisionHclust = hclustV[1]
   sensitivityHclust = hclustV[2]
-
+  
   return(data.frame(precisionKmeans=precisionKmeans,sensitivityKmeans=sensitivityKmeans,
                     precisionHclust=precisionHclust,sensitivityHclust=sensitivityHclust))
 }
@@ -155,14 +155,16 @@ logger <- getLogger(name="filter_switches", level=10) #Level debug
 addHandler(writeToConsole, logger="filter_switches", level='INFO')
 addHandler(writeToFile, logger="filter_switches", file=paste0(out, "rSmartAS.log"), level='DEBUG')
 
+allPatients <- c(inputData$Replicates,inputData$unpairedReplicates)
+
 candidates <- list()
 expressed <- list()
 psiList <- list()
 
-for (patient in inputData$Replicates){
+for (patient in allPatients){
   load(paste0(args[1],"RWorkspaces/",patient,"_candidates_expressed.RData"))
   load(paste0(args[1],"RWorkspaces/",patient,"_more.RData"))
-    
+  
   candidates[[patient]] <- patientCandidates
   expressed[[patient]] <- patientExpressed
   psiList[[patient]] <- patientInfo$deltaPSI 
@@ -172,7 +174,7 @@ allExpressedTranscripts <- unique(do.call('rbind', expressed))
 allExpressedTranscripts <- allExpressedTranscripts[with(allExpressedTranscripts, order(Transcript)), ]
 psis <- do.call("cbind",psiList)
 
-for (i in inputData$Replicates){candidates[[i]]$Origin = i}
+for (i in allPatients){candidates[[i]]$Origin = i}
 
 candidateList <- do.call("rbind", candidates)
 candidateList <- ddply(candidateList,.(Gene,Normal_isoform,Tumor_isoform), summarise, Replicated=length(Gene), Patients=paste(Origin, collapse = ",") )
@@ -181,10 +183,9 @@ candidateList <- candidateList[with(candidateList, order(-Replicated)), ]
 write.table(candidateList, file=paste0(out, "candidateList.tsv"), sep="\t", row.names=F, col.names=F, quote=F)
 write.table(allExpressedTranscripts, paste0(out, "expressedGenes.lst"), sep="\t", row.names=F, col.names=F, quote=F)
 
-load(paste0(args[1],"RWorkspaces/",inputData$Replicates[1],".RData"))
+load(paste0(args[1],"RWorkspaces/",inputData$Replicates[1],"_more.RData"))
 
 transcripts = data.frame(Gene=as.character(patientInfo$Gene),Tx=patientInfo$Transcript)
-save(transcripts,deltaPsis,file="txandpsis.RData")
 deltaPsis <- cbind(transcripts,psis)
 
 clustVals = apply(candidateList,1,getSensitivityAndPrecision)
