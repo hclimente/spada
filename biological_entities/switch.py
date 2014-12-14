@@ -124,13 +124,14 @@ class IsoformSwitch:
 		it calculates the shared and specific regions."""
 		if nInfo["Uniprot"]:
 			self._normal_protein = protein.Protein( self._normal_transcript_name, nInfo)
-			self._normal_protein.checkInteractome3DStructures()
+			#self._normal_protein.checkInteractome3DStructures()
 		if tInfo["Uniprot"]:
 			self._tumor_protein  = protein.Protein( self._tumor_transcript_name, tInfo)
-			self._tumor_protein.checkInteractome3DStructures()
+			#self._tumor_protein.checkInteractome3DStructures()
 
 		if self._normal_protein and self._tumor_protein:
-			self.getAlteredRegions()
+			pass
+			#self.getAlteredRegions()
 
 	def get_cdsDiff(self):
 		"""Changes the values of the CDS dictionary of the transcripts to
