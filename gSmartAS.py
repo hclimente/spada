@@ -39,7 +39,6 @@ class SmartAS:
 		utils.cmd("Pipeline/methods/explore_data.r", options.Options().qout, 
 				  "Data/Input/{0}/{1}/".format(options.Options().inputType, options.Options().tag) )
 
-
 		self.logger.info("Extracting transcripts with high variance and high expression.")
 		utils.cmd( "Pipeline/methods/get_candidates.r", options.Options().qout )
 
@@ -177,7 +176,7 @@ if __name__ == '__main__':
 	 	#S.getCandidates()
 	 		 	
 	 	S.createTranscriptNetwork(True)
-		S.createGeneNetwork(True)
+		S.createGeneNetwork(False)
 		
 		out_network.outputGTF(S._gene_network,S._transcript_network)
 		out_network.outCandidateList(S._gene_network,S._transcript_network)
