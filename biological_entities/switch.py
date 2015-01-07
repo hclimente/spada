@@ -15,7 +15,8 @@ class IsoformSwitch:
 		self._normal_protein 		= None
 		self._tumor_protein 		= None
 
-		#Structural analysis
+		#Relevance measure
+		self._iloops_change		 	= None
 		self._functional_change 	= None
 		self._disorder_change 		= None
 		self._broken_surfaces 		= None
@@ -109,7 +110,7 @@ class IsoformSwitch:
 		utrDiff.extend( [ x for x in self._tumor_transcript.utr if x not in self._normal_transcript.utr ])
 		return utrDiff
 
-	def addTxs(self, nInfo, tInfo):
+	def addTxs(self,nInfo,tInfo):
 		"""Creates the transcript objects for the transcripts involved
 		in the switch and calculates UTR and CDS differences."""
 		self._normal_transcript = transcript.Transcript( self._normal_transcript_name, nInfo )
@@ -118,20 +119,19 @@ class IsoformSwitch:
 		self.get_cdsDiff()
 		self.get_utrDiff()
 
-	def addIsos(self, nInfo, tInfo):
+	def addIsos(self,nInfo,tInfo):
 		"""Creates the isoform objects for the transcripts involved
 		in the switch if they have an UniProt identifier. If both do,
 		it calculates the shared and specific regions."""
 		if nInfo["Uniprot"]:
 			self._normal_protein = protein.Protein( self._normal_transcript_name, nInfo)
-			#self._normal_protein.checkInteractome3DStructures()
+			self._normal_protein.checkInteractome3DStructures()
 		if tInfo["Uniprot"]:
 			self._tumor_protein  = protein.Protein( self._tumor_transcript_name, tInfo)
-			#self._tumor_protein.checkInteractome3DStructures()
+			self._tumor_protein.checkInteractome3DStructures()
 
 		if self._normal_protein and self._tumor_protein:
-			pass
-			#self.getAlteredRegions()
+			self.getAlteredRegions()
 
 	def get_cdsDiff(self):
 		"""Changes the values of the CDS dictionary of the transcripts to

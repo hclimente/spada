@@ -72,13 +72,13 @@ def getGUILDInput(gn_net, onlyExperimental=False):
 			else:
 				GUILD_EDGES.write("{0} {1} {2}\n".format(node1, info["score"], node2))
 
-def outputGTF(gn_network, tx_network):
+def outputGTF(gn_network,tx_network):
 	logging.info("Writing GTF files.")
 	with open(options.Options().qout + "/candidates_normal.gtf", 'w') as nGTF, \
 		 open(options.Options().qout + "/candidates_tumor.gtf", 'w') as tGTF, \
 		 open("Data/" + options.Options().inputType + "/annotation.gtf", "r") as ALLTRANSCRIPTS:
 	
-		switchesInfo = [ [(z.nTx,z.tTx),z.score] for x,y,z in utils.iterate_switches_ScoreWise(gn_network) ]
+		switchesInfo = [ [(z.nTx,z.tTx),z.score] for w,x,y,z in gn_network.iterate_switches_ScoreWise(tx_network) ]
 
 		for line in ALLTRANSCRIPTS:
 			for switch in switchesInfo:
@@ -87,7 +87,7 @@ def outputGTF(gn_network, tx_network):
 				elif switch[0][1] in line:
 					tGTF.write("{0};patients_affected={1}\n".format(line.strip(), switch[1] ))
 
-def outCandidateList(gn_network, tx_network):
+def outCandidateList(gn_network,tx_network):
 	logging.info("Writing candidateList_v3.")
 	with open(options.Options().qout + "candidateList_v3.tsv", "w") as cList:
 		cList.write("GeneId\tSymbol\tNormal_transcript\tTumor_transcript\t")
@@ -95,7 +95,7 @@ def outCandidateList(gn_network, tx_network):
 		cList.write("Precision\tSensitivity\tDriver\tDruggable\tCDS\t")
 		cList.write("CDS_change\tUTR_change\tPatients_affected\n")
 		
-		for gene,info,switch in utils.iterate_switches_ScoreWise(gn_network):
+		for gene,info,switch in gn_network.iterate_switches_ScoreWise(tx_network):
 			nIso = switch.nTranscript
 			tIso = switch.tTranscript
 

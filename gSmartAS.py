@@ -127,14 +127,6 @@ class SmartAS:
 			self._gene_network.importCandidates()
 			self._gene_network.importKnownInteractions()
 
-			isoSwitches = []
-			[ isoSwitches.extend(p["isoformSwitches"]) for x,p in self._gene_network.nodes(data=True) ]
-			for switch in isoSwitches:
-				nInfo = self._transcript_network._net.node[switch.nTx]
-				tInfo = self._transcript_network._net.node[switch.tTx]
-				switch.addTxs(nInfo,tInfo)
-				switch.addIsos(nInfo,tInfo)
-
 			self._gene_network.saveNetwork("geneNetwork.pkl")
 
 	def createTranscriptNetwork(self, recover=False):
@@ -161,13 +153,11 @@ class SmartAS:
 
 if __name__ == '__main__':
 
-	logging.basicConfig(
-						level=logging.DEBUG,
+	logging.basicConfig(level=logging.DEBUG,
 						format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
 						datefmt='%m-%d %H:%M',
 	                   	filename=options.Options().tag + '_smartAS_devel.log',
-	                   	filemode='w'
-					   )
+	                   	filemode='w')
 
 	console = logging.StreamHandler()
 	console.setLevel(logging.INFO)
@@ -184,16 +174,16 @@ if __name__ == '__main__':
 	
 	# Get and characterize switches
 	elif options.Options().initialStep == "get-switches":
-	 	S.getCandidates()
-	 	
+	 	#S.getCandidates()
+	 		 	
 	 	S.createTranscriptNetwork(True)
-		S.createGeneNetwork(False)
+		S.createGeneNetwork(True)
 		
-		out_network.outputGTF(S._gene_network, S._transcript_network )
-		out_network.outCandidateList(S._gene_network, S._transcript_network)
-		export_to_MSAnalysis.Export2MSAnalysis().generateFile(S._gene_network)
+		out_network.outputGTF(S._gene_network,S._transcript_network)
+		out_network.outCandidateList(S._gene_network,S._transcript_network)
+		export_to_MSAnalysis.Export2MSAnalysis().generateFile(S._gene_network,S._transcript_network)
 
-		options.Options().printToFile(initialStep="get-relevant-switces")
+		options.Options().printToFile(initialStep="get-relevant-switches")
 
 	else:
 		S.createTranscriptNetwork(True)

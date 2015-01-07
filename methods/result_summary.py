@@ -54,7 +54,7 @@ class ResultSummary(method.Method):
 
 		total = 0
 		
-		for gene,info,switch in utils.iterate_switches_ScoreWise(self._gene_network):
+		for gene,info,switchDict,switch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network):
 			nIso = switch.nTranscript
 			tIso = switch.tTranscript
 
@@ -108,7 +108,7 @@ class ResultSummary(method.Method):
 
 		total = 0
 
-		for gene,info,switch in utils.iterate_switches_ScoreWise(self._gene_network):
+		for gene,info,switchDict,switch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network):
 			nIso = switch.nTranscript
 			tIso = switch.tTranscript
 
@@ -152,7 +152,7 @@ class ResultSummary(method.Method):
 
 		mostCommonChanges = {}
 
-		changes = [ z.functionalChange for x,y,z in utils.iterate_switches_ScoreWise(self._gene_network) ]
+		changes = [ z.functionalChange for w,x,y,z in self._gene_network.iterate_switches_ScoreWise(self._transcript_network) ]
 		
 		for x in changes:
 			if x:
@@ -199,7 +199,7 @@ class ResultSummary(method.Method):
 		withDisorder = 0
 		total = 0
 
-		motifs = [ z.disorderChange for x,y,z in utils.iterate_switches_ScoreWise(self._gene_network) ]
+		motifs = [ z.disorderChange for w,x,y,z in self._gene_network.iterate_switches_ScoreWise(self._transcript_network) ]
 
 		for x in motifs:
 			if x:
@@ -224,7 +224,7 @@ class ResultSummary(method.Method):
 
 		affectedGenes = {}
 
-		patientsNGenes = [ [y["symbol"],z.patients] for x,y,z in utils.iterate_switches_ScoreWise(self._gene_network) ]
+		patientsNGenes = [ [x["symbol"],z.patients] for w,x,y,z in self._gene_network.iterate_switches_ScoreWise(self._transcript_network) ]
 
 		patients = []
 		[ patients.extend(z) for x,z in patientsNGenes ]
@@ -258,7 +258,7 @@ class ResultSummary(method.Method):
 		import pdb
 		pdb.set_trace()
 		neighborhoodAnalysis = []
-		[ neighborhoodAnalysis.extend(z.neighborhoodChange) for x,y,z in utils.iterate_switches_ScoreWise(self._gene_network) ]
+		[ neighborhoodAnalysis.extend(z.neighborhoodChange) for w,x,y,z in self._gene_network.iterate_switches_ScoreWise(self._transcript_network) ]
 		neighborhoodAnalysis = set(neighborhoodAnalysis)
 		
 		with open("{0}result_summary/neighborhoods_genesets.tsv".format(options.Options().qout,analysis), "w" ) as F:
@@ -275,7 +275,7 @@ class ResultSummary(method.Method):
 		for analysis in neighborhoodAnalysis:
 
 			geneSets = []
-			[ geneSets.extend(y["neighborhoods"][analysis]) for x,y,z in utils.iterate_switches_ScoreWise(self._gene_network) ]
+			[ geneSets.extend(x["neighborhoods"][analysis]) for w,x,y,z in self._gene_network.iterate_switches_ScoreWise(self._transcript_network) ]
 			geneSets = set(geneSets)
 
 			with open("{0}result_summary/neighborhoods_genes_{1}.tsv".format(options.Options().qout,analysis), "w" ) as F:

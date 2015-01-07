@@ -214,16 +214,17 @@ class GeneNetwork(network.Network):
 
 		for index,row in switches.iterrows():
 			Gene 		= row["Gene"]
-			nIso 		= row["Transcript_normal"]
-			tIso 		= row["Transcript_tumor"]
-			Score 		= row["Percentage"]
-			Patients 	= row["Patients"]
-			Precision 	= row["Precision"]
-			Sensitivity = row["Sensitivity"]
+			switch = {}
+			switch["nIso"] 			= row["Transcript_normal"]
+			switch["tIso"] 			= row["Transcript_tumor"]
+			switch["score"] 		= row["Percentage"]
+			switch["patients"] 		= row["Patients"]
+			switch["precision"] 	= row["Precision"]
+			switch["sensitivity"] 	= row["Sensitivity"]
+			switch["relevant"] 		= None
 
-			isoSwitch = switch.IsoformSwitch(nIso,tIso,Score,Patients,
-											 Precision,Sensitivity)
-			self.update_node("isoformSwitches", isoSwitch, full_name=Gene)
+			#isoSwitch = switch.IsoformSwitch(nIso,tIso,Score,Patients,Precision,Sensitivity)
+			self.update_node("isoformSwitches",switch,full_name=Gene)
 
 	def importSpecificDrivers(self):
 		self.logger.debug("Importing specific drivers.")
@@ -381,3 +382,92 @@ class GeneNetwork(network.Network):
 					self.update_edge("score", 1.0, gene_id1=geneId_1, gene_id2=geneId_2)
 				elif [ x for x in method_ids if x not in affinity_methods ]:
 					self.update_edge("score", 0.2, gene_id1=geneId_1, gene_id2=geneId_2)
+
+	def iterate_switches_ScoreWise(self,tx_network,only_first=False):
+		"""Iterate through the isoform switches of a gene network, and
+			generate a list of (gene,geneInformation,isoformSwitch).
+			Only return those switches with an overlap between the CDS 
+			of the transcripts.
+
+			only_first(bool): if True, only the first switch (the most 
+				common) will be returned for each gene.
+		"""
+
+		sortedNodes = sorted(self.nodes(data=True), 
+							 key=lambda (a, dct): dct['score'], 
+							 reverse=True)
+		
+		counter = 1
+		for gene,info in sortedNodes:
+			if not info["isoformSwitches"]: continue
+			#elif abs(info["diffExpression_logFC"]) > 0.5 or info["diffExpression_p"] < 0.05: continue
+
+			if only_first:
+				self.logger.debug("Iterating switch number {0}.".format(counter))
+				switchDict = info["isoformSwitches"][0]
+				thisSwitch = switch.IsoformSwitch(switchDict["nIso"],switchDict["tIso"],
+											  switchDict["score"],switchDict["patients"],
+											  switchDict["precision"],switchDict["sensitivity"])
+				nInfo = tx_network._net.node[thisSwitch.nTx]
+				tInfo = tx_network._net.node[thisSwitch.tTx]
+				thisSwitch.addTxs(nInfo,tInfo)
+				thisSwitch.addIsos(nInfo,tInfo)
+				counter += 1
+				yield gene,info,switchDict,thisSwitch
+			else:
+				for switchDict in info["isoformSwitches"]:
+					self.logger.debug("Iterating switch number {0}.".format(counter))
+					thisSwitch = switch.IsoformSwitch(switchDict["nIso"],switchDict["tIso"],
+												  switchDict["score"],switchDict["patients"],
+												  switchDict["precision"],switchDict["sensitivity"])
+					nInfo = tx_network._net.node[thisSwitch.nTx]
+					tInfo = tx_network._net.node[thisSwitch.tTx]
+					thisSwitch.addTxs(nInfo,tInfo)
+					thisSwitch.addIsos(nInfo,tInfo)
+					counter += 1
+					yield gene,info,switchDict,thisSwitch
+
+	def iterate_relevantSwitches_ScoreWise(self,tx_network,only_first=False):
+		"""Iterate through the isoform switches of a gene network, and
+			generate a list of (gene,geneInformation,isoformSwitch).
+			Only return those switches with an overlap between the CDS 
+			of the transcripts and that have different features.
+
+			only_first(bool): if True, only the first switch (the most 
+				common) will be returned for each gene.
+		"""
+
+		sortedNodes = sorted(self.nodes(data=True), 
+							 key=lambda (a, dct): dct['score'], 
+							 reverse=True)
+		
+		counter = 1
+		for gene,info in sortedNodes:
+			if not info["isoformSwitches"]: continue
+			#elif abs(info["diffExpression_logFC"]) > 0.5 or info["diffExpression_p"] < 0.05: continue
+
+			if only_first:
+				self.logger.debug("Iterating switch number {0}.".format(counter))
+				if info["isoformSwitches"][0].is_relevant:
+					switchDict = info["isoformSwitches"][0]
+					thisSwitch = switch.IsoformSwitch(switchDict["nIso"],switchDict["tIso"],
+												  switchDict["score"],switchDict["patients"],
+												  switchDict["precision"],switchDict["sensitivity"])
+					nInfo = tx_network._net.node[thisSwitch.nTx]
+					tInfo = tx_network._net.node[thisSwitch.tTx]
+					thisSwitch.addTxs(nInfo,tInfo)
+					thisSwitch.addIsos(nInfo,tInfo)
+					counter += 1
+					yield gene,info,switchDict,thisSwitch
+			else:
+				for switchDict in [ x for x in info["isoformSwitches"] if x.is_relevant ]:
+					self.logger.debug("Iterating switch number {0}.".format(counter))
+					thisSwitch = switch.IsoformSwitch(switchDict["nIso"],switchDict["tIso"],
+												  switchDict["score"],switchDict["patients"],
+												  switchDict["precision"],switchDict["sensitivity"])
+					nInfo = tx_network._net.node[thisSwitch.nTx]
+					tInfo = tx_network._net.node[thisSwitch.tTx]
+					thisSwitch.addTxs(nInfo,tInfo)
+					thisSwitch.addIsos(nInfo,tInfo)
+					counter += 1
+					yield gene,info,switchDict,thisSwitch

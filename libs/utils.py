@@ -41,55 +41,6 @@ def readTable(path, sep="\t", header=True):
 			
 			yield line.strip().split(sep)
 
-def iterate_switches_ScoreWise(gene_network,only_first=False):
-	"""Iterate through the isoform switches of a gene network, and
-		generate a list of (gene,geneInformation,isoformSwitch).
-		Only return those switches with an overlap between the CDS 
-		of the transcripts.
-
-		only_first(bool): if True, only the first switch (the most 
-			common) will be returned for each gene.
-	"""
-
-	sortedNodes = sorted(gene_network.nodes(data=True), 
-						 key=lambda (a, dct): dct['score'], 
-						 reverse=True)
-	
-	for gene,info in sortedNodes:
-		if not info["isoformSwitches"]: continue
-		#elif abs(info["diffExpression_logFC"]) > 0.5 or info["diffExpression_p"] < 0.05: continue
-
-		if only_first:
-			yield gene,info,info["isoformSwitches"][0]
-		else:
-			for switch in info["isoformSwitches"]:
-				yield gene,info,switch
-
-def iterate_relevantSwitches_ScoreWise(gene_network,only_first=False):
-	"""Iterate through the isoform switches of a gene network, and
-		generate a list of (gene,geneInformation,isoformSwitch).
-		Only return those switches with an overlap between the CDS 
-		of the transcripts and that have different features.
-
-		only_first(bool): if True, only the first switch (the most 
-			common) will be returned for each gene.
-	"""
-
-	sortedNodes = sorted(gene_network.nodes(data=True), 
-						 key=lambda (a, dct): dct['score'], 
-						 reverse=True)
-	
-	for gene,info in sortedNodes:
-		if not info["isoformSwitches"]: continue
-		#elif abs(info["diffExpression_logFC"]) > 0.5 or info["diffExpression_p"] < 0.05: continue
-
-		if only_first:
-			if info["isoformSwitches"][0].is_relevant:
-				yield gene,info,info["isoformSwitches"][0]
-		else:
-			for switch in [ x for x in info["isoformSwitches"] if x.is_relevant ]:
-				yield gene,info,switch
-
 def setEnvironment():
 
 	o = options.Options()

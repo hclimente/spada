@@ -235,7 +235,7 @@ if __name__ == '__main__':
 		
 		out_network.outputGTF(S._gene_network, S._transcript_network )
 		out_network.outCandidateList(S._gene_network, S._transcript_network)
-		export_to_MSAnalysis.Export2MSAnalysis().generateFile(S._gene_network)
+		export_to_MSAnalysis.Export2MSAnalysis().generateFile(S._gene_network,S._transcript_network)
 
 		options.Options().printToFile(initialStep="get-relevant-switches")
 	else:

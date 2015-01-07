@@ -114,7 +114,7 @@ class NeighborhoodAnalysis(method.Method):
 		for geneSet in geneSets:
 			affectedPathway[geneSet] = [0]*len(options.Options().replicates)
 
-			for gene,info,switch in utils.iterate_switches_ScoreWise(self._gene_network):
+			for gene,info,switchDict,switch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network):
 				if gene not in geneSets[geneSet]: continue
 				
 				switchSpread = [ 1 if x in switch.patients else 0 for x in options.Options().replicates ]
