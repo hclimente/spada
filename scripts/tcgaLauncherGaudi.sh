@@ -7,8 +7,8 @@ function launchQ {
 
 	source ~/.bashrc
 
-	thisTag=$1$2
-	prevTag=$1$3
+	thisTag="$1"_$2
+	prevTag="$1"_$3
 
 	echo '#!/bin/sh' >$thisTag.sh
 	echo '# SmartAS launch' >>$thisTag.sh
@@ -19,6 +19,7 @@ function launchQ {
 	echo "#$ -V" >>$thisTag.sh
 	echo "#$ -N $thisTag" >>$thisTag.sh
 
+	echo "/sbi/users/hectorc/SmartAS_experimental/Pipeline/gSmartAS.py -f $thisTag.cfg" >>$thisTag.sh
 	echo "/sbi/users/hectorc/SmartAS_experimental/Pipeline/gSmartAS.py -f $thisTag.cfg" >>$thisTag.sh
 
 	qsub -hold_jid $prevTag $thisTag.sh
@@ -47,13 +48,13 @@ do
 	printFile $fullTag get-switches
 	launchQ $fullTag get-switches
 
-	printFile $fullTag get-relevant-switches
-	launchQ $fullTag get-relevant-switches get-switches
+	# printFile $fullTag get-relevant-switches
+	# launchQ $fullTag get-relevant-switches get-switches
 
-    printFile $fullTag neighborhood-analysis
-    launchQ $fullTag neighborhood-analysis get-relevant-switches
+ 	# printFile $fullTag neighborhood-analysis
+ 	# launchQ $fullTag neighborhood-analysis get-relevant-switches
 
-    printFile $fullTag experimental-network-analysis
-    launchQ $fullTag experimental-network-analysis neighborhood-analysis
+ 	# printFile $fullTag experimental-network-analysis
+ 	# launchQ $fullTag experimental-network-analysis neighborhood-analysis
 
 done < "$fileList"

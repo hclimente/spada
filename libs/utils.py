@@ -84,7 +84,7 @@ def setEnvironment():
 
 	if o.initialStep not in ["import-data"]:
 		cmd("cp -r", ".testOld/" + o.out + "DataExploration", o.qout)
-		cmd("cp", ".testOld/" + o.out + "RWorkspaces/*.RData", o.qout + "/RWorkspaces")
+		cmd("mv", ".testOld/" + o.out + "RWorkspaces/*.RData", o.qout + "/RWorkspaces")
 		
 		cmd("cp", ".testOld/" + o.out + "expression_normal.tsv", ".testOld/" + o.out + "expression_tumor.tsv", o.qout)
 		cmd("cp", ".testOld/" + o.out + "candidateList.tsv", ".testOld/" + o.out + "candidateList_v2.tsv",".testOld/" + o.out + "candidateList_v3.tsv",".testOld/" + o.out + "expressedGenes.lst", o.qout)
@@ -92,6 +92,8 @@ def setEnvironment():
 		cmd("cp", ".testOld/" + o.out + "geneNetwork*.pkl", ".testOld/" + o.out + "txNetwork*.pkl", o.qout)
 		cmd("cp", ".testOld/" + o.out + "msInput.txt", o.qout)
 			
+	if o.initialStep != "get-relevant-switches" and o.initialStep not in ["import-data","get-switches"]:
+		cmd("cp -r", ".testOld/{0}/structural_analysis".format(options.Options().out), o.qout)
 	if o.initialStep != "launch-iloops" and o.initialStep not in ["import-data","get-switches"]:
 		cmd("cp", ".testOld/" + o.out + "candidatesGaudi.lst", o.qout)
 	if o.initialStep != "neighborhood-analysis" and o.initialStep not in ["import-data","get-switches"]:
@@ -102,8 +104,6 @@ def setEnvironment():
 	if o.initialStep != "predicted-network-analysis" and o.initialStep not in ["import-data","get-switches"]:
 		cmd("cp -r", ".testOld/{0}/GUILD_enriched".format(o.out), o.qout)
 		cmd("cp -r", ".testOld/{0}/iLoops/{1}".format(o.out, o.iLoopsVersion), o.qout)
-	if o.initialStep != "get-relevant-switches" and o.initialStep not in ["import-data","get-switches"]:
-		cmd("cp -r", ".testOld/{0}/structural_analysis".format(options.Options().out), o.qout)
 	if o.initialStep != "summary" and o.initialStep not in ["import-data","get-switches"]:
 		cmd("cp -r", ".testOld/{0}/result_summary".format(o.out), o.qout)
 
