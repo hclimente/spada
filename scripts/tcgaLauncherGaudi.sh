@@ -20,7 +20,7 @@ function launchQ {
 	echo "#$ -N $thisTag" >>$thisTag.sh
 
 	echo "/sbi/users/hectorc/SmartAS_experimental/Pipeline/gSmartAS.py -f $thisTag.cfg" >>$thisTag.sh
-	echo "/sbi/users/hectorc/SmartAS_experimental/Pipeline/gSmartAS.py -f $thisTag.cfg" >>$thisTag.sh
+	echo "tar -zcvf $fullTag.tar.gz testResults/TCGA/$fullTag" >>$thisTag.sh
 
 	qsub -hold_jid $prevTag $thisTag.sh
 

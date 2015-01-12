@@ -189,7 +189,7 @@ class GeneNetwork(network.Network):
 		# driver info
 		for line in utils.readTable("Data/Databases/cancer_drivers_from_networks.csv"):
 			geneSymbol = line[0]
-				
+			
 			for gene,info in self.nodes(data=True):
 				if info["symbol"] == geneSymbol:
 					self.update_node("Driver",True,gene_id=gene )
