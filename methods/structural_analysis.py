@@ -10,6 +10,8 @@ from Bio import pairwise2
 import fisher
 import os
 
+import pdb
+
 class StructuralAnalysis(method.Method):
 	def __init__(self, gn_network, tx_network, gn_subnetwork):
 		method.Method.__init__(self, __name__, gn_network, tx_network, gn_subnetwork)
@@ -21,9 +23,9 @@ class StructuralAnalysis(method.Method):
 		for line in open(options.Options().wd+"Data/TCGA/UnifiedFasta_iLoops13.fa"):
 			if ">" in line:
 				elements = line.strip().split("#")
-				isoInfo[elements[0]] = {}
-				isoInfo[elements[0]]["iLoopsFamily"] = elements[2]
-				isoInfo[elements[0]]["UniProt"] = elements[3]
+				isoInfo[elements[0][1:]] = {}
+				isoInfo[elements[0][1:]]["UniProt"] = elements[2]
+				isoInfo[elements[0][1:]]["iLoopsFamily"] = elements[3]
 
 		I3D_REPORT = open(options.Options().qout+"structural_analysis/I3D_analysis.tsv","w")
 		I3D_REPORT.write("Gene\tSymbol\tTranscript\tUniprot\tPercent_affected_by_AS\t")
@@ -31,7 +33,7 @@ class StructuralAnalysis(method.Method):
 
 		IP_REPORT = open("{0}structural_analysis/InterPro_report.tsv".format(options.Options().qout),"w")
 		IP_REPORT.write("Gene\tGene_symbol\tTranscript\tAnalysis\tFeature_accesion\t")
-		IP_REPORT.write("Feature\t(Additional) repetitions\tPercent affected\n")
+		IP_REPORT.write("Feature\t(Additional) repetitions\n")
 
 		IUPRED_REPORT = open(options.Options().qout+"structural_analysis/iupred_analysis.tsv","w")
 		IUPRED_REPORT.write("Gene\tTranscript\tAnalysis\tPercent_affected_by_AS\t")
@@ -40,38 +42,50 @@ class StructuralAnalysis(method.Method):
 		IUPRED_REPORT.write("#aa_Isoform_specific_disordered\t")
 		IUPRED_REPORT.write("#aa_Non_isoform_specific_disordered\n")
 
-		for gene,info,switch in self._gene_network.iterate_relevantSwitches_ScoreWise(self._transcript_network):
+		RELEVANCE_INFO = open(options.Options().qout+"structural_analysis/structural_summary.tsv","w")
+		RELEVANCE_INFO.write("Gene\tNormalTranscript\tTumorTranscript\tiLoopsChange\t")
+		RELEVANCE_INFO.write("BrokenSurface\tFunctionalChange\tDisorderChange\n")
+
+		for gene,info,switchDict,switch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network):
 			switch._iloops_change 	  = self.findDiffLoops(switch,gene,info,isoInfo)
 			switch._broken_surfaces   = self.findBrokenSurfaces(switch,gene,info,I3D_REPORT)
 			switch._functional_change = self.interProAnalysis(switch,gene,info,IP_REPORT)
 			switch._disorder_change   = self.disorderAnalysis(switch,gene,info,IUPRED_REPORT)
 
+			RELEVANCE_INFO.write("{0}\t{1}\t{2}\t{3}\t".format(gene,switch.nTx,switch.tTx,switch._iloops_change))
+			RELEVANCE_INFO.write("{0}\t{1}\t{2}\n".format(switch._broken_surfaces,switch._functional_change,switch._disorder_change))
+
 		I3D_REPORT.close()
 		IP_REPORT.close()
 		IUPRED_REPORT.close()
+		RELEVANCE_INFO.close()
 
 	def findDiffLoops(self,switch,gene,info,isoInfo):
 
-		self.logger.info("Classifying loops based on iLoops changes.")
+		self.logger.debug("Classifying loops based on iLoops changes for gene {0}.".format(gene) )
+		
+		if switch.nTx in isoInfo and switch.tTx in isoInfo:
+			nLoops = isoInfo[switch.nTx]["iLoopsFamily"]
+			tLoops = isoInfo[switch.tTx]["iLoopsFamily"]
 
-		nLoops = isoInfo[switch.nTx]["iLoopsFamily"]
-		tLoops = isoInfo[switch.tTx]["iLoopsFamily"]
+			if nLoops != tLoops:
+				return True
+			else:
+				return False
 
-		if nLoops != tLoops:
-			return True
-		else:
-			return False
+		return None
 
 	def findBrokenSurfaces(self,switch,gene,info,I3D_REPORT):
 
-		self.logger.info("Searching Interactome3D broken surfaces.")
-
+		self.logger.debug("Searching Interactome3D broken surfaces for gene {0}.".format(gene) )
+		
 		nIso = switch.nIsoform
 		tIso = switch.tIsoform
 
-		if not nIsoform.uniprot and not tIsoform.uniprot: return False
+		if nIso is None or tIso is None: return False
+		elif not nIso.uniprot and not tIso.uniprot: return False
 		elif not nIso.hasPdbs and not tIso.hasPdbs: return False
-
+		
 		self.logger.debug("I3D information found for gene {0}.".format(gene))
 		
 		nIsoSpecific = bool([ x for x in nIso._structure if x.isoformSpecific ])
@@ -114,7 +128,7 @@ class StructuralAnalysis(method.Method):
 		self.logger.debug("{0}, Interacting surface:{1}\tNon-interacting surface:{2}\tBuried:{3}\tUnknown location:{4}".format(protein.tx,stats["isoSp"]["I"],stats["isoSp"]["S"],stats["isoSp"]["B"],stats["isoSp"]["u"]) )
 		self.logger.debug("{0}, Interacting surface:{1}\tNon-interacting surface:{2}\tBuried:{3}\tUnknown location:{4}".format(protein.tx,stats["nIsoSp"]["I"],stats["nIsoSp"]["S"],stats["nIsoSp"]["B"],stats["nIsoSp"]["u"]) )
 
-		try: percent = stats["isoSp"]["I"]/(stats["isoSp"]["I"]+stats["nIsoSp"]["I"])*100
+		try: percent = float(stats["isoSp"]["I"])/(stats["isoSp"]["I"]+stats["nIsoSp"]["I"])*100
 		except ZeroDivisionError: percent = 0
 
 		pval = 0
@@ -136,6 +150,8 @@ class StructuralAnalysis(method.Method):
 
 	def interProAnalysis(self,switch,gene,info,IP_REPORT):
 
+		self.logger.debug("Searching InterPro features changes for gene {0}.".format(gene) )
+		
 		normalProtein = switch.nIsoform
 		tumorProtein = switch.tIsoform
 
@@ -147,7 +163,7 @@ class StructuralAnalysis(method.Method):
 
 		if not normalProtein or not tumorProtein: return False
 		if not normalProtein._features and not tumorProtein._features: return False
-
+		
 		nIsoFeatures = Counter([ x["accession"] for x in normalProtein._features ])
 		tIsoFeatures = Counter([ x["accession"] for x in tumorProtein._features ])
 
@@ -163,8 +179,8 @@ class StructuralAnalysis(method.Method):
 				IP_REPORT.write("{0}\t{1}\t".format(gene, info["symbol"]))
 				IP_REPORT.write("{0}\t{1}\t".format(protein.tx,whatsHappening))
 				IP_REPORT.write("{0}\t{1}\t".format(featInfo["analysis"],featInfo["accession"]))
-				IP_REPORT.write("{0}\t{1}\t".format(featInfo["description"],reps))
-				IP_REPORT.write("{0}\n".format(featInfo["percentAffected"]))
+				IP_REPORT.write("{0}\t{1}\n".format(featInfo["description"],reps))
+				# IP_REPORT.write("{0}\n".format(featInfo["percentAffected"]))
 
 				if switch._functional_change is None:
 					switch._functional_change = set()
@@ -180,6 +196,7 @@ class StructuralAnalysis(method.Method):
 	def disorderAnalysis(self,switch,gene,info,IUPRED_REPORT):
 
 		self.logger.debug("Searching structural information for gene {0}.".format(gene))
+		
 		normalProtein = switch.nIsoform
 		tumorProtein = switch.tIsoform
 
