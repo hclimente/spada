@@ -12,7 +12,7 @@ function launchQ {
 
 	echo '#!/bin/sh' >$thisTag.sh
 	echo '# SmartAS launch' >>$thisTag.sh
-	echo '#$ -q bigmem' >>$thisTag.sh
+	echo '#$ -q sbi' >>$thisTag.sh
 	echo '#$ -cwd' >>$thisTag.sh
 	echo "#$ -e /sbi/users/hectorc/SmartAS_experimental/esmartas_$thisTag.txt" >>$thisTag.sh
 	echo "#$ -o /sbi/users/hectorc/SmartAS_experimental/osmartas_$thisTag.txt" >>$thisTag.sh
@@ -30,14 +30,15 @@ function printFile {
 
 	fullTag=$1
 	action=$2
+	cfgFile="$fullTag"_$action.cfg
 	cancerTag=`echo $fullTag | cut -d'-' -f1`
 
-	echo initial-step=$action  >$fullTag$action.cfg
-	echo tag=$fullTag >>$fullTag$action.cfg
-	echo specific-drivers=Data/TCGA/specificDrivers/"$cancerTag"Drivers.txt >>$fullTag$action.cfg
-	echo unpaired-replicates=Yes >>$fullTag$action.cfg
-	echo specific-drivers=Data/"$fullTag"Drivers.txt >>$fullTag$action.cfg
-	echo working-directory=/sbi/users/hectorc/SmartAS_experimental >>$fullTag$action.cfg
+	echo initial-step=$action  >$cfgFile
+	echo tag=$fullTag >>$cfgFile
+	echo specific-drivers=Data/TCGA/specificDrivers/"$cancerTag"Drivers.txt >>$cfgFile
+	echo unpaired-replicates=Yes >>$cfgFile
+	echo specific-drivers=Data/"$fullTag"Drivers.txt >>$cfgFile
+	echo working-directory=/sbi/users/hectorc/SmartAS_experimental >>$cfgFile
 
 }
 
