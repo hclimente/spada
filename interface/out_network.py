@@ -95,7 +95,7 @@ def outCandidateList(gn_network,tx_network):
 		cList.write("Precision\tSensitivity\tDriver\tDruggable\tCDS\t")
 		cList.write("CDS_change\tUTR_change\tPatients_affected\n")
 		
-		for gene,info,switch in gn_network.iterate_switches_ScoreWise(tx_network):
+		for gene,info,switchDict,switch in gn_network.iterate_switches_ScoreWise(tx_network):
 			nIso = switch.nTranscript
 			tIso = switch.tTranscript
 
