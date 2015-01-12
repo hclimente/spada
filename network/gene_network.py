@@ -157,6 +157,7 @@ class GeneNetwork(network.Network):
 			a threshold of expression.
 		"""
 		
+		# rbp and epigenetic factor info
 		for line in utils.readTable("Data/Databases/compilationTable.tsv"):
 			self.add_node(full_name=line[0])
 			geneID = self.nameFilter(full_name=line[0])[0]
@@ -164,13 +165,12 @@ class GeneNetwork(network.Network):
 			apoptosis = [line[10]]
 			embryo = [line[9]]
 			
-			if "yes" in [line[8], line[13]]:
-				self.update_node( "Driver", True, gene_id = geneID )
 			if "yes" in [line[3], line[4], line[5], line[11]]:
 				self.update_node( "RBP", True, gene_id = geneID )
 			if "yes" in [line[6]]:
 				self.update_node( "EpiFactor", True, gene_id = geneID )
 
+		# druggability info
 		for line in utils.readTable("Data/Databases/dgidb_export_all_drivers_bygene_results.tsv"):
 			geneSymbol = line[0]
 				
@@ -179,11 +179,21 @@ class GeneNetwork(network.Network):
 					self.update_node("Druggable",True,gene_id=gene )
 					break
 		
+		# expression info
 		for line in utils.readTable(options.Options().qout + "expressedGenes.lst", header=False):
 			geneID = self.nameFilter(full_name=line[1])[0]
 						
 			if geneID is not None:				
 				self.update_node( "ExpressedTranscripts", line[0], gene_id=geneID )
+
+		# driver info
+		for line in utils.readTable("Data/Databases/cancer_drivers_from_networks.csv"):
+			geneSymbol = line[0]
+				
+			for gene,info in self.nodes(data=True):
+				if info["symbol"] == geneSymbol:
+					self.update_node("Driver",True,gene_id=gene )
+					break
 
 	def importCandidates(self):
 		"""Import a set of genes with an isoform switch from candidateList.tsv.
