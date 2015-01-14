@@ -4,7 +4,11 @@ from libs import options
 from libs import utils
 from methods import method
 
+from itertools import groupby
+from operator import itemgetter
 import pandas as pd
+
+import pdb
 
 class ResultSummary(method.Method):
 	def __init__(self, gn_network, tx_network, gn_subnetwork):
@@ -13,14 +17,14 @@ class ResultSummary(method.Method):
 	def run(self):
 		self.logger.info("Summarizing results.")
 
-		#self.generalSwitchInfo()
+		self.generalSwitchInfo()
 		#self.structuralInfo()
 		#self.functionalChange()
-		self.printRelevantGene()
+		#self.printRelevantGene()
 
 	def generalSwitchInfo(self):
-		self.generalSwitches()
-		utils.cmd("{0}Pipeline/methods/switch_validation.r".format(options.Options().wd),options.Options().qout,options.Options().tag)
+		#self.proteinOverview()
+		self.switchAndExonOverview()
 
 	def structuralInfo(self):
 		self.loopChange()
@@ -30,27 +34,47 @@ class ResultSummary(method.Method):
 	def neighborhoodInfo(self):
 		self.topNeighborhoods()
 
-	def generalSwitches(self):
+	def proteinOverview(self):
+		sortedNodes = sorted(self._gene_network.nodes(data=True), 
+							 key=lambda (a, dct): dct['score'], reverse=True)
+		txDict = self._transcript_network.nodes(data=True)
 
+		centrality = []
+		nIsoLength = []
+		tIsoLength = []
+		
+		for gene,info in sortedNodes:
+			if not info["isoformSwitches"]: continue
+			#elif abs(info["diffExpression_logFC"]) > 0.5 or info["diffExpression_p"] < 0.05: continue
+			centrality.append(self._gene_network._net.degree(gene))
+			for switchDict in info["isoformSwitches"]:
+				if [ x[1]["proteinSequence"] for x in txDict if x[0]==switchDict["nIso"] ]!=[None]:
+					seq = [ x[1]["proteinSequence"] for x in txDict if x[0]==switchDict["nIso"] ][0]
+					nIsoLength.append(len(seq))
+				if [ x[1]["proteinSequence"] for x in txDict if x[0]==switchDict["tIso"] ]!=[None]:
+					seq = [ x[1]["proteinSequence"] for x in txDict if x[0]==switchDict["tIso"] ][0]
+					tIsoLength.append(len(seq))
+
+		with open("{0}result_summary/protein_centrality.tsv".format(options.Options().qout), "w" ) as F:
+			for degree in centrality:
+				F.write("{0}\n".format(degree))
+
+		with open("{0}result_summary/nIso_length.tsv".format(options.Options().qout), "w" ) as F:
+			for length in nIsoLength:
+				F.write("{0}\n".format(length))
+		
+		with open("{0}result_summary/tIso_length.tsv".format(options.Options().qout), "w" ) as F:
+			for length in tIsoLength:
+				F.write("{0}\n".format(length))
+
+	def switchAndExonOverview(self):
 		stats = {}
 
-		stats["hasCds"] = {}
-		stats["hasCds"].setdefault("both", 0)
-		stats["hasCds"].setdefault("onlyN", 0)
-		stats["hasCds"].setdefault("onlyT", 0)
-		stats["hasCds"].setdefault("none", 0)
-
-		stats["hasCdsChange"] = {}
-		stats["hasCdsChange"].setdefault("y", 0)
-		stats["hasCdsChange"].setdefault("n", 0)
-
-		stats["hasUtrChange"] = {}
-		stats["hasUtrChange"].setdefault("y", 0)
-		stats["hasUtrChange"].setdefault("n", 0)
-
-		stats["isDriver"] = {}
-		stats["isDriver"].setdefault("y", 0)
-		stats["isDriver"].setdefault("n", 0)
+		stats["hasCds"] = { "both": 0, "onlyN": 0,"onlyT": 0,"none": 0 }
+		stats["hasCdsChange"] = { "y": 0, "n": 0 }
+		stats["hasUtrChange"] = { "y": 0, "n": 0 }
+		stats["isDriver"] = { "y": 0, "n": 0 }
+		stats["isRelevant"] = { "y": 0, "n": 0 }
 
 		total = 0
 		
@@ -69,10 +93,57 @@ class ResultSummary(method.Method):
 			if switch.utr_diff: stats["hasUtrChange"]["y"] += 1
 			else: 				stats["hasUtrChange"]["n"] += 1
 
-			if info["Driver"]:  stats["isDriver"]["y"]	+=1
-			else: 				stats["isDriver"]["n"]	+=1
+			if info["Driver"]:  stats["isDriver"]["y"] +=1
+			else: 				stats["isDriver"]["n"] +=1
+
+			if switch.is_relevant:  stats["isRelevant"]["y"] +=1
+			else: 					stats["isRelevant"]["n"] +=1
 
 			total += 1
+
+			nSpecificCds = [ x for x in switch._normal_transcript.cds if x not in switch._tumor_transcript.cds ]
+			nSpecificUtr = [ x for x in switch._normal_transcript.utr if x not in switch._tumor_transcript.utr ]
+			tSpecificCds = [ x for x in switch._tumor_transcript.cds if x not in switch._normal_transcript.cds ]
+			tSpecificUtr = [ x for x in switch._tumor_transcript.utr if x not in switch._normal_transcript.utr ]
+			
+			for specificCds,specificUtr,cds in zip([nSpecificCds,tSpecificCds],[nSpecificUtr,tSpecificUtr],[switch._normal_transcript.cds,switch._tumor_transcript.cds]):
+			
+				specific = specificUtr
+				specific.extend(specificCds)
+				specific = sorted(specific)
+				
+				setSpecCds = set(specificCds)
+				setSpecUtr = set(specificUtr)
+				setSpec = set(specific)
+
+				exons = [ map(itemgetter(1),g) for k,g in groupby(enumerate(specific), lambda (i,x): i-x) ]
+				
+				for exon in exons:
+					exonInfo = {}
+					exonInfo["switch"] = "{0}_{1}_{2}".format(gene,switchDict["nIso"],switchDict["tIso"])
+					exonInfo["length"] = len(exon)
+
+					if setSpec & setSpecCds and setSpec & setSpecUtr:
+						exonicCds = sorted(setSpec & setSpecCds)
+						exonInfo["role"] = "CDS-UTR"
+						exonInfo["keepORF"] = len(exonicCds)%3
+						medianPos = exonicCds[len(exonicCds)/2]
+						pos = [ i for i,x in enumerate(cds) if x==medianPos ][0]	 
+						exonInfo["position"] = float(pos)/len(cds)
+					elif setSpec & setSpecCds:
+						exonInfo["role"] = "CDS"
+						exonInfo["keepORF"] = len(exon)%3
+						medianPos = exon[len(exon)/2]
+						pos = [ i for i,x in enumerate(cds) if x==medianPos ][0]
+						exonInfo["position"] = float(pos)/len(cds)
+					elif setSpec & setSpecUtr:
+						exonInfo["role"] = "UTR"
+						exonInfo["keepORF"] = None
+						exonInfo["position"] = None
+					else:
+						exonInfo["role"] = "wut"
+						exonInfo["keepORF"] = "wut"
+						exonInfo["position"] = "wut"
 
 		with open("{0}result_summary/switches.tsv".format(options.Options().qout), "w" ) as F:
 			F.write("Cancer\tAnalysis\tBoth\tOnly_nIso\tOnly_tIso\tNone\tTotal\n")
@@ -86,16 +157,25 @@ class ResultSummary(method.Method):
 			F.write("{0}\t{1}\t".format(stats["hasCdsChange"]["y"],stats["hasCdsChange"]["n"]) )
 			F.write("{0}\n".format(total))
 
-			F.write("Cancer\tAnalysis\tYes\tNo\tTotal\n")
 			F.write("{0}\tUTR_change\t".format(options.Options().tag ))
 			F.write("{0}\t{1}\t".format(stats["hasUtrChange"]["y"],stats["hasUtrChange"]["n"]) )
 			F.write("{0}\n".format(total))
 
-			F.write("Cancer\tAnalysis\tYes\tNo\tTotal\n")
 			F.write("{0}\tDriver_affection\t".format(options.Options().tag ))
 			F.write("{0}\t{1}\t".format(stats["isDriver"]["y"],stats["isDriver"]["n"]) )
 			F.write("{0}\n".format(total))
 
+			F.write("{0}\tRelevant\t".format(options.Options().tag ))
+			F.write("{0}\t{1}\t".format(stats["isRelevant"]["y"],stats["isRelevant"]["n"]) )
+			F.write("{0}\n".format(total))
+
+		with open("{0}result_summary/exons.tsv".format(options.Options().qout), "w" ) as F:
+			F.write("Cancer\tSwitch\tLength\tType\tKeepOrf\tPosition\n")
+			for length in exonInfo:
+				F.write("{0}\t{1}\t".format(options.Options().tag,exonInfo["switch"]))
+				F.write("{0}\t{1}\t".format(exonInfo["length"],exonInfo["role"]))
+				F.write("{0}\t{1}\n".format(exonInfo["keepORF"],exonInfo["position"]))
+		
 	def loopChange(self):
 		stats = {}
 
