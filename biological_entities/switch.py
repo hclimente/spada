@@ -1,5 +1,9 @@
+from libs import options
+from libs import utils
 import protein
 import transcript
+
+import os
 
 class IsoformSwitch:
 	def __init__(self, nTx, tTx, score, patients,precision,sensitivity):
@@ -51,11 +55,20 @@ class IsoformSwitch:
 	def tTranscript(self): return self._tumor_transcript
 
 	@property
-	def functionalChange(self): return self._functional_change
+	def functionalChange(self): 
+		if self._functional_change is None:
+			self.readRelevanceAnalysis()
+		return self._functional_change
 	@property
-	def disorderChange(self): return self._disorder_change
+	def disorderChange(self): 
+		if self._disorder_change is None:
+			self.readRelevanceAnalysis()
+		return self._disorder_change
 	@property
-	def brokenSurfaces(self): return self._broken_surfaces
+	def brokenSurfaces(self): 
+		if self._broken_surfaces is None:
+			self.readRelevanceAnalysis()
+		return self._broken_surfaces
 	@property
 	def guildTop1(self): return self._guild_top1
 	@property
@@ -63,7 +76,10 @@ class IsoformSwitch:
 	@property
 	def neighborhoodChange(self): return self._neighborhood_change
 	@property
-	def iloopsChange(self): return self._iloops_change
+	def iloopsChange(self): 
+		if self._iloops_change is None:
+			self.readRelevanceAnalysis()
+		return self._iloops_change
 
 	@property
 	def is_relevant(self):
@@ -80,6 +96,8 @@ class IsoformSwitch:
 		"""
 		#cds_diff is required if there is any feature
 		#utr_diff only is impossible if a feature change is required
+		if None in [self.disorderChange,self.iloopsChange,self.brokenSurfaces,self.functionalChange]:
+			self.readRelevanceAnalysis()
 		if self.cds_overlap and (self.disorderChange or self.iloopsChange or self.brokenSurfaces or self.functionalChange):
 			return True
 		else:
@@ -173,3 +191,22 @@ class IsoformSwitch:
 		for res in self._tumor_protein._structure:
 			if res.genomicPosition not in [ y.genomicPosition for y in self._normal_protein._structure]:
 				res.setIsoformSpecific(True)
+
+	def readRelevanceAnalysis(self):
+		if not os.path.exists(options.Options().qout+"structural_analysis/structural_summary.tsv"):
+			raise LackingFile("Relevance information not generated.")
+			return False
+
+		for elements in utils.readTable(options.Options().qout+"structural_analysis/structural_summary.tsv"):
+			if elements[1] == self.nTx and elements[2] == self.tTx:
+				if elements[3] == "True": self._iloops_change = True
+				elif elements[3] == "False": self._iloops_change = False
+
+				if elements[4] == "True": self._broken_surfaces = True
+				elif elements[4] == "False": self._broken_surfaces = False
+
+				if elements[5] == "True": self._functional_change =True 
+				elif elements[5] == "False": self._functional_change =False
+
+				if elements[6] == "True": self._disorder_change = True
+				elif elements[6] == "False": self._disorder_change = False

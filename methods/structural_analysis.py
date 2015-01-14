@@ -270,7 +270,7 @@ class StructuralAnalysis(method.Method):
 
 					if ratio >= 0.2:
 						usefulMotifs.add(motif)
-						if switch.disorderChange is None:
+						if switch._disorder_change is None:
 							switch._disorder_change = []
 						switch._disorder_change.append(motif)
 			
@@ -284,7 +284,7 @@ class StructuralAnalysis(method.Method):
 
 			os.remove(options.Options().qout+"protein.fa")
 
-		if switch.disorderChange is None or not switch._disorder_change: return False
+		if switch._disorder_change is None or not switch._disorder_change: return False
 		else: return True
 		
 if __name__ == '__main__':
