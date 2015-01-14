@@ -2,15 +2,15 @@
 
 #Data/Input/TCGA_tags.txt
 fileList=$1
-initialStep=$2
+action=$2
 
 function launchQ {
 
 	source ~/.bashrc
 
-	tag=$1
+	tag=$2
 	echo '#!/bin/sh' >$tag.sh
-	echo '# SmartAS import data' >>$tag.sh
+	echo "# SmartAS $tag" >>$tag.sh
 	echo '#$ -q normal' >>$tag.sh
 	echo '#$ -cwd' >>$tag.sh
 	echo "#$ -e esmartas_$tag.txt" >>$tag.sh
@@ -18,7 +18,7 @@ function launchQ {
 	echo "#$ -V" >>$tag.sh
 	echo "#$ -N $tag" >>$tag.sh
 
-	echo "Pipeline/SmartAS.py -f $tag.cfg" >>$tag.sh
+	echo "Pipeline/gSmartAS.py -f $tag.cfg" >>$tag.sh
 
 	qsub $tag.sh
 
@@ -28,13 +28,16 @@ while read fullTag
 do
 
 	echo $fullTag 
+	cfgFile="$fullTag"_$action.cfg
+
 	cancerTag=`echo $fullTag | cut -d'-' -f1`
 
-	echo initial-step=$initialStep  >$fullTag.cfg
-	echo tag=$fullTag >>$fullTag.cfg
-	echo specific-drivers=Data/"$fullTag"Drivers.txt >>$fullTag.cfg
-	echo working-directory=/data/users/hector >>$fullTag.cfg
+	echo initial-step=$action  >$cfgFile
+	echo tag=$fullTag >>$cfgFile
+	echo unpaired-replicates=Yes >>$cfgFile
+	echo working-directory=/data/users/hector >>$cfgFile
 
-	launchQ $fullTag &
+	launchQ $fullTag "$fullTag"_$action
+	break
 
 done < "$fileList"
