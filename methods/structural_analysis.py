@@ -62,13 +62,14 @@ class StructuralAnalysis(method.Method):
 
 	def findDiffLoops(self,switch,gene,info,isoInfo):
 
-		self.logger.debug("Classifying loops based on iLoops changes for gene {0}.".format(gene) )
+		self.logger.debug("iLoops: looking for loop changes for gene {0}.".format(gene) )
 		
 		if switch.nTx in isoInfo and switch.tTx in isoInfo:
 			nLoops = isoInfo[switch.nTx]["iLoopsFamily"]
 			tLoops = isoInfo[switch.tTx]["iLoopsFamily"]
 
 			if nLoops != tLoops:
+				self.logger.debug("iLoops: information found for gene {0}.".format(gene) )
 				return True
 			else:
 				return False
@@ -77,7 +78,7 @@ class StructuralAnalysis(method.Method):
 
 	def findBrokenSurfaces(self,switch,gene,info,I3D_REPORT):
 
-		self.logger.debug("Searching Interactome3D broken surfaces for gene {0}.".format(gene) )
+		self.logger.debug("I3D: searching broken surfaces for gene {0}.".format(gene) )
 		
 		nIso = switch.nIsoform
 		tIso = switch.tIsoform
@@ -86,14 +87,14 @@ class StructuralAnalysis(method.Method):
 		elif not nIso.uniprot and not tIso.uniprot: return False
 		elif not nIso.hasPdbs and not tIso.hasPdbs: return False
 		
-		self.logger.debug("I3D information found for gene {0}.".format(gene))
-		
 		nIsoSpecific = bool([ x for x in nIso._structure if x.isoformSpecific ])
 		tIsoSpecific = bool([ x for x in tIso._structure if x.isoformSpecific ])
 
 		if sum([nIsoSpecific,tIsoSpecific]) == 2:
 			self.logger.debug("Isoform specific residues were not found exclusively in one isoform.")
 			return False
+
+		self.logger.debug("I3D: information found for gene {0}.".format(gene))
 
 		for protein,hasIsoSpecificResidues in zip([nIso,tIso],[nIsoSpecific,tIsoSpecific]):
 			if protein.hasPdbs and hasIsoSpecificResidues:
@@ -150,7 +151,7 @@ class StructuralAnalysis(method.Method):
 
 	def interProAnalysis(self,switch,gene,info,IP_REPORT):
 
-		self.logger.debug("Searching InterPro features changes for gene {0}.".format(gene) )
+		self.logger.debug("InterPro: searching changes for gene {0}.".format(gene) )
 		
 		normalProtein = switch.nIsoform
 		tumorProtein = switch.tIsoform
@@ -158,8 +159,9 @@ class StructuralAnalysis(method.Method):
 		for protein in [normalProtein,tumorProtein]:
 			if not protein: continue
 
-			out = interpro_analysis.InterproAnalysis().launchAnalysis(protein.tx, protein.seq)
-			protein.getFeatures(out)
+			interproFile = interpro_analysis.InterproAnalysis().launchAnalysis(protein.tx, protein.seq)
+			if not interproFile: continue
+			protein.getFeatures(interproFile)
 
 		if not normalProtein or not tumorProtein: return False
 		if not normalProtein._features and not tumorProtein._features: return False
@@ -190,12 +192,14 @@ class StructuralAnalysis(method.Method):
 					switch._functional_change = []
 				switch._functional_change.append(toSave)
 
-		if switch._functional_change: return True
+		if switch._functional_change: 
+			self.logger.debug("InterPro: information found for gene {0}.".format(gene))
+			return True
 		else: return False
 
 	def disorderAnalysis(self,switch,gene,info,IUPRED_REPORT):
 
-		self.logger.debug("Searching structural information for gene {0}.".format(gene))
+		self.logger.debug("IUPRED: Searching disorder for gene {0}.".format(gene))
 		
 		normalProtein = switch.nIsoform
 		tumorProtein = switch.tIsoform
@@ -284,8 +288,11 @@ class StructuralAnalysis(method.Method):
 
 			os.remove(options.Options().qout+"protein.fa")
 
-		if switch._disorder_change is None or not switch._disorder_change: return False
-		else: return True
+		if switch._disorder_change is None or not switch._disorder_change: 
+			return False
+		else: 
+			self.logger.debug("IUPRED: information found for gene {0}.".format(gene))
+			return True
 		
 if __name__ == '__main__':
 	pass
