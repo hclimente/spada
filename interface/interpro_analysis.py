@@ -28,10 +28,14 @@ class InterproAnalysis:
             self._server.soapproxy.http_proxy = http_proxy_conf
 
     def launchAnalysis(self,tx,seq):
-        out = "{0}InterPro/{1}/{2}.tsv.txt".format(options.Options().wd, options.Options().inputType, tx)
+        out = "{0}InterPro/{1}/{2}.tsv".format(options.Options().wd, options.Options().inputType, tx)
 
+        # asume that if the file is not present, 
+        # its because no feature could be mapped
         if os.path.isfile(out):
             return out
+        else:
+            return None
 
         if self._mode=="online":
             params = {}
@@ -98,10 +102,14 @@ class InterproAnalysis:
             if len(cols) > 14:
                 pathway_annotation  = cols[14] #(Pathways annotations)
 
+            tx=protein_accession.strip().split("#")[0]
+
             if score and score > 0.01: 
                 continue
             elif analysis not in acceptedAnalysis: 
                 continue
+            elif tx != protein.tx:
+                raise Exception("Error reading InterPro features for {0}. Invalid identifier {1} found.".format(protein.tx,tx))
             
             isoSpecificRes = set([ x._num for x in protein._structure if x.isoformSpecific ])
             featureRes = set(range(start,stop+1))
