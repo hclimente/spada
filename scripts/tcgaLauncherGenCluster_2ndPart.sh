@@ -38,6 +38,5 @@ do
 	echo working-directory=/data/users/hector >>$cfgFile
 
 	launchQ $fullTag "$fullTag"_$action
-	break
 
 done < "$fileList"

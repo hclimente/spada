@@ -72,7 +72,7 @@ class Options(object):
         parser.add_argument('-wd', '--working-directory', dest='wd', action='store', default='/home/hector/SmartAS/',
                             help='Root file of SmartAS folder in the current machine.')
         parser.add_argument('-gwd', '--gaudi-wd', dest='gwd', action='store', 
-                            default='/sbi/users/hectorc/SmartAS/', help='Root file of SmartAS folder in Gaudi.')
+                            default='/sbi/users/hectorc/SmartAS_experimental/', help='Root file of SmartAS folder in Gaudi.')
         parser.add_argument('-m', '--minimum-expression', dest='minExpression', action='store', default='-1',
                             type=float, help='Minimum expression to consider a transcript not residual.')
         parser.add_argument('-i', '--input-type', dest='inputType', action='store', default='TCGA',

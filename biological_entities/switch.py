@@ -194,7 +194,7 @@ class IsoformSwitch:
 
 	def readRelevanceAnalysis(self):
 		if not os.path.exists(options.Options().qout+"structural_analysis/structural_summary.tsv"):
-			raise LackingFile("Relevance information not generated.")
+			raise Exception("Relevance information not generated.")
 			return False
 
 		for elements in utils.readTable(options.Options().qout+"structural_analysis/structural_summary.tsv"):

@@ -58,20 +58,14 @@ class SmartAS:
 	def launchiLoops(self):
 
 		self.logger.info("Selecting isoforms suitable for {0}.".format( options.Options().iLoopsVersion) )
-		utils.pickUniqPatterns(self._transcript_network, self._gene_network)
+		a = analyze_interactions.AnalyzeInteractions( self._gene_network, self._transcript_network, self._gene_subnetwork )
+		a.selectIloopsSwitches("Driver")
 
-		# self.logger.info("Sending list to Gaudi and performing the iLoops analysis.")
-		# gaudiThread = utils.cmdOut(
-		# 							"ssh", "hectorc@gaudi", \
-		# 							"'{0}Pipeline/methods/calculate_interactions.py {1} {2} {3} {4}'".format(
-		# 									options.Options().gwd,
-		# 									options.Options().gwd,
-		# 									options.Options().inputType,
-		# 									options.Options().gout,
-		# 									options.Options().iLoopsVersion 
-		# 								 ), 
-		# 							">{0}calculateInteractions.log".format(options.Options().qout)
-		# 						  )
+		self.logger.info("Sending list to Gaudi and performing the iLoops analysis.")
+		utils.cmd("ssh", "hectorc@gaudi",
+			      "'{0}Pipeline/methods/calculate_interactions.py {1} {2} {3} {4}'".format(
+		 		  options.Options().gwd,options.Options().gwd,options.Options().inputType,
+		 		  options.Options().gout,options.Options().iLoopsVersion ))
 
 	def analyzeInteractions(self):
 
@@ -205,3 +199,4 @@ if __name__ == '__main__':
 	elif options.Options().initialStep == "summary":
 		S.summarizeResults()
 	
+	S.logger.info("SmartAS will close.")
