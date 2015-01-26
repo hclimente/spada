@@ -20,7 +20,11 @@ def cmd(base, *args):
 def cmdOut(*args):
 	command = [ str(x) for x in args ]
 
-	logger.debug(command)
+	strCommand = ''
+	for arg in command:
+		strCommand += " " + arg
+
+	logger.debug(strCommand)
 	return subprocess.Popen(command, stdout=subprocess.PIPE)
 
 def readTable(path, sep="\t", header=True):
@@ -123,89 +127,3 @@ def geneclusterLaunch(tag,base,*args):
 		configFile.write(command+"\n")
 
 	cmd("qsub","-N",tag,tag+".sh")
-
-def selectIloopsSwitches(tx_network,gn_network,prop):
-
-	loopFamilies = {}
-
-	for tx,family in [ (x[0],x[1]["iLoopsFamily"]) for x in tx_network.nodes(data=True) if x[1]["iLoopsFamily"] is not None ]:
-		if family in loopFamilies:
-			loopFamilies[family].add(tx)
-		else:
-			loopFamilies[family] = set(tx)
-
-	analyzedLoops = {}
-
-	with open(options.Options().qout + "candidatesGaudi.lst", "w") as CANDIDATES_GAUDI:
-		sortedNodes = sorted(gn_network.nodes(data=True), key=lambda (a, dct): dct['score'], reverse=True)
-		for gene,gInfo in sortedNodes:
-
-			# genes that dont have a property or are related to one who
-			#  does e.g. driver, are not considered
-			if not gInfo[prop] or not [ x for x,y in gn_network._net.neighbors(gene) if y[prop] ]:
-				break
-
-			for switch in gInfo["isoformSwitches"]:
-				nIso = switch.nTx
-				tIso = switch.tTx
-				nInfo = tx_network._net.node[nIso]
-				tInfo = tx_network._net.node[tIso]
-
-				analyze = 0
-				comment = "To analyze."
-
-				if switch.score < 0.1: 
-					continue
-				elif abs(gInfo["diffExpression_logFC"]) > 0.5 or gInfo["diffExpression_p"] < 0.05:
-					analyze = -1
-					comment = "Gene differentially expressed between conditions."
-				elif not switch.cds_diff: 
-					analyze = -1
-					comment = "No CDS change."
-				elif not switch.cds_overlap: 
-					analyze = -1
-					comment = "No overlap between CDS."
-				elif not nInfo["iLoopsFamily"] or not tInfo["iLoopsFamily"]:
-					analyze = -1
-					comment = "No loops mapped by {0}.".format(options.Options().iLoopsVersion)
-				elif nInfo["iLoopsFamily"] == tInfo["iLoopsFamily"]:
-					analyze = -1
-					comment = "No different loops mapped by {0}.".format(options.Options().iLoopsVersion)
-
-				if analyze < 0:
-					CANDIDATES_GAUDI.write("{0}\t{1}\t{2}\n".format(nIso, analyze, comment))
-					CANDIDATES_GAUDI.write("{0}\t{1}\t{2}\n".format(tIso, analyze, comment))
-					continue
-
-				for isoform,thisLoopPattern in zip([nIso,tIso],[nInfo["iLoopsFamily"],tInfo["iLoopsFamily"]]):
-
-					if os.path.isfile("iLoops/{0}/{1}/{2}.tar.gz".format(
-											options.Options().inputType,
-											options.Options().iLoopsVersion,
-											isoform) ):
-							analyze = 1
-							comment = "Already analyzed."
-					elif thisLoopPattern in analyzedLoops:
-							analyze = 2
-							if isoform in analyzedLoops[thisLoopPattern]:
-								comment = "Already being analyzed in this batch."
-							else:
-								comment = "Analyzing relative {0}.".format(analyzedLoops[thisLoopPattern])
-					else:
-						for iso in loopFamilies[thisLoopPattern]:
-							if os.path.isfile("{0}iLoops/TCGA/{1}/{2}.tar.gz".format(options.Options().wd, options.Options().iLoopsVersion,iso) ):
-								analyze = 2
-								comment = "Analyzed relative {0}.".format(iso)
-								break
-
-					CANDIDATES_GAUDI.write( "{0}\t{1}\t{2}\n".format(isoform, analyze, comment))
-
-					if analyze == 0: 
-						analyzedLoops[thisLoopPattern] = isoform
-
-	cmd("ssh","hectorc@gaudi", "'rm -r {0}'".format(options.Options().gout))
-	cmd("ssh","hectorc@gaudi","'mkdir -p {0}Output'".format(options.Options().gout))
-	cmd("ssh","hectorc@gaudi","'mkdir {0}Input'".format(options.Options().gout))
-	cmd("ssh","hectorc@gaudi","'mkdir {0}logs'".format(options.Options().gout))
-	cmd("scp", "-r", options.Options().qout + "candidatesGaudi.lst",
-		"hectorc@gaudi.imim.es:" + options.Options().gout)
