@@ -13,12 +13,14 @@ import time
 class AnalyzeInteractions(method.Method):
 	def __init__(self, gn_network, tx_network, gn_subnetwork):
 		method.Method.__init__(self, __name__, gn_network, tx_network, gn_subnetwork)
-		self._expressed_transcripts = set()
+		if os.path.isfile("{0}candidatesGaudi.lst".format(options.Options().qout)):
+			self._expressed_transcripts = set()
 
-		for txSet in [ self._gene_network._net.node[x]["ExpressedTranscripts"] for x in self._gene_network.nodes() ]:
-			for tx in txSet:
-				self._expressed_transcripts.add(tx)
-		self._analyzable_candidates	= self.getAnalyzableCandidates()
+			for txSet in [ self._gene_network._net.node[x]["ExpressedTranscripts"] for x in self._gene_network.nodes() ]:
+				for tx in txSet:
+					self._expressed_transcripts.add(tx)
+
+			self._analyzable_candidates	= self.getAnalyzableCandidates()
 
 	def run(self):
 		self.logger.info("Examining iLoops results.")
@@ -26,7 +28,7 @@ class AnalyzeInteractions(method.Method):
 		
 		#Sort by score: drivers will be first to be analyzed. Then, genes with an isoform switch with 
 		#decreasing number of patients
-		for gene,info,switch in utils.iterate_switches_ScoreWise(self._gene_network,only_first=True):
+		for gene,info,switchDict,switch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network,only_first=True):
 			nIso = switch.nTx
 			tIso = switch.tTx
 
@@ -149,6 +151,89 @@ class AnalyzeInteractions(method.Method):
 				elif edgeInfo["deltaRC"] >= 20 and edgeInfo["score"] < 0.2:
 					if nInfo["RC"] == 50 or tInfo["RC"] == 500:
 						self.logger.info("{0} - {1} interaction gained.".format(gene1, gene2))
+
+	def selectIloopsSwitches(self,geneProperty):
+
+		loopFamilies = {}
+
+		for tx,family in [ (x[0],x[1]["iLoopsFamily"]) for x in self._transcript_network.nodes(data=True) if x[1]["iLoopsFamily"] is not None ]:
+			if not family in loopFamilies: 	
+				loopFamilies[family] = set()
+			loopFamilies[family].add(tx)
+
+		analyzedLoops = {}
+
+		with open(options.Options().qout + "candidatesGaudi.lst", "w") as CANDIDATES_GAUDI:
+			sortedNodes = sorted(self._gene_network.nodes(data=True), key=lambda (a, dct): dct['score'], reverse=True)
+			for gene,gInfo in sortedNodes:
+
+				# genes that dont have a property or are related to 
+				# one who does e.g. driver, are not considered
+				
+				if not gInfo[geneProperty] or not [ x for x in self._gene_network._net.neighbors(gene) if self._gene_network._net.node[x][geneProperty] ]:
+					continue
+
+				for switchDict in gInfo["isoformSwitches"]:
+					switch = self._gene_network.createSwitch(switchDict,self._transcript_network,partialCreation=True)
+					nIso = switch.nTx
+					tIso = switch.tTx
+					nInfo = self._transcript_network._net.node[nIso]
+					tInfo = self._transcript_network._net.node[tIso]
+
+					analyze = 0
+					comment = "To analyze."
+
+					if not switch.cds_diff: 
+						analyze = -1
+						comment = "No CDS change."
+					elif not switch.cds_overlap: 
+						analyze = -1
+						comment = "No overlap between CDS."
+					elif not nInfo["iLoopsFamily"] or not tInfo["iLoopsFamily"]:
+						analyze = -1
+						comment = "No loops mapped by {0}.".format(options.Options().iLoopsVersion)
+					elif nInfo["iLoopsFamily"] == tInfo["iLoopsFamily"]:
+						analyze = -1
+						comment = "No different loops mapped by {0}.".format(options.Options().iLoopsVersion)
+					elif not switch.is_relevant: 
+						continue
+
+					if analyze < 0:
+						CANDIDATES_GAUDI.write("{0}\t{1}\t{2}\n".format(nIso, analyze, comment))
+						CANDIDATES_GAUDI.write("{0}\t{1}\t{2}\n".format(tIso, analyze, comment))
+						continue
+
+					for isoform,thisLoopPattern in zip([nIso,tIso],[nInfo["iLoopsFamily"],tInfo["iLoopsFamily"]]):
+						if os.path.isfile("{0}iLoops/{1}/{2}/{3}.tar.gz".format(options.Options().qout,
+																				options.Options().inputType,
+																				options.Options().iLoopsVersion,
+																				isoform) ):
+							analyze = 1
+							comment = "Already analyzed."
+						elif thisLoopPattern in analyzedLoops:
+							analyze = 2
+							if isoform in analyzedLoops[thisLoopPattern]:
+								comment = "Already being analyzed in this batch."
+							else:
+								comment = "Analyzing relative {0}.".format(analyzedLoops[thisLoopPattern])
+						else:
+							for iso in loopFamilies[thisLoopPattern]:
+								if os.path.isfile("{0}iLoops/TCGA/{1}/{2}.tar.gz".format(options.Options().wd, options.Options().iLoopsVersion,iso) ):
+									analyze = 2
+									comment = "Analyzed relative {0}.".format(iso)
+									break
+
+						CANDIDATES_GAUDI.write( "{0}\t{1}\t{2}\n".format(isoform, analyze, comment))
+
+						if analyze == 0: 
+							analyzedLoops[thisLoopPattern] = isoform
+
+		utils.cmd("ssh","hectorc@gaudi", "'rm -r {0}'".format(options.Options().gout))
+		utils.cmd("ssh","hectorc@gaudi","'mkdir -p {0}Output'".format(options.Options().gout))
+		utils.cmd("ssh","hectorc@gaudi","'mkdir {0}Input'".format(options.Options().gout))
+		utils.cmd("ssh","hectorc@gaudi","'mkdir {0}logs'".format(options.Options().gout))
+		utils.cmd("scp", "-r", options.Options().qout + "candidatesGaudi.lst",
+				  "hectorc@gaudi.imim.es:" + options.Options().gout)
 
 if __name__ == '__main__':
 	pass

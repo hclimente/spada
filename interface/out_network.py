@@ -72,13 +72,13 @@ def getGUILDInput(gn_net, onlyExperimental=False):
 			else:
 				GUILD_EDGES.write("{0} {1} {2}\n".format(node1, info["score"], node2))
 
-def outputGTF(gn_network, tx_network):
+def outputGTF(gn_network,tx_network):
 	logging.info("Writing GTF files.")
 	with open(options.Options().qout + "/candidates_normal.gtf", 'w') as nGTF, \
 		 open(options.Options().qout + "/candidates_tumor.gtf", 'w') as tGTF, \
 		 open("Data/" + options.Options().inputType + "/annotation.gtf", "r") as ALLTRANSCRIPTS:
 	
-		switchesInfo = [ [(z.nTx,z.tTx),z.score] for x,y,z in utils.iterate_switches_ScoreWise(gn_network) ]
+		switchesInfo = [ [(z.nTx,z.tTx),z.score] for w,x,y,z in gn_network.iterate_switches_ScoreWise(tx_network) ]
 
 		for line in ALLTRANSCRIPTS:
 			for switch in switchesInfo:
@@ -87,14 +87,15 @@ def outputGTF(gn_network, tx_network):
 				elif switch[0][1] in line:
 					tGTF.write("{0};patients_affected={1}\n".format(line.strip(), switch[1] ))
 
-def outCandidateList(gn_network, tx_network):
-	logging.info("Writing candidateList_v2.")
-	with open(options.Options().qout + "candidateList_v2.tsv", "w") as cList:
-		cList.write("GeneId\tSymbol\tNormal_transcript\tTumor_transcript\tNormal_protein\t")
-		cList.write("Tumor_protein\tpval\tPatient_percentage\tDriver\tEpigenetic_factor\t")
-		cList.write("RBP\tCDS\tCDS_change\tUTR_change\tPatients_affected\n")
+def outCandidateList(gn_network,tx_network):
+	logging.info("Writing candidateList_v3.")
+	with open(options.Options().qout + "candidateList_v3.tsv", "w") as cList:
+		cList.write("GeneId\tSymbol\tNormal_transcript\tTumor_transcript\t")
+		cList.write("Normal_protein\tTumor_protein\tPatient_percentage\t")
+		cList.write("Precision\tSensitivity\tDriver\tDruggable\tCDS\t")
+		cList.write("CDS_change\tUTR_change\tPatients_affected\n")
 		
-		for gene,info,switch in utils.iterate_switches_ScoreWise(gn_network):
+		for gene,info,switchDict,switch in gn_network.iterate_switches_ScoreWise(tx_network):
 			nIso = switch.nTranscript
 			tIso = switch.tTranscript
 
@@ -111,9 +112,9 @@ def outCandidateList(gn_network, tx_network):
 			cList.write("{0}\t{1}\t".format( gene, info["symbol"] ))
 			cList.write("{0}\t{1}\t".format( nIso.name, tIso.name ))
 			cList.write("{0}\t{1}\t".format( nUniprot, tUniprot ))
-			cList.write("{0}\t".format( switch.p ))
-			cList.write("{0}\t{1}\t".format( switch.score, info["Driver"] ))
-			cList.write("{0}\t{1}\t".format( info["EpiFactor"], info["RBP"] ))
+			cList.write("{0}\t{1}\t".format( switch.score, switch.precision ))
+			cList.write("{0}\t{1}\t".format( switch.sensitivity, info["Driver"] ))
+			cList.write("{0}\t".format( info["Druggable"] ))
 			cList.write("{0}\t{1}\t".format( cds, cdsChange ))
 			cList.write("{0}\t{1}\n".format( utrChange, ",".join(switch.patients) ))
 

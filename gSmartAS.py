@@ -13,9 +13,7 @@ from methods import result_summary
 from network import ucsc_gene_network, ucsc_isoform_network
 
 import cPickle
-import gridmap
 import logging
-import os
 
 class SmartAS:
 	def __init__(self):
@@ -37,58 +35,15 @@ class SmartAS:
 
 	def getCandidates(self):
 
-		operation = 3
-		if operation == 1:
-			self.logger.info("Reading and summarizing input files: computing PSI values and intereplicate agreement.")		
-			with open("explore_{0}.sh".format(options.Options().tag),"w") as EXPLORE:
-				EXPLORE.write('#!/bin/sh\n')
-				EXPLORE.write('# explore\n')
-				EXPLORE.write('#$ -q normal\n')
-				EXPLORE.write('#$ -cwd\n')
-				EXPLORE.write("#$ -e {0}/esmartas_explore_{1}.txt\n".format(options.Options().qout,options.Options().tag))
-				EXPLORE.write("#$ -o {0}/osmartas_explore_{1}.txt\n".format(options.Options().qout,options.Options().tag))
-				EXPLORE.write("#$ -V\n")
-				EXPLORE.write("#$ -N explore\n")
+		self.logger.info("Reading and summarizing input files: computing PSI values and intereplicate agreement.")
+		utils.cmd("Pipeline/methods/explore_data.r", options.Options().qout, 
+				  "Data/Input/{0}/{1}/".format(options.Options().inputType, options.Options().tag) )
 
-				EXPLORE.write("Pipeline/methods/explore_data.r " + options.Options().qout)
-				EXPLORE.write(" Data/Input/{0}/{1}/ ".format(options.Options().inputType,options.Options().tag))
-			utils.cmd("qsub","explore_{0}.sh".format(options.Options().tag))
+		self.logger.info("Extracting transcripts with high variance and high expression.")
+		utils.cmd( "Pipeline/methods/get_candidates.r", options.Options().qout )
 
-		elif operation == 2:
-			self.logger.info("Extracting transcripts with high variance and high expression.")
-			allPatients = options.Options().replicates.union(options.Options().unpairedReplicates)
-
-			for patient in allPatients:
-				with open(patient+".sh","w") as PATIENT:
-					PATIENT.write('#!/bin/sh\n')
-					PATIENT.write('# {0}\n'.format(patient) )
-					PATIENT.write('#$ -q normal\n')
-					PATIENT.write('#$ -cwd\n')
-					PATIENT.write("#$ -e {0}/esmartas_{1}.txt\n".format(options.Options().qout,patient))
-					PATIENT.write("#$ -o {0}/osmartas_{1}.txt\n".format(options.Options().qout,patient))
-					PATIENT.write("#$ -V\n")
-					PATIENT.write("#$ -N p{0}\n".format(patient) )
-
-					PATIENT.write("Pipeline/methods/get_candidates_for_patient.r {0} {1}".format(options.Options().qout,patient))
-
-				utils.cmd("qsub",patient+".sh")
-		elif operation == 3:
-			self.logger.info("Filtering switches with clustering measures.")
-			with open("validate_{0}.sh".format(options.Options().tag),"w") as VAL:
-				VAL.write('#!/bin/sh\n')
-				VAL.write('# validate\n')
-				VAL.write('#$ -q normal\n')
-				VAL.write('#$ -cwd\n')
-				VAL.write("#$ -e {0}/esmartas_validate_{1}.txt\n".format(options.Options().qout,options.Options().tag))
-				VAL.write("#$ -o {0}/osmartas_validate_{1}.txt\n".format(options.Options().qout,options.Options().tag))
-				VAL.write("#$ -V\n")
-				VAL.write("#$ -N val{0}\n".format(options.Options().tag))
-
-				VAL.write("Pipeline/methods/switch_validation.r " + options.Options().qout)
-			
-			utils.cmd("qsub","validate_{0}.sh".format(options.Options().tag))
-		
-		exit()
+		self.logger.info("Filtering switches with clustering measures.")
+		utils.cmd( "Pipeline/methods/switch_validation.r", options.Options().qout )
 
 	def networkAnalysis(self, onlyExperimental):
 		
@@ -103,20 +58,14 @@ class SmartAS:
 	def launchiLoops(self):
 
 		self.logger.info("Selecting isoforms suitable for {0}.".format( options.Options().iLoopsVersion) )
-		utils.selectIloopsSwitches(self._transcript_network,self._gene_network,"Driver")
+		a = analyze_interactions.AnalyzeInteractions( self._gene_network, self._transcript_network, self._gene_subnetwork )
+		a.selectIloopsSwitches("Driver")
 
-		# self.logger.info("Sending list to Gaudi and performing the iLoops analysis.")
-		# gaudiThread = utils.cmdOut(
-		# 							"ssh", "hectorc@gaudi", \
-		# 							"'{0}Pipeline/methods/calculate_interactions.py {1} {2} {3} {4}'".format(
-		# 									options.Options().gwd,
-		# 									options.Options().gwd,
-		# 									options.Options().inputType,
-		# 									options.Options().gout,
-		# 									options.Options().iLoopsVersion 
-		# 								 ), 
-		# 							">{0}calculateInteractions.log".format(options.Options().qout)
-		# 						  )
+		self.logger.info("Sending list to Gaudi and performing the iLoops analysis.")
+		utils.cmd("ssh", "hectorc@gaudi",
+			      "'{0}Pipeline/methods/calculate_interactions.py {1} {2} {3} {4}'".format(
+		 		  options.Options().gwd,options.Options().gwd,options.Options().inputType,
+		 		  options.Options().gout,options.Options().iLoopsVersion ))
 
 	def analyzeInteractions(self):
 
@@ -171,14 +120,6 @@ class SmartAS:
 			self._gene_network.importCandidates()
 			self._gene_network.importKnownInteractions()
 
-			isoSwitches = []
-			[ isoSwitches.extend(p["isoformSwitches"]) for x,p in self._gene_network.nodes(data=True) ]
-			for switch in isoSwitches:
-				nInfo = self._transcript_network._net.node[switch.nTx]
-				tInfo = self._transcript_network._net.node[switch.tTx]
-				switch.addTxs(nInfo,tInfo)
-				switch.addIsos(nInfo,tInfo)
-
 			self._gene_network.saveNetwork("geneNetwork.pkl")
 
 	def createTranscriptNetwork(self, recover=False):
@@ -205,13 +146,11 @@ class SmartAS:
 
 if __name__ == '__main__':
 
-	logging.basicConfig(
-						level=logging.DEBUG,
+	logging.basicConfig(level=logging.DEBUG,
 						format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
 						datefmt='%m-%d %H:%M',
 	                   	filename=options.Options().tag + '_smartAS_devel.log',
-	                   	filemode='w'
-					   )
+	                   	filemode='w')
 
 	console = logging.StreamHandler()
 	console.setLevel(logging.INFO)
@@ -228,16 +167,17 @@ if __name__ == '__main__':
 	
 	# Get and characterize switches
 	elif options.Options().initialStep == "get-switches":
-	 	S.getCandidates()
-	 	
-	 	S.createTranscriptNetwork(False)
+	 	#S.getCandidates()
+	 		 	
+	 	S.createTranscriptNetwork(True)
 		S.createGeneNetwork(False)
 		
-		out_network.outputGTF(S._gene_network, S._transcript_network )
-		out_network.outCandidateList(S._gene_network, S._transcript_network)
+		out_network.outputGTF(S._gene_network,S._transcript_network)
+		out_network.outCandidateList(S._gene_network,S._transcript_network)
 		export_to_MSAnalysis.Export2MSAnalysis().generateFile(S._gene_network,S._transcript_network)
 
 		options.Options().printToFile(initialStep="get-relevant-switches")
+
 	else:
 		S.createTranscriptNetwork(True)
 		S.createGeneNetwork(True)
@@ -258,3 +198,5 @@ if __name__ == '__main__':
 	# summarize results
 	elif options.Options().initialStep == "summary":
 		S.summarizeResults()
+	
+	S.logger.info("SmartAS will close.")

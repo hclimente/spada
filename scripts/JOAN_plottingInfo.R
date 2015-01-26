@@ -5,8 +5,8 @@ gene <- args[1]
 nTx <- args[2]
 tTx <- args[3]
 
-load(paste0("~/SmartAS/Results/TCGA/luad_mE-1.0/RWorkspaces/5_Interactions_", gene, "_", nTx, "_", tTx, "_1.RData"))
-load("~/SmartAS/Results/TCGA/luad_mE-1.0/RWorkspaces/2_GetCandidates.RData")
+load(paste0("~/SmartAS/testResults/TCGA/luad_mE-1.0/RWorkspaces/5_Interactions_", gene, "_", nTx, "_", tTx, "_1.RData"))
+load("~/SmartAS/testResults/TCGA/luad_mE-1.0/RWorkspaces/2_GetCandidates.RData")
 
 finalDf <- InteraX[,c("Partner","Partner_gene","RC_N","RC_T","dRC","Annotation")]
 expression_N <- interReplicate[["N"]][,c("Transcript", "Gene", "Median_TPM")]

@@ -6,7 +6,7 @@ gene <- "ARL1"
 tx1 <- "uc001tib.2"
 tx2 <- "uc001tic.2"
 
-InteraX <- read.delim(paste0("~/SmartAS/Results/TCGA/luad_mE-1.0/iLoops/InteraXChanges_", gene, "_", tx1, "_", tx2, ".tsv"))
+InteraX <- read.delim(paste0("~/SmartAS/testResults/TCGA/luad_mE-1.0/iLoops/InteraXChanges_", gene, "_", tx1, "_", tx2, ".tsv"))
 kk <- vector("list", length(unique(InteraX$Partner_gene)))
 
 mask1 <- abs(InteraX$dRC) != 9999

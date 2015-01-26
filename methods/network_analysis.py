@@ -21,7 +21,43 @@ class NetworkAnalysis(method.Method):
 		return self._gene_subnetworks[top]
 
 	def run(self, onlyExperimental):
-		self.logger.info("Network analysis.")
+		self.guildAnalysis(onlyExperimental)
+		self.relevantNeighbors()
+
+	def relevantNeighbors(self):
+		self.logger.info("Switches in driver neighborhoods.")
+		candidatesNet = []
+
+		for g in [ x for x,info in self._gene_network.nodes(data=True) if info["Driver"] ]:
+			if self._gene_network._net.node[g]["isoformSwitches"]:
+				for switch in self._gene_network._net.node[n]["isoformSwitches"]:
+					nIso = switch.nTx
+					tIso = switch.tTx
+					nInfo = self._tx_network._net.node[nIso]
+					tInfo = self._tx_network._net.node[tIso]
+					if switch.cds_diff and nInfo["iLoopsFamily"] and tInfo["iLoopsFamily"] and nInfo["iLoopsFamily"] != tInfo["iLoopsFamily"]:
+						candidatesNet.append(nIso)
+						candidatesNet.append(tIso)
+			for n in self._gene_network._net.neighbors(g):
+				if self._gene_network._net.node[n]["isoformSwitches"]:
+					for switch in self._gene_network._net.node[n]["isoformSwitches"]:
+						nIso = switch.nTx
+						tIso = switch.tTx
+						nInfo = self._tx_network._net.node[nIso]
+						tInfo = self._tx_network._net.node[tIso]
+						if switch.cds_diff and nInfo["iLoopsFamily"] and tInfo["iLoopsFamily"] and nInfo["iLoopsFamily"] != tInfo["iLoopsFamily"]:
+							candidatesNet.append(nIso)
+							candidatesNet.append(tIso)
+
+		with open(options.Options().qout+"candidatesNetwork.lst","w") as CANDIDATES:
+			for iso in candidatesNet:
+				CANDIDATES.write(iso+"\t0\tTo analize.\n")
+
+		utils.cmd("scp",options.Options().qout+"candidatesNetwork.lst",
+				  "hectorc@gaudi:"+options.Options().gout)
+
+	def guildAnalysis(self,onlyExperimental):
+		self.logger.info("GUILD analysis.")
 		out_network.getGUILDInput(self._gene_network, onlyExperimental=onlyExperimental)
 
 		self.guildOut = "{0}GUILD_enriched/".format(options.Options().qout)

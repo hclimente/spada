@@ -8,6 +8,8 @@ import os
 import fnmatch
 
 def standarizeInput():
+	"""Create the input files por paired and (if present) unpaired patients."""
+	
 	outDir = "{0}Data/Input/{1}/{2}/".format( options.Options().wd,
 					options.Options().inputType, options.Options().tag)
 
@@ -22,7 +24,9 @@ def standarizeInput():
 					for line in utils.readTable("Data/GENCODE/Rawdata/{0}-kmer-length/{1}/quant_bias_corrected.sf".format(options.Options().tag, sample)):
 						if "#" not in line[0]:
 							FILTERED.write("{0}\t{1}\n".format(line[0], line[2]))
-				if replicateCounter > numberOfPatients: numberOfPatients = replicateCounter
+				
+				if replicateCounter > numberOfPatients: 
+					numberOfPatients = replicateCounter
 				replicateCounter += 1
 
 
@@ -33,17 +37,16 @@ def standarizeInput():
 		pairedPatients 	 	 = set()
 		unpairedPatients 	 = set()
 		tag = options.Options().tag 
-		if options.Options().unpairedReplicates:
-			tag = tag[2:]
 
-		inputFile = "Data/TCGA/Rawdata/{0}_iso_tpm_paired-filtered.txt".format(tag)
+		pairedSamplesData = "Data/TCGA/Rawdata/{0}_iso_tpm_paired-filtered.txt".format(tag)
+		tumorOnlyData = "Data/TCGA/Rawdata/{0}_iso_tpm_tumor-filtered.txt".format(tag)
 
-		for line in utils.readTable(inputFile,header=False):
+		for line in utils.readTable(pairedSamplesData,header=False):
 			pairedPatients = set([ x[:-1] for x in line ])
 			patientFiles = [ open("{0}{1}_{2}.tsv".format(outDir,line[p][:-1],s),"w") for s in ["N", "T"] for p in range(len(pairedPatients)) ]
 			break
 
-		for line in utils.readTable(inputFile):
+		for line in utils.readTable(pairedSamplesData):
 			identifiers = line[0].split(",")
 			gene = identifiers[0]
 			transcript = identifiers[1]
@@ -54,15 +57,13 @@ def standarizeInput():
 		for patient in patientFiles:
 			patient.close()
 
-		if options.Options().unpairedReplicates:
-			inputFile = "Data/TCGA/Rawdata/{0}_iso_tpm_tumor-filtered.txt".format(tag)
-
-			for line in utils.readTable(inputFile,header=False):
+		if os.path.isfile(tumorOnlyData):
+			for line in utils.readTable(tumorOnlyData,header=False):
 				unpairedPatients = set([ x[:-1] for x in line ])
 				unpairedPatientFiles = [ open("{0}{1}_T.tsv".format(outDir,line[p][:-1]),"w") for p in range(len(unpairedPatients)) ]
 				break
 
-			for line in utils.readTable(inputFile):
+			for line in utils.readTable(tumorOnlyData):
 				identifiers = line[0].split(",")
 				gene = identifiers[0]
 				transcript = identifiers[1]
@@ -73,4 +74,4 @@ def standarizeInput():
 			for patient in unpairedPatientFiles:
 				patient.close()
 
-	options.Options().printToFile(initialStep=1,replicates=pairedPatients,unpairedReplicates=unpairedPatients)
+	options.Options().printToFile(initialStep="get-switches",replicates=pairedPatients,unpairedReplicates=unpairedPatients)

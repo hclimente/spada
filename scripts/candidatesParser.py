@@ -5,7 +5,7 @@ import sys
 def doStuff(knsur, iLoopsVersion):
 
 	minReplicates = 0
-	out = "Results/TCGA/" + knsur + "_mE-1.0/"
+	out = "testResults/TCGA/" + knsur + "_mE-1.0/"
 
 	with open(out + "Parameters.cfg", "r") as PARAM:
 		for line in PARAM:

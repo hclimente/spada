@@ -108,6 +108,6 @@ for line in utils.readTable(out + "candidatesGaudi.lst", header=False):
 	p = pruner.iLoopsOutput_pruner(transcript, out + "Output/")
 	p.joinFiles()
 	if p.makeLiteVersion():
-		utils.cmd("scp","-r", out + "Output/" + transcript + ".tar.gz", "hector@einstein.imim.es:~/SmartAS/iLoops/" + inputType + "/" + iLoopsVersion)
+		utils.cmd("scp","-r", out + "Output/" + transcript + ".tar.gz", "hector@gencluster:~/iLoops/" + inputType + "/" + iLoopsVersion)
 	else:
 		logging.error("Error in generation of file.")

@@ -45,11 +45,15 @@ class IsoformNetwork(network.Network):
 		raise NotImplementedError()
 
 	def add_node(self, tx, gene_full_name):
-				
+		
+		if tx in self.nodes():
+			self.logger.debug("Transcript {0}, gene {1} already in the network.".format(tx, gene_full_name))
+			return True
+
 		geneID = self.genenameFilter( full_name=gene_full_name )[0]
 
 		if geneID is None:
-			self.logger.error("No gene could be extracted for transcript {0}, gene {1}.".format(tx, gene_full_name))
+			self.logger.debug("No gene could be extracted for transcript {0}, gene {1}.".format(tx, gene_full_name))
 			return False
 		
 		return self._net.add_node( 
@@ -86,18 +90,24 @@ class IsoformNetwork(network.Network):
 	def importTranscriptome(self):
 
 		for line in utils.readTable(options.Options().qout + "expression_normal.tsv"):
-			gene_full_name 	= line[0]
-			txName 			= line[1]
+			gene 		= line[0]
+			tx 			= line[1]
+			median_PSI 	= float(line[2]) if(line[2]) != "NA" else None
+			median_TPM 	= float(line[5]) if(line[5]) != "NA" else None
 			
-			if not self.add_node(txName, gene_full_name): continue
-			if line[3] != "NA":	self.update_node( txName, "median_PSI_N", float(line[3]) )
-			if line[5] != "NA": self.update_node( txName, "median_TPM_N", float(line[5]) )
+			if not self.add_node(tx, gene): continue
+			if median_PSI: self.update_node( tx, "median_PSI_N", median_PSI )
+			if median_TPM: self.update_node( tx, "median_TPM_N", median_TPM )
 
 		for line in utils.readTable(options.Options().qout + "expression_tumor.tsv"):
-			txName 			= line[1]
-			if txName not in self.nodes(): continue
-			if line[3] != "NA":	self.update_node( txName, "median_PSI_T", float(line[3]) )
-			if line[5] != "NA": self.update_node( txName, "median_TPM_T", float(line[5]) )
+			gene 		= line[0]
+			tx 			= line[1]
+			median_PSI 	= float(line[2]) if(line[2]) != "NA" else None
+			median_TPM 	= float(line[5]) if(line[5]) != "NA" else None
+
+			if not self.add_node(tx, gene): continue
+			if median_PSI: self.update_node( tx, "median_PSI_T", median_PSI )
+			if median_TPM: self.update_node( tx, "median_TPM_T", median_TPM )
 
 		# currentLoopFamily 	= ""
 		# for line in utils.readTable("Data/TCGA/UnifiedFasta_" + options.Options().iLoopsVersion + "_loopFamilies.txt", header=False):

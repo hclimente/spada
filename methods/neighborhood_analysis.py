@@ -21,6 +21,8 @@ class NeighborhoodAnalysis(method.Method):
 		self.searchEnrichment("go_biological_process", "c5.bp.v4.0.entrez.gmt","two-sided")
 		#C6 Oncogenic signatures
 		self.searchEnrichment("oncogenic_signatures", "c6.all.v4.0.entrez.gmt","greater")
+		#C7 Immunologic signatures
+		self.searchEnrichment("immunologic_signatures", "c7.all.v4.0.entrez.gmt","greater")
 
 		#Look for enrichment in genes known to be involved in AS in cancer
 		self.searchEnrichment("asAffectedGenes_Angiogenesis","asAffected_Angiogenesis_list.csv","greater")
@@ -31,7 +33,7 @@ class NeighborhoodAnalysis(method.Method):
 		self.searchEnrichment("asAffectedGenes_Proliferation","asAffected_Proliferation_list.csv","greater")
 		self.searchEnrichment("asAffectedGenes_DNA_damage","asAffected_DNA_damage_list.csv","greater")
 
-	def searchEnrichment(self, sTag, sSetFile,H1):
+	def searchEnrichment(self,sTag,sSetFile,H1):
 
 		geneSets = {}
 		geneSetFile = "{0}Data/Databases/{1}".format(options.Options().wd,sSetFile)
@@ -50,28 +52,32 @@ class NeighborhoodAnalysis(method.Method):
 			outGeneSet_withoutSwitches 	= set()
 
 			#Iterate over the genes that are expressed in the tissue
-			for gene,info in [ (x,y) for x,y in self._gene_network.nodes(data=True) if y["ExpressedTranscripts"]]:
+			for gene,info,switchDict,switch in self._gene_network.iterate_relevantSwitches_ScoreWise(self._transcript_network,True):
 				if gene not in geneSets[geneSet]["allGenes"]:
-					if info["isoformSwitches"]:
+					if switch:
 						outGeneSet_withSwitches.add(gene)
 					else:
 						outGeneSet_withoutSwitches.add(gene)
 				else:
-					if info["isoformSwitches"]:
+					if switch:
 						self._gene_network.update_node("neighborhoods",geneSet,gene_id=gene,secondKey=sTag)
 						inGeneSet_withSwitches.add(gene)
 					else:
 						inGeneSet_withoutSwitches.add(gene)
+
+			for gene,info in [ (x,y) for x,y in self._gene_network.nodes(data=True) if y["ExpressedTranscripts"] and not y["isoformSwitches"]]:
+				if gene not in geneSets[geneSet]["allGenes"]:
+					outGeneSet_withoutSwitches.add(gene)
+				else:
+					inGeneSet_withoutSwitches.add(gene)
 		
 			iInGeneSet_withSwitches 	= len(inGeneSet_withSwitches)
 			iInGeneSet_withoutSwitches 	= len(inGeneSet_withoutSwitches)
 			iOutGeneSet_withSwitches 	= len(outGeneSet_withSwitches)
 			iOutGeneSet_withoutSwitches = len(outGeneSet_withoutSwitches)
 
-			lContingencyTable = [
-									[iInGeneSet_withSwitches,iInGeneSet_withoutSwitches],
-									[iOutGeneSet_withSwitches,iOutGeneSet_withoutSwitches]
-								]
+			lContingencyTable = [[iInGeneSet_withSwitches,iInGeneSet_withoutSwitches],
+								[iOutGeneSet_withSwitches,iOutGeneSet_withoutSwitches]]
 			fOddsRatio,fPval = fisher_exact(lContingencyTable,H1)
 
 			geneSets[geneSet]["pval"] = fPval
@@ -91,6 +97,7 @@ class NeighborhoodAnalysis(method.Method):
 				OUT.write("{0}\t{1}\t".format(adj_p,switchGenes))
 				OUT.write("{0}\n".format(geneSets[geneSet]["oddsRatio"]))
 
+				# fill switch property in the positives
 				if adj_p <= 0.05:
 					for gene in geneSets[geneSet]["switchGenes"]:
 						for switch in self._gene_network._net.node[x]["isoformSwitches"]:
@@ -111,7 +118,7 @@ class NeighborhoodAnalysis(method.Method):
 		for geneSet in geneSets:
 			affectedPathway[geneSet] = [0]*len(options.Options().replicates)
 
-			for gene,info,switch in utils.iterate_switches_ScoreWise(self._gene_network):
+			for gene,info,switchDict,switch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network):
 				if gene not in geneSets[geneSet]: continue
 				
 				switchSpread = [ 1 if x in switch.patients else 0 for x in options.Options().replicates ]
@@ -122,6 +129,7 @@ class NeighborhoodAnalysis(method.Method):
 
 			for geneSet in affectedPathway:
 				OUT.write("{0}\t{1}\n".format(geneSet,'\t'.join(map(str,affectedPathway[geneSet]))))
+
 
 if __name__ == '__main__':
 	pass

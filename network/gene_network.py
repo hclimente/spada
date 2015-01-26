@@ -20,6 +20,7 @@ class GeneNetwork(network.Network):
 		score(float,0.01)				Score of the gene for GUILD analysis.
 		scoreG(float,None)				Final GUILD score.
 		Driver(bool,False) 				Gene described as a driver.
+		Druggable(bool,False) 			Gene described as druggable.
 		specificDriver(bool,False) 		Gene described as driver in this cancer type.
 		RBP(bool,False) 				Gene described as a RBP.
 		EpiFactor(bool,False) 			Gene described as epigenetic factor.
@@ -84,6 +85,7 @@ class GeneNetwork(network.Network):
 								scoreG 					= None,
 								specificDriver 			= False,
 								Driver 					= False, 
+								Druggable 				= False, 
 								RBP 					= False, 
 								EpiFactor				= False, 
 								ExpressedTranscripts 	= set(),
@@ -155,6 +157,7 @@ class GeneNetwork(network.Network):
 			a threshold of expression.
 		"""
 		
+		# rbp and epigenetic factor info
 		for line in utils.readTable("Data/Databases/compilationTable.tsv"):
 			self.add_node(full_name=line[0])
 			geneID = self.nameFilter(full_name=line[0])[0]
@@ -162,38 +165,54 @@ class GeneNetwork(network.Network):
 			apoptosis = [line[10]]
 			embryo = [line[9]]
 			
-			if "yes" in [line[8], line[13]]:
-				self.update_node( "Driver", True, gene_id = geneID )
 			if "yes" in [line[3], line[4], line[5], line[11]]:
 				self.update_node( "RBP", True, gene_id = geneID )
 			if "yes" in [line[6]]:
 				self.update_node( "EpiFactor", True, gene_id = geneID )
+
+		# druggability info
+		for line in utils.readTable("Data/Databases/dgidb_export_all_drivers_bygene_results.tsv"):
+			geneSymbol = line[0]
+				
+			for gene,info in self.nodes(data=True):
+				if info["symbol"] == geneSymbol:
+					self.update_node("Druggable",True,gene_id=gene )
+					break
 		
+		# expression info
 		for line in utils.readTable(options.Options().qout + "expressedGenes.lst", header=False):
 			geneID = self.nameFilter(full_name=line[1])[0]
 						
 			if geneID is not None:				
 				self.update_node( "ExpressedTranscripts", line[0], gene_id=geneID )
 
+		# driver info
+		for line in utils.readTable("Data/Databases/cancer_drivers_from_networks.csv"):
+			geneSymbol = line[0]
+			
+			for gene,info in self.nodes(data=True):
+				if info["symbol"] == geneSymbol:
+					self.update_node("Driver",True,gene_id=gene )
+					break
+
 	def importCandidates(self):
-		"""Import a set of genes with an isoform switch from candidateList.tsv.
+		"""Import a set of genes with an isoform switch from candidateList_v2.tsv.
 		"""
 		self.logger.debug("Retrieving calculated isoform switches.")
 
 		samples = len(options.Options().replicates)
 		if options.Options().unpairedReplicates:
-			samples = len(options.Options().unpairedReplicates)
+			samples = samples + len(options.Options().unpairedReplicates)
 		min_samples = round(samples * 0.1)
 
-		switches = pd.DataFrame.from_csv(options.Options().qout + "candidateList.tsv", sep="\t", header=None, index_col=None)
-		switches.columns = ["Gene","Transcript_normal","Transcript_tumor","Replicates","Patients","pvalue"]
+		switches = pd.DataFrame.from_csv(options.Options().qout + "candidateList_v2.tsv", sep="\t", header=None, index_col=None)
+		switches.columns = ["Gene","Transcript_normal","Transcript_tumor","Replicates","Patients","Precision","Sensitivity","PrecisionKmeans","PrecisionHclust","SensitivityKmeans","SensitivityHclust"]
 		switches.Replicates = switches.Replicates.astype(float)
 		switches.Patients = switches.Patients.str.split(",")
-		switches.pvalue = switches.pvalue.astype(float)
+		switches.Precision = switches.Precision.astype(float)
+		switches.Sensitivity = switches.Sensitivity.astype(float)
 		switches["Percentage"] = switches.Replicates/samples
-
-		switches = switches[ switches.pvalue <= 0.001 ]
-				
+		
 		switches_groupedByGene = switches[ ["Gene", "Replicates"] ]
 		switches_groupedByGene = switches_groupedByGene.groupby("Gene").sum()
 		switches_groupedByGene.Replicates = 0.2 + 0.3 * (switches_groupedByGene.Replicates - min_samples)/(samples - min_samples)
@@ -205,14 +224,17 @@ class GeneNetwork(network.Network):
 
 		for index,row in switches.iterrows():
 			Gene 		= row["Gene"]
-			nIso 		= row["Transcript_normal"]
-			tIso 		= row["Transcript_tumor"]
-			Score 		= row["Percentage"]
-			Patients 	= row["Patients"]
-			pvalue 		= row["pvalue"]
+			switch = {}
+			switch["nIso"] 			= row["Transcript_normal"]
+			switch["tIso"] 			= row["Transcript_tumor"]
+			switch["score"] 		= row["Percentage"]
+			switch["patients"] 		= row["Patients"]
+			switch["precision"] 	= row["Precision"]
+			switch["sensitivity"] 	= row["Sensitivity"]
+			switch["relevant"] 		= None
 
-			isoSwitch = switch.IsoformSwitch(nIso, tIso, Score, Patients, pvalue)
-			self.update_node("isoformSwitches", isoSwitch, full_name=Gene)
+			#isoSwitch = switch.IsoformSwitch(nIso,tIso,Score,Patients,Precision,Sensitivity)
+			self.update_node("isoformSwitches",switch,full_name=Gene)
 
 	def importSpecificDrivers(self):
 		self.logger.debug("Importing specific drivers.")
@@ -232,11 +254,7 @@ class GeneNetwork(network.Network):
 	def importDiffExpression(self):
 		self.logger.debug("Importing differential expression information.")
 
-		tag = options.Options().tag
-		if options.Options().unpairedReplicates:
-			tag = options.Options().tag[2:]
-
-		for line in utils.readTable("Data/TCGA/Rawdata/{0}_gene_diffexp_paired-filtered.txt".format(tag)):
+		for line in utils.readTable("Data/TCGA/Rawdata/{0}_gene_diffexp_paired-filtered.txt".format(options.Options().tag)):
 			geneID = self.nameFilter(full_name=line[1])[0]
 
 			self.update_node("diffExpression_logFC", float(line[11]), gene_id=geneID)
@@ -374,3 +392,74 @@ class GeneNetwork(network.Network):
 					self.update_edge("score", 1.0, gene_id1=geneId_1, gene_id2=geneId_2)
 				elif [ x for x in method_ids if x not in affinity_methods ]:
 					self.update_edge("score", 0.2, gene_id1=geneId_1, gene_id2=geneId_2)
+
+	def iterate_switches_ScoreWise(self,tx_network,only_first=False,partialCreation=False):
+		"""Iterate through the isoform switches of a gene network, and
+			generate a list of (gene,geneInformation,isoformSwitch).
+			Only return those switches with an overlap between the CDS 
+			of the transcripts.
+
+			only_first(bool): if True, only the first switch (the most 
+				common) will be returned for each gene.
+		"""
+		sortedNodes = sorted(self.nodes(data=True),key=lambda (a,dct):dct['score'],reverse=True)
+		
+		counter = 1
+		for gene,info in sortedNodes:
+			if not info["isoformSwitches"]: continue
+
+			switchProvided = False
+			for switchDict in info["isoformSwitches"]:
+				if switchProvided: break
+				thisSwitch = self.createSwitch(switchDict,tx_network,partialCreation)
+
+				self.logger.debug("Iterating switch number {0}.".format(counter))
+				counter += 1
+				if only_first:
+					switchProvided = True
+				yield gene,info,switchDict,thisSwitch
+
+	def iterate_relevantSwitches_ScoreWise(self,tx_network,only_first=False,partialCreation=False):
+		"""Iterate through the isoform switches of a gene network, and
+			generate a list of (gene,geneInformation,isoformSwitch).
+			Only return those switches with an overlap between the CDS 
+			of the transcripts and that have different features.
+
+			only_first(bool): if True, only the first switch (the most 
+				common) will be returned for each gene.
+		"""
+
+		sortedNodes = sorted(self.nodes(data=True),key=lambda (a,dct):dct['score'],reverse=True)
+		
+		counter = 1
+		for gene,info in sortedNodes:
+			if not info["isoformSwitches"]: continue
+
+			switchProvided = False
+			for switchDict in info["isoformSwitches"]:
+				if switchProvided: break
+				thisSwitch = self.createSwitch(switchDict,tx_network,partialCreation)
+				
+				if thisSwitch.is_relevant and not switchProvided:
+					self.logger.debug("Iterating switch number {0}.".format(counter))
+					counter += 1
+					if only_first:
+						switchProvided = True
+					yield gene,info,switchDict,thisSwitch
+
+	def createSwitch(self,switchDict,tx_network,partialCreation):
+		"""Create a switch object from the switch dictionary.
+
+			partialCreation(bool): if False, the heavy protein 
+				objects are not created.
+		"""
+		thisSwitch = switch.IsoformSwitch(switchDict["nIso"],switchDict["tIso"],
+											  switchDict["score"],switchDict["patients"],
+											  switchDict["precision"],switchDict["sensitivity"])
+		nInfo = tx_network._net.node[thisSwitch.nTx]
+		tInfo = tx_network._net.node[thisSwitch.tTx]
+		thisSwitch.addTxs(nInfo,tInfo)
+		if not partialCreation:
+			thisSwitch.addIsos(nInfo,tInfo)
+
+		return thisSwitch
