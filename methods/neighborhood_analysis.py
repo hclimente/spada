@@ -52,28 +52,32 @@ class NeighborhoodAnalysis(method.Method):
 			outGeneSet_withoutSwitches 	= set()
 
 			#Iterate over the genes that are expressed in the tissue
-			for gene,info in [ (x,y) for x,y in self._gene_network.nodes(data=True) if y["ExpressedTranscripts"]]:
+			for gene,info,switchDict,switch in self._gene_network.iterate_relevantSwitches_ScoreWise(self._transcript_network,True):
 				if gene not in geneSets[geneSet]["allGenes"]:
-					if [ x for x in info["isoformSwitches"] if x.is_relevant]:
+					if switch:
 						outGeneSet_withSwitches.add(gene)
 					else:
 						outGeneSet_withoutSwitches.add(gene)
 				else:
-					if [ x for x in info["isoformSwitches"] if x.is_relevant]:
+					if switch:
 						self._gene_network.update_node("neighborhoods",geneSet,gene_id=gene,secondKey=sTag)
 						inGeneSet_withSwitches.add(gene)
 					else:
 						inGeneSet_withoutSwitches.add(gene)
+
+			for gene,info in [ (x,y) for x,y in self._gene_network.nodes(data=True) if y["ExpressedTranscripts"] and not y["isoformSwitches"]]:
+				if gene not in geneSets[geneSet]["allGenes"]:
+					outGeneSet_withoutSwitches.add(gene)
+				else:
+					inGeneSet_withoutSwitches.add(gene)
 		
 			iInGeneSet_withSwitches 	= len(inGeneSet_withSwitches)
 			iInGeneSet_withoutSwitches 	= len(inGeneSet_withoutSwitches)
 			iOutGeneSet_withSwitches 	= len(outGeneSet_withSwitches)
 			iOutGeneSet_withoutSwitches = len(outGeneSet_withoutSwitches)
 
-			lContingencyTable = [
-									[iInGeneSet_withSwitches,iInGeneSet_withoutSwitches],
-									[iOutGeneSet_withSwitches,iOutGeneSet_withoutSwitches]
-								]
+			lContingencyTable = [[iInGeneSet_withSwitches,iInGeneSet_withoutSwitches],
+								[iOutGeneSet_withSwitches,iOutGeneSet_withoutSwitches]]
 			fOddsRatio,fPval = fisher_exact(lContingencyTable,H1)
 
 			geneSets[geneSet]["pval"] = fPval
