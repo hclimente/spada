@@ -57,17 +57,18 @@ def setEnvironment():
 	if not os.path.exists(".testOld2/" + o.out):
 		cmd("mkdir","-p",".testOld2/" + o.out)
 
-	cmd("rm -r .testOld2/" + o.out )
-	cmd("mv", ".testOld/" + o.out, ".testOld2/" + o.out )
-	cmd("mv", o.qout, ".testOld/" + o.out )
-	cmd("mkdir -p", "testResults/" + o.out + "RWorkspaces")
-	cmd("mkdir", o.qout + "DataExploration")
-	cmd("mkdir -p", o.qout + "iLoops/" + o.iLoopsVersion)
-	cmd("mkdir", o.qout + "GUILD_experimental")
-	cmd("mkdir", o.qout + "GUILD_enriched")
-	cmd("mkdir", o.qout + "structural_analysis")
-	cmd("mkdir", o.qout + "neighborhood_analysis")
-	cmd("mkdir", o.qout + "result_summary")
+	if o.initialStep in ["import-data","get-switches"]:
+		cmd("rm -r .testOld2/" + o.out )
+		cmd("mv", ".testOld/" + o.out, ".testOld2/" + o.out )
+		cmd("mv", o.qout, ".testOld/" + o.out )
+		cmd("mkdir -p", "testResults/" + o.out + "RWorkspaces")
+		cmd("mkdir", o.qout + "DataExploration")
+		cmd("mkdir -p", o.qout + "iLoops/" + o.iLoopsVersion)
+		cmd("mkdir", o.qout + "GUILD_experimental")
+		cmd("mkdir", o.qout + "GUILD_enriched")
+		cmd("mkdir", o.qout + "structural_analysis")
+		cmd("mkdir", o.qout + "neighborhood_analysis")
+		cmd("mkdir", o.qout + "result_summary")
 
 	if o.initialStep == "get-switches":
 		
@@ -86,30 +87,54 @@ def setEnvironment():
 		r('inputData[["minExpression"]] <- {0}'.format(options.Options().minExpression))
 		r('save.image("' + options.Options().qout + 'RWorkspaces/0_InitialEnvironment.RData")')
 
-	if o.initialStep not in ["import-data"]:
 		cmd("cp -r", ".testOld/" + o.out + "DataExploration", o.qout)
 		cmd("mv", ".testOld/" + o.out + "RWorkspaces/*.RData", o.qout + "/RWorkspaces")
 		
-		cmd("cp", ".testOld/" + o.out + "expression_normal.tsv", ".testOld/" + o.out + "expression_tumor.tsv", o.qout)
-		cmd("cp", ".testOld/" + o.out + "candidateList.tsv", ".testOld/" + o.out + "candidateList_v2.tsv",".testOld/" + o.out + "candidateList_v3.tsv",".testOld/" + o.out + "expressedGenes.lst", o.qout)
-		cmd("cp", ".testOld/" + o.out + "candidates_normal.gtf", ".testOld/" + o.out + "candidates_tumor.gtf", o.qout)
-		cmd("cp", ".testOld/" + o.out + "geneNetwork*.pkl", ".testOld/" + o.out + "txNetwork*.pkl", o.qout)
-		cmd("cp", ".testOld/" + o.out + "msInput.txt", o.qout)
+		cmd("cp", ".testOld/{0}expression_normal.tsv".format(o.out), ".testOld/{0}expression_tumor.tsv".format(o.out), o.qout)
+		cmd("cp", ".testOld/{0}candidateList.tsv".format(o.out), ".testOld/{0}candidateList_v2.tsv".format(o.out),".testOld/{0}candidateList_v3.tsv".format(o.out),".testOld/{0}expressedGenes.lst".format(o.out), o.qout)
+		cmd("cp", ".testOld/{0}candidates_normal.gtf".format(o.out), ".testOld/{0}candidates_tumor.gtf".format(o.out), o.qout)
+		cmd("cp", ".testOld/{0}geneNetwork*.pkl".format(o.out), ".testOld/{0}txNetwork*.pkl".format(o.out), o.qout)
+		cmd("cp", ".testOld/{0}msInput.txt".format(o.out), o.qout)
 			
-	if o.initialStep != "get-relevant-switches" and o.initialStep not in ["import-data","get-switches"]:
-		cmd("cp -r", ".testOld/{0}/structural_analysis".format(options.Options().out), o.qout)
-	if o.initialStep != "launch-iloops" and o.initialStep not in ["import-data","get-switches"]:
-		cmd("cp", ".testOld/" + o.out + "candidatesGaudi.lst", o.qout)
-	if o.initialStep != "neighborhood-analysis" and o.initialStep not in ["import-data","get-switches"]:
-		cmd("cp -r", ".testOld/{0}/GUILD_experimental".format(o.out), o.qout)
-		cmd("cp", ".testOld/{0}/geneSubnetwork.pkl".format(o.out), o.qout)
-	if o.initialStep != "experimental-network-analysis" and o.initialStep not in ["import-data","get-switches"]:
-		cmd("cp -r", ".testOld/{0}/neighborhood_analysis".format(o.out), o.qout)
-	if o.initialStep != "predicted-network-analysis" and o.initialStep not in ["import-data","get-switches"]:
-		cmd("cp -r", ".testOld/{0}/GUILD_enriched".format(o.out), o.qout)
-		cmd("cp -r", ".testOld/{0}/iLoops/{1}".format(o.out, o.iLoopsVersion), o.qout)
-	if o.initialStep != "summary" and o.initialStep not in ["import-data","get-switches"]:
-		cmd("cp -r", ".testOld/{0}/result_summary".format(o.out), o.qout)
+	if o.initialStep == "get-relevant-switches":
+		cmd("rm","-r",".testOld2/{0}/structural_analysis".format(o.out))
+		cmd("mv",".testOld/{0}/structural_analysis".format(o.out),".testOld2/{0}/structural_analysis".format(o.out))
+		cmd("mv","{0}/structural_analysis".format(o.qout),".testOld/{0}/structural_analysis".format(o.out))
+		cmd("mkdir", "{0}/structural_analysis".format(o.qout))
+	elif o.initialStep == "neighborhood-analysis":
+		cmd("rm","-r",".testOld2/{0}/neighborhood_analysis".format(o.out))
+		cmd("mv",".testOld/{0}/neighborhood_analysis".format(o.out),".testOld2/{0}/neighborhood_analysis".format(o.out))
+		cmd("mv","{0}/neighborhood_analysis".format(o.qout),".testOld/{0}/neighborhood_analysis".format(o.out))
+		cmd("mkdir", "{0}/neighborhood_analysis".format(o.qout))
+	elif o.initialStep == "launch-iloops":
+		cmd("rm",".testOld2/{0}/candidatesGaudi.lst".format(o.out))
+		cmd("mv",".testOld/{0}/candidatesGaudi.lst".format(o.out),".testOld2/{0}/".format(o.out))
+		cmd("mv","{0}/candidatesGaudi.lst".format(o.qout),".testOld/{0}/".format(o.out))
+	elif o.initialStep == "get-interaction-changes":
+		cmd("rm","-r",".testOld2/{0}/interaction_changes".format(o.out))
+		cmd("mv",".testOld/{0}/interaction_changes".format(o.out),".testOld2/{0}/interaction_changes".format(o.out))
+		cmd("mv","{0}/interaction_changes".format(o.qout),".testOld/{0}/interaction_changes".format(o.out))
+		cmd("mkdir", "{0}/interaction_changes".format(o.qout))
+	elif o.initialStep == "experimental-network-analysis":
+		cmd("rm","-r",".testOld2/{0}/GUILD_experimental".format(o.out))
+		cmd("mv",".testOld/{0}/GUILD_experimental".format(o.out),".testOld2/{0}/GUILD_experimental".format(o.out))
+		cmd("mv","{0}/GUILD_experimental".format(o.qout),".testOld/{0}/GUILD_experimental".format(o.out))
+		cmd("mkdir", "{0}/GUILD_experimental".format(o.qout))
+
+		cmd("rm",".testOld2/{0}/geneSubnetwork.pkl".format(o.out))
+		cmd("mv",".testOld/{0}/geneSubnetwork.pkl".format(o.out),".testOld2/{0}/".format(o.out))
+		cmd("mv","{0}/geneSubnetwork.pkl".format(o.qout),".testOld/{0}/".format(o.out))
+	elif o.initialStep == "predicted-network-analysis":
+		cmd("rm","-r",".testOld2/{0}/GUILD_enriched".format(o.out))
+		cmd("mv",".testOld/{0}/GUILD_enriched".format(o.out),".testOld2/{0}/GUILD_enriched".format(o.out))
+		cmd("mv","{0}/GUILD_enriched".format(o.qout),".testOld/{0}/GUILD_enriched".format(o.out))
+		cmd("mkdir", "{0}/GUILD_enriched".format(o.qout))
+
+	elif o.initialStep == "summary":
+		cmd("rm","-r",".testOld2/{0}/result_summary".format(o.out))
+		cmd("mv",".testOld/{0}/result_summary".format(o.out),".testOld2/{0}/result_summary".format(o.out))
+		cmd("mv","{0}/result_summary".format(o.qout),".testOld/{0}/result_summary".format(o.out))
+		cmd("mkdir", "{0}/result_summary".format(o.qout))
 
 def geneclusterLaunch(tag,base,*args):
 	command = base

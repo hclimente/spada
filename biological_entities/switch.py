@@ -162,9 +162,9 @@ class IsoformSwitch:
 
 		for gPos in self._tumor_transcript.cds:
 			if gPos not in self._normal_transcript.cds:
-				self._normal_transcript._cds[gPos] = True
+				self._tumor_transcript._cds[gPos] = True
 			else:
-				self._normal_transcript._cds[gPos] = False
+				self._tumor_transcript._cds[gPos] = False
 
 	def get_utrDiff(self):
 		"""Changes the values of the UTR dictionary of the transcripts to

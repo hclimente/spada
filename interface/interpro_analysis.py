@@ -120,6 +120,6 @@ class InterproAnalysis:
             featInfo["accession"]       = signature_accession
             featInfo["description"]     = signature_descript
             featInfo["analysis"]        = analysis
-            featInfo["percentAffected"] = len(overlapRes)/len(featureRes) * 100
+            featInfo["percentAffected"] = float(len(overlapRes))/len(featureRes) * 100
 
             yield featInfo

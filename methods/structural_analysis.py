@@ -32,7 +32,7 @@ class StructuralAnalysis(method.Method):
 		I3D_REPORT.write("Fisher_p-value\tResidue_information\tIsoform_specific_residues\n")
 
 		IP_REPORT = open("{0}structural_analysis/InterPro_report.tsv".format(options.Options().qout),"w")
-		IP_REPORT.write("Gene\tGene_symbol\tTranscript\tAnalysis\tFeature_accesion\t")
+		IP_REPORT.write("Symbol\tGene\tnTx\ttTx\tAnalysis\tFeature_accesion\t")
 		IP_REPORT.write("Feature\t(Additional) repetitions\n")
 
 		IUPRED_REPORT = open(options.Options().qout+"structural_analysis/iupred_analysis.tsv","w")
@@ -178,8 +178,8 @@ class StructuralAnalysis(method.Method):
 			for feat,reps in uniqFeat:
 				featInfo = [ x for x in protein._features if x["accession"]==feat ][0]
 
-				IP_REPORT.write("{0}\t{1}\t".format(gene, info["symbol"]))
-				IP_REPORT.write("{0}\t{1}\t".format(protein.tx,whatsHappening))
+				IP_REPORT.write("{0}\t{1}\t{2}\t".format(info["symbol"],gene,switch.nTx))
+				IP_REPORT.write("{0}\t{1}\t".format(switch.tTx,whatsHappening))
 				IP_REPORT.write("{0}\t{1}\t".format(featInfo["analysis"],featInfo["accession"]))
 				IP_REPORT.write("{0}\t{1}\n".format(featInfo["description"],reps))
 				# IP_REPORT.write("{0}\n".format(featInfo["percentAffected"]))

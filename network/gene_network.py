@@ -447,6 +447,34 @@ class GeneNetwork(network.Network):
 						switchProvided = True
 					yield gene,info,switchDict,thisSwitch
 
+	def iterate_nonRelevantSwitches_ScoreWise(self,tx_network,only_first=False,partialCreation=False):
+		"""Iterate through the isoform switches of a gene network, and
+			generate a list of (gene,geneInformation,isoformSwitch).
+			Only return those switches with an overlap between the CDS 
+			of the transcripts and that have different features.
+
+			only_first(bool): if True, only the first switch (the most 
+				common) will be returned for each gene.
+		"""
+
+		sortedNodes = sorted(self.nodes(data=True),key=lambda (a,dct):dct['score'],reverse=True)
+		
+		counter = 1
+		for gene,info in sortedNodes:
+			if not info["isoformSwitches"]: continue
+
+			switchProvided = False
+			for switchDict in info["isoformSwitches"]:
+				if switchProvided: break
+				thisSwitch = self.createSwitch(switchDict,tx_network,partialCreation)
+				
+				if not thisSwitch.is_relevant and not switchProvided:
+					self.logger.debug("Iterating switch number {0}.".format(counter))
+					counter += 1
+					if only_first:
+						switchProvided = True
+					yield gene,info,switchDict,thisSwitch
+
 	def createSwitch(self,switchDict,tx_network,partialCreation):
 		"""Create a switch object from the switch dictionary.
 

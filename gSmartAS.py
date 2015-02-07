@@ -187,13 +187,14 @@ if __name__ == '__main__':
 		S.structuralAnalysis()
 	elif options.Options().initialStep == "launch-iloops":
 		S.launchiLoops()
+	elif options.Options().initialStep == "get-interaction-changes":
+		S.analyzeInteractions()
+	elif options.Options().initialStep == "experimental-network-analysis":
+		S.analyzeInteractions()
 	elif options.Options().initialStep == "predicted-network-analysis":
 		S.networkAnalysis(True)
 	elif options.Options().initialStep == "neighborhood-analysis":
 		S.neighborhoodAnalysis()
-	elif options.Options().initialStep == "experimental-network-analysis":
-		S.analyzeInteractions()
-		S.networkAnalysis(False)
 
 	# summarize results
 	elif options.Options().initialStep == "summary":

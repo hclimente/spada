@@ -14,6 +14,8 @@ class ResultSummary(method.Method):
 	def __init__(self, gn_network, tx_network, gn_subnetwork):
 		method.Method.__init__(self, __name__, gn_network, tx_network, gn_subnetwork)
 
+		self.sizes = {}
+
 		self.proteinStats = {}
 		self.proteinStats["centrality"] = []
 		self.proteinStats["nIsoLength"] = []
@@ -36,13 +38,15 @@ class ResultSummary(method.Method):
 		self.loops["loopsChange"].setdefault("onlyT", 0)
 		self.loops["loopsChange"].setdefault("noLoops", 0)
 
+		self.featuresTable = {}
+
 	def run(self):
 		self.logger.info("Summarizing results.")
 
 		txDict = self._transcript_network.nodes(data=True)
 		total = 0
 
-		for gene,info,switchDict,switch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network,partialCreation=True):
+		for gene,info,switchDict,switch in self._gene_network.iterate_nonRelevantSwitches_ScoreWise(self._transcript_network,partialCreation=True):
 			self.logger.debug("Getting statistics for switch {0}_{1}_{2}.".format(gene,switch.nTx,switch.tTx))
 
 			# general protein, switch and gene info
@@ -50,6 +54,7 @@ class ResultSummary(method.Method):
 			self.switchAndExonOverview(gene,info,switchDict,switch)
 
 			# structural info
+			self.changedFeatures(gene,info,switch)
 			self.loopChange(switch)
 			#self.disorderChange(switch)
 			#self.functionalChange(switch)
@@ -63,17 +68,9 @@ class ResultSummary(method.Method):
 
 		self.printSwitchInfo(total)
 		self.printStructutalInfo(total)
-		#self.structuralInfo()
+		
 		#self.functionalChange()
 		#self.printRelevantGene()	
-
-	def structuralInfo(self):
-
-		self.logger.info("Structural information.")
-
-		self.loopChange()
-		self.disorderChange()
-		self.functionalChange()
 
 	def neighborhoodInfo(self):
 
@@ -101,7 +98,7 @@ class ResultSummary(method.Method):
 		else: 					  self.switchStats["hasCds"]["none"]  += 1
 
 		if thisSwitch.cds_diff: self.switchStats["hasCdsChange"]["y"] += 1
-		else: 				self.switchStats["hasCdsChange"]["n"] += 1
+		else:					self.switchStats["hasCdsChange"]["n"] += 1
 
 		if thisSwitch.utr_diff: self.switchStats["hasUtrChange"]["y"] += 1
 		else: 				self.switchStats["hasUtrChange"]["n"] += 1
@@ -110,8 +107,8 @@ class ResultSummary(method.Method):
 		else: 				self.switchStats["isDriver"]["n"] +=1
 
 
-		#if thisSwitch.is_relevant:  self.switchStats["isRelevant"]["y"] +=1
-		#else: 						self.switchStats["isRelevant"]["n"] +=1
+		if thisSwitch.is_relevant:  self.switchStats["isRelevant"]["y"] +=1
+		else: 						self.switchStats["isRelevant"]["n"] +=1
 
 		nSpecificCds = [ x for x in thisSwitch._normal_transcript.cds if x not in thisSwitch._tumor_transcript.cds ]
 		nSpecificUtr = [ x for x in thisSwitch._normal_transcript.utr if x not in thisSwitch._tumor_transcript.utr ]
@@ -131,24 +128,25 @@ class ResultSummary(method.Method):
 			exons = [ map(itemgetter(1),g) for k,g in groupby(enumerate(specific), lambda (i,x): i-x) ]
 			
 			for exon in exons:
+				setExon = set(exon)
 				exonInfo = {}
 				exonInfo["switch"] = "{0}_{1}_{2}".format(gene,switchDict["nIso"],switchDict["tIso"])
 				exonInfo["length"] = len(exon)
 
-				if setSpec & setSpecCds and setSpec & setSpecUtr:
-					exonicCds = sorted(setSpec & setSpecCds)
+				if setExon & setSpecCds and setExon & setSpecUtr:
+					exonicCds = sorted(setExon & setSpecCds)
 					exonInfo["role"] = "CDS-UTR"
 					exonInfo["keepORF"] = len(exonicCds)%3
 					medianPos = exonicCds[len(exonicCds)/2]
-					pos = [ i for i,x in enumerate(cds) if x==medianPos ][0]	 
+					pos = [ i for i,x in enumerate(cds) if x==medianPos ][0]
 					exonInfo["position"] = float(pos)/len(cds)
-				elif setSpec & setSpecCds:
+				elif setExon & setSpecCds:
 					exonInfo["role"] = "CDS"
-					exonInfo["keepORF"] = len(exon)%3
+					exonInfo["keepORF"] = len(switchAndExonOverview)%3
 					medianPos = exon[len(exon)/2]
 					pos = [ i for i,x in enumerate(cds) if x==medianPos ][0]
 					exonInfo["position"] = float(pos)/len(cds)
-				elif setSpec & setSpecUtr:
+				elif setExon & setSpecUtr:
 					exonInfo["role"] = "UTR"
 					exonInfo["keepORF"] = None
 					exonInfo["position"] = None
@@ -162,7 +160,7 @@ class ResultSummary(method.Method):
 	def printSwitchInfo(self,total):
 		with open("{0}result_summary/protein_centrality.tsv".format(options.Options().qout), "w" ) as F:
 			for degree in self.proteinStats["centrality"]:
-				F.write("{0}\n".format(degree))
+				F.write("{0}\t{1}\n".format(options.Options().tag,degree))
 
 		with open("{0}result_summary/nIso_length.tsv".format(options.Options().qout), "w" ) as F:
 			for length in self.proteinStats["nIsoLength"]:
@@ -180,7 +178,7 @@ class ResultSummary(method.Method):
 			F.write("{0}\n".format(total))
 
 			F.write("Cancer\tAnalysis\tYes\tNo\tTotal\n")
-			F.write("{0}\tCDS_change\t".format(options.Options().tag ))
+			F.write("{0}\tCDS_change\t".format(options.Options().tag))
 			F.write("{0}\t{1}\t".format(self.switchStats["hasCdsChange"]["y"],self.switchStats["hasCdsChange"]["n"]) )
 			F.write("{0}\n".format(total))
 
@@ -204,13 +202,124 @@ class ResultSummary(method.Method):
 				F.write("{0}\t{1}\n".format(exon["keepORF"],exon["position"]))
 
 	def printStructutalInfo(self,total):
+		with open("{0}result_summary/structural_summary.tsv".format(options.Options().qout), "w" ) as F:
+			F.write("Cancer\tSwitch\tPfam\tPRINTS\tProSitePatterns\t")
+			F.write("IUPREDLong\tIUPREDShort\tI3D\tDriver\n")
+			for s in self.featuresTable:
+				F.write("{0}\t{1}\t".format(options.Options().tag,s))
+				F.write("{0}\t{1}\t".format(len(self.featuresTable[s][0]),len(self.featuresTable[s][1])))
+				F.write("{0}\t{1}\t".format(len(self.featuresTable[s][2]),len(self.featuresTable[s][3])))
+				F.write("{0}\t{1}\t".format(len(self.featuresTable[s][4]),len(self.featuresTable[s][5])))
+				F.write("{0}\n".format(self.featuresTable[s][6]))
+
+		with open("{0}result_summary/structural_features.tsv".format(options.Options().qout), "w" ) as F:
+			F.write("Cancer\tSwitch\tAnalysis\tAction\tFeature\tDriver\n")
+			
+			for s in self.featuresTable:
+				Pfam = self.featuresTable[s][0]
+				PRINTS = self.featuresTable[s][1]
+				ProSitePatterns = self.featuresTable[s][2]
+				IUPREDLong = self.featuresTable[s][3]
+				IUPREDShort = self.featuresTable[s][4]
+				I3D = self.featuresTable[s][5]
+				Driver = self.featuresTable[s][6]
+
+				for pfamDom in Pfam:
+					F.write("{0}\t{1}\tPfam\t".format(options.Options().tag,s))
+					F.write("{0}\t{1}\t{2}\n".format(pfamDom[1],pfamDom[0],Driver))
+
+				for prints in PRINTS:
+					F.write("{0}\t{1}\tPRINTS\t".format(options.Options().tag,s))
+					F.write("{0}\t{1}\t{2}\n".format(prints[1],prints[0],Driver))
+
+				for patt in ProSitePatterns:
+					F.write("{0}\t{1}\tProSitePatterns\t".format(options.Options().tag,s))
+					F.write("{0}\t{1}\t{2}\n".format(patt[1],patt[0],Driver))
+
+				if IUPREDLong:
+					for iulong in IUPREDLong[0]:
+						F.write("{0}\t{1}\tIUPREDLong\t".format(options.Options().tag,s))
+						F.write("{0}\t{1}\t{2}\n".format(IUPREDLong[1],iulong,Driver))
+
+				if IUPREDShort:
+					for iushort in IUPREDShort[0]:
+						F.write("{0}\t{1}\tIUPREDShort\t".format(options.Options().tag,s))
+						F.write("{0}\t{1}\t{2}\n".format(IUPREDShort[1],iushort,Driver))
+
+				for i3d in I3D:
+					F.write("{0}\t{1}\tI3D\t".format(options.Options().tag,s))
+					F.write("{0}\t{1}\t{2}\n".format(i3d[1],i3d[0],Driver))
+
 		with open("{0}result_summary/structural_loops.tsv".format(options.Options().qout), "w" ) as F:
-			F.write("Cancer\tMapped_loops\tDifferent\t")
+			F.write("Cancer\tDifferent\t")
 			F.write("Same\tOnly_nIso\tOnly_tIso\tNone\tTotal\n")
 			F.write("{0}\t".format(options.Options().tag ))
 			F.write("{0}\t{1}\t".format(self.loops["loopsChange"]["different"],self.loops["loopsChange"]["same"]) )
 			F.write("{0}\t{1}\t".format(self.loops["loopsChange"]["onlyN"],self.loops["loopsChange"]["onlyT"]) )
 			F.write("{0}\t{1}\n".format(self.loops["loopsChange"]["noLoops"],total ))
+
+	def changedFeatures(self,gene,info,switch):
+
+		tag = "{0}_{1}_{2}".format(gene,switch.nTx,switch.tTx)
+
+		self.featuresTable.setdefault(tag,[])
+
+		if switch.functionalChange:
+			Pfam = []
+			PRINTS = []
+			ProSitePatterns = []
+
+			functionalChanges = ""
+			for element in utils.readTable("{0}structural_analysis/InterPro_report.tsv".format(options.Options().qout)):
+				if element[0]==gene and element[2] in [switch.nTx,switch.tTx]:
+					if element[4]=="Pfam":
+						Pfam.append((element[6],element[3]))
+					elif element[4]=="PRINTS":
+						PRINTS.append((element[6],element[3]))
+					elif element[4]=="ProSitePatterns":
+						ProSitePatterns.append((element[6],element[3]))
+
+			self.featuresTable[tag].extend([Pfam,PRINTS,ProSitePatterns])
+			
+		else:
+			self.featuresTable[tag].extend([[],[],[]])
+		
+		if switch.disorderChange:
+			longDisorder = []
+			shortDisorder = []
+
+			for element in utils.readTable("{0}structural_analysis/iupred_analysis.tsv".format(options.Options().qout)):
+				if element[0]==gene and element[2] in [switch.nTx,switch.tTx] and element[4]:
+					if element[3]=='short':
+						if element[2] == switch.nTx:
+							shortDisorder = (element[4].split(","),'Lost in tumor')
+						else:
+							shortDisorder = (element[4].split(","),'Gained in tumor')
+					elif element[3]=='long':
+						if element[2] == switch.nTx:
+							longDisorder = (element[4].split(","),'Lost in tumor')
+						else:
+							longDisorder = (element[4].split(","),'Gained in tumor')
+			
+			self.featuresTable[tag].extend([shortDisorder,longDisorder])
+		else:
+			self.featuresTable[tag].extend([[],[]])
+		
+		if switch.brokenSurfaces:
+			surfaceChanges = []
+
+			for element in utils.readTable("{0}structural_analysis/I3D_analysis.tsv".format(options.Options().qout)):
+				if element[0]==gene and element[2] in [switch.nTx,switch.tTx] and element[4]:
+					if element[2] == switch.nTx:
+						surfaceChanges.append((element[4],"Lost in tumor"))
+					else:
+						surfaceChanges.append((element[4],"Gained in tumor"))
+			
+			self.featuresTable[tag].append(surfaceChanges)
+		else:
+			self.featuresTable[tag].append([])
+
+		self.featuresTable[tag].append(info["Driver"])
 
 	def loopChange(self,switch):
 		nIso = switch.nTranscript
@@ -231,87 +340,6 @@ class ResultSummary(method.Method):
 				self.loops["loopsChange"]["onlyT"] += 1
 		else:
 			self.loops["loopsChange"]["noLoops"] +=1
-
-	def functionalChange(self):
-
-		total = 0
-		withFunctionalChanges = 0
-		changeList = []
-		
-		PRINTS = 0
-		ProSiteProfiles = 0
-		ProSitePatterns = 0
-		Pfam = 0
-		totalType = 0
-
-		mostCommonChanges = {}
-
-		changes = [ z.functionalChange for w,x,y,z in self._gene_network.iterate_switches_ScoreWise(self._transcript_network) ]
-		
-		for x in changes:
-			if x:
-				withFunctionalChanges += 1
-				for y in x:
-					changeList.extend([y])
-			total += 1
-
-		for x in changeList:
-			if x[0] == "PRINTS":
-				PRINTS += x[3]
-			elif x[0] == "ProSiteProfiles":
-				ProSiteProfiles += x[3]
-			elif x[0] == "Pfam":
-				Pfam += x[3]
-			elif x[0] == "ProSitePatterns":
-				Pfam += x[3]
-			totalType += x[3]
-
-			mostCommonChanges.setdefault(x[2],0)
-			mostCommonChanges[x[2]] += x[3]
-
-		with open("{0}result_summary/structural_function.tsv".format(options.Options().qout), "w" ) as F:
-			F.write("Cancer\tAnalysis\tYes\tNo\tTotal\n")
-			F.write("{0}\tfunctional_change\t".format(options.Options().tag))
-			F.write("{0}\t{1}\t".format(withFunctionalChanges,total-withFunctionalChanges))
-			F.write("{0}\n".format(total))
-
-			F.write("Cancer\tAnalysis\tPRINTS\tProSiteProfiles\tPfam\tProSitePatterns\tTotal\n")
-			F.write("{0}\tchange_type\t".format(options.Options().tag))
-			F.write("{0}\t{1}\t".format(PRINTS,ProSiteProfiles))
-			F.write("{0}\t{1}\t".format(Pfam,ProSitePatterns))
-			F.write("{0}\n".format(totalType))
-
-			F.write("Cancer\tAnalysis\tFeature\tCount\n")
-			for x in mostCommonChanges:
-				F.write("{0}\tmotifs\t".format(options.Options().tag))
-				F.write("{0}\t{1}\n".format(x,mostCommonChanges[x]))
-
-	def disorderChange(self):
-		allMotifs = []
-
-		withDisorder = 0
-		total = 0
-
-		motifs = [ z.disorderChange for w,x,y,z in self._gene_network.iterate_switches_ScoreWise(self._transcript_network) ]
-
-		for x in motifs:
-			if x:
-				withDisorder += 1
-				for y in x:
-					allMotifs.extend([y])
-			total += 1
-
-		meanLength = float(sum([ len(x) for x in allMotifs ])/len(allMotifs)) if len(allMotifs) > 0 else float('nan')
-
-		with open("{0}result_summary/structural_disorder.tsv".format(options.Options().qout), "w" ) as F:
-			F.write("Cancer\tAnalysis\tYes\tNo\tTotal\n")
-			F.write("{0}\tdisordered_change\t".format(options.Options().tag))
-			F.write("{0}\t{1}\t".format(withDisorder,total-withDisorder))
-			F.write("{0}\n".format(total))
-
-			F.write("Cancer\tAnalysis\tMean_length\n")
-			F.write("{0}\tmean_length\t".format(options.Options().tag))
-			F.write("{0}\n".format(meanLength))
 
 	def printRelevantGene(self):
 

@@ -52,7 +52,7 @@ class NeighborhoodAnalysis(method.Method):
 			outGeneSet_withoutSwitches 	= set()
 
 			#Iterate over the genes that are expressed in the tissue
-			for gene,info,switchDict,switch in self._gene_network.iterate_relevantSwitches_ScoreWise(self._transcript_network,True):
+			for gene,info,switchDict,switch in self._gene_network.iterate_relevantSwitches_ScoreWise(self._transcript_network,only_first=True,partialCreation=True):
 				if gene not in geneSets[geneSet]["allGenes"]:
 					if switch:
 						outGeneSet_withSwitches.add(gene)
