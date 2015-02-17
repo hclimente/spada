@@ -88,14 +88,14 @@ def outputGTF(gn_network,tx_network):
 					tGTF.write("{0};patients_affected={1}\n".format(line.strip(), switch[1] ))
 
 def outCandidateList(gn_network,tx_network):
-	logging.info("Writing candidateList_v3.")
-	with open(options.Options().qout + "candidateList_v3.tsv", "w") as cList:
+	logging.info("Writing candidateList_v5.")
+	with open(options.Options().qout + "candidateList_v5.tsv", "w") as cList:
 		cList.write("GeneId\tSymbol\tNormal_transcript\tTumor_transcript\t")
-		cList.write("Normal_protein\tTumor_protein\tPatient_percentage\t")
-		cList.write("Precision\tSensitivity\tDriver\tDruggable\tCDS\t")
+		cList.write("Normal_protein\tTumor_protein\tNotNoise\t")
+		cList.write("IsModel\tIsRelevant\tDriver\tDruggable\tCDS\t")
 		cList.write("CDS_change\tUTR_change\tPatients_affected\n")
 		
-		for gene,info,switchDict,switch in gn_network.iterate_switches_ScoreWise(tx_network):
+		for gene,info,switchDict,switch in gn_network.iterate_switches_ScoreWise(tx_network,partialCreation=True):
 			nIso = switch.nTranscript
 			tIso = switch.tTranscript
 
@@ -112,11 +112,11 @@ def outCandidateList(gn_network,tx_network):
 			cList.write("{0}\t{1}\t".format( gene, info["symbol"] ))
 			cList.write("{0}\t{1}\t".format( nIso.name, tIso.name ))
 			cList.write("{0}\t{1}\t".format( nUniprot, tUniprot ))
-			cList.write("{0}\t{1}\t".format( switch.score, switch.precision ))
-			cList.write("{0}\t{1}\t".format( switch.sensitivity, info["Driver"] ))
-			cList.write("{0}\t".format( info["Druggable"] ))
-			cList.write("{0}\t{1}\t".format( cds, cdsChange ))
-			cList.write("{0}\t{1}\n".format( utrChange, ",".join(switch.patients) ))
+			cList.write("{0}\t{1}\t".format( int(switchDict["noise"]), int(switchDict["model"]) ))
+			cList.write("{0}\t{1}\t".format( int(switch.is_relevant), int(info["Driver"]) ))
+			cList.write("{0}\t{1}\t".format( int(info["Druggable"]), int(cds) ))
+			cList.write("{0}\t{1}\t".format( int(cdsChange),int(utrChange) ))
+			cList.write("{0}\n".format( ",".join(switch.patients) ))
 
 def outTSV(network,path):
 	with open(path + "_nodes.tsv", "w") as NODES:
