@@ -62,17 +62,20 @@ for (replicate in patientSet){
   significant <- intraReplicate[[replicate]]$padj_up < 0.05 | intraReplicate[[replicate]]$padj_dw < 0.05 
   significant[is.na(significant)] <- FALSE
   
-  norExpression <- log(intraReplicate[[replicate]]$TPM_N) > inputData$minExpression
-  tumExpression <- log(intraReplicate[[replicate]]$TPM_T) > inputData$minExpression
+  geneNorExpression <- log(intraReplicate[[replicate]]$tTPM_N) > inputData$minExpression
+  geneTumExpression <- log(intraReplicate[[replicate]]$tTPM_T) > inputData$minExpression
+  txNorExpression <- log(intraReplicate[[replicate]]$TPM_N) > 0
+  txTumExpression <- log(intraReplicate[[replicate]]$TPM_T) > 0
+  expressed <- geneNorExpression & geneTumExpression
   
   replicateCandidates <- vector('list', length(unique(intraReplicate[[replicate]]$Gene[significant]))) 
   
-  for (aCandidate in unique(intraReplicate[[replicate]]$Gene[significant])){ 
+  for (aCandidate in unique(intraReplicate[[replicate]]$Gene[significant & expressed])){ 
     
     thisGeneMask <- intraReplicate[[replicate]]$Gene == aCandidate
         
-    norTranscriptMask <- intraReplicate[[replicate]]$deltaPSI < 0 & significant & norExpression & thisGeneMask
-    tumTranscriptMask <- intraReplicate[[replicate]]$deltaPSI > 0 & significant & tumExpression & thisGeneMask
+    norTranscriptMask <- intraReplicate[[replicate]]$deltaPSI < 0 & significant & thisGeneMask
+    tumTranscriptMask <- intraReplicate[[replicate]]$deltaPSI > 0 & significant & thisGeneMask
     
     if(sum(norTranscriptMask,na.rm=T) == 0 || sum(tumTranscriptMask,na.rm=T) == 0){
       next
@@ -113,8 +116,8 @@ for (replicate in patientSet){
   candidates[[replicate]] <- do.call('rbind', replicateCandidates)
   
   #Expressed genes: transcripts whose expression are above the expression threshold in any of the conditions
-  replicateExpressed[[replicate]] <- data.frame(Transcript=intraReplicate[[replicate]]$Transcript[norExpression | tumExpression],
-                                                Gene=intraReplicate[[replicate]]$Gene[norExpression | tumExpression])
+  replicateExpressed[[replicate]] <- data.frame(Transcript=intraReplicate[[replicate]]$Transcript[ txNorExpression | txTumExpression ],
+                                                Gene=intraReplicate[[replicate]]$Gene[txNorExpression | txTumExpression ])
   logdebug("%d switches found at patient %s", nrow(candidates[[replicate]]), replicate, logger="get_candidates")
   setTxtProgressBar(candidatesPB, counter)
   counter <- counter + 1
