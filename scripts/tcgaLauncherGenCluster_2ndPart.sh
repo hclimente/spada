@@ -3,6 +3,7 @@
 #Data/Input/TCGA_tags.txt
 fileList=$1
 action=$2
+models=$3
 
 function launchQ {
 
@@ -36,6 +37,11 @@ do
 	echo tag=$fullTag >>$cfgFile
 	echo unpaired-replicates=Yes >>$cfgFile
 	echo working-directory=/data/users/hector >>$cfgFile
+	if [[ "$models" == "all-switches" ]]; then
+		echo $models >>$cfgFile
+	fi
+
+	
 
 	launchQ $fullTag "$fullTag"_$action
 

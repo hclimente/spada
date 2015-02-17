@@ -13,8 +13,33 @@ import os
 import pdb
 
 class StructuralAnalysis(method.Method):
-	def __init__(self, gn_network, tx_network, gn_subnetwork):
-		method.Method.__init__(self, __name__, gn_network, tx_network, gn_subnetwork)
+	def __init__(self, gn_network,tx_network,isRand=False):
+		method.Method.__init__(self, __name__,gn_network,tx_network)
+
+		tag = "_random" if isRand else ""
+
+		self._I3D_file = "{0}structural_analysis/I3D_analysis{1}.tsv".format(options.Options().qout,tag)
+		self.I3D = open(self._I3D_file,"w")
+		self.I3D.write("Gene\tSymbol\tTranscript\tUniprot\tPercent_affected_by_AS\t")
+		self.I3D.write("Fisher_p-value\tResidue_information\tIsoform_specific_residues\n")
+
+		self._interpro_file = "{0}structural_analysis/InterPro_report{1}.tsv".format(options.Options().qout,tag)
+		self.IP = open(self._interpro_file,"w")
+		self.IP.write("Symbol\tGene\tnTx\ttTx\tAnalysis\tFeature_accesion\t")
+		self.IP.write("Feature\t(Additional) repetitions\n")
+
+		self._iupred_file = "{0}structural_analysis/iupred_analysis{1}.tsv".format(options.Options().qout,tag)
+		self.IU = open(self._iupred_file,"w")
+		self.IU.write("Gene\tTranscript\tAnalysis\tPercent_affected_by_AS\t")
+		self.IU.write("Motifs\t#aa_Isoform_specific_ordered\t")
+		self.IU.write("#aa_Non_isoform_specific_ordered\t")
+		self.IU.write("#aa_Isoform_specific_disordered\t")
+		self.IU.write("#aa_Non_isoform_specific_disordered\n")
+
+		self._relevance_info = "{0}structural_analysis/structural_summary{1}.tsv".format(options.Options().qout,tag)
+		self.REL = open(self._relevance_info,"w")
+		self.REL.write("Gene\tNormalTranscript\tTumorTranscript\tiLoopsChange\t")
+		self.REL.write("BrokenSurface\tFunctionalChange\tDisorderChange\n")
 
 	def run(self):
 		self.logger.info("Structural analysis.")
@@ -27,38 +52,19 @@ class StructuralAnalysis(method.Method):
 				isoInfo[elements[0][1:]]["UniProt"] = elements[2]
 				isoInfo[elements[0][1:]]["iLoopsFamily"] = elements[3]
 
-		I3D_REPORT = open(options.Options().qout+"structural_analysis/I3D_analysis.tsv","w")
-		I3D_REPORT.write("Gene\tSymbol\tTranscript\tUniprot\tPercent_affected_by_AS\t")
-		I3D_REPORT.write("Fisher_p-value\tResidue_information\tIsoform_specific_residues\n")
-
-		IP_REPORT = open("{0}structural_analysis/InterPro_report.tsv".format(options.Options().qout),"w")
-		IP_REPORT.write("Symbol\tGene\tnTx\ttTx\tAnalysis\tFeature_accesion\t")
-		IP_REPORT.write("Feature\t(Additional) repetitions\n")
-
-		IUPRED_REPORT = open(options.Options().qout+"structural_analysis/iupred_analysis.tsv","w")
-		IUPRED_REPORT.write("Gene\tTranscript\tAnalysis\tPercent_affected_by_AS\t")
-		IUPRED_REPORT.write("Motifs\t#aa_Isoform_specific_ordered\t")
-		IUPRED_REPORT.write("#aa_Non_isoform_specific_ordered\t")
-		IUPRED_REPORT.write("#aa_Isoform_specific_disordered\t")
-		IUPRED_REPORT.write("#aa_Non_isoform_specific_disordered\n")
-
-		RELEVANCE_INFO = open(options.Options().qout+"structural_analysis/structural_summary.tsv","w")
-		RELEVANCE_INFO.write("Gene\tNormalTranscript\tTumorTranscript\tiLoopsChange\t")
-		RELEVANCE_INFO.write("BrokenSurface\tFunctionalChange\tDisorderChange\n")
-
 		for gene,info,switchDict,switch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network):
 			switch._iloops_change 	  = self.findDiffLoops(switch,gene,info,isoInfo)
-			switch._broken_surfaces   = self.findBrokenSurfaces(switch,gene,info,I3D_REPORT)
-			switch._functional_change = self.interProAnalysis(switch,gene,info,IP_REPORT)
-			switch._disorder_change   = self.disorderAnalysis(switch,gene,info,IUPRED_REPORT)
+			switch._broken_surfaces   = self.findBrokenSurfaces(switch,gene,info)
+			switch._functional_change = self.interProAnalysis(switch,gene,info)
+			switch._disorder_change   = self.disorderAnalysis(switch,gene,info)
 
-			RELEVANCE_INFO.write("{0}\t{1}\t{2}\t{3}\t".format(gene,switch.nTx,switch.tTx,switch._iloops_change))
-			RELEVANCE_INFO.write("{0}\t{1}\t{2}\n".format(switch._broken_surfaces,switch._functional_change,switch._disorder_change))
+			self.REL.write("{0}\t{1}\t{2}\t{3}\t".format(gene,switch.nTx,switch.tTx,switch._iloops_change))
+			self.REL.write("{0}\t{1}\t{2}\n".format(switch._broken_surfaces,switch._functional_change,switch._disorder_change))
 
-		I3D_REPORT.close()
-		IP_REPORT.close()
-		IUPRED_REPORT.close()
-		RELEVANCE_INFO.close()
+		self.I3D_REPORT.close()
+		self.IP.close()
+		self.IU.close()
+		self.REL.close()
 
 	def findDiffLoops(self,switch,gene,info,isoInfo):
 
@@ -76,7 +82,7 @@ class StructuralAnalysis(method.Method):
 
 		return None
 
-	def findBrokenSurfaces(self,switch,gene,info,I3D_REPORT):
+	def findBrokenSurfaces(self,switch,gene,info):
 
 		self.logger.debug("I3D: searching broken surfaces for gene {0}.".format(gene) )
 		
@@ -100,8 +106,8 @@ class StructuralAnalysis(method.Method):
 			if protein.hasPdbs and hasIsoSpecificResidues:
 				pval,percent = self.getStatistics(protein)
 				isoInfo,isoSpec = protein.report()
-				I3D_REPORT.write("{0}\t{1}\t{2}\t{3}\t".format(gene,info["symbol"],protein.tx,protein.uniprot))
-				I3D_REPORT.write("{0}\t{1}\t{2}\t{3}\n".format(percent,pval,isoInfo,isoSpec))
+				self.I3D.write("{0}\t{1}\t{2}\t{3}\t".format(gene,info["symbol"],protein.tx,protein.uniprot))
+				self.I3D.write("{0}\t{1}\t{2}\t{3}\n".format(percent,pval,isoInfo,isoSpec))
 				protein.printPDBInfo()
 
 				return True
@@ -149,7 +155,7 @@ class StructuralAnalysis(method.Method):
 
 		return (pval,percent)
 
-	def interProAnalysis(self,switch,gene,info,IP_REPORT):
+	def interProAnalysis(self,switch,gene,info):
 
 		self.logger.debug("InterPro: searching changes for gene {0}.".format(gene) )
 		
@@ -178,11 +184,11 @@ class StructuralAnalysis(method.Method):
 			for feat,reps in uniqFeat:
 				featInfo = [ x for x in protein._features if x["accession"]==feat ][0]
 
-				IP_REPORT.write("{0}\t{1}\t{2}\t".format(info["symbol"],gene,switch.nTx))
-				IP_REPORT.write("{0}\t{1}\t".format(switch.tTx,whatsHappening))
-				IP_REPORT.write("{0}\t{1}\t".format(featInfo["analysis"],featInfo["accession"]))
-				IP_REPORT.write("{0}\t{1}\n".format(featInfo["description"],reps))
-				# IP_REPORT.write("{0}\n".format(featInfo["percentAffected"]))
+				self.IP.write("{0}\t{1}\t{2}\t".format(info["symbol"],gene,switch.nTx))
+				self.IP.write("{0}\t{1}\t".format(switch.tTx,whatsHappening))
+				self.IP.write("{0}\t{1}\t".format(featInfo["analysis"],featInfo["accession"]))
+				self.IP.write("{0}\t{1}\n".format(featInfo["description"],reps))
+				# self.IP.write("{0}\n".format(featInfo["percentAffected"]))
 
 				if switch._functional_change is None:
 					switch._functional_change = set()
@@ -197,7 +203,7 @@ class StructuralAnalysis(method.Method):
 			return True
 		else: return False
 
-	def disorderAnalysis(self,switch,gene,info,IUPRED_REPORT):
+	def disorderAnalysis(self,switch,gene,info):
 
 		self.logger.debug("IUPRED: Searching disorder for gene {0}.".format(gene))
 		
@@ -278,13 +284,13 @@ class StructuralAnalysis(method.Method):
 							switch._disorder_change = []
 						switch._disorder_change.append(motif)
 			
-				IUPRED_REPORT.write("{0}\t{1}\t".format(gene,info["symbol"]))
-				IUPRED_REPORT.write("{0}\t{1}\t".format(protein.tx,mode))
-				IUPRED_REPORT.write("{0}\t".format(",".join(usefulMotifs)))
-				IUPRED_REPORT.write("{0}\t".format(int(counter["specific"]["ordered"])) )
-				IUPRED_REPORT.write("{0}\t".format(int(counter["unspecific"]["ordered"])) )
-				IUPRED_REPORT.write("{0}\t".format(int(counter["specific"]["disordered"])) )
-				IUPRED_REPORT.write("{0}\n".format(int(counter["unspecific"]["disordered"])) )
+				self.IU.write("{0}\t{1}\t".format(gene,info["symbol"]))
+				self.IU.write("{0}\t{1}\t".format(protein.tx,mode))
+				self.IU.write("{0}\t".format(",".join(usefulMotifs)))
+				self.IU.write("{0}\t".format(int(counter["specific"]["ordered"])) )
+				self.IU.write("{0}\t".format(int(counter["unspecific"]["ordered"])) )
+				self.IU.write("{0}\t".format(int(counter["specific"]["disordered"])) )
+				self.IU.write("{0}\n".format(int(counter["unspecific"]["disordered"])) )
 
 			os.remove(options.Options().qout+"protein.fa")
 

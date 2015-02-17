@@ -84,7 +84,7 @@ class Network:
 
 		return True
 
-	def saveNetwork(self, filename):
+	def saveNetwork(self,filename):
 		
 		self.logger.debug("Saving network at {0}{1}.".format(options.Options().qout,filename))
 		#Unattach logger to save without thread problems

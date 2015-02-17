@@ -43,38 +43,37 @@ class NeighborhoodAnalysis(method.Method):
 			genes = line[2:]
 			geneSets[geneSet] = {}
 			geneSets[geneSet]["allGenes"] = genes
+			geneSets[geneSet]["switchIn"] = set()
+			geneSets[geneSet]["switchOut"] = set()
+			geneSets[geneSet]["noswitchIn"] = set()
+			geneSets[geneSet]["noswitchOut"] = set()
 
-		for geneSet in geneSets:
-
-			inGeneSet_withSwitches		= set()
-			inGeneSet_withoutSwitches	= set()
-			outGeneSet_withSwitches 	= set()
-			outGeneSet_withoutSwitches 	= set()
-
+		# iterate genes with isoform switches
+		for gene,info,switchDict,switch in self._gene_network.iterate_relevantSwitches_ScoreWise(self._transcript_network,only_models=options.Options().onlyModels,partialCreation=True):
 			#Iterate over the genes that are expressed in the tissue
-			for gene,info,switchDict,switch in self._gene_network.iterate_relevantSwitches_ScoreWise(self._transcript_network,only_first=True,partialCreation=True):
+			for geneSet in geneSets:
 				if gene not in geneSets[geneSet]["allGenes"]:
-					if switch:
-						outGeneSet_withSwitches.add(gene)
-					else:
-						outGeneSet_withoutSwitches.add(gene)
+					geneSets[geneSet]["switchOut"].add(gene)
 				else:
-					if switch:
-						self._gene_network.update_node("neighborhoods",geneSet,gene_id=gene,secondKey=sTag)
-						inGeneSet_withSwitches.add(gene)
-					else:
-						inGeneSet_withoutSwitches.add(gene)
+					self._gene_network.update_node("neighborhoods",geneSet,gene_id=gene,secondKey=sTag)
+					geneSets[geneSet]["switchIn"].add(gene)
 
-			for gene,info in [ (x,y) for x,y in self._gene_network.nodes(data=True) if y["ExpressedTranscripts"] and not y["isoformSwitches"]]:
+		# iterate all genes and disregard previously iterated
+		for gene,info in [ (x,y) for x,y in self._gene_network.nodes(data=True) if y["ExpressedTranscripts"] ]:
+			for geneSet in geneSets:
+				if gene in geneSets[geneSet]["switchOut"] or gene in geneSets[geneSet]["switchIn"]:
+					continue
+				
 				if gene not in geneSets[geneSet]["allGenes"]:
-					outGeneSet_withoutSwitches.add(gene)
+					geneSets[geneSet]["noswitchOut"].add(gene)
 				else:
-					inGeneSet_withoutSwitches.add(gene)
+					geneSets[geneSet]["noswitchIn"].add(gene)
 		
-			iInGeneSet_withSwitches 	= len(inGeneSet_withSwitches)
-			iInGeneSet_withoutSwitches 	= len(inGeneSet_withoutSwitches)
-			iOutGeneSet_withSwitches 	= len(outGeneSet_withSwitches)
-			iOutGeneSet_withoutSwitches = len(outGeneSet_withoutSwitches)
+		for geneSet in geneSets:
+			iInGeneSet_withSwitches 	= len(geneSets[geneSet]["switchIn"])
+			iInGeneSet_withoutSwitches 	= len(geneSets[geneSet]["noswitchIn"])
+			iOutGeneSet_withSwitches 	= len(geneSets[geneSet]["switchOut"])
+			iOutGeneSet_withoutSwitches = len(geneSets[geneSet]["noswitchOut"])
 
 			lContingencyTable = [[iInGeneSet_withSwitches,iInGeneSet_withoutSwitches],
 								[iOutGeneSet_withSwitches,iOutGeneSet_withoutSwitches]]
@@ -82,28 +81,19 @@ class NeighborhoodAnalysis(method.Method):
 
 			geneSets[geneSet]["pval"] = fPval
 			geneSets[geneSet]["oddsRatio"] = fOddsRatio
-			geneSets[geneSet]["switchGenes"] = inGeneSet_withSwitches
 
 		stats = importr('stats')
 		p_adjust = stats.p_adjust(FloatVector([geneSets[x]["pval"] for x in geneSets]), method='BH')
 
-		with open("{0}neighborhood_analysis/{1}.txt".format(options.Options().qout,sTag),"w") as OUT:
+		with open("{0}neighborhood_analysis/{1}{2}.txt".format(options.Options().qout,sTag,options.Options().filetag),"w") as OUT:
 			OUT.write("GeneSet\tpval\tqval\tSwitchingGenes\tOddsRatio\n")
 			for geneSet,adj_p in zip(geneSets,p_adjust):
 
-				switchGenes = ",".join([ self._gene_network._net.node[x]["symbol"] for x in geneSets[geneSet]["switchGenes"] ])
+				switchGenes = ",".join([ self._gene_network._net.node[x]["symbol"] for x in geneSets[geneSet]["switchIn"] ])
 
 				OUT.write("{0}\t{1}\t".format(geneSet,geneSets[geneSet]["pval"]))
 				OUT.write("{0}\t{1}\t".format(adj_p,switchGenes))
 				OUT.write("{0}\n".format(geneSets[geneSet]["oddsRatio"]))
-
-				# fill switch property in the positives
-				if adj_p <= 0.05:
-					for gene in geneSets[geneSet]["switchGenes"]:
-						for switch in self._gene_network._net.node[x]["isoformSwitches"]:
-							if switch._neighborhood_change is None:
-								switch._neighborhood_change = set()
-							switch._neighborhood_change.add((sTag,geneSet))
 
 	def findAffectedPathways(self,sTag,sSetFile):
 		affectedPathway = {}
@@ -124,7 +114,7 @@ class NeighborhoodAnalysis(method.Method):
 				switchSpread = [ 1 if x in switch.patients else 0 for x in options.Options().replicates ]
 				affectedPathway[geneSet] = [ x+y for x,y in zip(affectedPathway[geneSet],switchSpread)]
 
-		with open("{0}neighborhood_analysis/{1}_patientAffectation.txt".format(options.Options().qout,sTag),"w") as OUT:
+		with open("{0}neighborhood_analysis/{1}_patientAffectation{2}.txt".format(options.Options().qout,sTag,options.Options().filetag),"w") as OUT:
 			OUT.write("GeneSet\t{0}\n".format('\t'.join(map(str,options.Options().replicates) ) ) )
 
 			for geneSet in affectedPathway:
