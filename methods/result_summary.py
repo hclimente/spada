@@ -6,9 +6,6 @@ from methods import method
 
 from itertools import groupby
 from operator import itemgetter
-import pandas as pd
-
-import pdb
 
 class ResultSummary(method.Method):
 	def __init__(self, gn_network, tx_network, gn_subnetwork):
@@ -46,7 +43,7 @@ class ResultSummary(method.Method):
 		txDict = self._transcript_network.nodes(data=True)
 		total = 0
 
-		for gene,info,switchDict,switch in self._gene_network.iterate_nonRelevantSwitches_ScoreWise(self._transcript_network,partialCreation=True):
+		for gene,info,switchDict,switch in self._gene_network.iterate_relevantSwitches_ScoreWise(self._transcript_network,options.Options().onlyModels,partialCreation=True):
 			self.logger.debug("Getting statistics for switch {0}_{1}_{2}.".format(gene,switch.nTx,switch.tTx))
 
 			# general protein, switch and gene info
@@ -101,7 +98,7 @@ class ResultSummary(method.Method):
 		else:					self.switchStats["hasCdsChange"]["n"] += 1
 
 		if thisSwitch.utr_diff: self.switchStats["hasUtrChange"]["y"] += 1
-		else: 				self.switchStats["hasUtrChange"]["n"] += 1
+		else: 					self.switchStats["hasUtrChange"]["n"] += 1
 
 		if info["Driver"]:  self.switchStats["isDriver"]["y"] +=1
 		else: 				self.switchStats["isDriver"]["n"] +=1
@@ -158,19 +155,20 @@ class ResultSummary(method.Method):
 				self.exonStats.append(exonInfo)
 		
 	def printSwitchInfo(self,total):
-		with open("{0}result_summary/protein_centrality.tsv".format(options.Options().qout), "w" ) as F:
+
+		with open("{0}result_summary/protein_centrality{1}.tsv".format(options.Options().qout,options.Options().filetag), "w" ) as F:
 			for degree in self.proteinStats["centrality"]:
 				F.write("{0}\t{1}\n".format(options.Options().tag,degree))
 
-		with open("{0}result_summary/nIso_length.tsv".format(options.Options().qout), "w" ) as F:
+		with open("{0}result_summary/nIso_length{1}.tsv".format(options.Options().qout,options.Options().filetag), "w" ) as F:
 			for length in self.proteinStats["nIsoLength"]:
 				F.write("{0}\n".format(length))
 		
-		with open("{0}result_summary/tIso_length.tsv".format(options.Options().qout), "w" ) as F:
+		with open("{0}result_summary/tIso_length{1}.tsv".format(options.Options().qout,options.Options().filetag), "w" ) as F:
 			for length in self.proteinStats["tIsoLength"]:
 				F.write("{0}\n".format(length))
 
-		with open("{0}result_summary/switches.tsv".format(options.Options().qout), "w" ) as F:
+		with open("{0}result_summary/switches{1}.tsv".format(options.Options().qout,options.Options().filetag), "w" ) as F:
 			F.write("Cancer\tAnalysis\tBoth\tOnly_nIso\tOnly_tIso\tNone\tTotal\n")
 			F.write("{0}\tCDS_study\t".format(options.Options().tag ))
 			F.write("{0}\t{1}\t".format(self.switchStats["hasCds"]["both"],self.switchStats["hasCds"]["onlyN"]) )
@@ -194,7 +192,7 @@ class ResultSummary(method.Method):
 			F.write("{0}\t{1}\t".format(self.switchStats["isRelevant"]["y"],self.switchStats["isRelevant"]["n"]) )
 			F.write("{0}\n".format(total))
 
-		with open("{0}result_summary/exons.tsv".format(options.Options().qout), "w" ) as F:
+		with open("{0}result_summary/exons{1}.tsv".format(options.Options().qout,options.Options().filetag), "w" ) as F:
 			F.write("Cancer\tSwitch\tLength\tType\tKeepOrf\tPosition\n")
 			for exon in self.exonStats:
 				F.write("{0}\t{1}\t".format(options.Options().tag,exon["switch"]))
@@ -202,7 +200,8 @@ class ResultSummary(method.Method):
 				F.write("{0}\t{1}\n".format(exon["keepORF"],exon["position"]))
 
 	def printStructutalInfo(self,total):
-		with open("{0}result_summary/structural_summary.tsv".format(options.Options().qout), "w" ) as F:
+
+		with open("{0}result_summary/structural_summary{1}.tsv".format(options.Options().qout,options.Options().filetag), "w" ) as F:
 			F.write("Cancer\tSwitch\tPfam\tPRINTS\tProSitePatterns\t")
 			F.write("IUPREDLong\tIUPREDShort\tI3D\tDriver\n")
 			for s in self.featuresTable:
@@ -212,7 +211,7 @@ class ResultSummary(method.Method):
 				F.write("{0}\t{1}\t".format(len(self.featuresTable[s][4]),len(self.featuresTable[s][5])))
 				F.write("{0}\n".format(self.featuresTable[s][6]))
 
-		with open("{0}result_summary/structural_features.tsv".format(options.Options().qout), "w" ) as F:
+		with open("{0}result_summary/structural_features{1}.tsv".format(options.Options().qout,options.Options().filetag), "w" ) as F:
 			F.write("Cancer\tSwitch\tAnalysis\tAction\tFeature\tDriver\n")
 			
 			for s in self.featuresTable:
@@ -250,7 +249,7 @@ class ResultSummary(method.Method):
 					F.write("{0}\t{1}\tI3D\t".format(options.Options().tag,s))
 					F.write("{0}\t{1}\t{2}\n".format(i3d[1],i3d[0],Driver))
 
-		with open("{0}result_summary/structural_loops.tsv".format(options.Options().qout), "w" ) as F:
+		with open("{0}result_summary/structural_loops{1}.tsv".format(options.Options().qout,options.Options().filetag), "w" ) as F:
 			F.write("Cancer\tDifferent\t")
 			F.write("Same\tOnly_nIso\tOnly_tIso\tNone\tTotal\n")
 			F.write("{0}\t".format(options.Options().tag ))

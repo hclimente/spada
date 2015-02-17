@@ -28,7 +28,7 @@ class AnalyzeInteractions(method.Method):
 		
 		#Sort by score: drivers will be first to be analyzed. Then, genes with an isoform switch with 
 		#decreasing number of patients
-		for gene,info,switchDict,switch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network,only_first=True):
+		for gene,info,switchDict,switch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network,only_models=options.Options().onlyModels,partialCreation=True):
 			nIso = switch.nTx
 			tIso = switch.tTx
 

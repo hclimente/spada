@@ -22,6 +22,7 @@ class Options(object):
         self._iLoopsVersion         = options.iLoopsVersion
         self._unpairedReplicates    = set(options.unpairedReplicates.split(",")) if options.unpairedReplicates else set()
         self._tag                   = options.tag 
+        self._only_models           = options.onlyModels
         self._specificDrivers = "{0}Data/{1}/specificDrivers/{2}Drivers.txt".format(
                                             self._wd,self._inputType,self._tag)
         self._out           = "{0}/{1}/".format(self._inputType,self._tag)
@@ -54,6 +55,8 @@ class Options(object):
     @property
     def tag(self):                  return self._tag
     @property
+    def onlyModels(self):           return self._only_models
+    @property
     def out(self):                  return self._out
     @property
     def gout(self):                 return self._gOut
@@ -61,6 +64,14 @@ class Options(object):
     def qout(self):                 return self._quickOut
     @property
     def specificDrivers(self):      return self._specificDrivers
+    @property
+    def filetag(self):
+        filetag = ""
+
+        if self.onlyModels:
+            filetag += "_onlyModels"
+
+        return filetag
 
     def parseOptions(self, *args, **kwds):
         parser = Parser(prog="SmartAS.py", description = "Find significant alternative splicing switches. Analyze their functional impact.", epilog= "Hector Climente, 2014", fromfile_prefix_chars='@')
@@ -77,6 +88,8 @@ class Options(object):
                             type=float, help='Minimum expression to consider a transcript not residual.')
         parser.add_argument('-i', '--input-type', dest='inputType', action='store', default='TCGA',
                             help='Origin of the data.')
+        parser.add_argument('-a', '--all-switches', dest='onlyModels', action='store_false',
+                            help='Only use the model switches.')
         parser.add_argument('-r', '--replicates', dest='replicates', action='store',
                             help='Number of patients or biological replicates.')
         parser.add_argument('-v', '--iloops-version', dest='iLoopsVersion', action='store', 
@@ -92,6 +105,7 @@ class Options(object):
         parser.add_argument('-d', '--specific-drivers', dest='specificDrivers', action='store', default='',
                             help='Path of the specific drivers for the cancer type.')
 
+        parser.set_defaults(onlyModels=True)
         config_opt  = parser.parse_args()
         options     = parser.parse_args(["@" + config_opt.config_file])
         return options

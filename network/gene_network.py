@@ -20,8 +20,10 @@ class GeneNetwork(network.Network):
 		score(float,0.01)				Score of the gene for GUILD analysis.
 		scoreG(float,None)				Final GUILD score.
 		Driver(bool,False) 				Gene described as a driver.
+		ASDriver(bool,False) 			Gene described as driver through alternative splicing.
 		Druggable(bool,False) 			Gene described as druggable.
 		specificDriver(bool,False) 		Gene described as driver in this cancer type.
+		DriverType(str,"") 				Role that plays the gene in tumorigenesis.
 		RBP(bool,False) 				Gene described as a RBP.
 		EpiFactor(bool,False) 			Gene described as epigenetic factor.
 		ExpressedTranscripts(set,()) 	Set with transcripts with a significant expression.
@@ -77,22 +79,22 @@ class GeneNetwork(network.Network):
 								full_name, gene_id, gene_symbol) )
 		else:
 			self.logger.debug("Node {0} imported.".format(geneID))
-			self._net.add_node( 
-								geneID, 
+			self._net.add_node( geneID, 
 								symbol 					= geneSymbol,
 								isoformSwitches 		= [],
 								score 					= 0.01, 
 								scoreG 					= None,
 								specificDriver 			= False,
 								Driver 					= False, 
+								DriverType 				= None,
+								ASDriver 				= False,
 								Druggable 				= False, 
 								RBP 					= False, 
 								EpiFactor				= False, 
 								ExpressedTranscripts 	= set(),
 								diffExpression_logFC	= None,
 								diffExpression_p		= None,
-								neighborhoods			= {}
-							  )
+								neighborhoods			= {} )
 
 			return True
 
@@ -187,12 +189,23 @@ class GeneNetwork(network.Network):
 				self.update_node( "ExpressedTranscripts", line[0], gene_id=geneID )
 
 		# driver info
-		for line in utils.readTable("Data/Databases/cancer_drivers_from_networks.csv"):
+		for line in utils.readTable("Data/Databases/cancer_networks_SuppTables_v7_S7.csv"):
 			geneSymbol = line[0]
+			role = line[1]
 			
 			for gene,info in self.nodes(data=True):
 				if info["symbol"] == geneSymbol:
 					self.update_node("Driver",True,gene_id=gene )
+					self.update_node("DriverType",role,gene_id=gene )
+					break
+
+		# driver info
+		for line in utils.readTable("Data/Databases/cancer_networks_SuppTables_v7_S6.csv"):
+			geneSymbol = line[0]
+			
+			for gene,info in self.nodes(data=True):
+				if info["symbol"] == geneSymbol:
+					self.update_node("ASDriver",True,gene_id=gene )
 					break
 
 	def importCandidates(self):
@@ -393,13 +406,13 @@ class GeneNetwork(network.Network):
 				elif [ x for x in method_ids if x not in affinity_methods ]:
 					self.update_edge("score", 0.2, gene_id1=geneId_1, gene_id2=geneId_2)
 
-	def iterate_switches_ScoreWise(self,tx_network,only_first=False,partialCreation=False):
+	def iterate_switches_ScoreWise(self,tx_network,only_models=False,partialCreation=False):
 		"""Iterate through the isoform switches of a gene network, and
 			generate a list of (gene,geneInformation,isoformSwitch).
 			Only return those switches with an overlap between the CDS 
 			of the transcripts.
 
-			only_first(bool): if True, only the first switch (the most 
+			only_models(bool): if True, only the first switch (the most 
 				common) will be returned for each gene.
 		"""
 		sortedNodes = sorted(self.nodes(data=True),key=lambda (a,dct):dct['score'],reverse=True)
@@ -408,24 +421,24 @@ class GeneNetwork(network.Network):
 		for gene,info in sortedNodes:
 			if not info["isoformSwitches"]: continue
 
-			switchProvided = False
 			for switchDict in info["isoformSwitches"]:
-				if switchProvided: break
+				if only_models and (switchDict["noise"] or not switchDict["model"]):
+					continue
+
 				thisSwitch = self.createSwitch(switchDict,tx_network,partialCreation)
 
 				self.logger.debug("Iterating switch number {0}.".format(counter))
 				counter += 1
-				if only_first:
-					switchProvided = True
+				
 				yield gene,info,switchDict,thisSwitch
 
-	def iterate_relevantSwitches_ScoreWise(self,tx_network,only_first=False,partialCreation=False):
+	def iterate_relevantSwitches_ScoreWise(self,tx_network,only_models=False,partialCreation=False):
 		"""Iterate through the isoform switches of a gene network, and
 			generate a list of (gene,geneInformation,isoformSwitch).
 			Only return those switches with an overlap between the CDS 
 			of the transcripts and that have different features.
 
-			only_first(bool): if True, only the first switch (the most 
+			only_models(bool): if True, only the first switch (the most 
 				common) will be returned for each gene.
 		"""
 
@@ -435,25 +448,24 @@ class GeneNetwork(network.Network):
 		for gene,info in sortedNodes:
 			if not info["isoformSwitches"]: continue
 
-			switchProvided = False
 			for switchDict in info["isoformSwitches"]:
-				if switchProvided: break
+				if only_models and (switchDict["noise"] or not switchDict["model"]):
+					continue
+
 				thisSwitch = self.createSwitch(switchDict,tx_network,partialCreation)
 				
-				if thisSwitch.is_relevant and not switchProvided:
+				if thisSwitch.is_relevant:
 					self.logger.debug("Iterating switch number {0}.".format(counter))
 					counter += 1
-					if only_first:
-						switchProvided = True
 					yield gene,info,switchDict,thisSwitch
 
-	def iterate_nonRelevantSwitches_ScoreWise(self,tx_network,only_first=False,partialCreation=False):
+	def iterate_nonRelevantSwitches_ScoreWise(self,tx_network,only_models=False,partialCreation=False):
 		"""Iterate through the isoform switches of a gene network, and
 			generate a list of (gene,geneInformation,isoformSwitch).
 			Only return those switches with an overlap between the CDS 
 			of the transcripts and that have different features.
 
-			only_first(bool): if True, only the first switch (the most 
+			only_models(bool): if True, only the first switch (the most 
 				common) will be returned for each gene.
 		"""
 
@@ -463,16 +475,16 @@ class GeneNetwork(network.Network):
 		for gene,info in sortedNodes:
 			if not info["isoformSwitches"]: continue
 
-			switchProvided = False
 			for switchDict in info["isoformSwitches"]:
-				if switchProvided: break
+				if only_models and (switchDict["noise"] or not switchDict["model"]):
+					continue
+
 				thisSwitch = self.createSwitch(switchDict,tx_network,partialCreation)
 				
-				if not thisSwitch.is_relevant and not switchProvided:
+				if not thisSwitch.is_relevant:
 					self.logger.debug("Iterating switch number {0}.".format(counter))
 					counter += 1
-					if only_first:
-						switchProvided = True
+					
 					yield gene,info,switchDict,thisSwitch
 
 	def createSwitch(self,switchDict,tx_network,partialCreation):
@@ -491,3 +503,55 @@ class GeneNetwork(network.Network):
 			thisSwitch.addIsos(nInfo,tInfo)
 
 		return thisSwitch
+
+	def calculateCompatibilityTable(self):
+		incompatible = []
+		bestpatible = {}
+
+		for gene,info in self.nodes(data=True):
+			if not info["isoformSwitches"]:
+				continue
+
+			txs = []
+			[ txs.extend([x["nIso"],x["tIso"]]) for x in info["isoformSwitches"] ]
+
+			d = dict.fromkeys(set(txs), {"N":0,"T":0} )
+
+			for x in info["isoformSwitches"]:
+				d[x["nIso"]] = { "N":d[x["nIso"]]["N"]+len(x["patients"]), "T":d[x["nIso"]]["T"] }
+				d[x["tIso"]] = { "T":d[x["tIso"]]["T"]+len(x["patients"]), "N":d[x["tIso"]]["N"] }
+
+			scores = [ d[x]["N"] - d[x]["T"] for x in d ]
+			consensus = { 'N': [ x for x in d if max(scores) == (d[x]["N"]-d[x]["T"]) ], 
+						  'T': [ x for x in d if min(scores) == (d[x]["N"]-d[x]["T"]) ] }
+
+			sortedSwitches = sorted(info["isoformSwitches"],key=lambda (a):len(a['patients']),reverse=True)
+			for x in sortedSwitches:
+				if x["nIso"] in consensus["N"] and x["tIso"] in consensus["T"]:
+					bestpatible[gene] = [x["nIso"],x["tIso"],len(x["patients"])]
+					break
+
+			# no good switch could be found
+			if not gene in bestpatible:
+				continue
+
+			incompatible.append(max([max( d[x]["N"] for x in d if x == bestpatible[gene][1] ),max( d[x]["T"] for x in d if x == bestpatible[gene][0] )]))
+
+		threshold = np.percentile(incompatible,95)
+
+		for gene,info in self.nodes(data=True):
+			if not info["isoformSwitches"]: continue
+
+			for s in info["isoformSwitches"]:
+				if len(s["patients"]) <= threshold:
+					s["noise"] = True
+				else:
+					s["noise"] = False
+
+				if gene in bestpatible:
+					if s["nIso"] == bestpatible[gene][0] and s["tIso"] == bestpatible[gene][1]:
+						s["model"] = True
+					else:
+						s["model"] = False
+				else:
+					s["model"] = False
