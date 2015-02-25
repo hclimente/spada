@@ -26,9 +26,6 @@ class GetRandomSwitches(method.Method):
 		# remove real switches and calculate new ones
 		self.sampleSwitches(gnNetCopy)
 
-		import pdb
-		pdb.set_trace()
-
 		# calculate relevant switches
 		S = structural_analysis.StructuralAnalysis(gnNetCopy,self._transcript_network,isRand=True)
 		S.run()

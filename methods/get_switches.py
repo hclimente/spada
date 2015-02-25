@@ -14,9 +14,9 @@ class GetSwitches(method.Method):
 
 		self.calculateSwitches()
 
-		out_network.outputGTF(S._gene_network,S._transcript_network)
-		out_network.outCandidateList(S._gene_network,S._transcript_network)
-		export_to_MSAnalysis.Export2MSAnalysis().generateFile(S._gene_network,S._transcript_network)
+		out_network.outputGTF(self._gene_network,self._transcript_network)
+		out_network.outCandidateList(self._gene_network,self._transcript_network)
+		export_to_MSAnalysis.Export2MSAnalysis().generateFile(self._gene_network,self._transcript_network)
 
 		options.Options().printToFile(initialStep="get-relevant-switches")
 
