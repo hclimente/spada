@@ -499,8 +499,7 @@ class GeneNetwork(network.Network):
 		nInfo = tx_network._net.node[thisSwitch.nTx]
 		tInfo = tx_network._net.node[thisSwitch.tTx]
 		thisSwitch.addTxs(nInfo,tInfo)
-		if not partialCreation:
-			thisSwitch.addIsos(nInfo,tInfo)
+		thisSwitch.addIsos(nInfo,tInfo,partialCreation)
 
 		return thisSwitch
 
