@@ -22,6 +22,12 @@ The working directory must have the following structure:
 		* Using UniProt
 			* Interactome3D
 
+	* Precalculated files per protein
+		* InterPro annotation
+		* GPS phosphorylations
+		* ProSite motifs
+		* Fasta file containing as id the transcript id, gene fullname (entrez+symbol), the UniProt and the loops mapped with iLoops; the sequence is the annotated protein sequence (UnifiedFasta_iLoops13.fa)
+
 	* Annotation files
 		* TCGA transcript annotation file (knownGene.txt)
 		* GTF with the transcript annotation
