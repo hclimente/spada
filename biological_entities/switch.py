@@ -23,7 +23,10 @@ class IsoformSwitch:
 		self._iloops_change		 	= None
 		self._functional_change 	= None
 		self._disorder_change 		= None
+		self._anchor_change 		= None
 		self._broken_surfaces 		= None
+		self._ptm_change 			= None
+		self._gps 					= None
 		#Network analysis
 		self._guild_top1 			= None
 		self._guild_top5 			= None
@@ -64,8 +67,12 @@ class IsoformSwitch:
 		if self._disorder_change is None:
 			self.readRelevanceAnalysis()
 		return self._disorder_change
+	def anchorChange(self): 
+		if self._anchor_change is None:
+			self.readRelevanceAnalysis()
+		return self._anchor_change
 	@property
-	def brokenSurfaces(self): 
+	def brokenSurfacesanchor	(self): 
 		if self._broken_surfaces is None:
 			self.readRelevanceAnalysis()
 		return self._broken_surfaces
@@ -96,9 +103,9 @@ class IsoformSwitch:
 		"""
 		#cds_diff is required if there is any feature
 		#utr_diff only is impossible if a feature change is required
-		if None in [self.disorderChange,self.iloopsChange,self.brokenSurfaces,self.functionalChange]:
+		if None in [self.disorderChange,self.iloopsChange,self.anchorChange,self.functionalChange]:
 			self.readRelevanceAnalysis()
-		if self.cds_overlap and (self.disorderChange or self.iloopsChange or self.brokenSurfaces or self.functionalChange):
+		if self.cds_overlap and (self.disorderChange or self.iloopsChange or self.anchorChange or self.functionalChange):
 			return True
 		else:
 			return False
@@ -137,18 +144,20 @@ class IsoformSwitch:
 		self.get_cdsDiff()
 		self.get_utrDiff()
 
-	def addIsos(self,nInfo,tInfo):
+	def addIsos(self,nInfo,tInfo,partialCreation=False):
 		"""Creates the isoform objects for the transcripts involved
 		in the switch if they have an UniProt identifier. If both do,
 		it calculates the shared and specific regions."""
 		if nInfo["Uniprot"]:
 			self._normal_protein = protein.Protein( self._normal_transcript_name, nInfo)
-			self._normal_protein.checkInteractome3DStructures()
+			if not partialCreation:
+				self._normal_protein.checkInteractome3DStructures()
 		if tInfo["Uniprot"]:
 			self._tumor_protein  = protein.Protein( self._tumor_transcript_name, tInfo)
-			self._tumor_protein.checkInteractome3DStructures()
+			if not partialCreation:
+				self._tumor_protein.checkInteractome3DStructures()
 
-		if self._normal_protein and self._tumor_protein:
+		if self._normal_protein and self._tumor_protein and not partialCreation:
 			self.getAlteredRegions()
 
 	def get_cdsDiff(self):
@@ -202,11 +211,14 @@ class IsoformSwitch:
 				if elements[3] == "True": self._iloops_change = True
 				elif elements[3] == "False": self._iloops_change = False
 
-				if elements[4] == "True": self._broken_surfaces = True
-				elif elements[4] == "False": self._broken_surfaces = False
+				# if elements[4] == "True": self._broken_surfaces = True
+				# elif elements[4] == "False": self._broken_surfaces = False
 
-				if elements[5] == "True": self._functional_change =True 
-				elif elements[5] == "False": self._functional_change =False
+				if elements[4] == "True": self._functional_change =True 
+				elif elements[4] == "False": self._functional_change =False
 
-				if elements[6] == "True": self._disorder_change = True
-				elif elements[6] == "False": self._disorder_change = False
+				if elements[5] == "True": self._disorder_change = True
+				elif elements[5] == "False": self._disorder_change = False
+
+				if elements[6] == "True": self._anchor_change = True
+				elif elements[6] == "False": self._anchor_change = False

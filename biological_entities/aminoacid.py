@@ -15,9 +15,14 @@ class AminoAcid:
 		self._pdbMapping 		= {}
 		self._genomicPosition 	= None
 		self._iuPred_score 		= None
+		self._anchor_score 		= None
+		self._kinases 	 		= set()
+		self._ptms 				= []
 
 	@property
 	def res(self): return self._res
+	@property
+	def num(self): return self._num
 	@property
 	def genomicPosition(self): return self._genomicPosition
 	def setGenomicPosition(self,genomicPosition): self._genomicPosition = genomicPosition
@@ -28,6 +33,13 @@ class AminoAcid:
 		else:
 			return True
 	def set_iuPredScore(self, value): self._iuPred_score = value
+	@property
+	def isAnchored(self):
+		if self._anchor_score < 0.5:
+			return False
+		else:
+			return True
+	def set_anchorScore(self, value): self._anchor_score = value
 	
 	@property
 	def tag(self): 

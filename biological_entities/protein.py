@@ -230,3 +230,39 @@ class Protein:
 	def getFeatures(self,interproOut):
 		for featInfo in interpro_analysis.InterproAnalysis().readInterpro(interproOut,self):
 			self._features.append(featInfo)
+
+	def getSegments(self,thing,minLength=1,gap=0):
+		segments = []
+		segment = []
+		gapped = []
+
+		for res in self._structure:
+			flag = False
+			if thing =="isoform-specific":
+				flag = res.isoformSpecific
+			elif thing =="anchor":
+				flag = res.isAnchored
+			elif thing =="disordered":
+				flag = res.isDisordered
+			else:
+				return None
+
+			if flag:
+				if gapped:
+					segment.extend(gapped)
+					gapped = []
+				segment.append(res)
+			elif segment:
+				if len(gapped) < gap:
+					gapped.append(res)
+				else:
+					if len(segment) >= minLength:
+						segments.append(segment)
+
+					gapped = []
+					segment = []
+
+		if len(segment) >= minLength:
+			segments.append(segment)
+
+		return segments
