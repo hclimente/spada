@@ -18,28 +18,40 @@ class StructuralAnalysis(method.Method):
 
 		tag = "_random" if isRand else ""
 
-		self._I3D_file = "{0}structural_analysis/I3D_analysis{1}.tsv".format(options.Options().qout,tag)
-		self.I3D = open(self._I3D_file,"w")
-		self.I3D.write("Gene\tSymbol\tTranscript\tUniprot\tPercent_affected_by_AS\t")
-		self.I3D.write("Fisher_p-value\tResidue_information\tIsoform_specific_residues\n")
+		# self._I3D_file = "{0}structural_analysis/I3D_analysis{1}.tsv".format(options.Options().qout,tag)
+		# self.I3D = open(self._I3D_file,"w")
+		# self.I3D.write("Gene\tSymbol\tTranscript\tUniprot\tPercent_affected_by_AS\t")
+		# self.I3D.write("Fisher_p-value\tResidue_information\tIsoform_specific_residues\n")
 
 		self._interpro_file = "{0}structural_analysis/InterPro_report{1}.tsv".format(options.Options().qout,tag)
 		self.IP = open(self._interpro_file,"w")
-		self.IP.write("Symbol\tGene\tnTx\ttTx\tAnalysis\tFeature_accesion\t")
+		self.IP.write("Symbol\tGene\tNormalTranscript\ttTumorTranscript\tAnalysis\tFeature_accesion\t")
 		self.IP.write("Feature\t(Additional) repetitions\n")
 
 		self._iupred_file = "{0}structural_analysis/iupred_analysis{1}.tsv".format(options.Options().qout,tag)
 		self.IU = open(self._iupred_file,"w")
-		self.IU.write("Gene\tTranscript\tAnalysis\tPercent_affected_by_AS\t")
-		self.IU.write("Motifs\t#aa_Isoform_specific_ordered\t")
-		self.IU.write("#aa_Non_isoform_specific_ordered\t")
-		self.IU.write("#aa_Isoform_specific_disordered\t")
-		self.IU.write("#aa_Non_isoform_specific_disordered\n")
+		self.IU.write("Symbol\tGene\tNormalTranscript\ttTumorTranscript\t")
+		self.IU.write("What\tSequence\tJaccard\n")
+				
+		self._anchor_file = "{0}structural_analysis/anchor_analysis{1}.tsv".format(options.Options().qout,tag)
+		self.ANCHOR = open(self._anchor_file,"w")
+		self.ANCHOR.write("Symbol\tGene\tNormalTranscript\ttTumorTranscript\t")
+		self.ANCHOR.write("What\tSequence\tJaccard\n")
+
+		self._prosite_file = "{0}structural_analysis/prosite_analysis{1}.tsv".format(options.Options().qout,tag)
+		self.PROSITE = open(self._prosite_file,"w")
+		self.PROSITE.write("Symbol\tGene\tNormalTranscript\t")
+		self.PROSITE.write("tTumorTranscript\tWhat\tMotif\n")
+
+		self._gps_file = "{0}structural_analysis/gps_analysis{1}.tsv".format(options.Options().qout,tag)
+		self.GPS = open(self._gps_file,"w")
+		self.GPS.write("Symbol\tGene\tNormalTranscript\ttTumorTranscript\tWhat\t")
+		self.GPS.write("Number\tResidue\tKinase\n")
 
 		self._relevance_info = "{0}structural_analysis/structural_summary{1}.tsv".format(options.Options().qout,tag)
 		self.REL = open(self._relevance_info,"w")
-		self.REL.write("Gene\tNormalTranscript\tTumorTranscript\tiLoopsChange\t")
-		self.REL.write("BrokenSurface\tFunctionalChange\tDisorderChange\n")
+		self.REL.write("Gene\tNormalTranscript\tTumorTranscript\tiLoops\t")
+		self.REL.write("Domain\tDisorder\tAnchor\tPTM\tGPS\n")
 
 	def run(self):
 		self.logger.info("Structural analysis.")
@@ -54,16 +66,23 @@ class StructuralAnalysis(method.Method):
 
 		for gene,info,switchDict,switch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network):
 			switch._iloops_change 	  = self.findDiffLoops(switch,gene,info,isoInfo)
-			switch._broken_surfaces   = self.findBrokenSurfaces(switch,gene,info)
+			# switch._broken_surfaces = self.findBrokenSurfaces(switch,gene,info)
 			switch._functional_change = self.interProAnalysis(switch,gene,info)
 			switch._disorder_change   = self.disorderAnalysis(switch,gene,info)
+			switch._anchor_change     = self.anchorAnalysis(switch,gene,info)
+			switch._ptm_change 		  = self.prositeAnalysis(switch,gene,info)
+			switch._gps 		  	  = self.gpsAnalysis(switch,gene,info)
 
-			self.REL.write("{0}\t{1}\t{2}\t{3}\t".format(gene,switch.nTx,switch.tTx,switch._iloops_change))
-			self.REL.write("{0}\t{1}\t{2}\n".format(switch._broken_surfaces,switch._functional_change,switch._disorder_change))
+			self.REL.write("{0}\t{1}\t{2}\t".format(gene,switch.nTx,switch.tTx))
+			self.REL.write("{0}\t{1}\t".format(switch._iloops_change,switch._functional_change))
+			self.REL.write("{0}\t{1}\t".format(switch._disorder_change,switch._anchor_change))
+			self.REL.write("{0}\t{1}\n".format(switch._ptm_change,switch._gps))
 
-		self.I3D_REPORT.close()
+		#self.I3D.close()
 		self.IP.close()
 		self.IU.close()
+		self.ANCHOR.close()
+		self.GPS.close()
 		self.REL.close()
 
 	def findDiffLoops(self,switch,gene,info,isoInfo):
@@ -210,21 +229,13 @@ class StructuralAnalysis(method.Method):
 		normalProtein = switch.nIsoform
 		tumorProtein = switch.tIsoform
 
-		for protein in [normalProtein,tumorProtein]:
-			if not protein: continue
+		if not normalProtein or not tumorProtein: return None
 
+		for protein,whatsHappening in zip([normalProtein,tumorProtein],["Lost in tumor","Gained in tumor"]):
 			with open(options.Options().qout+"protein.fa","w") as FASTA:
 				FASTA.write(">{0}\n{1}\n".format(protein.tx,protein.seq))
 
 			for mode in ["short","long"]:
-
-				counter = {	"specific" 	: { "ordered": 0.0,"disordered":0.0}, 
-							"unspecific": { "ordered": 0.0,"disordered":0.0} }
-
-				motif 	= ""
-				motifs 	= []
-				gap 	= ""
-
 				proc = utils.cmdOut(options.Options().wd+"Pipeline/libs/bin/iupred/iupred",options.Options().qout+"protein.fa",mode)
 
 				#Parse iupred output
@@ -234,71 +245,196 @@ class StructuralAnalysis(method.Method):
 					score 	= float(line[-1])
 
 					thisRes = protein._structure[resNum-1]
+					if residue != thisRes.res:
+						self.logger.error("Not matching residue in ANCHOR analysis, transcript {0}.".format(protein.tx))
+						os.remove(options.Options().qout+"protein.fa")
+						continue
 					thisRes.set_iuPredScore(score)
 
-					res = residue.upper() if thisRes.isoformSpecific else residue.lower()
+				disordered = protein.getSegments("disordered",minLength=5,gap=2)
+				isoform = protein.getSegments("isoform-specific")
 
-					#Extract motifs in isoform specific, disordered regions.
-					#A gap of 2 can be allowed.
+				for disorderedRegion in disordered:
+					disorderedRegionSet = set(disorderedRegion)
 
-					if thisRes.isDisordered:
-						if gap: #Check if there is a preexisting motif
-							motif += gap
-							gap	   = ""
-						
-						motif += res
-					elif motif:
-						if len(gap) < 2: #Max allowed gap
-							gap += res
-						else: 
-							if len(motif) > 1:
-								motifs.append(motif)
-							motif 	= ""
-							gap 	= ""
+					overlappingIsoSpecific = []
 
-					#Count disordered and ordered residues, based on isoform specificity
-					if thisRes.isDisordered:
-						if thisRes.isoformSpecific:
-							counter["specific"]["disordered"] 	+= 1
-						else: 
-							counter["unspecific"]["disordered"] += 1
-					else:
-						if thisRes.isoformSpecific:
-							counter["specific"]["ordered"] 		+= 1
-						else: 
-							counter["unspecific"]["ordered"] 	+= 1
+					for isoSpecific in isoform:
+						isoSpecificSet = set(isoSpecific)
 
-				if len(motif) > 1:
-					motifs.append(motif)
+						if isoSpecificSet & disorderedRegionSet:
+							overlappingIsoSpecific.extend(isoSpecific)
+					
+					if not overlappingIsoSpecific:
+						continue
 
-				usefulMotifs = set()
-				for motif in motifs:
-					isoSpecResidues 	= float(sum(1 for c in motif if c.isupper()))
-					nonIsoSpecResidues 	= float(sum(1 for c in motif if c.islower()))
+					overlappingIsoSpecificSet = set(overlappingIsoSpecific)
 
-					ratio = isoSpecResidues/(isoSpecResidues+nonIsoSpecResidues)	
+					intersection = float(len(overlappingIsoSpecificSet & disorderedRegionSet))
+					union = float(len(overlappingIsoSpecificSet | disorderedRegionSet))
 
-					if ratio >= 0.2:
-						usefulMotifs.add(motif)
-						if switch._disorder_change is None:
-							switch._disorder_change = []
-						switch._disorder_change.append(motif)
-			
-				self.IU.write("{0}\t{1}\t".format(gene,info["symbol"]))
-				self.IU.write("{0}\t{1}\t".format(protein.tx,mode))
-				self.IU.write("{0}\t".format(",".join(usefulMotifs)))
-				self.IU.write("{0}\t".format(int(counter["specific"]["ordered"])) )
-				self.IU.write("{0}\t".format(int(counter["unspecific"]["ordered"])) )
-				self.IU.write("{0}\t".format(int(counter["specific"]["disordered"])) )
-				self.IU.write("{0}\n".format(int(counter["unspecific"]["disordered"])) )
+					jaccard = intersection/union
+
+					motifSequence = ""
+					for thisRes in disorderedRegion:
+						res = thisRes.res.upper() if thisRes.isoformSpecific else thisRes.res.lower()
+						motifSequence += res
+
+					self.IU.write("{0}\t{1}\t".format(gene,info["symbol"]))
+					self.IU.write("{0}\t{1}\t".format(normalProtein.tx,tumorProtein.tx))
+					self.IU.write("{0}\t{1}\t".format(whatsHappening,motifSequence))
+					self.IU.write("{0}\n".format(jaccard))
+					
+			os.remove(options.Options().qout+"protein.fa")
+
+		return None
+
+	def anchorAnalysis(self,switch,gene,info):
+
+		self.logger.debug("ANCHOR: Searching anchoring regions for gene {0}.".format(gene))
+		
+		normalProtein = switch.nIsoform
+		tumorProtein = switch.tIsoform
+
+		if not normalProtein or not tumorProtein: return None
+
+		for protein,whatsHappening in zip([normalProtein,tumorProtein],["Lost in tumor","Gained in tumor"]):
+			with open(options.Options().qout+"protein.fa","w") as FASTA:
+				FASTA.write(">{0}\n{1}\n".format(protein.tx,protein.seq))
+
+			proc = utils.cmdOut(options.Options().wd+"Pipeline/libs/ANCHOR/anchor",options.Options().qout+"protein.fa")
+
+			#Parse anchor output
+			for line in [ x.strip().split("\t") for x in proc.stdout if "#" not in x ]:
+				resNum  = int(line[0])
+				residue	= line[1]
+				score 	= float(line[2].strip())
+
+				thisRes = protein._structure[resNum-1]
+
+				if residue != thisRes.res:
+					self.logger.error("Not matching residue in ANCHOR analysis, transcript {0}.".format(protein.tx))
+					os.remove(options.Options().qout+"protein.fa")
+					continue
+
+				thisRes.set_anchorScore(score)
+
+			anchor = protein.getSegments("anchor",minLength=5,gap=2)
+			isoform = protein.getSegments("isoform-specific")
+
+			for anchorRegion in anchor:
+				anchorRegionSet = set(anchorRegion)
+
+				overlappingIsoSpecific = []
+
+				for isoSpecific in isoform:
+					isoSpecificSet = set(isoSpecific)
+
+					if isoSpecificSet & anchorRegionSet:
+						overlappingIsoSpecific.extend(isoSpecific)
+				
+				if not overlappingIsoSpecific:
+					continue
+
+				overlappingIsoSpecificSet = set(overlappingIsoSpecific)
+
+				intersection = float(len(overlappingIsoSpecificSet & anchorRegionSet))
+				union = float(len(overlappingIsoSpecificSet | anchorRegionSet))
+
+				jaccard = intersection/union
+
+				motifSequence = ""
+				for thisRes in anchorRegion:
+					res = thisRes.res.upper() if thisRes.isoformSpecific else thisRes.res.lower()
+					motifSequence += res
+
+				self.ANCHOR.write("{0}\t{1}\t".format(gene,info["symbol"]))
+				self.ANCHOR.write("{0}\t{1}\t".format(normalProtein.tx,tumorProtein.tx))
+				self.ANCHOR.write("{0}\t{1}\t".format(whatsHappening,motifSequence))
+				self.ANCHOR.write("{0}\n".format(jaccard))
 
 			os.remove(options.Options().qout+"protein.fa")
 
-		if switch._disorder_change is None or not switch._disorder_change: 
-			return False
-		else: 
-			self.logger.debug("IUPRED: information found for gene {0}.".format(gene))
-			return True
+		return None
+
+	def prositeAnalysis(self,switch,gene,info):
+
+		normalProtein = switch.nIsoform
+		tumorProtein = switch.tIsoform
+		happenings = {}
+
+		for protein,whatsHappening in zip([normalProtein,tumorProtein],["Lost in tumor","Gained in tumor"]):
+			if not protein: continue
+
+			txFile = "{0}Data/TCGA/ProSite/{1}.out".format(options.Options().qout,protein.tx)
+			if not os.path.isfile(txFile) or os.stat(txFile).st_size == 0:
+				continue
+			
+			for line in utils.readTable(txFile,header=False):
+				score = float(line[1])
+				start = int(line[3][:-2])
+				end = int(line[4])
+				motif = line[5]
+
+				for resNum in range(start,end):
+					thisRes = protein._structure[resNum-1]
+					thisRes._ptm.append(motif)
+
+			happenings[whatsHappening] = [ x for x in protein._structure if x._ptm and x.isoformSpecific ]
+
+		anyPTM = False
+		for whatsHappening in happenings:
+			for thisRes in happenings[whatsHappening]:
+				self.PROSITE.write("{0}\t{1}\t{2}\t".format(info["symbol"],gene,switch.nTx))
+				self.PROSITE.write("{0}\t{1}\t{2}\n".format(switch.tTx,whatsHappening,",".join(thisRes._ptm)))
+				anyPTM = True
+
+		return anyPTM
+
+	def gpsAnalysis(self,switch,gene,info):
+
+		normalProtein = switch.nIsoform
+		tumorProtein = switch.tIsoform
+		gpsFile = "{0}Data/TCGA/GPS.out".format(options.Options().wd)
+		happenings = {}
+
+		for protein,whatsHappening in zip([normalProtein,tumorProtein],["Lost in tumor","Gained in tumor"]):
+			if not protein: continue
+			reading = False
+			for line in utils.readTable(gpsFile,header=False):
+				if protein.tx not in line[0] and not reading:
+					continue
+				elif protein.tx in line[0] and not reading:
+					reading = True
+					continue
+				elif ">" in line[0]:
+					reading = False
+					continue
+
+				resNum 		= int(line[0])
+				res 		= line[1]
+				kinase 		= line[2]
+				motif 		= line[3]
+				score 		= float(line[4])
+				threshold 	= float(line[5])
+
+				if score < threshold:
+					continue
+
+				thisRes = protein._structure[resNum-1]
+				thisRes._kinases.add(kinase)
+
+			happenings[whatsHappening] = [ x for x in protein._structure if x._kinases and x.isoformSpecific ]
+
+		anyPTM = False
+		for whatsHappening in happenings:
+			for thisRes in happenings[whatsHappening]:
+				self.GPS.write("{0}\t{1}\t{2}\t".format(info["symbol"],gene,switch.nTx))
+				self.GPS.write("{0}\t{1}\t{2}\t".format(switch.tTx,whatsHappening,thisRes.num))
+				self.GPS.write("{0}\t{1}\n".format(thisRes.res,",".join(thisRes._kinases)))
+				anyPTM = True
+
+		return anyPTM
 		
 if __name__ == '__main__':
 	pass
