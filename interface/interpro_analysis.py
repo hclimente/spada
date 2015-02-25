@@ -28,7 +28,7 @@ class InterproAnalysis:
             self._server.soapproxy.http_proxy = http_proxy_conf
 
     def launchAnalysis(self,tx,seq):
-        out = "{0}InterPro/{1}/{2}.tsv".format(options.Options().wd, options.Options().inputType, tx)
+        out = "{0}Data/{1}/InterPro/{2}.tsv".format(options.Options().wd, options.Options().inputType, tx)
 
         # asume that if the file is not present, 
         # its because no feature could be mapped
@@ -76,7 +76,7 @@ class InterproAnalysis:
 
         for cols in utils.readTable(interproOut, header=False):
 
-            acceptedAnalysis = ["Pfam","PRINTS","ProSitePatterns","ProSiteProfiles"]
+            acceptedAnalysis = ["Pfam"]
 
             # https://code.google.com/p/interproscan/wiki/OutputFormats#Tab-separated_values_format_%28TSV%29
             protein_accession   = cols[0] #Protein Accession
@@ -113,13 +113,13 @@ class InterproAnalysis:
             
             isoSpecificRes = set([ x._num for x in protein._structure if x.isoformSpecific ])
             featureRes = set(range(start,stop+1))
-            overlapRes = isoSpecificRes | featureRes
+            intersection = float(len(isoSpecificRes & featureRes))
 
             featInfo = {}
             featInfo["region"]          = [start,stop]
             featInfo["accession"]       = signature_accession
             featInfo["description"]     = signature_descript
             featInfo["analysis"]        = analysis
-            featInfo["percentAffected"] = float(len(overlapRes))/len(featureRes) * 100
+            featInfo["percentAffected"] = intersection/len(featureRes) * 100
 
             yield featInfo
