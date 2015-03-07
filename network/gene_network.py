@@ -417,6 +417,11 @@ class GeneNetwork(network.Network):
 		"""
 		sortedNodes = sorted(self.nodes(data=True),key=lambda (a,dct):dct['score'],reverse=True)
 		
+		if options.Options().parallelRange:
+			bottom = options.Options().parallelRange - 1
+			top = bottom + 50
+			sortedNodes = sortedNodes[bottom:top]
+
 		counter = 1
 		for gene,info in sortedNodes:
 			if not info["isoformSwitches"]: continue
@@ -444,6 +449,11 @@ class GeneNetwork(network.Network):
 
 		sortedNodes = sorted(self.nodes(data=True),key=lambda (a,dct):dct['score'],reverse=True)
 		
+		if options.Options().parallelRange:
+			bottom = options.Options().parallelRange - 1
+			top = bottom + 50
+			sortedNodes = sortedNodes[bottom:top]
+
 		counter = 1
 		for gene,info in sortedNodes:
 			if not info["isoformSwitches"]: continue
@@ -471,6 +481,11 @@ class GeneNetwork(network.Network):
 
 		sortedNodes = sorted(self.nodes(data=True),key=lambda (a,dct):dct['score'],reverse=True)
 		
+		if options.Options().parallelRange:
+			bottom = options.Options().parallelRange - 1
+			top = bottom + 50
+			sortedNodes = sortedNodes[bottom:top]
+
 		counter = 1
 		for gene,info in sortedNodes:
 			if not info["isoformSwitches"]: continue

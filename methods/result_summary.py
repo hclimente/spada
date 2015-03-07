@@ -7,9 +7,11 @@ from methods import method
 from itertools import groupby
 from operator import itemgetter
 
+import pdb
+
 class ResultSummary(method.Method):
-	def __init__(self, gn_network, tx_network, gn_subnetwork):
-		method.Method.__init__(self, __name__, gn_network, tx_network, gn_subnetwork)
+	def __init__(self,gn_network,tx_network):
+		method.Method.__init__(self, __name__,gn_network,tx_network)
 
 		self.sizes = {}
 
@@ -47,12 +49,12 @@ class ResultSummary(method.Method):
 			self.logger.debug("Getting statistics for switch {0}_{1}_{2}.".format(gene,switch.nTx,switch.tTx))
 
 			# general protein, switch and gene info
-			self.proteinOverview(switchDict,txDict)
-			self.switchAndExonOverview(gene,info,switchDict,switch)
+			# self.proteinOverview(switchDict,txDict)
+			# self.switchAndExonOverview(gene,info,switchDict,switch)
 
 			# structural info
-			self.changedFeatures(gene,info,switch)
-			self.loopChange(switch)
+			self.changedFeatures(gene,info,switchDict,switch)
+			# self.loopChange(switch)
 			#self.disorderChange(switch)
 			#self.functionalChange(switch)
 			
@@ -60,10 +62,10 @@ class ResultSummary(method.Method):
 
 		sortedNodes = sorted(self._gene_network.nodes(data=True), 
 							 key=lambda (a, dct): dct['score'], reverse=True)
-		for gene,info in sortedNodes:
-			self.proteinStats["centrality"].append(self._gene_network._net.degree(gene))
+		# for gene,info in sortedNodes:
+		# 	self.proteinStats["centrality"].append(self._gene_network._net.degree(gene))
 
-		self.printSwitchInfo(total)
+		# self.printSwitchInfo(total)
 		self.printStructutalInfo(total)
 		
 		#self.functionalChange()
@@ -202,52 +204,61 @@ class ResultSummary(method.Method):
 	def printStructutalInfo(self,total):
 
 		with open("{0}result_summary/structural_summary{1}.tsv".format(options.Options().qout,options.Options().filetag), "w" ) as F:
-			F.write("Cancer\tSwitch\tPfam\tPRINTS\tProSitePatterns\t")
-			F.write("IUPREDLong\tIUPREDShort\tI3D\tDriver\n")
+			F.write("Cancer\tGene\tSymbol\tnTx\ttTx\tPfam\t")
+			F.write("IUPREDLong\tIUPREDShort\tRelevant\tModel\t")
+			F.write("Noise\tDriver\tASDriver\tDriverType\n")
 			for s in self.featuresTable:
-				F.write("{0}\t{1}\t".format(options.Options().tag,s))
-				F.write("{0}\t{1}\t".format(len(self.featuresTable[s][0]),len(self.featuresTable[s][1])))
-				F.write("{0}\t{1}\t".format(len(self.featuresTable[s][2]),len(self.featuresTable[s][3])))
-				F.write("{0}\t{1}\t".format(len(self.featuresTable[s][4]),len(self.featuresTable[s][5])))
-				F.write("{0}\n".format(self.featuresTable[s][6]))
+				switchElements = s.split("_")
+				gene = switchElements[0]
+				symbol = switchElements[1]
+				nTx = switchElements[2]
+				tTx = switchElements[3]
+
+				F.write("{0}\t{1}\t".format(options.Options().tag,gene))
+				F.write("{0}\t{1}\t{2}\t".format(symbol,nTx,tTx))
+				F.write("{0}\t{1}\t".format(len(self.featuresTable[s]["Pfam"]),len(self.featuresTable[s]["IUPREDLong"])))
+				F.write("{0}\t".format(len(self.featuresTable[s]["IUPREDShort"])))
+				F.write("{0}\t{1}\t".format(self.featuresTable[s]["Relevant"],self.featuresTable[s]["Model"]))
+				F.write("{0}\t{1}\t".format(self.featuresTable[s]["Noise"],self.featuresTable[s]["Driver"]))
+				F.write("{0}\t{1}\n".format(self.featuresTable[s]["ASDriver"],self.featuresTable[s]["DriverType"]))
 
 		with open("{0}result_summary/structural_features{1}.tsv".format(options.Options().qout,options.Options().filetag), "w" ) as F:
-			F.write("Cancer\tSwitch\tAnalysis\tAction\tFeature\tDriver\n")
+			F.write("Cancer\tGene\tSymbol\tnTx\ttTx\tAnalysis\tWhatsHappenning\t")
+			F.write("Feature\tRelevant\tModel\tNoise\tDriver\tASDriver\tDriverType\n")
 			
 			for s in self.featuresTable:
-				Pfam = self.featuresTable[s][0]
-				PRINTS = self.featuresTable[s][1]
-				ProSitePatterns = self.featuresTable[s][2]
-				IUPREDLong = self.featuresTable[s][3]
-				IUPREDShort = self.featuresTable[s][4]
-				I3D = self.featuresTable[s][5]
-				Driver = self.featuresTable[s][6]
+				switchElements = s.split("_")
+				gene = switchElements[0]
+				symbol = switchElements[1]
+				nTx = switchElements[2]
+				tTx = switchElements[3]
 
-				for pfamDom in Pfam:
-					F.write("{0}\t{1}\tPfam\t".format(options.Options().tag,s))
-					F.write("{0}\t{1}\t{2}\n".format(pfamDom[1],pfamDom[0],Driver))
+				for pfamDom in self.featuresTable[s]["Pfam"]:
+					F.write("{0}\t{1}\tPfam\t".format(options.Options().tag,gene))
+					F.write("{0}\t{1}\t{2}\t".format(symbol,nTx,tTx))
+					F.write("{0}\t{1}\t".format(pfamDom[1],pfamDom[0]))
+					F.write("{0}\t{1}\t".format(self.featuresTable[s]["Relevant"],self.featuresTable[s]["Model"]))
+					F.write("{0}\t{1}\t".format(self.featuresTable[s]["Noise"],self.featuresTable[s]["Driver"]))
+					F.write("{0}\t{1}\n".format(self.featuresTable[s]["ASDriver"],self.featuresTable[s]["DriverType"]))
 
-				for prints in PRINTS:
-					F.write("{0}\t{1}\tPRINTS\t".format(options.Options().tag,s))
-					F.write("{0}\t{1}\t{2}\n".format(prints[1],prints[0],Driver))
+				if self.featuresTable[s]["IUPREDLong"]:
+					for iulong in self.featuresTable[s]["IUPREDLong"][0]:
+						F.write("{0}\t{1}\tIUPREDLong\t".format(options.Options().tag,gene))
+						F.write("{0}\t{1}\t{2}\t".format(symbol,nTx,tTx))
 
-				for patt in ProSitePatterns:
-					F.write("{0}\t{1}\tProSitePatterns\t".format(options.Options().tag,s))
-					F.write("{0}\t{1}\t{2}\n".format(patt[1],patt[0],Driver))
+						F.write("{0}\t{1}\t".format(self.featuresTable[s]["IUPREDLong"][1],iulong))
+						F.write("{0}\t{1}\t".format(self.featuresTable[s]["Relevant"],self.featuresTable[s]["Model"]))
+						F.write("{0}\t{1}\t".format(self.featuresTable[s]["Noise"],self.featuresTable[s]["Driver"]))
+						F.write("{0}\t{1}\n".format(self.featuresTable[s]["ASDriver"],self.featuresTable[s]["DriverType"]))
 
-				if IUPREDLong:
-					for iulong in IUPREDLong[0]:
-						F.write("{0}\t{1}\tIUPREDLong\t".format(options.Options().tag,s))
-						F.write("{0}\t{1}\t{2}\n".format(IUPREDLong[1],iulong,Driver))
-
-				if IUPREDShort:
-					for iushort in IUPREDShort[0]:
-						F.write("{0}\t{1}\tIUPREDShort\t".format(options.Options().tag,s))
-						F.write("{0}\t{1}\t{2}\n".format(IUPREDShort[1],iushort,Driver))
-
-				for i3d in I3D:
-					F.write("{0}\t{1}\tI3D\t".format(options.Options().tag,s))
-					F.write("{0}\t{1}\t{2}\n".format(i3d[1],i3d[0],Driver))
+				if self.featuresTable[s]["IUPREDShort"]:
+					for iushort in self.featuresTable[s]["IUPREDShort"][0]:
+						F.write("{0}\t{1}\tIUPREDShort\t".format(options.Options().tag,gene))
+						F.write("{0}\t{1}\t{2}\t".format(symbol,nTx,tTx))
+						F.write("{0}\t{1}\t".format(self.featuresTable[s]["IUPREDShort"][1],iushort))
+						F.write("{0}\t{1}\t".format(self.featuresTable[s]["Relevant"],self.featuresTable[s]["Model"]))
+						F.write("{0}\t{1}\t".format(self.featuresTable[s]["Noise"],self.featuresTable[s]["Driver"]))
+						F.write("{0}\t{1}\n".format(self.featuresTable[s]["ASDriver"],self.featuresTable[s]["DriverType"]))
 
 		with open("{0}result_summary/structural_loops{1}.tsv".format(options.Options().qout,options.Options().filetag), "w" ) as F:
 			F.write("Cancer\tDifferent\t")
@@ -257,31 +268,25 @@ class ResultSummary(method.Method):
 			F.write("{0}\t{1}\t".format(self.loops["loopsChange"]["onlyN"],self.loops["loopsChange"]["onlyT"]) )
 			F.write("{0}\t{1}\n".format(self.loops["loopsChange"]["noLoops"],total ))
 
-	def changedFeatures(self,gene,info,switch):
+	def changedFeatures(self,gene,info,switchDict,switch):
 
-		tag = "{0}_{1}_{2}".format(gene,switch.nTx,switch.tTx)
+		tag = "{0}_{1}_{2}_{3}".format(gene,info["symbol"],switch.nTx,switch.tTx)
 
-		self.featuresTable.setdefault(tag,[])
+		self.featuresTable.setdefault(tag,{})
 
 		if switch.functionalChange:
 			Pfam = []
-			PRINTS = []
-			ProSitePatterns = []
 
 			functionalChanges = ""
 			for element in utils.readTable("{0}structural_analysis/InterPro_report.tsv".format(options.Options().qout)):
 				if element[0]==gene and element[2] in [switch.nTx,switch.tTx]:
 					if element[4]=="Pfam":
 						Pfam.append((element[6],element[3]))
-					elif element[4]=="PRINTS":
-						PRINTS.append((element[6],element[3]))
-					elif element[4]=="ProSitePatterns":
-						ProSitePatterns.append((element[6],element[3]))
 
-			self.featuresTable[tag].extend([Pfam,PRINTS,ProSitePatterns])
+			self.featuresTable[tag]["Pfam"] = Pfam
 			
 		else:
-			self.featuresTable[tag].extend([[],[],[]])
+			self.featuresTable[tag]["Pfam"] = []
 		
 		if switch.disorderChange:
 			longDisorder = []
@@ -300,25 +305,18 @@ class ResultSummary(method.Method):
 						else:
 							longDisorder = (element[4].split(","),'Gained in tumor')
 			
-			self.featuresTable[tag].extend([shortDisorder,longDisorder])
+			self.featuresTable[tag]["IUPREDShort"] = shortDisorder
+			self.featuresTable[tag]["IUPREDLong"] = longDisorder
 		else:
-			self.featuresTable[tag].extend([[],[]])
+			self.featuresTable[tag]["IUPREDShort"] = []
+			self.featuresTable[tag]["IUPREDLong"] = []
 		
-		if switch.brokenSurfaces:
-			surfaceChanges = []
-
-			for element in utils.readTable("{0}structural_analysis/I3D_analysis.tsv".format(options.Options().qout)):
-				if element[0]==gene and element[2] in [switch.nTx,switch.tTx] and element[4]:
-					if element[2] == switch.nTx:
-						surfaceChanges.append((element[4],"Lost in tumor"))
-					else:
-						surfaceChanges.append((element[4],"Gained in tumor"))
-			
-			self.featuresTable[tag].append(surfaceChanges)
-		else:
-			self.featuresTable[tag].append([])
-
-		self.featuresTable[tag].append(info["Driver"])
+		self.featuresTable[tag]["Driver"] = int(info["Driver"])
+		self.featuresTable[tag]["ASDriver"] = int(info["ASDriver"])
+		self.featuresTable[tag]["DriverType"] = info["DriverType"]
+		self.featuresTable[tag]["Relevant"] = int(switch.is_relevant)
+		self.featuresTable[tag]["Model"] = int(switchDict["model"])
+		self.featuresTable[tag]["Noise"] = int(switchDict["noise"])
 
 	def loopChange(self,switch):
 		nIso = switch.nTranscript

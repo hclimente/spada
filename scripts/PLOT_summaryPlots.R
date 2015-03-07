@@ -315,3 +315,65 @@ colnames(structural_features_nrel) <- c("Cancer","Switch","Analysis","Action","F
 structural_features <- rbind(structural_features_rel,structural_features_nrel)
 
 featureCounts <- by(structural_features, structural_features$Analysis, table(x[,5))
+
+################ DOMAINS ENRICHMENT ################
+domains <- read.delim("~/Desktop/structural_features.onlyModels.tsv", header=FALSE)
+colnames(domains) <- c("Cancer","Gene","Analysis","Symbol","nTx","tTx","Action","Feature","Relevant","Model","Noise","Driver","ASDriver","DriverType")
+# once the new feature selection is run, this shouldn't be a problem
+domains <- domains[!is.na(domains$Feature),]
+
+uniqStuff <- unique( domains[domains$Analysis=='Pfam',c("Feature","Action")] )
+
+driverTest <- list()
+oncogeneTest <- list()
+suppressorTest <- list()
+for (i in 1:nrow(uniqStuff)){
+  feat <- uniqStuff[i,1]
+  action <- uniqStuff[i,2]
+  
+  
+  
+  usedFeature <- domains[domains$Action==action & domains$Feature==feat,]
+  nonUsedFeature <- domains[domains$Action!=action | domains$Feature!=feat,]
+  
+  driverTest[[i]] <- data.frame(Feature=feat, Action=action,
+                                FDriver=sum(usedFeature$Driver==1),
+                                FNonDriver=sum(usedFeature$Driver==0),
+                                NFDriver=sum(nonUsedFeature$Driver==1),
+                                NFNonDriver=sum(nonUsedFeature$Driver==0)
+  )
+  oncogeneTest[[i]] <- data.frame(Feature=feat, Action=action,
+                                  FOncogene=sum(usedFeature$DriverType=='oncogene'),
+                                  FNonOncogene=sum(usedFeature$DriverType!='oncogene'),
+                                  NFOncogene=sum(nonUsedFeature$DriverType=='oncogene'),
+                                  NFNonOncogene=sum(nonUsedFeature$DriverType!='oncogene')  )
+  
+  suppressorTest[[i]] <- data.frame(Feature=feat, Action=action,
+                                    FSuppressor=sum(usedFeature$DriverType=='suppressor'),
+                                    FNonSuppressor=sum(usedFeature$DriverType!='suppressor'),
+                                    NFSuppressor=sum(nonUsedFeature$DriverType=='suppressor'),
+                                    NFNonSuppressor=sum(nonUsedFeature$DriverType!='suppressor')  )
+  
+}
+
+driverTestDf <- do.call('rbind',driverTest)
+oncogeneTestDf <- do.call('rbind',oncogeneTest)
+suppressorTestDf <- do.call('rbind',suppressorTest)
+
+driverTestDf$p <- apply(driverTestDf,1, function(x){ 
+  k <- fisher.test(x=matrix(as.numeric(x[3:6]),nrow=2,ncol=2),alternative="greater")
+  k$p.value } )
+driverTestDf$p.adj <- p.adjust(driverTestDf$p)
+write.table(driverTestDf,file="~/Desktop/driverTest.tsv",sep="\t", row.names=F, col.names=F, quote=F)
+
+oncogeneTestDf$p <- apply(oncogeneTestDf,1, function(x){ 
+  k <- fisher.test(x=matrix(as.numeric(x[3:6]),nrow=2,ncol=2),alternative="greater")
+  k$p.value } )
+oncogeneTestDf$p.adj <- p.adjust(oncogeneTestDf$p)
+write.table(oncogeneTestDf,file="~/Desktop/oncogeneTest.tsv",sep="\t", row.names=F, col.names=F, quote=F)
+
+suppressorTestDf$p <- apply(suppressorTestDf,1, function(x){ 
+  k <- fisher.test(x=matrix(as.numeric(x[3:6]),nrow=2,ncol=2),alternative="greater")
+  k$p.value } )
+suppressorTestDf$p.adj <- p.adjust(suppressorTestDf$p)
+write.table(suppressorTestDf,file="~/Desktop/suppressorTest.tsv",sep="\t", row.names=F, col.names=F, quote=F)

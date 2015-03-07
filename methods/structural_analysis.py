@@ -8,54 +8,56 @@ from methods import method
 from collections import Counter
 from Bio import pairwise2
 import fisher
+import glob
+import numpy as np
 import os
 
 import pdb
 
 class StructuralAnalysis(method.Method):
-	def __init__(self, gn_network,tx_network,isRand=False):
+	def __init__(self,gn_network,tx_network,isRand=False):
 		method.Method.__init__(self, __name__,gn_network,tx_network)
 
+		self.isRandom = isRand
 		tag = "_random" if isRand else ""
 
-		# self._I3D_file = "{0}structural_analysis/I3D_analysis{1}.tsv".format(options.Options().qout,tag)
-		# self.I3D = open(self._I3D_file,"w")
-		# self.I3D.write("Gene\tSymbol\tTranscript\tUniprot\tPercent_affected_by_AS\t")
-		# self.I3D.write("Fisher_p-value\tResidue_information\tIsoform_specific_residues\n")
-
-		self._interpro_file = "{0}structural_analysis/InterPro_report{1}.tsv".format(options.Options().qout,tag)
+		self._interpro_file = "{0}structural_analysis/InterPro_report{1}{2}.tsv".format(options.Options().qout,tag,options.Options().filetag)
 		self.IP = open(self._interpro_file,"w")
 		self.IP.write("Symbol\tGene\tNormalTranscript\ttTumorTranscript\tAnalysis\tFeature_accesion\t")
 		self.IP.write("Feature\t(Additional) repetitions\n")
 
-		self._iupred_file = "{0}structural_analysis/iupred_analysis{1}.tsv".format(options.Options().qout,tag)
+		self._iupred_file = "{0}structural_analysis/iupred_analysis{1}{2}.tsv".format(options.Options().qout,tag,options.Options().filetag)
 		self.IU = open(self._iupred_file,"w")
 		self.IU.write("Symbol\tGene\tNormalTranscript\ttTumorTranscript\t")
-		self.IU.write("What\tSequence\tJaccard\n")
+		self.IU.write("What\tSequence\tJaccard\tThreshold\tSignificant\n")
 				
-		self._anchor_file = "{0}structural_analysis/anchor_analysis{1}.tsv".format(options.Options().qout,tag)
+		self._anchor_file = "{0}structural_analysis/anchor_analysis{1}{2}.tsv".format(options.Options().qout,tag,options.Options().filetag)
 		self.ANCHOR = open(self._anchor_file,"w")
 		self.ANCHOR.write("Symbol\tGene\tNormalTranscript\ttTumorTranscript\t")
-		self.ANCHOR.write("What\tSequence\tJaccard\n")
+		self.ANCHOR.write("What\tSequence\tJaccard\tThreshold\tSignificant\n")
 
-		self._prosite_file = "{0}structural_analysis/prosite_analysis{1}.tsv".format(options.Options().qout,tag)
+		self._prosite_file = "{0}structural_analysis/prosite_analysis{1}{2}.tsv".format(options.Options().qout,tag,options.Options().filetag)
 		self.PROSITE = open(self._prosite_file,"w")
 		self.PROSITE.write("Symbol\tGene\tNormalTranscript\t")
 		self.PROSITE.write("tTumorTranscript\tWhat\tMotif\n")
 
-		self._gps_file = "{0}structural_analysis/gps_analysis{1}.tsv".format(options.Options().qout,tag)
+		self._gps_file = "{0}structural_analysis/gps_analysis{1}{2}.tsv".format(options.Options().qout,tag,options.Options().filetag)
 		self.GPS = open(self._gps_file,"w")
 		self.GPS.write("Symbol\tGene\tNormalTranscript\ttTumorTranscript\tWhat\t")
 		self.GPS.write("Number\tResidue\tKinase\n")
 
-		self._relevance_info = "{0}structural_analysis/structural_summary{1}.tsv".format(options.Options().qout,tag)
+		self._relevance_info = "{0}structural_analysis/structural_summary{1}{2}.tsv".format(options.Options().qout,tag,options.Options().filetag)
 		self.REL = open(self._relevance_info,"w")
 		self.REL.write("Gene\tNormalTranscript\tTumorTranscript\tiLoops\t")
 		self.REL.write("Domain\tDisorder\tAnchor\tPTM\tGPS\n")
 
-	def run(self):
+		if not self.isRandom:
+			self.joinRandomFiles()
+
+	def run(self):		
 		self.logger.info("Structural analysis.")
 
+		# get loops families
 		isoInfo = {}
 		for line in open(options.Options().wd+"Data/TCGA/UnifiedFasta_iLoops13.fa"):
 			if ">" in line:
@@ -64,7 +66,15 @@ class StructuralAnalysis(method.Method):
 				isoInfo[elements[0][1:]]["UniProt"] = elements[2]
 				isoInfo[elements[0][1:]]["iLoopsFamily"] = elements[3]
 
-		for gene,info,switchDict,switch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network):
+		# get thresholds from random switches
+		if self.isRandom:
+			self.anchor_threshold = 0
+			self.iupred_threshold = 0
+		else:
+			self.anchor_threshold = self.getThresholdFromRandom("anchor",95)
+			self.iupred_threshold = self.getThresholdFromRandom("iupred",95)
+
+		for gene,info,switchDict,switch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network,partialCreation=True):
 			switch._iloops_change 	  = self.findDiffLoops(switch,gene,info,isoInfo)
 			# switch._broken_surfaces = self.findBrokenSurfaces(switch,gene,info)
 			switch._functional_change = self.interProAnalysis(switch,gene,info)
@@ -99,7 +109,7 @@ class StructuralAnalysis(method.Method):
 			else:
 				return False
 
-		return None
+		return False
 
 	def findBrokenSurfaces(self,switch,gene,info):
 
@@ -226,17 +236,18 @@ class StructuralAnalysis(method.Method):
 
 		self.logger.debug("IUPRED: Searching disorder for gene {0}.".format(gene))
 		
+		anyIUpredSeq = False
 		normalProtein = switch.nIsoform
 		tumorProtein = switch.tIsoform
 
-		if not normalProtein or not tumorProtein: return None
+		if not normalProtein or not tumorProtein: return False
 
 		for protein,whatsHappening in zip([normalProtein,tumorProtein],["Lost in tumor","Gained in tumor"]):
-			with open(options.Options().qout+"protein.fa","w") as FASTA:
+			with open("{0}protein{1}.fa".format(options.Options().qout,options.Options().filetag),"w") as FASTA:
 				FASTA.write(">{0}\n{1}\n".format(protein.tx,protein.seq))
 
 			for mode in ["short","long"]:
-				proc = utils.cmdOut(options.Options().wd+"Pipeline/libs/bin/iupred/iupred",options.Options().qout+"protein.fa",mode)
+				proc = utils.cmdOut(options.Options().wd+"Pipeline/libs/bin/iupred/iupred","{0}protein{1}.fa".format(options.Options().qout,options.Options().filetag),mode)
 
 				#Parse iupred output
 				for line in [ x.strip().split(" ") for x in proc.stdout if "#" not in x ]:
@@ -247,7 +258,7 @@ class StructuralAnalysis(method.Method):
 					thisRes = protein._structure[resNum-1]
 					if residue != thisRes.res:
 						self.logger.error("Not matching residue in ANCHOR analysis, transcript {0}.".format(protein.tx))
-						os.remove(options.Options().qout+"protein.fa")
+						os.remove("{0}protein{1}.fa".format(options.Options().qout,options.Options().filetag))
 						continue
 					thisRes.set_iuPredScore(score)
 
@@ -283,26 +294,31 @@ class StructuralAnalysis(method.Method):
 					self.IU.write("{0}\t{1}\t".format(gene,info["symbol"]))
 					self.IU.write("{0}\t{1}\t".format(normalProtein.tx,tumorProtein.tx))
 					self.IU.write("{0}\t{1}\t".format(whatsHappening,motifSequence))
-					self.IU.write("{0}\n".format(jaccard))
-					
-			os.remove(options.Options().qout+"protein.fa")
+					self.IU.write("{0}\t{1}\t".format(jaccard,self.iupred))
+					self.IU.write("{0}\n".format(int(jaccard > self.iupred)))
 
-		return None
+					if jaccard > self.iupred:
+						anyIUpredSeq = True
+					
+			os.remove("{0}protein{1}.fa".format(options.Options().qout,options.Options().filetag))
+
+		return anyIUpredSeq
 
 	def anchorAnalysis(self,switch,gene,info):
 
 		self.logger.debug("ANCHOR: Searching anchoring regions for gene {0}.".format(gene))
 		
+		anyAnchorSeq = False
 		normalProtein = switch.nIsoform
 		tumorProtein = switch.tIsoform
 
-		if not normalProtein or not tumorProtein: return None
+		if not normalProtein or not tumorProtein: return False
 
 		for protein,whatsHappening in zip([normalProtein,tumorProtein],["Lost in tumor","Gained in tumor"]):
-			with open(options.Options().qout+"protein.fa","w") as FASTA:
+			with open("{0}protein{1}.fa".format(options.Options().qout,options.Options().filetag),"w") as FASTA:
 				FASTA.write(">{0}\n{1}\n".format(protein.tx,protein.seq))
 
-			proc = utils.cmdOut(options.Options().wd+"Pipeline/libs/ANCHOR/anchor",options.Options().qout+"protein.fa")
+			proc = utils.cmdOut(options.Options().wd+"Pipeline/libs/ANCHOR/anchor","{0}protein{1}.fa".format(options.Options().qout,options.Options().filetag))
 
 			#Parse anchor output
 			for line in [ x.strip().split("\t") for x in proc.stdout if "#" not in x ]:
@@ -314,7 +330,7 @@ class StructuralAnalysis(method.Method):
 
 				if residue != thisRes.res:
 					self.logger.error("Not matching residue in ANCHOR analysis, transcript {0}.".format(protein.tx))
-					os.remove(options.Options().qout+"protein.fa")
+					os.remove("{0}protein{1}.fa".format(options.Options().qout,options.Options().filetag))
 					continue
 
 				thisRes.set_anchorScore(score)
@@ -351,11 +367,15 @@ class StructuralAnalysis(method.Method):
 				self.ANCHOR.write("{0}\t{1}\t".format(gene,info["symbol"]))
 				self.ANCHOR.write("{0}\t{1}\t".format(normalProtein.tx,tumorProtein.tx))
 				self.ANCHOR.write("{0}\t{1}\t".format(whatsHappening,motifSequence))
-				self.ANCHOR.write("{0}\n".format(jaccard))
+				self.ANCHOR.write("{0}\t{1}\t".format(jaccard,self.anchor))
+				self.ANCHOR.write("{0}\n".format(int(jaccard>self.anchor)))
 
-			os.remove(options.Options().qout+"protein.fa")
+				if jaccard > self.anchor:
+					anyAnchorSeq = True
 
-		return None
+			os.remove("{0}protein{1}.fa".format(options.Options().qout,options.Options().filetag))
+
+		return anyAnchorSeq
 
 	def prositeAnalysis(self,switch,gene,info):
 
@@ -435,6 +455,57 @@ class StructuralAnalysis(method.Method):
 				anyPTM = True
 
 		return anyPTM
+
+	def getThresholdFromRandom(self,sInputType,iQuantileThreshold):
+		sRandomFile = "{0}structural_analysis/{1}_analysis_random.tsv".format(options.Options().qout,sInputType)
+		jaccardIndex = []
+		for line in utils.readTable(sRandomFile):
+			jaccardIndex.append(int(line[6]))
+
+		threshold = np.percentile(jaccardIndex,iQuantileThreshold)
+
+		return threshold
+
+	def recalculateScores(self,sInputType,iQuantileThreshold):
+		sOldRandomFile = "{0}structural_analysis/{1}_analysis_random.tsv".format(options.Options().qout,sInputType)
+		sNewRandomFile = "{0}structural_analysis/{1}_analysis_newRandom.tsv".format(options.Options().qout,sInputType)
+		
+		threshold = self.getThresholdFromRandom(sInputType,iQuantileThreshold)
+
+		with open(sNewRandomFile,"w") as newRandom:
+			
+			newRandom.write("Symbol\tGene\tNormalTranscript\ttTumorTranscript\t")
+			newRandom.write("What\tSequence\tJaccard\tThreshold\tSignificant\n")
+
+			for line in utils.readTable(sOldRandomFile):
+				jaccard = int(line[6])
+
+				newRandom.write("{0}\t{1}\t".format(line[0],line[1]))
+				newRandom.write("{0}\t{1}\t".format(line[2],line[3]))
+				newRandom.write("{0}\t{1}\t".format(line[4],line[5]))
+				newRandom.write("{0}\t{1}\t".format(line[6],threshold))
+				newRandom.write("{0}\n".format(int(jaccard > threshold)))
+
+		# ASEGURARSE DE QUE EL ARCHIVO ES CORRECTO
+		# os.rename(sNewRandomFile,sOldRandomFile)
+
+	def joinRandomFiles(self):
+
+		roots = ['InterPro_report','iupred_analysis','anchor_analysis','prosite_analysis']
+
+		for root in roots:
+			files = glob.glob("{0}structural_analysis/{1}_random_*.tsv".format(options.Options().qout,root))
+
+			with open("{0}structural_analysis/{1}_random.tsv".format(options.Options().qout,root)) as OUT:
+				for aFile in files:
+					with open(aFile) as IN:
+						OUT.write(IN.read())
+
+
+		# get thresholds from random switches
+		self.recalculateScores("anchor",95)
+		self.recalculateScores("iupred",95)
+
 		
 if __name__ == '__main__':
 	pass
