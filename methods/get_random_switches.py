@@ -14,7 +14,7 @@ class GetRandomSwitches(method.Method):
 	def __init__(self, gn_network, tx_network):
 		method.Method.__init__(self, __name__, gn_network, tx_network)
 
-		self.MAX_SWITCHES = 10
+		self.MAX_SWITCHES = 5
 
 	def run(self):
 		if not os.path.exists("{0}randomGeneNetwork.pkl".format(options.Options().qout)):
@@ -75,7 +75,7 @@ class GetRandomSwitches(method.Method):
 
 		randoms = []
 
-		for startingNode in range(1,len(self._gene_network.nodes()),50):
+		for startingNode in range(1,len(self._gene_network.nodes()),20):
 			cfg = options.Options().printToFile(filename="random_{0}_node{1}".format(options.Options().tag,startingNode),parallelRange=startingNode,onlyModels=False)
 			jt = s.createJobTemplate()
 			
