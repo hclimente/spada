@@ -41,8 +41,8 @@ do
 		echo $models >>$cfgFile
 	fi
 
-	
-
 	launchQ $fullTag "$fullTag"_$action
+
+	exit
 
 done < "$fileList"

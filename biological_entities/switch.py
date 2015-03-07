@@ -26,7 +26,7 @@ class IsoformSwitch:
 		self._anchor_change 		= None
 		self._broken_surfaces 		= None
 		self._ptm_change 			= None
-		self._gps 					= None
+		self._gps_change			= None
 		#Network analysis
 		self._guild_top1 			= None
 		self._guild_top5 			= None
@@ -67,15 +67,27 @@ class IsoformSwitch:
 		if self._disorder_change is None:
 			self.readRelevanceAnalysis()
 		return self._disorder_change
+	@property
 	def anchorChange(self): 
 		if self._anchor_change is None:
 			self.readRelevanceAnalysis()
 		return self._anchor_change
 	@property
-	def brokenSurfacesanchor	(self): 
+	def brokenSurfaces(self): 
 		if self._broken_surfaces is None:
 			self.readRelevanceAnalysis()
 		return self._broken_surfaces
+	@property
+	def gpsChange(self): 
+		if self._gps_change is None:
+			self.readRelevanceAnalysis()
+		return self._gps_change
+	@property
+	def ptmChange(self): 
+		if self._ptm_change is None:
+			self.readRelevanceAnalysis()
+		return self._ptm_change
+
 	@property
 	def guildTop1(self): return self._guild_top1
 	@property
@@ -101,11 +113,9 @@ class IsoformSwitch:
 				* I3D Interaction surfaces altered.
 				* Differences in mapped structural features.
 		"""
-		#cds_diff is required if there is any feature
-		#utr_diff only is impossible if a feature change is required
-		if None in [self.disorderChange,self.iloopsChange,self.anchorChange,self.functionalChange]:
-			self.readRelevanceAnalysis()
-		if self.cds_overlap and (self.disorderChange or self.iloopsChange or self.anchorChange or self.functionalChange):
+		# cds_diff is required if there is any feature
+		# utr_diff only is impossible if a feature change is required
+		if self.cds_overlap and (self.disorderChange or self.iloopsChange or self.anchorChange or self.functionalChange or self.gpsChange or self.ptmChange):
 			return True
 		else:
 			return False
@@ -208,17 +218,33 @@ class IsoformSwitch:
 
 		for elements in utils.readTable(options.Options().qout+"structural_analysis/structural_summary.tsv"):
 			if elements[1] == self.nTx and elements[2] == self.tTx:
+				# QUITAR CUANDO SE ACTUALIZEN LOS RELEVANTES
 				if elements[3] == "True": self._iloops_change = True
 				elif elements[3] == "False": self._iloops_change = False
 
-				# if elements[4] == "True": self._broken_surfaces = True
-				# elif elements[4] == "False": self._broken_surfaces = False
+				if elements[4] == "True": self._broken_surfaces = True
+				elif elements[4] == "False": self._broken_surfaces = False
 
-				if elements[4] == "True": self._functional_change =True 
-				elif elements[4] == "False": self._functional_change =False
+				if elements[5] == "True": self._functional_change =True 
+				elif elements[5] == "False": self._functional_change =False
 
-				if elements[5] == "True": self._disorder_change = True
-				elif elements[5] == "False": self._disorder_change = False
+				if elements[6] == "True": self._disorder_change = True
+				elif elements[6] == "False": self._disorder_change = False
 
-				if elements[6] == "True": self._anchor_change = True
-				elif elements[6] == "False": self._anchor_change = False
+				# if elements[3] == "True": self._iloops_change = True
+				# elif elements[3] == "False": self._iloops_change = False
+
+				# if elements[4] == "True": self._functional_change =True 
+				# elif elements[4] == "False": self._functional_change =False
+
+				# if elements[5] == "True": self._disorder_change = True
+				# elif elements[5] == "False": self._disorder_change = False
+
+				# if elements[6] == "True": self._anchor_change = True
+				# elif elements[6] == "False": self._anchor_change = False
+
+				# if elements[7] == "True": self._ptm_change = True
+				# elif elements[7] == "False": self._ptm_change = False
+
+				# if elements[8] == "True": self._gps_change = True
+				# elif elements[8] == "False": self._gps_change = False

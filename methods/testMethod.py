@@ -9,4 +9,8 @@ class Test(method.Method):
 		method.Method.__init__(self, __name__, gn_network, tx_network, gn_subnetwork)
 
 	def run(self):
-		self._gene_network.calculateCompatibilityTable()
+		for x in self._gene_network.nodes():
+			self._gene_network._net.node[x]["DriverType"] = None
+			self._gene_network._net.node[x]["ASDriver"] = False
+		self._gene_network.readGeneInfo()
+		self._gene_network.saveNetwork("geneNetwork.pkl")

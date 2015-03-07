@@ -30,6 +30,8 @@ class Options(object):
         self._gOut                  = self._gwd + "testResults/" + self._out
         self._quickOut              = self._wd + "testResults/" + self._out
 
+        self._parallelRange         = options.parallelRange
+
     # Getters ##
     @property
     def configFile(self):           return self._config_file
@@ -70,8 +72,14 @@ class Options(object):
 
         if self.onlyModels:
             filetag += "_onlyModels"
+        if self.parallelRange:
+            filetag += "_{0}".format(self.parallelRange)
 
         return filetag
+
+    @property
+    def parallelRange(self):        return self._parallelRange
+    
 
     def parseOptions(self, *args, **kwds):
         parser = Parser(prog="SmartAS.py", description = "Find significant alternative splicing switches. Analyze their functional impact.", epilog= "Hector Climente, 2014", fromfile_prefix_chars='@')
@@ -104,16 +112,23 @@ class Options(object):
                             help='Path of output data in Gaudi.')
         parser.add_argument('-d', '--specific-drivers', dest='specificDrivers', action='store', default='',
                             help='Path of the specific drivers for the cancer type.')
+        parser.add_argument('-p', '--parallel-range', dest='parallelRange', action='store', default='0',
+                            type=int,help='Range of nodes if parallel.')
 
         parser.set_defaults(onlyModels=True)
         config_opt  = parser.parse_args()
         options     = parser.parse_args(["@" + config_opt.config_file])
         return options
 
-    def printToFile(self, initialStep=None, wd=None, gwd=None, minExpression=None, inputType=None, replicates=None, iLoopsVersion=None, unpairedReplicates=None, tag=None, specificDrivers=None):
+    def printToFile(self,filename="",initialStep=None, wd=None, gwd=None, minExpression=None, inputType=None, replicates=None, iLoopsVersion=None, unpairedReplicates=None, tag=None, specificDrivers=None,parallelRange=None,onlyModels=None):
         """Print the config to a new file, only those values that are different 
         than the default ones. Overwrite those that are passed as arguments."""
-        with open(self._tag + ".cfg", "w") as CONFIG:
+        if not filename:
+            cfgFilename = "{0}{1}.cfg".format(self.wd,self._tag)
+        else:
+            cfgFilename = "{0}{1}.cfg".format(self.wd,filename)
+
+        with open(cfgFilename, "w") as CONFIG:
             if initialStep:
                 CONFIG.write("initial-step=" + str(initialStep) + "\n")
             elif self._initial_step != 0:
@@ -158,6 +173,12 @@ class Options(object):
                 CONFIG.write("tag=" + tag + "\n")
             elif self._tag:
                 CONFIG.write("tag=" + self._tag + "\n")
+
+            if parallelRange:
+                CONFIG.write("parallel-range={0}\n".format(parallelRange) )
+
+            if onlyModels is not None and not onlyModels:
+                CONFIG.write("all-switches\n" )
             
             if specificDrivers:
                 CONFIG.write("specific-drivers=" + specificDrivers + "\n")
@@ -165,6 +186,8 @@ class Options(object):
                 CONFIG.write("specific-drivers=" + self._specificDrivers + "\n")
             #if self._out:                   CONFIG.write("out=" + self._out + "\n")
             #if self._gOut:                  CONFIG.write("gOut=" + self._gOut + "\n")
+
+        return cfgFilename
 
 class Parser(argparse.ArgumentParser):
     def convert_arg_line_to_args(self, arg_line):
