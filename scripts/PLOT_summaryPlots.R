@@ -12,30 +12,30 @@ for (cancer in cancerTypes){
 }
 
 ################ CDS STUDY ################
-#CDS_study_all <- read.delim("/genomics/users/hector/TCGA_analysis/CDS_study.tsv", header=FALSE)
+#CDS_study_all <- read.delim("CDS_study.tsv", header=FALSE)
 #CDS_study_all <- cbind(CDS_study_all,"All")
 #colnames(CDS_study_all) <- c("Cancer","Analysis","Both","Only_nIso","Only_tIso","None","Total","Relevance")
 
-CDS_study_rel <- read.delim("/genomics/users/hector/TCGA_analysis/CDS_study_relevant.tsv", header=FALSE)
+CDS_study_rel <- read.delim("CDS_study_relevant.tsv", header=FALSE)
 CDS_study_rel <- cbind(CDS_study_rel,"Relevant")
 colnames(CDS_study_rel) <- c("Cancer","Analysis","Both","Only_nIso","Only_tIso","None","Total","Relevance")
 
-CDS_study_nrel <- read.delim("/genomics/users/hector/TCGA_analysis/CDS_study_nonrelevant.tsv", header=FALSE)
+CDS_study_nrel <- read.delim("CDS_study_nonrelevant.tsv", header=FALSE)
 CDS_study_nrel <- cbind(CDS_study_nrel,"NonRelevant")
 colnames(CDS_study_nrel) <- c("Cancer","Analysis","Both","Only_nIso","Only_tIso","None","Total","Relevance")
 
 CDS_study <- rbind(CDS_study_rel,CDS_study_nrel)
 
 ################ CDS CHANGE ################
-#CDS_change_all <- read.delim("/genomics/users/hector/TCGA_analysis/CDS_change.tsv", header=FALSE)
+#CDS_change_all <- read.delim("CDS_change.tsv", header=FALSE)
 #CDS_change_all <- cbind(CDS_change_all,"All")
 #colnames(CDS_change_all) <- c("Cancer","Analysis","Yes","No","Total","Relevance")
 
-CDS_change_rel <- read.delim("/genomics/users/hector/TCGA_analysis/CDS_change_relevant.tsv", header=FALSE)
+CDS_change_rel <- read.delim("CDS_change_relevant.tsv", header=FALSE)
 CDS_change_rel <- cbind(CDS_change_rel,"Relevant")
 colnames(CDS_change_rel) <- c("Cancer","Analysis","Yes","No","Total","Relevance")
 
-CDS_change_nrel <- read.delim("/genomics/users/hector/TCGA_analysis/CDS_change_nonrelevant.tsv", header=FALSE)
+CDS_change_nrel <- read.delim("CDS_change_nonrelevant.tsv", header=FALSE)
 CDS_change_nrel <- cbind(CDS_change_nrel,"NonRelevant")
 colnames(CDS_change_nrel) <- c("Cancer","Analysis","Yes","No","Total","Relevance")
 
@@ -54,15 +54,15 @@ barplot(t(plotTable_CDS_change),beside=T,names.arg=unique(CDS_change$Cancer))
 graphics.off()
 
 ################ UTR CHANGE ################
-#UTR_change_all <- read.delim("/genomics/users/hector/TCGA_analysis/UTR_change.tsv", header=FALSE)
+#UTR_change_all <- read.delim("UTR_change.tsv", header=FALSE)
 #UTR_change_all <- cbind(UTR_change_all,"All")
 #colnames(UTR_change_all) <- c("Cancer","Analysis","Yes","No","Total","Relevance")
 
-UTR_change_rel <- read.delim("/genomics/users/hector/TCGA_analysis/UTR_change_relevant.tsv", header=FALSE)
+UTR_change_rel <- read.delim("UTR_change_relevant.tsv", header=FALSE)
 UTR_change_rel <- cbind(UTR_change_rel,"Relevant")
 colnames(UTR_change_rel) <- c("Cancer","Analysis","Yes","No","Total","Relevance")
 
-UTR_change_nrel <- read.delim("/genomics/users/hector/TCGA_analysis/UTR_change_nonrelevant.tsv", header=FALSE)
+UTR_change_nrel <- read.delim("UTR_change_nonrelevant.tsv", header=FALSE)
 UTR_change_nrel <- cbind(UTR_change_nrel,"NonRelevant")
 colnames(UTR_change_nrel) <- c("Cancer","Analysis","Yes","No","Total","Relevance")
 
@@ -81,7 +81,7 @@ barplot(t(plotTable_UTR_change),beside=T,names.arg=unique(UTR_change$Cancer))
 graphics.off()
 
 ################ RELEVANCE ANALYSIS ################
-Relevant <- read.delim("/genomics/users/hector/TCGA_analysis/Relevant.tsv", header=FALSE)
+Relevant <- read.delim("Relevant.tsv", header=FALSE)
 Relevant <- cbind(Relevant,"All")
 colnames(Relevant) <- c("Cancer","Analysis","Yes","No","Total","Relevance")
 
@@ -92,30 +92,30 @@ barplot(Relevant$Ratio,names.arg=unique(Relevant$Cancer))
 graphics.off()
 
 ################ LOOPS ################
-#structural_loops_all <- read.delim("/genomics/users/hector/TCGA_analysis/structural_loops.tsv", header=FALSE)
+#structural_loops_all <- read.delim("structural_loops.tsv", header=FALSE)
 #structural_loops_all <- cbind(structural_loops_all,"All")
 #colnames(structural_loops_all) <- c("Cancer","Different","Same","Only_nIso","Only_tIso","None","Total","Relevance")
 
-structural_loops_rel <- read.delim("/genomics/users/hector/TCGA_analysis/structural_loops_relevant.tsv", header=FALSE)
+structural_loops_rel <- read.delim("structural_loops_relevant.tsv", header=FALSE)
 structural_loops_rel <- cbind(structural_loops_rel,"Relevant")
 colnames(structural_loops_rel) <- c("Cancer","Different","Same","Only_nIso","Only_tIso","None","Total","Relevance")
 
-structural_loops_nrel <- read.delim("/genomics/users/hector/TCGA_analysis/structural_loops_nonrelevant.tsv", header=FALSE)
+structural_loops_nrel <- read.delim("structural_loops_nonrelevant.tsv", header=FALSE)
 structural_loops_nrel <- cbind(structural_loops_nrel,"NonRelevant")
 colnames(structural_loops_nrel) <- c("Cancer","Different","Same","Only_nIso","Only_tIso","None","Total","Relevance")
 
 structural_loops <- rbind(structural_loops_rel,structural_loops_nrel)
 
 ################ DRIVER AFFECTION ################
-#Driver_affection_all <- read.delim("/genomics/users/hector/TCGA_analysis/Driver_affection.tsv", header=FALSE)
+#Driver_affection_all <- read.delim("Driver_affection.tsv", header=FALSE)
 #Driver_affection_all <- cbind(Driver_affection_all,"All")
 #colnames(Driver_affection_all) <- c("Cancer","Analysis","Yes","No","Total","Relevance")
 
-Driver_affection_rel <- read.delim("/genomics/users/hector/TCGA_analysis/Driver_affection_relevant.tsv", header=FALSE)
+Driver_affection_rel <- read.delim("Driver_affection_relevant.tsv", header=FALSE)
 Driver_affection_rel <- cbind(Driver_affection_rel,"Relevant")
 colnames(Driver_affection_rel) <- c("Cancer","Analysis","Yes","No","Total","Relevance")
 
-Driver_affection_nrel <- read.delim("/genomics/users/hector/TCGA_analysis/Driver_affection_nonrelevant.tsv", header=FALSE)
+Driver_affection_nrel <- read.delim("Driver_affection_nonrelevant.tsv", header=FALSE)
 Driver_affection_nrel <- cbind(Driver_affection_nrel,"NonRelevant")
 colnames(Driver_affection_nrel) <- c("Cancer","Analysis","Yes","No","Total","Relevance")
 
@@ -134,15 +134,15 @@ barplot(t(plotTable_Driver_affection),beside=T,names.arg=unique(Driver_affection
 graphics.off()
 
 ################ EXON ANALYSIS ################
-#exons_all <- read.delim("/genomics/users/hector/TCGA_analysis/exons.tsv", header=FALSE)
+#exons_all <- read.delim("exons.tsv", header=FALSE)
 #exons_all <- cbind(exons_all,"All")
 #colnames(exons_all) <- c("Cancer","switch","length","type","keepORF","position","Relevance")
 
-exons_rel <- read.delim("/genomics/users/hector/TCGA_analysis/exons_relevant.tsv", header=FALSE)
+exons_rel <- read.delim("exons_relevant.tsv", header=FALSE)
 exons_rel <- cbind(exons_rel,"Relevant")
 colnames(exons_rel) <- c("Cancer","Switch","length","type","keepORF","position","Relevance")
 
-exons_nrel <- read.delim("/genomics/users/hector/TCGA_analysis/exons_nonrelevant.tsv", header=FALSE)
+exons_nrel <- read.delim("exons_nonrelevant.tsv", header=FALSE)
 exons_nrel <- cbind(exons_nrel,"NonRelevant")
 colnames(exons_nrel) <- c("Cancer","Switch","length","type","keepORF","position","Relevance")
 
@@ -155,11 +155,11 @@ graphics.off()
 
 ################ exons per switch ################
 
-exonsPerSwitch_rel <- read.delim("/genomics/users/hector/TCGA_analysis/exonsPerSwitch_relevant.tsv", header=FALSE)
+exonsPerSwitch_rel <- read.delim("exonsPerSwitch_relevant.tsv", header=FALSE)
 exonsPerSwitch_rel <- cbind(exonsPerSwitch_rel,"Relevant")
 colnames(exonsPerSwitch_rel) <- c("Counts","Cancer","Switch","Relevance")
 
-exonsPerSwitch_nrel <- read.delim("/genomics/users/hector/TCGA_analysis/exonsPerSwitch_nonrelevant.tsv", header=FALSE)
+exonsPerSwitch_nrel <- read.delim("exonsPerSwitch_nonrelevant.tsv", header=FALSE)
 exonsPerSwitch_nrel <- cbind(exonsPerSwitch_nrel,"NonRelevant")
 colnames(exonsPerSwitch_nrel) <- c("Counts","Cancer","Switch","Relevance")
 
@@ -179,7 +179,7 @@ centrality_rel <- data.frame()
 centrality_nrel <- data.frame()
 
 for (cancer in cancerTypes){
-	basePath <- "/genomics/users/hector/TCGA_analysis/"
+	basePath <- ""
 	#cancer_all <- read.delim(paste0(basePath,cancer,".tIso_length.tsv"), header=FALSE)
 	#tiso_length_all <- rbind(tiso_length_all,cbind(cancer_all,cancer))
 	
@@ -207,7 +207,7 @@ niso_length_rel <- data.frame()
 niso_length_nrel <- data.frame()
 
 for (cancer in cancerTypes){
-	basePath <- "/genomics/users/hector/TCGA_analysis/"
+	basePath <- ""
 	#cancer_all <- read.delim(paste0(basePath,cancer,".tIso_length.tsv"), header=FALSE)
 	#tiso_length_all <- rbind(tiso_length_all,cbind(cancer_all,cancer))
 	
@@ -235,7 +235,7 @@ tiso_length_rel <- data.frame()
 tiso_length_nrel <- data.frame()
 
 for (cancer in cancerTypes){
-	basePath <- "/genomics/users/hector/TCGA_analysis/"
+	basePath <- ""
 	#cancer_all <- read.delim(paste0(basePath,cancer,".tIso_length.tsv"), header=FALSE)
 	#tiso_length_all <- rbind(tiso_length_all,cbind(cancer_all,cancer))
 	
@@ -258,11 +258,11 @@ boxplot(Length~interaction(Relevance,Cancer),data=tiso_length,outline=F,col=c("g
 graphics.off()
 
 ################ FEATURES AFFECTED ################
-Feats_affected_rel <- read.delim("/genomics/users/hector/TCGA_analysis/structural_summary_relevant.tsv", header=FALSE)
+Feats_affected_rel <- read.delim("structural_summary_relevant.tsv", header=FALSE)
 Feats_affected_rel <- cbind(Feats_affected_rel,"Relevant")
 colnames(Feats_affected_rel) <- c("Cancer","Switch","Pfam","PRINTS","ProSitePatterns","IUPREDLong","IUPREDShort","I3D","Driver","Relevance")
 
-Feats_affected_nrel <- read.delim("/genomics/users/hector/TCGA_analysis/structural_summary_nonrelevant.tsv", header=FALSE)
+Feats_affected_nrel <- read.delim("structural_summary_nonrelevant.tsv", header=FALSE)
 Feats_affected_nrel <- cbind(Feats_affected_nrel,"NonRelevant")
 colnames(Feats_affected_nrel) <- c("Cancer","Switch","Pfam","PRINTS","ProSitePatterns","IUPREDLong","IUPREDShort","I3D","Driver","Relevance")
 
@@ -300,18 +300,58 @@ boxplot(IUPREDLong~interaction(Driver,Cancer),data=Feats_affected[Feats_affected
 graphics.off()
 
 ################ STRUCTURAL FEATURES ################
-#exons_all <- read.delim("/genomics/users/hector/TCGA_analysis/exons.tsv", header=FALSE)
+#exons_all <- read.delim("exons.tsv", header=FALSE)
 #exons_all <- cbind(exons_all,"All")
 #colnames(exons_all) <- c("Cancer","switch","length","type","keepORF","position","Relevance")
 
-structural_features_rel <- read.delim("/genomics/users/hector/TCGA_analysis/structural_features_relevant.tsv", header=FALSE)
+structural_features_rel <- read.delim("structural_features_relevant.tsv", header=FALSE)
 structural_features_rel <- cbind(structural_features_rel,"Relevant")
 colnames(structural_features_rel) <- c("Cancer","Switch","Analysis","Action","Feature","Driver","Relevance")
 
-structural_features_nrel <- read.delim("/genomics/users/hector/TCGA_analysis/structural_features_nonrelevant.tsv", header=FALSE)
+structural_features_nrel <- read.delim("structural_features_nonrelevant.tsv", header=FALSE)
 structural_features_nrel <- cbind(structural_features_nrel,"NonRelevant")
 colnames(structural_features_nrel) <- c("Cancer","Switch","Analysis","Action","Feature","Driver","Relevance")
 
 structural_features <- rbind(structural_features_rel,structural_features_nrel)
 
-featureCounts <- by(structural_features, structural_features$Analysis, table(x[,5))
+PfamDriver <-sort(table(structural_features$Feature[structural_features$Analysis=='Pfam' & structural_features$Relevance=="Relevant" & structural_features$Driver=="True"]),decreasing=TRUE)
+PfamDriver <- PfamDriver[PfamDriver>0]
+PfamDriver <- 100*PfamDriver/length(structural_features$Feature[structural_features$Analysis=='Pfam' & structural_features$Relevance=="Relevant" & structural_features$Driver=="True"])
+
+PfamNonDriver <-sort(table(structural_features$Feature[structural_features$Analysis=='Pfam' & structural_features$Relevance=="Relevant" & structural_features$Driver=="False"]),decreasing=TRUE)
+PfamNonDriver <- PfamNonDriver[PfamNonDriver>0]
+PfamNonDriver <- 100*PfamNonDriver/length(structural_features$Feature[structural_features$Analysis=='Pfam' & structural_features$Relevance=="Relevant" & structural_features$Driver=="False"])
+
+PfamDriverGained <-sort(table(structural_features$Feature[structural_features$Analysis=='Pfam' & structural_features$Relevance=="Relevant" & structural_features$Driver=="True" & structural_features$Action=="Gained in tumor"]),decreasing=TRUE)
+PfamDriverGained <- PfamDriverGained[PfamDriverGained>0]
+PfamDriverGained <- 100*PfamDriverGained/length(structural_features$Feature[structural_features$Analysis=='Pfam' & structural_features$Relevance=="Relevant" & structural_features$Driver=="True" & structural_features$Action=="Gained in tumor"])
+
+PfamDriverLost <-sort(table(structural_features$Feature[structural_features$Analysis=='Pfam' & structural_features$Relevance=="Relevant" & structural_features$Driver=="True"  & structural_features$Action=="Lost in tumor"]),decreasing=TRUE)
+PfamDriverLost <- PfamDriverLost[PfamDriverLost>0]
+PfamDriverLost <- 100*PfamDriverLost/length(structural_features$Feature[structural_features$Analysis=='Pfam' & structural_features$Relevance=="Relevant" & structural_features$Driver=="True"  & structural_features$Action=="Lost in tumor"])
+
+write.table(PfamDriver,'PfamDriver.txt',quote=F,col.names=F)
+write.table(PfamNonDriver,'PfamNonDriver.txt',quote=F,col.names=F)
+write.table(PfamDriverLost,'PfamDriverLost.txt',quote=F,col.names=F)
+write.table(PfamDriverGained,'PfamDriverGained.txt',quote=F,col.names=F)
+
+ProSitePatternsDriver <-sort(table(structural_features$Feature[structural_features$Analysis=='ProSitePatterns' & structural_features$Relevance=="Relevant" & structural_features$Driver=="True"]),decreasing=TRUE)
+ProSitePatternsDriver <- ProSitePatternsDriver[ProSitePatternsDriver>0]
+ProSitePatternsDriver <- 100*ProSitePatternsDriver/length(structural_features$Feature[structural_features$Analysis=='ProSitePatterns' & structural_features$Relevance=="Relevant" & structural_features$Driver=="True"])
+
+ProSitePatternsNonDriver <-sort(table(structural_features$Feature[structural_features$Analysis=='ProSitePatterns' & structural_features$Relevance=="Relevant" & structural_features$Driver=="False"]),decreasing=TRUE)
+ProSitePatternsNonDriver <- ProSitePatternsNonDriver[ProSitePatternsNonDriver>0]
+ProSitePatternsNonDriver <- 100*ProSitePatternsNonDriver/length(structural_features$Feature[structural_features$Analysis=='ProSitePatterns' & structural_features$Relevance=="Relevant" & structural_features$Driver=="False"])
+
+ProSitePatternsDriverGained <-sort(table(structural_features$Feature[structural_features$Analysis=='ProSitePatterns' & structural_features$Relevance=="Relevant" & structural_features$Driver=="True" & structural_features$Action=="Gained in tumor"]),decreasing=TRUE)
+ProSitePatternsDriverGained <- ProSitePatternsDriverGained[ProSitePatternsDriverGained>0]
+ProSitePatternsDriverGained <- 100*ProSitePatternsDriverGained/length(structural_features$Feature[structural_features$Analysis=='ProSitePatterns' & structural_features$Relevance=="Relevant" & structural_features$Driver=="True" & structural_features$Action=="Gained in tumor"])
+
+ProSitePatternsDriverLost <-sort(table(structural_features$Feature[structural_features$Analysis=='ProSitePatterns' & structural_features$Relevance=="Relevant" & structural_features$Driver=="True"  & structural_features$Action=="Lost in tumor"]),decreasing=TRUE)
+ProSitePatternsDriverLost <- ProSitePatternsDriverLost[ProSitePatternsDriverLost>0]
+ProSitePatternsDriverLost <- 100*ProSitePatternsDriverLost/length(structural_features$Feature[structural_features$Analysis=='ProSitePatterns' & structural_features$Relevance=="Relevant" & structural_features$Driver=="True"  & structural_features$Action=="Lost in tumor"])
+
+write.table(ProSitePatternsDriver,'ProSitePatternsDriver.txt',quote=F,col.names=F)
+write.table(ProSitePatternsNonDriver,'ProSitePatternsNonDriver.txt',quote=F,col.names=F)
+write.table(ProSitePatternsDriverLost,'ProSitePatternsDriverLost.txt',quote=F,col.names=F)
+write.table(ProSitePatternsDriverGained,'ProSitePatternsDriverGained.txt',quote=F,col.names=F)
