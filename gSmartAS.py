@@ -91,7 +91,11 @@ if __name__ == '__main__':
 	logging.basicConfig(level=logging.DEBUG,
 						format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
 						datefmt='%m-%d %H:%M',
-					   	filename=options.Options().tag + '_smartAS_devel.log',
+					   	filename='{0}logs/{1}_smartAS_{2}{3}.log'.format(
+					   					options.Options().qout,
+					   					options.Options().tag,
+					   					options.Options().initialStep,
+					   					options.Options().filetag),
 					   	filemode='w')
 
 	console = logging.StreamHandler()
