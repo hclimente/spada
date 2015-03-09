@@ -71,17 +71,20 @@ class StructuralAnalysis(method.Method):
 			self.anchor_threshold = 0
 			self.iupred_threshold = 0
 		else:
-			self.anchor_threshold = self.getThresholdFromRandom("anchor",95)
-			self.iupred_threshold = self.getThresholdFromRandom("iupred",95)
+			pass
+			# QUITAR
+			#self.anchor_threshold = self.getThresholdFromRandom("anchor",95)
+			#self.iupred_threshold = self.getThresholdFromRandom("iupred",95)
 
 		for gene,info,switchDict,switch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network,partialCreation=True):
+			pdb.set_trace()
 			switch._iloops_change 	  = self.findDiffLoops(switch,gene,info,isoInfo)
 			# switch._broken_surfaces = self.findBrokenSurfaces(switch,gene,info)
 			switch._functional_change = self.interProAnalysis(switch,gene,info)
 			switch._disorder_change   = self.disorderAnalysis(switch,gene,info)
 			switch._anchor_change     = self.anchorAnalysis(switch,gene,info)
 			switch._ptm_change 		  = self.prositeAnalysis(switch,gene,info)
-			switch._gps 		  	  = self.gpsAnalysis(switch,gene,info)
+			#switch._gps 		  	  = self.gpsAnalysis(switch,gene,info)
 
 			self.REL.write("{0}\t{1}\t{2}\t".format(gene,switch.nTx,switch.tTx))
 			self.REL.write("{0}\t{1}\t".format(switch._iloops_change,switch._functional_change))
@@ -412,7 +415,6 @@ class StructuralAnalysis(method.Method):
 		return anyPTM
 
 	def gpsAnalysis(self,switch,gene,info):
-
 		normalProtein = switch.nIsoform
 		tumorProtein = switch.tIsoform
 		gpsFile = "{0}Data/TCGA/GPS.out".format(options.Options().wd)
@@ -421,7 +423,7 @@ class StructuralAnalysis(method.Method):
 		for protein,whatsHappening in zip([normalProtein,tumorProtein],["Lost in tumor","Gained in tumor"]):
 			if not protein: continue
 			reading = False
-			for line in utils.readTable(gpsFile,header=False):
+			for line in utils.readTable(gpsFile,header=True):
 				if protein.tx not in line[0] and not reading:
 					continue
 				elif protein.tx in line[0] and not reading:
@@ -496,15 +498,15 @@ class StructuralAnalysis(method.Method):
 		for root in roots:
 			files = glob.glob("{0}structural_analysis/{1}_random_*.tsv".format(options.Options().qout,root))
 
-			with open("{0}structural_analysis/{1}_random.tsv".format(options.Options().qout,root)) as OUT:
+			with open("{0}structural_analysis/{1}_random.tsv".format(options.Options().qout,root),"w") as OUT:
 				for aFile in files:
 					with open(aFile) as IN:
 						OUT.write(IN.read())
 
 
-		# get thresholds from random switches
-		self.recalculateScores("anchor",95)
-		self.recalculateScores("iupred",95)
+		# QUITAR get thresholds from random switches
+		#self.recalculateScores("anchor",95)
+		#self.recalculateScores("iupred",95)
 
 		
 if __name__ == '__main__':

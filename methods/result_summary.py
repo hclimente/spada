@@ -24,7 +24,7 @@ class ResultSummary(method.Method):
 		self.switchStats["hasCds"] = { "both": 0, "onlyN": 0,"onlyT": 0,"none": 0 }
 		self.switchStats["hasCdsChange"] = { "y": 0, "n": 0 }
 		self.switchStats["hasUtrChange"] = { "y": 0, "n": 0 }
-		self.switchStats["isDriver"] = { "y": 0, "n": 0 }
+		self.switchStats["driverTest"] = { "DriverSwitch": 0, "NoDriverSwitch": 0, "DriverNoSwitch": 0, "NoDriverNoSwitch": 0 }
 		self.switchStats["isRelevant"] = { "y": 0, "n": 0 }
 
 		self.exonStats = []
@@ -60,6 +60,11 @@ class ResultSummary(method.Method):
 			
 			total += 1
 
+		for gene,info in self._gene_network.iterate_genes_ScoreWise():
+			if info["isoformSwitches"]: continue
+
+			self.changedFeatures(gene,info,None,None)
+
 		sortedNodes = sorted(self._gene_network.nodes(data=True), 
 							 key=lambda (a, dct): dct['score'], reverse=True)
 		# for gene,info in sortedNodes:
@@ -88,6 +93,12 @@ class ResultSummary(method.Method):
 
 	def switchAndExonOverview(self,gene,info,switchDict,thisSwitch):
 
+		if switchDict is None:
+			if info["Driver"]:
+				self.switchStats["driverTest"]["DriverNoSwitch"]
+			else:
+				self.switchStats["driverTest"]["NoDriverNoSwitch"]
+
 		nIso = thisSwitch.nTranscript
 		tIso = thisSwitch.tTranscript
 
@@ -102,8 +113,8 @@ class ResultSummary(method.Method):
 		if thisSwitch.utr_diff: self.switchStats["hasUtrChange"]["y"] += 1
 		else: 					self.switchStats["hasUtrChange"]["n"] += 1
 
-		if info["Driver"]:  self.switchStats["isDriver"]["y"] +=1
-		else: 				self.switchStats["isDriver"]["n"] +=1
+		if info["Driver"]:  self.switchStats["driverTest"]["DriverSwitch"] +=1
+		else: 				self.switchStats["driverTest"]["NoDriverSwitch"] +=1
 
 
 		if thisSwitch.is_relevant:  self.switchStats["isRelevant"]["y"] +=1
@@ -187,7 +198,7 @@ class ResultSummary(method.Method):
 			F.write("{0}\n".format(total))
 
 			F.write("{0}\tDriver_affection\t".format(options.Options().tag ))
-			F.write("{0}\t{1}\t".format(self.switchStats["isDriver"]["y"],self.switchStats["isDriver"]["n"]) )
+			F.write("{0}\t{1}\t".format(self.switchStats["driverTest"]["y"],self.switchStats["driverTest"]["n"]) )
 			F.write("{0}\n".format(total))
 
 			F.write("{0}\tRelevant\t".format(options.Options().tag ))

@@ -406,35 +406,46 @@ class GeneNetwork(network.Network):
 				elif [ x for x in method_ids if x not in affinity_methods ]:
 					self.update_edge("score", 0.2, gene_id1=geneId_1, gene_id2=geneId_2)
 
-	def iterate_switches_ScoreWise(self,tx_network,only_models=False,partialCreation=False):
-		"""Iterate through the isoform switches of a gene network, and
-			generate a list of (gene,geneInformation,isoformSwitch).
-			Only return those switches with an overlap between the CDS 
-			of the transcripts.
-
-			only_models(bool): if True, only the first switch (the most 
-				common) will be returned for each gene.
-		"""
+	def iterate_genes_ScoreWise(self):
 		sortedNodes = sorted(self.nodes(data=True),key=lambda (a,dct):dct['score'],reverse=True)
-		
+
 		if options.Options().parallelRange:
 			bottom = options.Options().parallelRange - 1
 			top = bottom + 50
 			sortedNodes = sortedNodes[bottom:top]
 
-		counter = 1
 		for gene,info in sortedNodes:
+			self.logger.debug("Iterating gene {0}.".format(gene))
+			yield gene,info
+
+	def iterate_switches_ScoreWise(self,tx_network,only_models=False,relevance=None,partialCreation=False):
+		"""Iterate through the isoform switches of a gene network, and
+			generate a list of (gene,geneInformation,isoformSwitch).
+			Only return those switches with an overlap between the CDS 
+			of the transcripts and that have different features.
+
+			only_models(bool): if True, only the first switch (the most 
+				common) will be returned for each gene.
+		"""
+
+		counter = 1
+		for gene,info in self.iterate_genes_ScoreWise():		
 			if not info["isoformSwitches"]: continue
 
 			for switchDict in info["isoformSwitches"]:
-				if only_models and (switchDict["noise"] or not switchDict["model"]):
+				if switchDict["noise"]:
+					continue
+				elif only_models and switchDict["model"]:
 					continue
 
 				thisSwitch = self.createSwitch(switchDict,tx_network,partialCreation)
-
+				
+				if relevance is not None and relevance != thisSwitch.is_relevant:
+					continue
+				
 				self.logger.debug("Iterating switch number {0}.".format(counter))
 				counter += 1
-				
+					
 				yield gene,info,switchDict,thisSwitch
 
 	def iterate_relevantSwitches_ScoreWise(self,tx_network,only_models=False,partialCreation=False):
@@ -447,27 +458,7 @@ class GeneNetwork(network.Network):
 				common) will be returned for each gene.
 		"""
 
-		sortedNodes = sorted(self.nodes(data=True),key=lambda (a,dct):dct['score'],reverse=True)
-		
-		if options.Options().parallelRange:
-			bottom = options.Options().parallelRange - 1
-			top = bottom + 50
-			sortedNodes = sortedNodes[bottom:top]
-
-		counter = 1
-		for gene,info in sortedNodes:
-			if not info["isoformSwitches"]: continue
-
-			for switchDict in info["isoformSwitches"]:
-				if only_models and (switchDict["noise"] or not switchDict["model"]):
-					continue
-
-				thisSwitch = self.createSwitch(switchDict,tx_network,partialCreation)
-				
-				if thisSwitch.is_relevant:
-					self.logger.debug("Iterating switch number {0}.".format(counter))
-					counter += 1
-					yield gene,info,switchDict,thisSwitch
+		self.iterate_switches_ScoreWise(tx_network,only_models,True,partialCreation)
 
 	def iterate_nonRelevantSwitches_ScoreWise(self,tx_network,only_models=False,partialCreation=False):
 		"""Iterate through the isoform switches of a gene network, and
@@ -479,28 +470,7 @@ class GeneNetwork(network.Network):
 				common) will be returned for each gene.
 		"""
 
-		sortedNodes = sorted(self.nodes(data=True),key=lambda (a,dct):dct['score'],reverse=True)
-		
-		if options.Options().parallelRange:
-			bottom = options.Options().parallelRange - 1
-			top = bottom + 50
-			sortedNodes = sortedNodes[bottom:top]
-
-		counter = 1
-		for gene,info in sortedNodes:
-			if not info["isoformSwitches"]: continue
-
-			for switchDict in info["isoformSwitches"]:
-				if only_models and (switchDict["noise"] or not switchDict["model"]):
-					continue
-
-				thisSwitch = self.createSwitch(switchDict,tx_network,partialCreation)
-				
-				if not thisSwitch.is_relevant:
-					self.logger.debug("Iterating switch number {0}.".format(counter))
-					counter += 1
-					
-					yield gene,info,switchDict,thisSwitch
+		self.iterate_switches_ScoreWise(tx_network,only_models,False,partialCreation)
 
 	def createSwitch(self,switchDict,tx_network,partialCreation):
 		"""Create a switch object from the switch dictionary.
