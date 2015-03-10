@@ -29,27 +29,27 @@ class StructuralAnalysis(method.Method):
 			#self.anchor_threshold = self.getThresholdFromRandom("anchor",95)
 			#self.iupred_threshold = self.getThresholdFromRandom("iupred",95)
 
-		self._interpro_file = "{0}structural_analysis/InterPro_report{1}.tsv".format(options.Options().qout,tag)
+		self._interpro_file = "{0}structural_analysis/InterPro_report{1}{2}.tsv".format(options.Options().qout,tag,options.Options().filetag)
 		self.IP = open(self._interpro_file,"w")
 		self.IP.write("Symbol\tGene\tNormalTranscript\ttTumorTranscript\tAnalysis\tFeature_accesion\t")
 		self.IP.write("Feature\t(Additional) repetitions\n")
 
-		self._iupred_file = "{0}structural_analysis/iupred_analysis{1}.tsv".format(options.Options().qout,tag)
+		self._iupred_file = "{0}structural_analysis/iupred_analysis{1}{2}.tsv".format(options.Options().qout,tag,options.Options().filetag)
 		self.IU = open(self._iupred_file,"w")
 		self.IU.write("Symbol\tGene\tNormalTranscript\ttTumorTranscript\t")
 		self.IU.write("What\tSequence\tJaccard\tThreshold\tSignificant\n")
 				
-		self._anchor_file = "{0}structural_analysis/anchor_analysis{1}.tsv".format(options.Options().qout,tag)
+		self._anchor_file = "{0}structural_analysis/anchor_analysis{1}{2}.tsv".format(options.Options().qout,tag,options.Options().filetag)
 		self.ANCHOR = open(self._anchor_file,"w")
 		self.ANCHOR.write("Symbol\tGene\tNormalTranscript\ttTumorTranscript\t")
 		self.ANCHOR.write("What\tSequence\tJaccard\tThreshold\tSignificant\n")
 
-		self._prosite_file = "{0}structural_analysis/prosite_analysis{1}.tsv".format(options.Options().qout,tag)
+		self._prosite_file = "{0}structural_analysis/prosite_analysis{1}{2}.tsv".format(options.Options().qout,tag,options.Options().filetag)
 		self.PROSITE = open(self._prosite_file,"w")
 		self.PROSITE.write("Symbol\tGene\tNormalTranscript\t")
 		self.PROSITE.write("tTumorTranscript\tWhat\tMotif\n")
 
-		self._relevance_info = "{0}structural_analysis/structural_summary{1}.tsv".format(options.Options().qout,tag)
+		self._relevance_info = "{0}structural_analysis/structural_summary{1}{2}.tsv".format(options.Options().qout,tag,options.Options().filetag)
 		self.REL = open(self._relevance_info,"w")
 		self.REL.write("Gene\tNormalTranscript\tTumorTranscript\tiLoops\t")
 		self.REL.write("Domain\tDisorder\tAnchor\tPTM\n")
