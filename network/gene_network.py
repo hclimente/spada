@@ -7,6 +7,7 @@ from biological_entities import switch
 import abc
 import numpy as np
 import pandas as pd
+import random
 import subprocess
 
 class GeneNetwork(network.Network):
@@ -418,7 +419,7 @@ class GeneNetwork(network.Network):
 			self.logger.debug("Iterating gene {0}.".format(gene))
 			yield gene,info
 
-	def iterate_switches_ScoreWise(self,tx_network,only_models=False,relevance=None,partialCreation=False):
+	def iterate_switches_ScoreWise(self,tx_network,only_models=False,relevance=None,partialCreation=False,removeNoise=True):
 		"""Iterate through the isoform switches of a gene network, and
 			generate a list of (gene,geneInformation,isoformSwitch).
 			Only return those switches with an overlap between the CDS 
@@ -433,7 +434,7 @@ class GeneNetwork(network.Network):
 			if not info["isoformSwitches"]: continue
 
 			for switchDict in info["isoformSwitches"]:
-				if switchDict["noise"]:
+				if removeNoise and switchDict["noise"]:
 					continue
 				elif only_models and switchDict["model"]:
 					continue
@@ -448,7 +449,7 @@ class GeneNetwork(network.Network):
 					
 				yield gene,info,switchDict,thisSwitch
 
-	def iterate_relevantSwitches_ScoreWise(self,tx_network,only_models=False,partialCreation=False):
+	def iterate_relevantSwitches_ScoreWise(self,tx_network,only_models=False,partialCreation=False,removeNoise=True):
 		"""Iterate through the isoform switches of a gene network, and
 			generate a list of (gene,geneInformation,isoformSwitch).
 			Only return those switches with an overlap between the CDS 
@@ -458,9 +459,9 @@ class GeneNetwork(network.Network):
 				common) will be returned for each gene.
 		"""
 
-		self.iterate_switches_ScoreWise(tx_network,only_models,True,partialCreation)
+		self.iterate_switches_ScoreWise(tx_network,only_models,True,partialCreation,removeNoise)
 
-	def iterate_nonRelevantSwitches_ScoreWise(self,tx_network,only_models=False,partialCreation=False):
+	def iterate_nonRelevantSwitches_ScoreWise(self,tx_network,only_models=False,partialCreation=False,removeNoise=True):
 		"""Iterate through the isoform switches of a gene network, and
 			generate a list of (gene,geneInformation,isoformSwitch).
 			Only return those switches with an overlap between the CDS 
@@ -470,7 +471,7 @@ class GeneNetwork(network.Network):
 				common) will be returned for each gene.
 		"""
 
-		self.iterate_switches_ScoreWise(tx_network,only_models,False,partialCreation)
+		self.iterate_switches_ScoreWise(tx_network,only_models,False,partialCreation,removeNoise)
 
 	def createSwitch(self,switchDict,tx_network,partialCreation):
 		"""Create a switch object from the switch dictionary.
@@ -539,3 +540,15 @@ class GeneNetwork(network.Network):
 						s["model"] = False
 				else:
 					s["model"] = False
+
+	def sampleSwitches(self,tx_network,partialCreation=True):
+		
+		numIterations = 20000
+
+		for i in range(0,numIterations):
+			gene = random.choice(self.nodes())
+			info = self._net.node[gene]
+			switchDict = random.choice(info["isoformSwitches"])
+			thisSwitch = createSwitch(switchDict,tx_network,partialCreation)
+
+			yield gene,info,switchDict,thisSwitch

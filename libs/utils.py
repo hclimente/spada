@@ -97,10 +97,11 @@ def setEnvironment():
 		cmd("cp", ".testOld/{0}msInput.txt".format(o.out), o.qout)
 			
 	if o.initialStep == "get-relevant-switches":
-		cmd("rm","-r",".testOld2/{0}/structural_analysis".format(o.out))
-		cmd("mv",".testOld/{0}/structural_analysis".format(o.out),".testOld2/{0}/structural_analysis".format(o.out))
-		cmd("mv","{0}/structural_analysis".format(o.qout),".testOld/{0}/structural_analysis".format(o.out))
-		cmd("mkdir", "{0}/structural_analysis".format(o.qout))
+		pass
+		# cmd("rm","-r",".testOld2/{0}/structural_analysis".format(o.out))
+		# cmd("mv",".testOld/{0}/structural_analysis".format(o.out),".testOld2/{0}/structural_analysis".format(o.out))
+		# cmd("mv","{0}/structural_analysis".format(o.qout),".testOld/{0}/structural_analysis".format(o.out))
+		# cmd("mkdir", "{0}/structural_analysis".format(o.qout))
 	elif o.initialStep == "neighborhood-analysis":
 		cmd("rm","-r",".testOld2/{0}/neighborhood_analysis".format(o.out))
 		cmd("mv",".testOld/{0}/neighborhood_analysis".format(o.out),".testOld2/{0}/neighborhood_analysis".format(o.out))

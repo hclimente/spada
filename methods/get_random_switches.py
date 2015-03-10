@@ -60,7 +60,7 @@ class GetRandomSwitches(method.Method):
 				switchDict["precision"] = 0.0
 				switchDict["sensitivity"] = 0.0
 				switchDict["noise"] = False
-				switchDict["model"] = False
+				switchDict["model"] = True
 
 				info["isoformSwitches"].append(switchDict)
 

@@ -167,7 +167,7 @@ class IsoformSwitch:
 			if not partialCreation:
 				self._tumor_protein.checkInteractome3DStructures()
 
-		if self._normal_protein and self._tumor_protein and not partialCreation:
+		if self._normal_protein and self._tumor_protein:
 			self.getAlteredRegions()
 
 	def get_cdsDiff(self):
@@ -212,11 +212,11 @@ class IsoformSwitch:
 				res.setIsoformSpecific(True)
 
 	def readRelevanceAnalysis(self):
-		if not os.path.exists(options.Options().qout+"structural_analysis/structural_summary.tsv"):
+		if not os.path.exists("{0}structural_analysis/structural_summary{1}.tsv".format(options.Options().qout,options.Options().filetag)):
 			raise Exception("Relevance information not generated.")
 			return False
 
-		for elements in utils.readTable(options.Options().qout+"structural_analysis/structural_summary.tsv"):
+		for elements in utils.readTable("{0}structural_analysis/structural_summary{1}.tsv".format(options.Options().qout,options.Options().filetag)):
 			if elements[1] == self.nTx and elements[2] == self.tTx:
 				# QUITAR CUANDO SE ACTUALIZEN LOS RELEVANTES
 				if elements[3] == "True": self._iloops_change = True
