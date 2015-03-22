@@ -209,7 +209,6 @@ class ResultSummary(method.Method):
 					exonInfo["wholeSeqPosition"] = "wut"
 
 				self.exonStats[randomTag].append(exonInfo)
-		'''
 		
 	def printSwitchInfo(self):
 
