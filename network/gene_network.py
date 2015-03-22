@@ -546,12 +546,9 @@ class GeneNetwork(network.Network):
 				else:
 					s["model"] = False
 
-	def sampleSwitches(self,tx_network,partialCreation=True):
-		
-		numIterations = 2000
-
-		for i in range(0,numIterations):
-			gene = random.choice(self.nodes())
+	def sampleSwitches(self,tx_network,partialCreation=True,numIterations=2000):
+		genes = random.sample(self.nodes(),numIterations)
+		for gene in genes:
 			info = self._net.node[gene]
 
 			if not info["isoformSwitches"]:

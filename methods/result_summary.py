@@ -60,25 +60,28 @@ class ResultSummary(method.Method):
 
 		txDict = self._transcript_network.nodes(data=True)
 
-		for gene,info,switchDict,thisSwitch in self._random_gene_network.sampleSwitches(self._transcript_network,partialCreation=True):
-			self.switchAndExonOverview(True,gene,info,switchDict,thisSwitch)
-			self.changedFeatures(True,gene,info,switchDict,thisSwitch)
-
+		switchNum = 0
 		# tests at switch level
 		for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network,options.Options().onlyModels,partialCreation=True,removeNoise=True):
 			self.logger.debug("Getting statistics for switch {0}_{1}_{2}.".format(gene,thisSwitch.nTx,thisSwitch.tTx))
 
+			# general protein, switch and gene info
 			self.switchAndExonOverview(False,gene,info,switchDict,thisSwitch)
 			self.changedFeatures(False,gene,info,switchDict,thisSwitch)
+			self.proteinOverview(False,switchDict,txDict)
 
-			# general protein, switch and gene info
-			# self.proteinOverview(switchDict,txDict)
+			switchNum += 1
 			
 			# structural info
 			
 			# self.loopChange(switch)
 			#self.disorderChange(switch)
 			#self.functionalChange(switch)
+
+		for gene,info,switchDict,thisSwitch in self._random_gene_network.sampleSwitches(self._transcript_network,numIterations=switchNum):
+			self.switchAndExonOverview(True,gene,info,switchDict,thisSwitch)
+			self.changedFeatures(True,gene,info,switchDict,thisSwitch)
+			self.proteinOverview(True,switchDict,txDict)
 
 		# tests at gene level
 		for gene,info in self._gene_network.iterate_genes_ScoreWise():
@@ -134,8 +137,8 @@ class ResultSummary(method.Method):
 			self.switchStats["driverRTest"][driverTag][relevanceTag] += 1
 
 	def switchAndExonOverview(self,random,gene,info,switchDict,thisSwitch):
-		nIso = thisSwitch.nTranscript
-		tIso = thisSwitch.tTranscript
+		nTx = thisSwitch.nTranscript
+		tTx = thisSwitch.tTranscript
 
 		if random: 	randomTag = "Random"
 		else:		randomTag = "NonRandom"
@@ -149,9 +152,9 @@ class ResultSummary(method.Method):
 		if thisSwitch.utr_diff: utrTag = "Change"
 		else: 					utrTag = "NoChange"
 
-		if nIso.cds and tIso.cds: presenceTag = "Both"
-		elif nIso.cds: 			  presenceTag = "OnlyN"
-		elif tIso.cds: 			  presenceTag = "OnlyT"
+		if nTx.cds and tTx.cds: presenceTag = "Both"
+		elif nTx.cds: 			  presenceTag = "OnlyN"
+		elif tTx.cds: 			  presenceTag = "OnlyT"
 		else: 					  presenceTag = "None"
 
 		self.switchStats["relevanceTest"][randomTag][relevanceTag] += 1
@@ -159,52 +162,51 @@ class ResultSummary(method.Method):
 		self.switchStats["utrTest"][randomTag][utrTag] += 1
 		self.switchStats["cdsPresence"][randomTag][presenceTag] += 1
 
-		'''
-		nSpecificCds = [ x for x in thisSwitch._normal_transcript.cds if x not in thisSwitch._tumor_transcript.cds ]
-		nSpecificUtr = [ x for x in thisSwitch._normal_transcript.utr if x not in thisSwitch._tumor_transcript.utr ]
-		tSpecificCds = [ x for x in thisSwitch._tumor_transcript.cds if x not in thisSwitch._normal_transcript.cds ]
-		tSpecificUtr = [ x for x in thisSwitch._tumor_transcript.utr if x not in thisSwitch._normal_transcript.utr ]
+		nSpecificCds = [ x for x in nTx.cds if x not in tTx.cds ]
+		nSpecificUtr = [ x for x in nTx.utr if x not in tTx.utr ]
+		tSpecificCds = [ x for x in tTx.cds if x not in nTx.cds ]
+		tSpecificUtr = [ x for x in tTx.utr if x not in nTx.utr ]
 		
-		for specificCds,specificUtr,cds in zip([nSpecificCds,tSpecificCds],[nSpecificUtr,tSpecificUtr],[thisSwitch._normal_transcript.cds,thisSwitch._tumor_transcript.cds]):
+		for specificCds,specificUtr,cds in zip([nSpecificCds,tSpecificCds],[nSpecificUtr,tSpecificUtr],[nTx.cds,tTx.cds]):
 		
-			specific = specificUtr
-			specific.extend(specificCds)
-			specific = sorted(specific)
+			jointSpecific = specificUtr
+			jointSpecific.extend(specificCds)
+			jointSpecific = sorted(jointSpecific)
 			
-			setSpecCds = set(specificCds)
-			setSpecUtr = set(specificUtr)
-			setSpec = set(specific)
+			setCds = set(specificCds)
+			setUtr = set(specificUtr)
+			setJoint = set(jointSpecific)
 
-			exons = [ map(itemgetter(1),g) for k,g in groupby(enumerate(specific), lambda (i,x): i-x) ]
+			# check that this works
+			exons = [ map(itemgetter(1),g) for k,g in groupby(enumerate(jointSpecific), lambda (i,x): i-x) ]
 			
 			for exon in exons:
 				setExon = set(exon)
 				exonInfo = {}
-				exonInfo["random"] = randomTag
 				exonInfo["switch"] = "{0}_{1}_{2}".format(gene,switchDict["nIso"],switchDict["tIso"])
 				exonInfo["length"] = len(exon)
 
-				if setExon & setSpecCds and setExon & setSpecUtr:
-					exonicCds = sorted(setExon & setSpecCds)
+				if setExon & setCds and setExon & setUtr:
+					exonicCds = sorted(setExon & setCds)
 					exonInfo["role"] = "CDS-UTR"
 					exonInfo["keepORF"] = len(exonicCds)%3
 					medianPos = exonicCds[len(exonicCds)/2]
 					pos = [ i for i,x in enumerate(cds) if x==medianPos ][0]
-					exonInfo["position"] = float(pos)/len(cds)
-				elif setExon & setSpecCds:
+					exonInfo["wholeSeqPosition"] = float(pos)/len(cds)
+				elif setExon & setCds:
 					exonInfo["role"] = "CDS"
 					exonInfo["keepORF"] = len(switchAndExonOverview)%3
 					medianPos = exon[len(exon)/2]
 					pos = [ i for i,x in enumerate(cds) if x==medianPos ][0]
-					exonInfo["position"] = float(pos)/len(cds)
-				elif setExon & setSpecUtr:
+					exonInfo["wholeSeqPosition"] = float(pos)/len(cds)
+				elif setExon & setUtr:
 					exonInfo["role"] = "UTR"
 					exonInfo["keepORF"] = None
-					exonInfo["position"] = None
+					exonInfo["wholeSeqPosition"] = None
 				else:
 					exonInfo["role"] = "wut"
 					exonInfo["keepORF"] = "wut"
-					exonInfo["position"] = "wut"
+					exonInfo["wholeSeqPosition"] = "wut"
 
 				self.exonStats[randomTag].append(exonInfo)
 		'''
@@ -303,7 +305,7 @@ class ResultSummary(method.Method):
 			for exon in self.exonStats:
 				F.write("{0}\t{1}\t".format(options.Options().tag,exon["switch"]))
 				F.write("{0}\t{1}\t".format(exon["length"],exon["role"]))
-				F.write("{0}\t{1}\n".format(exon["keepORF"],exon["position"]))
+				F.write("{0}\t{1}\n".format(exon["keepORF"],exon["wholeSeqPosition"]))
 		'''
 
 	def printStructutalInfo(self):
