@@ -30,7 +30,7 @@ class GetRandomSwitches(method.Method):
 			self.sampleSwitches(gnNetCopy)
 			gnNetCopy.saveNetwork("randomGeneNetwork.pkl")
 
-			self.launchJobs()
+			utils.launchJobs(self._gene_network,"random")
 
 		else:
 			# calculate relevant switches
@@ -71,7 +71,7 @@ class GetRandomSwitches(method.Method):
 		s.initialize()
 
 		natSpec = ""
-		natSpec += "-q normal -l 'qname=normal|long' "
+		natSpec += "-q short,normal -l 'qname=short|normal' "
 		natSpec += "-cwd "
 		natSpec += "-V "
 

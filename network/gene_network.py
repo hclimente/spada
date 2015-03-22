@@ -408,14 +408,19 @@ class GeneNetwork(network.Network):
 					self.update_edge("score", 0.2, gene_id1=geneId_1, gene_id2=geneId_2)
 
 	def iterate_genes_ScoreWise(self):
+		'''
+		Iterate genes that have alternative splicing and more than one transcript expressed.
+		'''
 		sortedNodes = sorted(self.nodes(data=True),key=lambda (a,dct):dct['score'],reverse=True)
 
 		if options.Options().parallelRange:
 			bottom = options.Options().parallelRange - 1
-			top = bottom + 50
+			top = bottom + 20
 			sortedNodes = sortedNodes[bottom:top]
 
 		for gene,info in sortedNodes:
+			if len(info["ExpressedTranscripts"]) < 2:
+				continue
 			self.logger.debug("Iterating gene {0}.".format(gene))
 			yield gene,info
 
@@ -543,12 +548,15 @@ class GeneNetwork(network.Network):
 
 	def sampleSwitches(self,tx_network,partialCreation=True):
 		
-		numIterations = 20000
+		numIterations = 2000
 
 		for i in range(0,numIterations):
 			gene = random.choice(self.nodes())
 			info = self._net.node[gene]
+
+			if not info["isoformSwitches"]:
+				continue
 			switchDict = random.choice(info["isoformSwitches"])
-			thisSwitch = createSwitch(switchDict,tx_network,partialCreation)
+			thisSwitch = self.createSwitch(switchDict,tx_network,partialCreation)
 
 			yield gene,info,switchDict,thisSwitch

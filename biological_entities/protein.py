@@ -245,7 +245,7 @@ class Protein:
 			elif thing =="disordered":
 				flag = res.isDisordered
 			else:
-				return None
+				flag = thing in res._ptms
 
 			if flag:
 				if gapped:

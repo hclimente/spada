@@ -43,6 +43,4 @@ do
 
 	launchQ $fullTag "$fullTag"_$action
 
-	exit
-
 done < "$fileList"

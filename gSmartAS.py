@@ -64,7 +64,15 @@ class SmartAS:
 	def structuralAnalysis(self):
 
 		s = structural_analysis.StructuralAnalysis(True,True)
-		s.run()
+		if not options.Options().parallelRange:
+			import glob
+			files=glob.glob("{0}structural_analysis/interpro_analysis_[0-9]*.tsv".format(options.Options().qout))
+			if files:
+				s.joinFiles()
+			else:
+				utils.launchJobs(s._gene_network,'structural_analysis')
+		else:
+			s.run()
 
 	def neighborhoodAnalysis(self):
 

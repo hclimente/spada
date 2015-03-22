@@ -153,3 +153,32 @@ def geneclusterLaunch(tag,base,*args):
 		configFile.write(command+"\n")
 
 	cmd("qsub","-N",tag,tag+".sh")
+
+def launchJobs(gnNetwork,task):
+	import drmaa
+
+	s = drmaa.Session()
+	s.initialize()
+
+	natSpec = ""
+	natSpec += "-q normal -l 'qname=normal' "
+	natSpec += "-cwd "
+	natSpec += "-V "
+
+	randoms = []
+
+	for startingNode in range(1,len(gnNetwork.nodes()),20):
+		cfg = options.Options().printToFile(filename="{0}_{1}_node{2}".format(options.Options().tag,task,startingNode),parallelRange=startingNode,onlyModels=False)
+		jt = s.createJobTemplate()
+		
+		jt.remoteCommand = 'Pipeline/gSmartAS.py'
+		jt.args = ['-f',cfg]
+		jt.joinFiles=True
+		jt.nativeSpecification = natSpec
+		jt.nativeSpecification += "-N {0}_{1}_{2} ".format(options.Options().tag,task,startingNode)
+		jt.nativeSpecification += "-e {0}logs/{1}_{2}.txt ".format(options.Options().qout,task,startingNode)
+		jt.nativeSpecification += "-o {0}logs/{1}_{2}.txt".format(options.Options().qout,task,startingNode)
+
+		jobid = s.runJob(jt)
+		randoms.append(jobid)
+		s.deleteJobTemplate(jt)
