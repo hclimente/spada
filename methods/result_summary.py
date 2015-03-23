@@ -17,6 +17,7 @@ class ResultSummary(method.Method):
 		method.Method.__init__(self, __name__,gn_network,tx_network)
 
 		self._random_gene_network = cPickle.load(open("{0}randomGeneNetwork.pkl".format(options.Options().qout)))
+		self._random_gene_network.createLogger()
 
 		self.proteinStats = { "Random": { "nIsoLength": [], "tIsoLength": [] },
 							  "NonRandom": { "nIsoLength": [], "tIsoLength": [] }}
