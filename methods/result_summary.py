@@ -74,7 +74,6 @@ class ResultSummary(method.Method):
 
 			# general protein, switch and gene info
 			self.switchAndExonOverview(False,gene,info,switchDict,thisSwitch)
-			self.changedFeatures(False,gene,info,switchDict,thisSwitch)
 			self.proteinOverview(False,switchDict,txDict)
 
 			# structural info
@@ -86,10 +85,9 @@ class ResultSummary(method.Method):
 			
 		for gene,info,switchDict,thisSwitch in self._random_gene_network.sampleSwitches(self._transcript_network,numIterations=testedSwitches):
 			self.switchAndExonOverview(True,gene,info,switchDict,thisSwitch)
-			self.changedFeatures(True,gene,info,switchDict,thisSwitch)
 			self.proteinOverview(True,switchDict,txDict)
 
-			#self.changedStructuralFeatures(True,gene,info,switchDict,thisSwitch)
+			# self.changedStructuralFeatures(True,gene,info,switchDict,thisSwitch)
 
 		# tests at gene level
 		for gene,info in self._gene_network.iterate_genes_ScoreWise():
@@ -359,39 +357,23 @@ class ResultSummary(method.Method):
 
 	def printStructutalInfo(self):
 
-		with open("{0}result_summary/structural_summary{1}.tsv".format(options.Options().qout,options.Options().filetag), "w" ) as F:
-			F.write("Cancer\tGene\tSymbol\tnTx\ttTx\tPfam\t")
-			F.write("IUPREDLong\tIUPREDShort\tRelevant\tModel\t")
-			F.write("Noise\tDriver\tASDriver\tDriverType\n")
-			for tag,random,featureDict in self.featuresTable:
-				switchElements = tag.split("_")
-				gene = switchElements[0]
-				symbol = switchElements[1]
-				nTx = switchElements[2]
-				tTx = switchElements[3]
-
-				F.write("{0}\t{1}\t".format(options.Options().tag,gene))
-				F.write("{0}\t{1}\t{2}\t".format(symbol,nTx,tTx))
-				F.write("{0}\t{1}\t".format(len(featureDict["Pfam"]),len(featureDict["IUPREDLong"])))
-				F.write("{0}\t".format(len(featureDict["IUPREDShort"])))
-				F.write("{0}\t{1}\t".format(featureDict["Relevant"],featureDict["Model"]))
-				F.write("{0}\t{1}\t".format(featureDict["Noise"],featureDict["Driver"]))
-				F.write("{0}\t{1}\n".format(featureDict["ASDriver"],featureDict["DriverType"]))
-
 		with open("{0}result_summary/structural_features{1}.tsv".format(options.Options().qout,options.Options().filetag), "w" ) as F:
-			F.write("Cancer\tGene\tSymbol\tnTx\ttTx\tAnalysis\tWhatsHappenning\t")
+			F.write("Cancer\tGene\tSymbol\tnTx\ttTx\tAnalysis\tRandom\tWhatsHappenning\t")
 			F.write("Feature\tRelevant\tModel\tNoise\tDriver\tASDriver\tDriverType\n")
 			
 			for s in self.featuresTable:
-				switchElements = s.split("_")
+				switchElements = s[0].split("_")
 				gene = switchElements[0]
 				symbol = switchElements[1]
 				nTx = switchElements[2]
 				tTx = switchElements[3]
 
+				randomTag = s[1]
+				featureDict = s[2]
+
 				for pfamDom in featureDict["Pfam"]:
-					F.write("{0}\t{1}\tPfam\t".format(options.Options().tag,gene))
-					F.write("{0}\t{1}\t{2}\t".format(symbol,nTx,tTx))
+					F.write("{0}\t{1}\t{2}\t".format(options.Options().tag,gene,symbol))
+					F.write("{0}\t{1}\tPfam\t{2}\t".format(nTx,tTx,randomTag))
 					F.write("{0}\t{1}\t".format(pfamDom[1],pfamDom[0].replace(" ","_")))
 					F.write("{0}\t{1}\t".format(featureDict["Relevant"],featureDict["Model"]))
 					F.write("{0}\t{1}\t".format(featureDict["Noise"],featureDict["Driver"]))
