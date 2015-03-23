@@ -7,12 +7,14 @@ from libs import utils
 from network import gene_network, isoform_network
 from methods import method
 
+import copy
+import networkx as nx
 import os
 import time
 
 class AnalyzeInteractions(method.Method):
-	def __init__(self, gn_network, tx_network, gn_subnetwork):
-		method.Method.__init__(self, __name__, gn_network, tx_network, gn_subnetwork)
+	def __init__(self,gn_network,tx_network):
+		method.Method.__init__(self, __name__,gn_network,tx_network)
 		if os.path.isfile("{0}candidatesGaudi.lst".format(options.Options().qout)):
 			self._expressed_transcripts = set()
 
@@ -162,18 +164,40 @@ class AnalyzeInteractions(method.Method):
 			loopFamilies[family].add(tx)
 
 		analyzedLoops = {}
+		interestingNeighborhood = []
+
+		# remove sticky
+		self._gene_network.removeLogger()
+		modGeneNetwork = copy.deepcopy(self._gene_network)
+		self._gene_network.createLogger()
+		modGeneNetwork.createLogger()
+		
+		for gene,info in modGeneNetwork.iterate_genes_ScoreWise():
+			if modGeneNetwork._net.degree(gene) > 20:
+				modGeneNetwork._net.remove_node(gene)
+
+		# get all genes at d<=2 of a driver
+		d0 = set()
+		d1 = set()
+		d2 = set()
+		for gene,info in modGeneNetwork.iterate_genes_ScoreWise():
+			if info[geneProperty]:
+				d0.add(gene)
+				dist1 = set(modGeneNetwork._net.neighbors(gene))
+				d1 = d1 and dist1
+				dist2 = set(nx.single_source_shortest_path_length(modGeneNetwork._net,gene,cutoff=2))
+				d2 = d2 and dist2
+
+		interestingNeighborhood.extend(list(d0))
+		interestingNeighborhood.extend(list(d1))
+		interestingNeighborhood.extend(list(d2))
 
 		with open(options.Options().qout + "candidatesGaudi.lst", "w") as CANDIDATES_GAUDI:
-			sortedNodes = sorted(self._gene_network.nodes(data=True), key=lambda (a, dct): dct['score'], reverse=True)
-			for gene,gInfo in sortedNodes:
+			for gene in interestingNeighborhood:
+				gInfo = modGeneNetwork._net.node[gene]
 
-				# genes that dont have a property or are related to 
-				# one who does e.g. driver, are not considered
-				
-				if not gInfo[geneProperty] or not [ x for x in self._gene_network._net.neighbors(gene) if self._gene_network._net.node[x][geneProperty] ]:
-					continue
-
-				for switchDict in gInfo["isoformSwitches"]:
+				# write gene as potential interactor
+				for switchDict in [ x for x in gInfo["isoformSwitches"] if not x["noise"] and x["model"]]:
 					switch = self._gene_network.createSwitch(switchDict,self._transcript_network,partialCreation=True)
 					nIso = switch.nTx
 					tIso = switch.tTx

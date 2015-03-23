@@ -6,6 +6,7 @@ from methods import method
 
 import cPickle
 import fisher
+from scipy import stats
 from itertools import groupby
 from operator import itemgetter
 
@@ -23,10 +24,14 @@ class ResultSummary(method.Method):
 		self.switchStats = {}
 		
 		# driver/driver+relevance tests
-		self.switchStats["driverTest"] = { "Driver": {"NoSwitch": 0, "Switch": 0}, 
-										   "NonDriver": {"NoSwitch": 0, "Switch": 0} }
+		self.switchStats["driverD0Test"] = { "Driver": {"NoSwitch": 0, "Switch": 0}, 
+										   	 "NonDriver": {"NoSwitch": 0, "Switch": 0} }
+		self.switchStats["driverD0Patients"] = { "Driver": [], "NonDriver": [] }
+		self.switchStats["driverD1Test"] = { "D1Driver": {"NoSwitch": 0, "Switch": 0}, 
+										   	 "NonD1Driver": {"NoSwitch": 0, "Switch": 0} }
+		self.switchStats["driverD1Patients"] = { "D1Driver": [], "NonD1Driver": [] }
 		self.switchStats["driverRTest"] = { "Driver": {"NonRelevant": 0, "Relevant": 0}, 
-										   "NonDriver": {"NonRelevant": 0, "Relevant": 0} }
+										   	"NonDriver": {"NonRelevant": 0, "Relevant": 0} }
 
 		# relevance test
 		self.switchStats["relevanceTest"] = { "Random": {"NonRelevant": 0, "Relevant": 0}, 
@@ -60,9 +65,10 @@ class ResultSummary(method.Method):
 
 		txDict = self._transcript_network.nodes(data=True)
 
-		switchNum = 0
+		testedSwitches = 0
+
 		# tests at switch level
-		for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network,options.Options().onlyModels,partialCreation=True,removeNoise=True):
+		for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network,only_models=True,partialCreation=True,removeNoise=True):
 			self.logger.debug("Getting statistics for switch {0}_{1}_{2}.".format(gene,thisSwitch.nTx,thisSwitch.tTx))
 
 			# general protein, switch and gene info
@@ -70,22 +76,23 @@ class ResultSummary(method.Method):
 			self.changedFeatures(False,gene,info,switchDict,thisSwitch)
 			self.proteinOverview(False,switchDict,txDict)
 
-			switchNum += 1
-			
 			# structural info
-			
+			self.changedStructuralFeatures(False,gene,info,switchDict,thisSwitch)
 			# self.loopChange(switch)
-			#self.disorderChange(switch)
-			#self.functionalChange(switch)
+			# self.disorderChange(switch)
 
-		for gene,info,switchDict,thisSwitch in self._random_gene_network.sampleSwitches(self._transcript_network,numIterations=switchNum):
+			testedSwitches += 1
+			
+		for gene,info,switchDict,thisSwitch in self._random_gene_network.sampleSwitches(self._transcript_network,numIterations=testedSwitches):
 			self.switchAndExonOverview(True,gene,info,switchDict,thisSwitch)
 			self.changedFeatures(True,gene,info,switchDict,thisSwitch)
 			self.proteinOverview(True,switchDict,txDict)
 
+			#self.changedStructuralFeatures(True,gene,info,switchDict,thisSwitch)
+
 		# tests at gene level
 		for gene,info in self._gene_network.iterate_genes_ScoreWise():
-			dicts = [ x for x in info["isoformSwitches"] if x["model"] ]
+			dicts = [ x for x in info["isoformSwitches"] if x["model"] and not x["noise"] ]
 
 			switchDict = None
 			thisSwitch = None
@@ -96,9 +103,8 @@ class ResultSummary(method.Method):
 			self.driverTests(gene,info,switchDict,thisSwitch)
 
 		self.printSwitchInfo()
-		#self.printStructutalInfo()
+		self.printStructutalInfo()
 		
-		#self.functionalChange()
 		#self.printRelevantGene()	
 
 	def neighborhoodInfo(self):
@@ -132,7 +138,21 @@ class ResultSummary(method.Method):
 			else:
 				relevanceTag = "NonRelevant"
 			
-		self.switchStats["driverTest"][driverTag][switchTag] += 1
+		self.switchStats["driverD0Test"][driverTag][switchTag] += 1
+
+		if not info["Driver"]:
+			d1 = [ x for x in self._gene_network._net.neighbors(gene) if self._gene_network._net.node[x]["Driver"] ]
+			if d1: 	
+				d1DriverTag="D1Driver"
+			else: 	
+				d1DriverTag="NonD1Driver"
+
+			self.switchStats["driverD1Test"][d1DriverTag][switchTag] += 1
+		
+		if switchDict:
+			self.switchStats["driverD0Patients"][driverTag].append(len(switchDict["patients"]))
+			if not info["Driver"]:
+				self.switchStats["driverD1Patients"][d1DriverTag].append(len(switchDict["patients"]))
 		if switchDict is not None:
 			self.switchStats["driverRTest"][driverTag][relevanceTag] += 1
 
@@ -162,51 +182,44 @@ class ResultSummary(method.Method):
 		self.switchStats["utrTest"][randomTag][utrTag] += 1
 		self.switchStats["cdsPresence"][randomTag][presenceTag] += 1
 
-		nSpecificCds = [ x for x in nTx.cds if x not in tTx.cds ]
-		nSpecificUtr = [ x for x in nTx.utr if x not in tTx.utr ]
-		tSpecificCds = [ x for x in tTx.cds if x not in nTx.cds ]
-		tSpecificUtr = [ x for x in tTx.utr if x not in nTx.utr ]
+		nSpecificCds = set([ x for x in nTx.cds if x not in tTx.cds ])
+		nSpecificUtr = set([ x for x in nTx.utr if x not in tTx.utr ])
+		tSpecificCds = set([ x for x in tTx.cds if x not in nTx.cds ])
+		tSpecificUtr = set([ x for x in tTx.utr if x not in nTx.utr ])
 		
 		for specificCds,specificUtr,cds in zip([nSpecificCds,tSpecificCds],[nSpecificUtr,tSpecificUtr],[nTx.cds,tTx.cds]):
 		
-			jointSpecific = specificUtr
-			jointSpecific.extend(specificCds)
-			jointSpecific = sorted(jointSpecific)
-			
-			setCds = set(specificCds)
-			setUtr = set(specificUtr)
-			setJoint = set(jointSpecific)
-
-			# check that this works
-			exons = [ map(itemgetter(1),g) for k,g in groupby(enumerate(jointSpecific), lambda (i,x): i-x) ]
+			specificRegions = sorted(list(specificUtr | specificCds))
+			exons = [ set(map(itemgetter(1),g)) for k,g in groupby(enumerate(specificRegions), lambda (i,x): i-x) ]
 			
 			for exon in exons:
-				setExon = set(exon)
+
 				exonInfo = {}
 				exonInfo["switch"] = "{0}_{1}_{2}".format(gene,switchDict["nIso"],switchDict["tIso"])
 				exonInfo["length"] = len(exon)
 
-				if setExon & setCds and setExon & setUtr:
-					exonicCds = sorted(setExon & setCds)
-					exonInfo["role"] = "CDS-UTR"
-					exonInfo["keepORF"] = len(exonicCds)%3
-					medianPos = exonicCds[len(exonicCds)/2]
-					pos = [ i for i,x in enumerate(cds) if x==medianPos ][0]
-					exonInfo["wholeSeqPosition"] = float(pos)/len(cds)
-				elif setExon & setCds:
-					exonInfo["role"] = "CDS"
-					exonInfo["keepORF"] = len(switchAndExonOverview)%3
-					medianPos = exon[len(exon)/2]
-					pos = [ i for i,x in enumerate(cds) if x==medianPos ][0]
-					exonInfo["wholeSeqPosition"] = float(pos)/len(cds)
-				elif setExon & setUtr:
+				if exon & specificCds:
+					exonicCds = sorted(list(exon & specificCds))
+					
+					exonInfo["cdsLength"] = len(exonicCds)
+					exonInfo["keepORF"] = True if len(exonicCds)%3==0 else False
+					
+					firstPos = exonicCds[0]
+					pos = [ i for i,x in enumerate(cds) if x==firstPos ][0]
+					exonInfo["position"] = float(pos)/len(cds)
+					exonInfo["relativeSize"] = float(exonInfo["cdsLength"])/len(cds)
+
+					if exon & specificUtr:
+						exonInfo["role"] = "CDS-UTR"
+					else:
+						exonInfo["role"] = "CDS"
+
+				elif exon & specificUtr:
 					exonInfo["role"] = "UTR"
+					exonInfo["cdsLength"] = 0
 					exonInfo["keepORF"] = None
-					exonInfo["wholeSeqPosition"] = None
-				else:
-					exonInfo["role"] = "wut"
-					exonInfo["keepORF"] = "wut"
-					exonInfo["wholeSeqPosition"] = "wut"
+					exonInfo["position"] = None
+					exonInfo["relativeSize"] = None
 
 				self.exonStats[randomTag].append(exonInfo)
 		
@@ -272,16 +285,29 @@ class ResultSummary(method.Method):
 			##### GENE LEVEL #####
 			F.write("Cancer\tAnalysis\tFeat-Switch\tFeat-NoSwitch\tNoFeat-Switch\tNoFeat-NoSwitch\tp\n")
 			# driver enrichment in switches
-			F.write("{0}\tDriver_enrichment\t".format(options.Options().tag ))
-			F.write("{0}\t".format(self.switchStats["driverTest"]["Driver"]["Switch"]))
-			F.write("{0}\t".format(self.switchStats["driverTest"]["Driver"]["NoSwitch"]))
-			F.write("{0}\t".format(self.switchStats["driverTest"]["NonDriver"]["Switch"]))
-			F.write("{0}\t".format(self.switchStats["driverTest"]["NonDriver"]["NoSwitch"]))
+			F.write("{0}\tDriver_D0_enrichment\t".format(options.Options().tag ))
+			F.write("{0}\t".format(self.switchStats["driverD0Test"]["Driver"]["Switch"]))
+			F.write("{0}\t".format(self.switchStats["driverD0Test"]["Driver"]["NoSwitch"]))
+			F.write("{0}\t".format(self.switchStats["driverD0Test"]["NonDriver"]["Switch"]))
+			F.write("{0}\t".format(self.switchStats["driverD0Test"]["NonDriver"]["NoSwitch"]))
 			
-			p = fisher.pvalue(self.switchStats["driverTest"]["Driver"]["Switch"],
-							self.switchStats["driverTest"]["Driver"]["NoSwitch"],
-							self.switchStats["driverTest"]["NonDriver"]["Switch"],
-							self.switchStats["driverTest"]["NonDriver"]["NoSwitch"])
+			p = fisher.pvalue(self.switchStats["driverD0Test"]["Driver"]["Switch"],
+							self.switchStats["driverD0Test"]["Driver"]["NoSwitch"],
+							self.switchStats["driverD0Test"]["NonDriver"]["Switch"],
+							self.switchStats["driverD0Test"]["NonDriver"]["NoSwitch"])
+
+			F.write("{0}\n".format(p.two_tail) )
+
+			F.write("{0}\tDriver_D1_enrichment\t".format(options.Options().tag ))
+			F.write("{0}\t".format(self.switchStats["driverD1Test"]["D1Driver"]["Switch"]))
+			F.write("{0}\t".format(self.switchStats["driverD1Test"]["D1Driver"]["NoSwitch"]))
+			F.write("{0}\t".format(self.switchStats["driverD1Test"]["NonD1Driver"]["Switch"]))
+			F.write("{0}\t".format(self.switchStats["driverD1Test"]["NonD1Driver"]["NoSwitch"]))
+			
+			p = fisher.pvalue(self.switchStats["driverD1Test"]["D1Driver"]["Switch"],
+							self.switchStats["driverD1Test"]["D1Driver"]["NoSwitch"],
+							self.switchStats["driverD1Test"]["NonD1Driver"]["Switch"],
+							self.switchStats["driverD1Test"]["NonD1Driver"]["NoSwitch"])
 
 			F.write("{0}\n".format(p.two_tail) )
 
@@ -298,14 +324,37 @@ class ResultSummary(method.Method):
 							self.switchStats["driverRTest"]["NonDriver"]["NonRelevant"])
 
 			F.write("{0}\n".format(p.two_tail) )
-		'''
+
+			F.write("Cancer\tAnalysis\tMean cond1\tMean cond2\tp\n")
+			# patient difference in switches
+			F.write("{0}\tDriver_D0_patients\t".format(options.Options().tag ))
+			F.write("{0}\t".format(sum(self.switchStats["driverD0Patients"]["Driver"])/len(self.switchStats["driverD0Patients"]["Driver"])))
+			F.write("{0}\t".format(sum(self.switchStats["driverD0Patients"]["NonDriver"])/len(self.switchStats["driverD0Patients"]["NonDriver"])))
+			
+			t,p = stats.ttest_ind(self.switchStats["driverD0Patients"]["Driver"],
+								  self.switchStats["driverD0Patients"]["NonDriver"])
+
+			F.write("{0}\n".format(p) )
+
+			F.write("{0}\tDriver_D1_patients\t".format(options.Options().tag ))
+			F.write("{0}\t".format(sum(self.switchStats["driverD1Patients"]["D1Driver"])/len(self.switchStats["driverD1Patients"]["D1Driver"])))
+			F.write("{0}\t".format(sum(self.switchStats["driverD1Patients"]["NonD1Driver"])/len(self.switchStats["driverD1Patients"]["NonD1Driver"])))
+			
+			t,p = stats.ttest_ind(self.switchStats["driverD1Patients"]["D1Driver"],
+								  self.switchStats["driverD1Patients"]["NonD1Driver"])
+
+			F.write("{0}\n".format(p) )
+
 		with open("{0}result_summary/exons{1}.tsv".format(options.Options().qout,options.Options().filetag), "w" ) as F:
-			F.write("Cancer\tSwitch\tLength\tType\tKeepOrf\tPosition\n")
-			for exon in self.exonStats:
-				F.write("{0}\t{1}\t".format(options.Options().tag,exon["switch"]))
-				F.write("{0}\t{1}\t".format(exon["length"],exon["role"]))
-				F.write("{0}\t{1}\n".format(exon["keepORF"],exon["wholeSeqPosition"]))
-		'''
+			F.write("Cancer\tRandom\tSwitch\tType\tLength\tCDSLength\t")
+			F.write("CDSRelativeSize\tPosition\tKeepOrf\tPosition\n")
+			for random in self.exonStats:
+				for chunk in self.exonStats[random]:
+					F.write("{0}\t{1}\t".format(options.Options().tag,random))
+					F.write("{0}\t{1}\t".format(exon["switch"],exon["role"]))
+					F.write("{0}\t{1}\t".format(exon["length"],exon["cdsLength"]))
+					F.write("{0}\t{1}\t".format(exonInfo["relativeSize"],exon["position"]))
+					F.write("{0}\t{1}\n".format(exon["keepORF"],exon["position"]))
 
 	def printStructutalInfo(self):
 
@@ -342,29 +391,29 @@ class ResultSummary(method.Method):
 				for pfamDom in featureDict["Pfam"]:
 					F.write("{0}\t{1}\tPfam\t".format(options.Options().tag,gene))
 					F.write("{0}\t{1}\t{2}\t".format(symbol,nTx,tTx))
-					F.write("{0}\t{1}\t".format(pfamDom[1],pfamDom[0]))
+					F.write("{0}\t{1}\t".format(pfamDom[1],pfamDom[0].replace(" ","_")))
 					F.write("{0}\t{1}\t".format(featureDict["Relevant"],featureDict["Model"]))
 					F.write("{0}\t{1}\t".format(featureDict["Noise"],featureDict["Driver"]))
 					F.write("{0}\t{1}\n".format(featureDict["ASDriver"],featureDict["DriverType"]))
 
-				if featureDict["IUPREDLong"]:
-					for iulong in featureDict["IUPREDLong"][0]:
-						F.write("{0}\t{1}\tIUPREDLong\t".format(options.Options().tag,gene))
-						F.write("{0}\t{1}\t{2}\t".format(symbol,nTx,tTx))
+				# if featureDict["IUPREDLong"]:
+				# 	for iulong in featureDict["IUPREDLong"][0]:
+				# 		F.write("{0}\t{1}\tIUPREDLong\t".format(options.Options().tag,gene))
+				# 		F.write("{0}\t{1}\t{2}\t".format(symbol,nTx,tTx))
 
-						F.write("{0}\t{1}\t".format(featureDict["IUPREDLong"][1],iulong))
-						F.write("{0}\t{1}\t".format(featureDict["Relevant"],featureDict["Model"]))
-						F.write("{0}\t{1}\t".format(featureDict["Noise"],featureDict["Driver"]))
-						F.write("{0}\t{1}\n".format(featureDict["ASDriver"],featureDict["DriverType"]))
+				# 		F.write("{0}\t{1}\t".format(featureDict["IUPREDLong"][1],iulong))
+				# 		F.write("{0}\t{1}\t".format(featureDict["Relevant"],featureDict["Model"]))
+				# 		F.write("{0}\t{1}\t".format(featureDict["Noise"],featureDict["Driver"]))
+				# 		F.write("{0}\t{1}\n".format(featureDict["ASDriver"],featureDict["DriverType"]))
 
-				if featureDict["IUPREDShort"]:
-					for iushort in featureDict["IUPREDShort"][0]:
-						F.write("{0}\t{1}\tIUPREDShort\t".format(options.Options().tag,gene))
-						F.write("{0}\t{1}\t{2}\t".format(symbol,nTx,tTx))
-						F.write("{0}\t{1}\t".format(featureDict["IUPREDShort"][1],iushort))
-						F.write("{0}\t{1}\t".format(featureDict["Relevant"],featureDict["Model"]))
-						F.write("{0}\t{1}\t".format(featureDict["Noise"],featureDict["Driver"]))
-						F.write("{0}\t{1}\n".format(featureDict["ASDriver"],featureDict["DriverType"]))
+				# if featureDict["IUPREDShort"]:
+				# 	for iushort in featureDict["IUPREDShort"][0]:
+				# 		F.write("{0}\t{1}\tIUPREDShort\t".format(options.Options().tag,gene))
+				# 		F.write("{0}\t{1}\t{2}\t".format(symbol,nTx,tTx))
+				# 		F.write("{0}\t{1}\t".format(featureDict["IUPREDShort"][1],iushort))
+				# 		F.write("{0}\t{1}\t".format(featureDict["Relevant"],featureDict["Model"]))
+				# 		F.write("{0}\t{1}\t".format(featureDict["Noise"],featureDict["Driver"]))
+				# 		F.write("{0}\t{1}\n".format(featureDict["ASDriver"],featureDict["DriverType"]))
 
 		with open("{0}result_summary/structural_loops{1}.tsv".format(options.Options().qout,options.Options().filetag), "w" ) as F:
 			F.write("Cancer\tDifferent\t")
@@ -374,51 +423,51 @@ class ResultSummary(method.Method):
 			F.write("{0}\t{1}\t".format(self.loops["loopsChange"]["onlyN"],self.loops["loopsChange"]["onlyT"]) )
 			F.write("{0}\t{1}\n".format(self.loops["loopsChange"]["noLoops"]))
 
-	def changedFeatures(self,random,gene,info,switchDict,switch):	
+	def changedStructuralFeatures(self,random,gene,info,switchDict,switch):	
 
 		tag = "{0}_{1}_{2}_{3}".format(gene,info["symbol"],switch.nTx,switch.tTx)
 
-		if random:	randomTag = "Random"
-		else:	randomTag = "NonRandom"
+		if random:
+			randomTag = "Random"
+			filetag = "_random"
+		else:
+			randomTag = "NonRandom"
+			filetag = ""
 
 		switchFeatures = {}
 
-		if switch.functionalChange:
-			Pfam = []
+		Pfam = []
 
-			functionalChanges = ""
-			for element in utils.readTable("{0}structural_analysis/interpro_analysis.tsv".format(options.Options().qout)):
-				if element[0]==gene and element[2] in [switch.nTx,switch.tTx]:
-					if element[4]=="Pfam":
-						Pfam.append((element[6],element[3]))
+		functionalChanges = ""
+		for element in utils.readTable("{0}structural_analysis/interpro_analysis{1}.tsv".format(options.Options().qout,filetag)):
+			if element[2]==switch.nTx and element[3]==switch.tTx:
+				if element[5]=="Pfam":
+					Pfam.append((element[7],element[4]))
 
-			switchFeatures["Pfam"] = Pfam
-			
-		else:
-			switchFeatures["Pfam"] = []
+		switchFeatures["Pfam"] = Pfam
 		
-		if switch.disorderChange:
-			longDisorder = []
-			shortDisorder = []
+		# if switch.disorderChange:
+		# 	longDisorder = []
+		# 	shortDisorder = []
 
-			for element in utils.readTable("{0}structural_analysis/iupred_analysis.tsv".format(options.Options().qout)):
-				if element[0]==gene and element[2] in [switch.nTx,switch.tTx] and element[4]:
-					if element[3]=='short':
-						if element[2] == switch.nTx:
-							shortDisorder = (element[4].split(","),'Lost in tumor')
-						else:
-							shortDisorder = (element[4].split(","),'Gained in tumor')
-					elif element[3]=='long':
-						if element[2] == switch.nTx:
-							longDisorder = (element[4].split(","),'Lost in tumor')
-						else:
-							longDisorder = (element[4].split(","),'Gained in tumor')
+		# 	for element in utils.readTable("{0}structural_analysis/iupred_analysis.tsv".format(options.Options().qout)):
+		# 		if element[0]==gene and element[2] in [switch.nTx,switch.tTx] and element[4]:
+		# 			if element[3]=='short':
+		# 				if element[2] == switch.nTx:
+		# 					shortDisorder = (element[4].split(","),'Lost in tumor')
+		# 				else:
+		# 					shortDisorder = (element[4].split(","),'Gained in tumor')
+		# 			elif element[3]=='long':
+		# 				if element[2] == switch.nTx:
+		# 					longDisorder = (element[4].split(","),'Lost in tumor')
+		# 				else:
+		# 					longDisorder = (element[4].split(","),'Gained in tumor')
 			
-			switchFeatures["IUPREDShort"] = shortDisorder
-			switchFeatures["IUPREDLong"] = longDisorder
-		else:
-			switchFeatures["IUPREDShort"] = []
-			switchFeatures["IUPREDLong"] = []
+		# 	switchFeatures["IUPREDShort"] = shortDisorder
+		# 	switchFeatures["IUPREDLong"] = longDisorder
+		# else:
+		# 	switchFeatures["IUPREDShort"] = []
+		# 	switchFeatures["IUPREDLong"] = []
 		
 		switchFeatures["Driver"] = int(info["Driver"])
 		switchFeatures["ASDriver"] = int(info["ASDriver"])

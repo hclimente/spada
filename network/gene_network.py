@@ -547,12 +547,12 @@ class GeneNetwork(network.Network):
 					s["model"] = False
 
 	def sampleSwitches(self,tx_network,partialCreation=True,numIterations=2000):
-		genes = random.sample(self.nodes(),numIterations)
+
+		genesWithSwitches = [ gene for gene,info in self.iterate_genes_ScoreWise() if info["isoformSwitches"] ]
+		genes = random.sample(genesWithSwitches,numIterations)
+
 		for gene in genes:
 			info = self._net.node[gene]
-
-			if not info["isoformSwitches"]:
-				continue
 			switchDict = random.choice(info["isoformSwitches"])
 			thisSwitch = self.createSwitch(switchDict,tx_network,partialCreation)
 
