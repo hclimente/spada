@@ -32,20 +32,18 @@ class iLoopsParser(iLoops_xml_parser.ILXMLParser):
 
 		return noLoops
 
-	def parseInteractions(self,myProtein,expressedTranscripts):
+	def parseInteractions(self,tx,expressedTranscripts):
 		interactions = {}
 		partner = ""
 		tmpRC = 0
 
-		tarFile = "iLoops/{0}/{1}/{2}.tar.gz".format(
-												options.Options().inputType, 
-												options.Options().iLoopsVersion, 
-												myProtein
-											 )
-		xmlFile = options.Options().qout + myProtein + ".ips"
+		tarFile = "{0}iLoops/{1}/{2}/{3}.tar.gz".format(options.Options().wd, 
+													 options.Options().inputType, 
+													 options.Options().iLoopsVersion,tx)
+		xmlFile = "{0}{1}.ips".format(options.Options().qout,tx)
 
 		tar = tarfile.open(tarFile)
-		tar.extract(myProtein+".ips", path=options.Options().qout)
+		tar.extract(tx+".ips", path=options.Options().qout)
 
 		tar.close()
 		with open(xmlFile) as FILE:
@@ -62,14 +60,14 @@ class iLoopsParser(iLoops_xml_parser.ILXMLParser):
 					if "True" in strippedLine and tmpRC > interactions[partner]:
 						interactions[partner] = tmpRC
 				elif ("P1ID" in strippedLine or "P2ID" in strippedLine):
-					if not partner or partner == myProtein:
+					if not partner or partner == tx:
 						partner = strippedLine[6:-7]
 
 		os.remove(xmlFile)
 
-		realInteractions = {k: interactions[k] for k in expressedTranscripts if k in interactions }
+		expressedInteractions = {k: interactions[k] for k in expressedTranscripts if k in interactions }
 
-		return realInteractions
+		return expressedInteractions
 
 	def makeProteinsLite(self, xmlOutput, xmlOriginal, **kwds):
 		for resultItem in self.results_parser(xml_file=xmlOriginal, report_level=0, **kwds):
