@@ -27,9 +27,12 @@ class StructuralAnalysis(method.Method):
 			tag = ""
 			if not options.Options().parallelRange:
 				self.joinFiles("_random")
-			self.anchor_threshold = self.getThresholdFromRandom("anchor",95)
-			self.iupred_threshold = self.getThresholdFromRandom("iupred",95)
-			self.prosite_threshold = self.getThresholdFromRandom("prosite",95)
+			#self.anchor_threshold = self.getThresholdFromRandom("anchor",95)
+			self.anchor_threshold = 1
+			#self.iupred_threshold = self.getThresholdFromRandom("iupred",95)
+			self.iupred_threshold = 1
+			#self.prosite_threshold = self.getThresholdFromRandom("prosite",95)
+			self.prosite_threshold = 0.5
 
 		self._interpro_file = "{0}structural_analysis/interpro_analysis{1}{2}.tsv".format(options.Options().qout,tag,options.Options().filetag)
 		self.IP = open(self._interpro_file,"w")
@@ -65,8 +68,8 @@ class StructuralAnalysis(method.Method):
 				isoInfo[elements[0][1:]]["iLoopsFamily"] = elements[3]
 
 		for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network,partialCreation=True,removeNoise=True):
-			thisSwitch._iloops_change 	  = self.findDiffLoops(thisSwitch,gene,info,isoInfo)
-			thisSwitch._functional_change = self.interProAnalysis(thisSwitch,gene,info)
+			thisSwitch._iloops_change 	  = self.archDBAnalysis(thisSwitch,gene,info,isoInfo)
+			thisSwitch._functional_change = self.interproAnalysis(thisSwitch,gene,info)
 			thisSwitch._disorder_change   = self.disorderAnalysis(thisSwitch,gene,info)
 			thisSwitch._anchor_change     = self.anchorAnalysis(thisSwitch,gene,info)
 			thisSwitch._ptm_change 		  = self.prositeAnalysis(thisSwitch,gene,info)
@@ -83,7 +86,7 @@ class StructuralAnalysis(method.Method):
 		self.PROSITE.close()
 		self.REL.close()
 
-	def findDiffLoops(self,thisSwitch,gene,info,isoInfo):
+	def archDBAnalysis(self,thisSwitch,gene,info,isoInfo):
 
 		self.logger.debug("iLoops: looking for loop changes for gene {0}.".format(gene) )
 		
@@ -99,7 +102,7 @@ class StructuralAnalysis(method.Method):
 
 		return False
 
-	def interProAnalysis(self,thisSwitch,gene,info):
+	def interproAnalysis(self,thisSwitch,gene,info):
 
 		self.logger.debug("InterPro: searching changes for gene {0}.".format(gene) )
 		
@@ -119,24 +122,31 @@ class StructuralAnalysis(method.Method):
 		nIsoFeatures = Counter([ x["accession"] for x in normalProtein._features ])
 		tIsoFeatures = Counter([ x["accession"] for x in tumorProtein._features ])
 
-		nIso_uniqFeats = [ (x,nIsoFeatures[x]-tIsoFeatures.get(x,0)) for x in nIsoFeatures if nIsoFeatures[x]-tIsoFeatures.get(x,0) > 0 ]
-		tIso_uniqFeats = [ (x,tIsoFeatures[x]-nIsoFeatures.get(x,0)) for x in tIsoFeatures if tIsoFeatures[x]-nIsoFeatures.get(x,0) > 0 ]
+		nIso_uniqFeats = dict([ (x,nIsoFeatures[x]-tIsoFeatures.get(x,0)) for x in nIsoFeatures if nIsoFeatures[x]-tIsoFeatures.get(x,0) > 0 ])
+		tIso_uniqFeats = dict([ (x,tIsoFeatures[x]-nIsoFeatures.get(x,0)) for x in tIsoFeatures if tIsoFeatures[x]-nIsoFeatures.get(x,0) > 0 ])
 
-		iterationZip = zip([nIso_uniqFeats,tIso_uniqFeats],[normalProtein,tumorProtein],["Lost in tumor","Gained in tumor"])
+		iterationZip = zip([nIsoFeatures,tIsoFeatures],[nIso_uniqFeats,tIso_uniqFeats],[normalProtein,tumorProtein],["Lost in tumor","Gained in tumor"])
 
-		for uniqFeat,protein,whatsHappening in iterationZip:
-			for feat,reps in uniqFeat:
-				featInfo = [ x for x in protein._features if x["accession"]==feat ][0]
+		for features,uniqFeatures,protein,whatShouldBeHappening in iterationZip:
+			for f in features:
+		
+				whatsHappening = "Nothing"
+				featInfo = [ x for x in protein._features if x["accession"]==f ][0]
+				notInUniq = 0
+				if f in uniqFeatures:
+					whatsHappening = whatShouldBeHappening
+					notInUniq = uniqFeatures[f]
 
-				self.IP.write("{0}\t{1}\t{2}\t".format(info["symbol"],gene,thisSwitch.nTx))
+				self.IP.write("{0}\t{1}\t{2}\t".format(gene,info["symbol"],thisSwitch.nTx))
 				self.IP.write("{0}\t{1}\t".format(thisSwitch.tTx,whatsHappening))
 				self.IP.write("{0}\t{1}\t".format(featInfo["analysis"],featInfo["accession"]))
-				self.IP.write("{0}\t{1}\n".format(featInfo["description"],reps))
+				self.IP.write("{0}\t{1}\t".format(featInfo["description"],features[f]))
+				self.IP.write("{0}\n".format(notInUniq))
 
 				if thisSwitch._functional_change is None:
 					thisSwitch._functional_change = set()
 
-				toSave = [featInfo["analysis"],featInfo["accession"],featInfo["description"],reps]
+				toSave = [featInfo["analysis"],featInfo["accession"],featInfo["description"],notInUniq]
 				if not thisSwitch._functional_change:
 					thisSwitch._functional_change = []
 				thisSwitch._functional_change.append(toSave)
@@ -156,16 +166,11 @@ class StructuralAnalysis(method.Method):
 
 		if not normalProtein or not tumorProtein: return False
 
-		for protein,whatsHappening in zip([normalProtein,tumorProtein],["Lost in tumor","Gained in tumor"]):
-			fFile = "{0}{1}{2}.fa".format(options.Options().qout,protein.tx,options.Options().filetag)
-			with open(fFile,"w") as FASTA:
-				FASTA.write(">{0}\n{1}\n".format(protein.tx,protein.seq))
-
+		for protein,whatShouldBeHappening in zip([normalProtein,tumorProtein],["Lost in tumor","Gained in tumor"]):
 			for mode in ["short","long"]:
-				proc = utils.cmdOut(options.Options().wd+"Pipeline/libs/bin/iupred/iupred",fFile,mode)
-
+				whatsHappening = whatShouldBeHappening
 				#Parse iupred output
-				for line in [ x.strip().split(" ") for x in proc.stdout if "#" not in x ]:
+				for line in self.getIupredOutput(protein,mode):
 					resNum  = int(line[0])
 					residue	= line[1]
 					score 	= float(line[-1])
@@ -191,14 +196,15 @@ class StructuralAnalysis(method.Method):
 							overlappingIsoSpecific.extend(isoSpecific)
 					
 					if not overlappingIsoSpecific:
-						continue
+						jaccard = 0
+						whatsHappening = "Nothing"
+					else:
+						overlappingIsoSpecificSet = set(overlappingIsoSpecific)
 
-					overlappingIsoSpecificSet = set(overlappingIsoSpecific)
+						intersection = float(len(overlappingIsoSpecificSet & disorderedRegionSet))
+						union = float(len(overlappingIsoSpecificSet | disorderedRegionSet))
 
-					intersection = float(len(overlappingIsoSpecificSet & disorderedRegionSet))
-					union = float(len(overlappingIsoSpecificSet | disorderedRegionSet))
-
-					jaccard = intersection/union
+						jaccard = intersection/union
 
 					motifSequence = ""
 					for thisRes in disorderedRegion:
@@ -213,8 +219,6 @@ class StructuralAnalysis(method.Method):
 
 					if jaccard > self.iupred_threshold:
 						anyIUpredSeq = True
-					
-			os.remove(fFile)
 
 		return anyIUpredSeq
 
@@ -228,15 +232,10 @@ class StructuralAnalysis(method.Method):
 
 		if not normalProtein or not tumorProtein: return False
 
-		for protein,whatsHappening in zip([normalProtein,tumorProtein],["Lost in tumor","Gained in tumor"]):
-			fFile = "{0}{1}{2}.fa".format(options.Options().qout,protein.tx,options.Options().filetag)
-			with open(fFile,"w") as FASTA:
-				FASTA.write(">{0}\n{1}\n".format(protein.tx,protein.seq))
-
-			proc = utils.cmdOut(options.Options().wd+"Pipeline/libs/ANCHOR/anchor",fFile)
-
+		for protein,whatShouldBeHappening in zip([normalProtein,tumorProtein],["Lost in tumor","Gained in tumor"]):
+			whatsHappening = whatShouldBeHappening
 			#Parse anchor output
-			for line in [ x.strip().split("\t") for x in proc.stdout if "#" not in x ]:
+			for line in self.getAnchorOutput(protein):
 				resNum  = int(line[0])
 				residue	= line[1]
 				score 	= float(line[2].strip())
@@ -264,14 +263,15 @@ class StructuralAnalysis(method.Method):
 						overlappingIsoSpecific.extend(isoSpecific)
 				
 				if not overlappingIsoSpecific:
-					continue
+					jaccard = 0
+					whatsHappening = "Nothing"
+				else:
+					overlappingIsoSpecificSet = set(overlappingIsoSpecific)
 
-				overlappingIsoSpecificSet = set(overlappingIsoSpecific)
+					intersection = float(len(overlappingIsoSpecificSet & anchorRegionSet))
+					union = float(len(overlappingIsoSpecificSet | anchorRegionSet))
 
-				intersection = float(len(overlappingIsoSpecificSet & anchorRegionSet))
-				union = float(len(overlappingIsoSpecificSet | anchorRegionSet))
-
-				jaccard = intersection/union
+					jaccard = intersection/union
 
 				motifSequence = ""
 				for thisRes in anchorRegion:
@@ -287,8 +287,6 @@ class StructuralAnalysis(method.Method):
 				if jaccard > self.anchor_threshold:
 					anyAnchorSeq = True
 
-			os.remove(fFile)
-
 		return anyAnchorSeq
 
 	def prositeAnalysis(self,thisSwitch,gene,info):
@@ -298,9 +296,10 @@ class StructuralAnalysis(method.Method):
 
 		anyPTM = False
 
-		for protein,whatsHappening in zip([normalProtein,tumorProtein],["Lost in tumor","Gained in tumor"]):
+		for protein,whatShouldBeHappening in zip([normalProtein,tumorProtein],["Lost in tumor","Gained in tumor"]):
 			if not protein: continue
 
+			whatsHappening = whatShouldBeHappening
 			txFile = "{0}Data/TCGA/ProSite/{1}.out".format(options.Options().wd,protein.tx)
 			if os.stat(txFile).st_size == 0:
 				continue
@@ -336,14 +335,15 @@ class StructuralAnalysis(method.Method):
 					[ overlappingIsoSpecific.extend(x) for x in isoform if set(x) & regionSet ]
 
 					if not overlappingIsoSpecific:
-						continue
+						jaccard = 0
+						whatsHappening = "Nothing"
+					else:
+						overlappingIsoSpecificSet = set(overlappingIsoSpecific)
 
-					overlappingIsoSpecificSet = set(overlappingIsoSpecific)
+						intersection = float(len(overlappingIsoSpecificSet & regionSet))
+						union = float(len(overlappingIsoSpecificSet | regionSet))
 
-					intersection = float(len(overlappingIsoSpecificSet & regionSet))
-					union = float(len(overlappingIsoSpecificSet | regionSet))
-
-					jaccard = intersection/union
+						jaccard = intersection/union
 
 					self.PROSITE.write("{0}\t{1}\t{2}\t".format(gene,info["symbol"],thisSwitch.nTx))
 					self.PROSITE.write("{0}\t{1}\t{2}\t".format(thisSwitch.tTx,whatsHappening,ptm))
@@ -464,9 +464,59 @@ class StructuralAnalysis(method.Method):
 					OUT.write("{0}\t{1}\t".format(rDisorder,rAnchor))
 					OUT.write("{0}\n".format(rProsite))
 
+	def getIupredOutput(self,protein,mode):
+
+		outfile = "{0}Data/{1}/IUPred/{2}.{3}.txt".format(options.Options().wd,options.Options().inputType,protein.tx,mode)
+		out = []
+
+		if not os.path.isfile(outfile):
+			outfile = "{0}IUPred/{1}.{2}.txt".format(options.Options().wd,protein.tx,mode)
+			fFile = "{0}{1}{2}.fa".format(options.Options().qout,protein.tx,options.Options().filetag)
+			with open(fFile,"w") as FASTA:
+				FASTA.write(">{0}\n{1}\n".format(protein.tx,protein.seq))
+
+			proc = utils.cmdOut(options.Options().wd+"Pipeline/libs/bin/iupred/iupred",fFile,mode)
+			out = [ x.strip().split(" ") for x in proc.stdout if "#" not in x ]
+			os.remove(fFile)
+
+			with open(outfile,"w") as IUout:
+				for line in out:
+					IUout.write("{0}\t{1}\t{2}\n".format(line[0],line[1],line[-1]))
+					yield line
+
+		else:
+			with open(outfile) as IUout:
+				for line in IUout:
+					yield line.strip().split()
+
+	def getAnchorOutput(self,protein):
+		outfile = "{0}Data/{1}/ANCHOR/{2}.txt".format(options.Options().wd,options.Options().inputType,protein.tx)
+		out = []
+
+		if not os.path.isfile(outfile):
+			outfile = "{0}ANCHOR/{1}.txt".format(options.Options().wd,protein.tx)
+			fFile = "{0}{1}{2}.fa".format(options.Options().qout,protein.tx,options.Options().filetag)
+			with open(fFile,"w") as FASTA:
+				FASTA.write(">{0}\n{1}\n".format(protein.tx,protein.seq))
+
+			proc = utils.cmdOut(options.Options().wd+"Pipeline/libs/ANCHOR/anchor",fFile)
+			out = [ x.strip().split() for x in proc.stdout if "#" not in x ]
+			os.remove(fFile)
+
+			with open(outfile,"w") as ANCHORout:
+				for line in out:
+					ANCHORout.write("{0}\t{1}\t{2}\n".format(line[0],line[1],line[2]))
+					yield line
+
+		else:
+			with open(outfile) as ANCHORout:
+				for line in ANCHORout:
+					yield line.strip().split()
+
 	def ipHeader(self,IP):
-		IP.write("Gene\tSymbol\tNormalTranscript\tTumorTranscript\tAnalysis\tFeature_accesion\t")
-		IP.write("Feature\t(Additional) repetitions\n")
+		IP.write("Gene\tSymbol\tNormalTranscript\tTumorTranscript\t")
+		IP.write("What\tAnalysis\tFeature_accesion\tFeature\tRepetitions\t")
+		IP.write("Exclusive repetitions\n")
 
 	def iuHeader(self,IU):
 		IU.write("Gene\tSymbol\tNormalTranscript\tTumorTranscript\t")
