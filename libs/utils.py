@@ -176,8 +176,8 @@ def launchJobs(gnNetwork,task):
 		jt.joinFiles=True
 		jt.nativeSpecification = natSpec
 		jt.nativeSpecification += "-N {0}_{1}_{2} ".format(options.Options().tag,task,startingNode)
-		jt.nativeSpecification += "-e {0}logs/{1}_{2}.txt ".format(options.Options().qout,task,startingNode)
-		jt.nativeSpecification += "-o {0}logs/{1}_{2}.txt".format(options.Options().qout,task,startingNode)
+		jt.nativeSpecification += "-e {0}logs/{1}_{2}.out.txt ".format(options.Options().qout,task,startingNode)
+		jt.nativeSpecification += "-o {0}logs/{1}_{2}.err.txt".format(options.Options().qout,task,startingNode)
 
 		jobid = s.runJob(jt)
 		randoms.append(jobid)

@@ -5,12 +5,10 @@ import math
 import networkx
 import logging
 
-def interactorsInfo(gn_net, tx_net, gene, nIso, tIso):
-	geneSym = gn_net._net.node[gene]["symbol"]
-	logging.info("Writing InteraX file for gene {0}({1}), isoforms {2} and {3}.".format(
-						gene, geneSym, nIso, tIso ))
-	with open("{0}iLoops/{1}/InteraXv2_{2}_{3}_{4}.tsv".format(options.Options().qout, options.Options().iLoopsVersion, geneSym, nIso, tIso), "w" ) as INTERAX:
-		
+def interactorsInfo(gn_net,tx_net,gene,nIso,tIso):
+	symbol = gn_net._net.node[gene]["symbol"]
+	logging.info("Writing InteraX file for gene {0}({1}), isoforms {2} and {3}.".format(gene,symbol,nIso,tIso))
+	with open("{0}iLoops/{1}/InteraX_{2}_{3}_{4}.tsv".format(options.Options().qout, options.Options().iLoopsVersion, symbol, nIso, tIso), "w" ) as INTERAX:
 		nTPM_N = None
 		if tx_net._net.node[nIso]["median_TPM_N"] is not None:
 			nTPM_N = math.log10 ( tx_net._net.node[nIso]["median_TPM_N"] + 0.0001 )
@@ -22,7 +20,7 @@ def interactorsInfo(gn_net, tx_net, gene, nIso, tIso):
 		INTERAX.write("#\t")
 		INTERAX.write("{0}\t{1}\t".format( nIso, tx_net._net.node[nIso]["median_PSI_N"] ))
 		INTERAX.write("{0}\t{1}\t".format( tIso, tx_net._net.node[tIso]["median_PSI_T"] ))
-		INTERAX.write("{0}\t{1}\t".format( gene, geneSym ))
+		INTERAX.write("{0}\t{1}\t".format( gene, symbol ))
 		INTERAX.write("{0}\t{1}\n".format( nTPM_N, tTPM_T ))
 
 		INTERAX.write("Partner\tGene\tSymbol\tRC_n\tRC_t\tdeltaRC\t")
@@ -42,18 +40,11 @@ def interactorsInfo(gn_net, tx_net, gene, nIso, tIso):
 			if tx_net._net.node[partnerIso]["median_TPM_T"] is not None:
 				tTPM = math.log10 ( tx_net._net.node[partnerIso]["median_TPM_T"] + 0.0001 )
 
-			INTERAX.write("{0}\t".format( partnerIso ))
-			INTERAX.write("{0}\t".format( partnerGene ))
-			INTERAX.write("{0}\t".format( gn_net._net.node[ partnerGene ]["symbol"] ))
-			INTERAX.write("{0}\t".format( RCN ))
-			INTERAX.write("{0}\t".format( RCT ))
-			INTERAX.write("{0}\t".format( dRC ))
-			INTERAX.write("{0}\t".format( annotation ))
-			INTERAX.write("{0}\t".format( nTPM ))
-			INTERAX.write("{0}\t".format( tx_net._net.node[partnerIso]["median_PSI_N"] ))
-			INTERAX.write("{0}\t".format( tTPM ))
-			INTERAX.write("{0}\t".format( tx_net._net.node[partnerIso]["median_PSI_T"] ))
-			INTERAX.write("\n")
+			INTERAX.write("{0}\t{1}\t".format(partnerIso,partnerGene))
+			INTERAX.write("{0}\t{1}\t".format(gn_net._net.node[partnerGene]["symbol"],RCN))
+			INTERAX.write("{0}\t{1}\t{2}\t".format(RCT,dRC,annotation))
+			INTERAX.write("{0}\t{1}\t".format(nTPM,tx_net._net.node[partnerIso]["median_PSI_N"]))
+			INTERAX.write("{0}\t{1}\n".format(tTPM,tx_net._net.node[partnerIso]["median_PSI_T"]))
 
 def getGUILDInput(gn_net, onlyExperimental=False):
 	logging.info("Writing GUILD input files.")
@@ -95,7 +86,7 @@ def outCandidateList(gn_network,tx_network):
 		cList.write("IsModel\tIsRelevant\tDriver\tDruggable\tCDS\t")
 		cList.write("CDS_change\tUTR_change\tPatients_affected\n")
 		
-		for gene,info,switchDict,switch in gn_network.iterate_switches_ScoreWise(tx_network,partialCreation=True):
+		for gene,info,switchDict,switch in gn_network.iterate_switches_ScoreWise(tx_network,partialCreation=True,removeNoise=False):
 			nIso = switch.nTranscript
 			tIso = switch.tTranscript
 
@@ -112,7 +103,7 @@ def outCandidateList(gn_network,tx_network):
 			cList.write("{0}\t{1}\t".format( gene, info["symbol"] ))
 			cList.write("{0}\t{1}\t".format( nIso.name, tIso.name ))
 			cList.write("{0}\t{1}\t".format( nUniprot, tUniprot ))
-			cList.write("{0}\t{1}\t".format( int(switchDict["noise"]), int(switchDict["model"]) ))
+			cList.write("{0}\t{1}\t".format( int(not switchDict["noise"]), int(switchDict["model"]) ))
 			cList.write("{0}\t{1}\t".format( int(switch.is_relevant), int(info["Driver"]) ))
 			cList.write("{0}\t{1}\t".format( int(info["Druggable"]), int(cds) ))
 			cList.write("{0}\t{1}\t".format( int(cdsChange),int(utrChange) ))

@@ -30,7 +30,7 @@ class AnalyzeInteractions(method.Method):
 		
 		#Sort by score: drivers will be first to be analyzed. Then, genes with an isoform switch with 
 		#decreasing number of patients
-		for gene,info,switchDict,switch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network,only_models=options.Options().onlyModels,partialCreation=True):
+		for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network,only_models=True,partialCreation=True,removeNoise=True):
 			nIso = switch.nTx
 			tIso = switch.tTx
 
@@ -42,8 +42,7 @@ class AnalyzeInteractions(method.Method):
 				self._transcript_network.saveNetwork("txNetwork.pkl")
 
 			if status == "analysis_finished" or status == "already_analyzed":
-				out_network.interactorsInfo(self._gene_network, self._transcript_network, 
-											gene, nIso, tIso )
+				out_network.interactorsInfo(self._gene_network,self._transcript_network,gene,nIso,tIso)
 				self.detectChanges(gene,nIso,tIso)
 				analyzedTxs.add(nIso)
 				analyzedTxs.add(tIso)
@@ -52,7 +51,7 @@ class AnalyzeInteractions(method.Method):
 		candidatesGaudi = {}
 		for line in utils.readTable(options.Options().qout + "candidatesGaudi.lst"):
 			index = int(line[1])
-			if index >= 0 and index <= 1:
+			if index in [0,1]:
 				candidatesGaudi[line[0]] = line[0]
 			if index == 2:
 				relative = line[2][-1].split(" ").pop()
@@ -60,7 +59,7 @@ class AnalyzeInteractions(method.Method):
 
 		return candidatesGaudi
 
-	def getPredictedInteractions(self, gene, nIso, tIso, analyzed):
+	def getPredictedInteractions(self,gene,nIso,tIso,analyzed):
 		parser = iLoops_parser.iLoopsParser()
 		symbol = self._gene_network._net.node[gene]["symbol"]
 
@@ -91,11 +90,9 @@ class AnalyzeInteractions(method.Method):
  		self.logger.info("Gene {0} ({1}): analyzing {2} and {3} predictions.".format(gene, symbol, nIso, tIso) )
  		
  		for iso, ori in zip([nIso, tIso], ["Normal","Tumor"]):
-			tarFile = "iLoops/{0}/{1}/{2}.tar.gz".format(
-													options.Options().inputType, 
+			tarFile = "iLoops/{0}/{1}/{2}.tar.gz".format(options.Options().inputType, 
 													options.Options().iLoopsVersion, 
-													self._analyzable_candidates[iso]
-												 )
+													self._analyzable_candidates[iso])
 			
 			self.logger.info("Analyzing {0} predictions ({1} transcript).".format(iso, ori) )
 
@@ -107,9 +104,9 @@ class AnalyzeInteractions(method.Method):
 			for partner in interactions:
 				partnerSameLoops = [ x[0] for x in self._transcript_network.nodes(data=True) if x[1]["iLoopsFamily"] == self._transcript_network._net.node[partner]["iLoopsFamily"] and x[0] in self._expressed_transcripts ]
 				for iso2 in partnerSameLoops:
-					self._transcript_network.add_edge( iso, iso2 )
-					self._transcript_network.update_edge( iso, iso2, "iLoops_prediction", True )
-					self._transcript_network.update_edge( iso, iso2, "RC", interactions[partner] )
+					self._transcript_network.add_edge(iso,iso2)
+					self._transcript_network.update_edge(iso,iso2,"iLoops_prediction",True)
+					self._transcript_network.update_edge(iso,iso2,"RC",interactions[partner])
 
 		return "analysis_finished"
 
@@ -219,8 +216,6 @@ class AnalyzeInteractions(method.Method):
 					elif nInfo["iLoopsFamily"] == tInfo["iLoopsFamily"]:
 						analyze = -1
 						comment = "No different loops mapped by {0}.".format(options.Options().iLoopsVersion)
-					elif not switch.is_relevant: 
-						continue
 
 					if analyze < 0:
 						CANDIDATES_GAUDI.write("{0}\t{1}\t{2}\n".format(nIso, analyze, comment))
