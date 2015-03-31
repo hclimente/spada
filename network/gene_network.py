@@ -190,24 +190,39 @@ class GeneNetwork(network.Network):
 				self.update_node( "ExpressedTranscripts", line[0], gene_id=geneID )
 
 		# driver info
+		# incompatible with notations other than ucsc
+		for line in utils.readTable("Data/TCGA/drivers_ucsc_notation.txt",sep="|"):
+			geneid = line[1]
+
+			self.update_node("Driver",True,gene_id=geneid)
+
 		for line in utils.readTable("Data/Databases/cancer_networks_SuppTables_v7_S7.csv"):
 			geneSymbol = line[0]
 			role = line[1]
 			
 			for gene,info in self.nodes(data=True):
 				if info["symbol"] == geneSymbol:
-					self.update_node("Driver",True,gene_id=gene )
-					self.update_node("DriverType",role,gene_id=gene )
+					if info["Driver"]:
+						self.update_node("DriverType",role,gene_id=gene )
 					break
 
-		# driver info
+		# asdriver info
+		# incompatible with notations other than ucsc
+		for line in utils.readTable("Data/TCGA/asdrivers_ucsc_notation.txt",sep="|"):
+			geneid = line[1]
+
+			self.update_node("ASDriver",True,gene_id=geneid)
+
+		'''
 		for line in utils.readTable("Data/Databases/cancer_networks_SuppTables_v7_S6.csv"):
 			geneSymbol = line[0]
 			
 			for gene,info in self.nodes(data=True):
 				if info["symbol"] == geneSymbol:
-					self.update_node("ASDriver",True,gene_id=gene )
+					if info["Driver"]:
+						self.update_node("ASDriver",True,gene_id=gene )
 					break
+		'''
 
 	def importCandidates(self):
 		"""Import a set of genes with an isoform switch from candidateList_v2.tsv.
@@ -329,7 +344,7 @@ class GeneNetwork(network.Network):
     			'1037':	'Split renilla luciferase complementation',
     		}
 		
-		methods  = [("Method_id", 18),("Method_id", 696)]
+		methods  = [("Method_id",18),("Method_id",696)]
 		methods.extend([ ("Method_id", x) for x in complementation_methods if x not in affinity_methods ])
 
 		seeds = [ x for x,props in self.nodes(data=True) if props["isoformSwitches"] or props["specificDriver"] ]
