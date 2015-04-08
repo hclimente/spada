@@ -131,12 +131,6 @@ def setEnvironment():
 		cmd("mv","{0}/GUILD_enriched".format(o.qout),".testOld/{0}/GUILD_enriched".format(o.out))
 		cmd("mkdir", "{0}/GUILD_enriched".format(o.qout))
 
-	elif o.initialStep == "summary":
-		cmd("rm","-r",".testOld2/{0}/result_summary".format(o.out))
-		cmd("mv",".testOld/{0}/result_summary".format(o.out),".testOld2/{0}/result_summary".format(o.out))
-		cmd("mv","{0}/result_summary".format(o.qout),".testOld/{0}/result_summary".format(o.out))
-		cmd("mkdir", "{0}/result_summary".format(o.qout))
-
 def geneclusterLaunch(tag,base,*args):
 	command = base
 	for argument in args:

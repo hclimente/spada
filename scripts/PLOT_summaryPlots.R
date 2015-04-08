@@ -1,6 +1,9 @@
 library(plyr)
+library(ggplot2)
 
 cancerTypes <- c("brca","coad","hnsc","kich","kirc","kirp","lihc","luad","lusc","prad","thca")
+workingDir <- "/genomics/users/hector/TCGA_analysis"
+setwd(workingDir)
 
 ################ CANDIDATES STUDY ################
 for (cancer in cancerTypes){
@@ -419,3 +422,91 @@ suppressorTestDf$p <- apply(suppressorTestDf,1, function(x){
   k$p.value } )
 suppressorTestDf$p.adj <- p.adjust(suppressorTestDf$p)
 write.table(suppressorTestDf,file="~/Desktop/suppressorTest.tsv",sep="\t", row.names=F, col.names=F, quote=F)
+
+
+############# EXONS #################
+exons <- read.delim("exons.tsv",header=FALSE)
+colnames(exons) <- c("Cancer","Random","Switch","Origin","Type","Length","CDSLength","CDSRelativeSize","Position","KeepOrf")
+
+# cds relative size
+cdsRelativeSize <- list()
+cdsPosition <- list()
+exonLength <- list()
+orfChange <- data.frame(cancer=c(),p=c(),oddsRation=c())
+for (knsur in cancerTypes){
+  cancer.exons = subset(exons,Cancer=knsur)
+  
+  p <- ggplot() + ggtitle(knsur) + theme_bw()
+  p <- p + stat_ecdf(data=subset(cancer.exons,Random=="Random"), aes(x=CDSRelativeSize,colour="green"),show_guide = FALSE)
+  p <- p + stat_ecdf(data=subset(cancer.exons,Random=="NonRandom"), aes(x=CDSRelativeSize,colour="red"),show_guide = FALSE)
+  
+  cdsRelativeSize[[knsur]] <- p
+  
+  # cds position
+  p <- ggplot() + ggtitle(knsur) + theme_bw()
+  p <- p + stat_ecdf(data=subset(cancer.exons,Random=="Random"), aes(x=Position,colour="green"),show_guide = FALSE)
+  p <- p + stat_ecdf(data=subset(cancer.exons,Random=="NonRandom"), aes(x=Position,colour="red"),show_guide = FALSE)
+  
+  cdsPosition[[knsur]] <- p
+  
+  # length
+  p <- ggplot() + ggtitle(knsur) + theme_bw()
+  p <- p + stat_ecdf(data=subset(cancer.exons,Random=="Random"), aes(x=Length,colour="green"),show_guide = FALSE)
+  p <- p + stat_ecdf(data=subset(cancer.exons,Random=="NonRandom"), aes(x=Length,colour="red"),show_guide = FALSE)
+  
+  exonLength[[knsur]] <- p
+  
+  # orf
+  switches <- table(cancer.exons$KeepOrf[cancer.exons$Random=="NonRandom" & cancer.exons$Type=="CDS" ],exclude="None")
+  randomSwitches <- table(cancer.exons$KeepOrf[cancer.exons$Random=="Random"& cancer.exons$Type=="CDS" ],exclude="None")
+  
+  cTable <- rbind(switches,randomSwitches)
+  f <- fisher.test(cTable)
+  this.Data <- data.frame(cancer=knsur,p=f$p.value,oddsRation=f$estimate)
+  orfChange <- rbind(orfChange,this.Data)
+}
+
+png("exon_cds_relative_size.png", width=1000, height=800)
+grid.arrange(cdsRelativeSize)
+graphics.off()
+
+
+
+png("exon_cds_position.png", width=1000, height=800)
+plot(ecdf(exons$Position[exons$Random=="NonRandom" & exons$Type=="CDS"]),col="green",main="Specific region relative position")
+lines(ecdf(exons$Position[exons$Random=="Random" & exons$Type=="CDS"]),col="red")
+graphics.off()
+
+
+png("exonlength.png", width=1000, height=800)
+plot(ecdf(log(exons$Length[exons$Random=="NonRandom"])),col="green",main="Specific region log(length)")
+lines(ecdf(log(exons$Length[exons$Random=="Random"])),col="red")
+graphics.off()
+
+
+
+
+# type
+switches <- table(exons$Type[exons$Random=="NonRandom" ])
+randomSwitches <- table(exons$Type[exons$Random=="Random" ])
+
+cTable <- rbind(switches,randomSwitches)
+
+############ STUDY FEATURES ############
+analysis <- c("interpro","anchor","iupred","prosite")
+df.features <- data.frame(cancer=c(),analysis=c(),what=c(), p=c())
+for (cancer in cancerTypes){
+  for (tag in analysis){
+    features <- read.delim(paste0(cancer,".",tag,"_analysis.tsv"))
+    random_data <- read.delim(paste0(cancer,".",tag,"_analysis_random.tsv"))
+    switches <- table(features$What)
+    randomSwitches <- table(random_data$What)
+    counts.features <- rbind(switches,randomSwitches)
+    lostVsNothing <- fisher.test(counts.features[,-1])
+    gainVsNothing <- fisher.test(counts.features[,-2])
+    gainVsLost <- fisher.test(counts.features[,-3])
+    
+    this.features <- data.frame(cancer=cancer,analysis=tag,what=c("lostVsNothing","gainVsNothing","gainVsLost"), p=c(lostVsNothing$p.value,gainVsNothing$p.value,gainVsLost$p.value),oddsratio=c(lostVsNothing$estimate,gainVsNothing$estimate,gainVsLost$estimate))
+    df.features <- rbind(df.features,this.features)
+  }
+}

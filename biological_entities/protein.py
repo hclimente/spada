@@ -229,7 +229,7 @@ class Protein:
 
 	def getFeatures(self,interproOut):
 		for featInfo in interpro_analysis.InterproAnalysis().readInterpro(interproOut,self):
-			self._features.append(featInfo.replace(" ","_"))
+			self._features.append(featInfo)
 
 	def getSegments(self,thing,minLength=1,gap=0):
 		segments = []
