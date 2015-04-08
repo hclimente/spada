@@ -81,7 +81,7 @@ class GetRandomSwitches(method.Method):
 			cfg = options.Options().printToFile(filename="random_{0}_node{1}".format(options.Options().tag,startingNode),parallelRange=startingNode,onlyModels=False)
 			jt = s.createJobTemplate()
 			
-			jt.remoteCommand = 'Pipeline/gSmartAS.py'
+			jt.remoteCommand = 'Pipeline/SmartAS.py'
 			jt.args = ['-f',cfg]
 			jt.joinFiles=True
 			jt.nativeSpecification = natSpec

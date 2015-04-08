@@ -19,7 +19,7 @@ function launchQ {
 	echo "#$ -V" >>$tag.sh
 	echo "#$ -N $tag" >>$tag.sh
 
-	echo "Pipeline/gSmartAS.py -f $tag.cfg" >>$tag.sh
+	echo "Pipeline/SmartAS.py -f $tag.cfg" >>$tag.sh
 
 	qsub $tag.sh
 

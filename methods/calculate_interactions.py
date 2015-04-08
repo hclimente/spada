@@ -1,9 +1,15 @@
 #!/soft/devel/python-2.7/bin/python
 
+from interface import iLoops_parser as parser
+from interface import iLoops_outputPruner as pruner
 from libs import options
 from libs import utils
 from network import gene_network, isoform_network
 from methods import method
+
+import copy
+import fnmatch
+import os
 
 class CalculateInteractions(method.Method):
 	def __init__(self,gn_network,tx_network):

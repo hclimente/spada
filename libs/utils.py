@@ -165,7 +165,7 @@ def launchJobs(gnNetwork,task):
 		cfg = options.Options().printToFile(filename="{0}_{1}_node{2}".format(options.Options().tag,task,startingNode),parallelRange=startingNode,onlyModels=False)
 		jt = s.createJobTemplate()
 		
-		jt.remoteCommand = 'Pipeline/gSmartAS.py'
+		jt.remoteCommand = 'Pipeline/SmartAS.py'
 		jt.args = ['-f',cfg]
 		jt.joinFiles=True
 		jt.nativeSpecification = natSpec
