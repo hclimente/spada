@@ -7,7 +7,6 @@ from libs import utils
 from network import gene_network, isoform_network
 from methods import method
 
-import networkx as nx
 import os
 import time
 

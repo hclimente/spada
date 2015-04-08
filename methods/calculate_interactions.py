@@ -9,6 +9,7 @@ from methods import method
 
 import copy
 import fnmatch
+import networkx as nx
 import os
 
 class CalculateInteractions(method.Method):
