@@ -15,7 +15,6 @@ class Options(object):
         self._config_file           = options.config_file
         self._initial_step          = options.initial_step
         self._wd                    = options.wd if options.wd[-1]== "/" else options.wd + "/"
-        self._gwd                   = options.gwd if options.gwd[-1]== "/" else options.gwd + "/"
         self._minExpression         = options.minExpression
         self._inputType             = options.inputType
         self._replicates            = set(options.replicates.split(",")) if options.replicates else set()
@@ -27,7 +26,6 @@ class Options(object):
                                             self._wd,self._inputType,self._tag)
         self._out           = "{0}/{1}/".format(self._inputType,self._tag)
 
-        self._gOut                  = self._gwd + "testResults/" + self._out
         self._quickOut              = self._wd + "testResults/" + self._out
 
         self._parallelRange         = options.parallelRange
@@ -39,8 +37,6 @@ class Options(object):
     def initialStep(self):          return self._initial_step
     @property
     def wd(self):                   return self._wd
-    @property
-    def gwd(self):                  return self._gwd
     @property
     def minExpression(self):        return self._minExpression
     @property
@@ -60,8 +56,6 @@ class Options(object):
     def onlyModels(self):           return self._only_models
     @property
     def out(self):                  return self._out
-    @property
-    def gout(self):                 return self._gOut
     @property
     def qout(self):                 return self._quickOut
     @property
@@ -90,8 +84,6 @@ class Options(object):
                             type=str, help='Where should SmartAS start.')
         parser.add_argument('-wd', '--working-directory', dest='wd', action='store', default='/home/hector/SmartAS/',
                             help='Root file of SmartAS folder in the current machine.')
-        parser.add_argument('-gwd', '--gaudi-wd', dest='gwd', action='store', 
-                            default='/sbi/users/hectorc/SmartAS_experimental/', help='Root file of SmartAS folder in Gaudi.')
         parser.add_argument('-m', '--minimum-expression', dest='minExpression', action='store', default='-1',
                             type=float, help='Minimum expression to consider a transcript not residual.')
         parser.add_argument('-i', '--input-type', dest='inputType', action='store', default='TCGA',
@@ -108,8 +100,6 @@ class Options(object):
                             help='Tag of the files.')
         parser.add_argument('-o', '--output', dest='out', action='store', default='',
                             help='Path of output data, under the testResults/ directory.')
-        parser.add_argument('-go', '--goutput', dest='gout', action='store', default='',
-                            help='Path of output data in Gaudi.')
         parser.add_argument('-d', '--specific-drivers', dest='specificDrivers', action='store', default='',
                             help='Path of the specific drivers for the cancer type.')
         parser.add_argument('-p', '--parallel-range', dest='parallelRange', action='store', default='0',
@@ -138,11 +128,6 @@ class Options(object):
                 CONFIG.write("working-directory=" + wd + "\n")
             elif self._wd != '/home/hector/SmartAS/':
                 CONFIG.write("working-directory=" + self._wd + "\n")
-            
-            if gwd:
-                CONFIG.write("gaudi-wd=" + gwd + "\n")
-            elif self._gwd != '/sbi/users/hectorc/SmartAS/':
-                CONFIG.write("gaudi-wd=" + self._gwd + "\n")
             
             if minExpression:
                 CONFIG.write("minimum-expression=" + str(minExpression) + "\n")
@@ -185,7 +170,6 @@ class Options(object):
             elif self._specificDrivers:
                 CONFIG.write("specific-drivers=" + self._specificDrivers + "\n")
             #if self._out:                   CONFIG.write("out=" + self._out + "\n")
-            #if self._gOut:                  CONFIG.write("gOut=" + self._gOut + "\n")
 
         return cfgFilename
 

@@ -5,6 +5,7 @@ from interface import out_network
 from libs import options
 from libs import utils
 from methods import analyze_interactions
+from methods import calculate_interactions
 from methods import get_random_switches
 from methods import get_switches
 from methods import neighborhood_analysis
@@ -47,14 +48,8 @@ class SmartAS:
 	def launchiLoops(self):
 
 		self.logger.info("Selecting isoforms suitable for {0}.".format( options.Options().iLoopsVersion) )
-		a = analyze_interactions.AnalyzeInteractions(True,True)
-		a.selectIloopsSwitches("Driver")
-
-		self.logger.info("Sending list to Gaudi and performing the iLoops analysis.")
-		utils.cmd("ssh", "hectorc@gaudi",
-				  "'{0}Pipeline/methods/calculate_interactions.py {1} {2} {3} {4}'".format(
-		 		  options.Options().gwd,options.Options().gwd,options.Options().inputType,
-		 		  options.Options().gout,options.Options().iLoopsVersion ))
+		c = calculate_interactions.CalculateInteractions(True,True)
+		c.run()
 
 	def analyzeInteractions(self):
 
