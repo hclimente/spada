@@ -46,26 +46,7 @@ class CalculateInteractions(method.Method):
 
 	def run(self):
 		self.logger.info("Examining iLoops results.")
-		analyzedTxs = set()
-		
-		#Sort by score: drivers will be first to be analyzed. Then, genes with an isoform switch with 
-		#decreasing number of patients
-		for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network,only_models=True,partialCreation=True,removeNoise=True):
-			nIso = switch.nTx
-			tIso = switch.tTx
-
-			status = self.getPredictedInteractions(gene, nIso, tIso, analyzedTxs)
-
-			if status == "analysis_finished":
-				self.calculateGeneInteractions(gene, nIso, tIso)
-				self._gene_network.saveNetwork("geneNetwork.pkl")
-				self._transcript_network.saveNetwork("txNetwork.pkl")
-
-			if status == "analysis_finished" or status == "already_analyzed":
-				out_network.interactorsInfo(self._gene_network,self._transcript_network,gene,nIso,tIso)
-				self.detectChanges(gene,nIso,tIso)
-				analyzedTxs.add(nIso)
-				analyzedTxs.add(tIso)
+		self.selectIloopsSwitches("Drivers")
 
 	def selectIloopsSwitches(self,filetag=""):
 
@@ -195,7 +176,7 @@ class CalculateInteractions(method.Method):
 		 	for fastaFile in fnmatch.filter(os.listdir(options.Options().qout), "testedPartners_*.fasta"):
 		 		batch = (fastaFile.split(".")[0]).split("_")[1]
 		 		tag = tx + "_" + batch
-		 		self.getFinalFASTAandPairs(tx,seq,sbatch)
+		 		self.getFinalFASTAandPairs(tx,seq,batch)
 		 			
 				utils.cmd(	"/soft/devel/python-2.7/bin/python",
 							"/sbi/programs/{0}/iLoops.py".format(options.Options().iLoopsVersion),
