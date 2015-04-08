@@ -89,16 +89,16 @@ class CalculateInteractions(method.Method):
 				if analyze < 0:
 					continue
 
-				allProteomeOutput = "{0}iLoops/{1}/{2}/{3}.tar.gz".format(options.Options().qout,
+
+				for isoform,thisLoopPattern in zip([nIso,tIso],[nInfo["iLoopsFamily"],tInfo["iLoopsFamily"]]):
+					allProteomeOutput = "{0}iLoops/{1}/{2}/{3}.tar.gz".format(options.Options().qout,
 																	   options.Options().inputType,
 																	   options.Options().iLoopsVersion,
 																	   isoform)
-				expectedOutput = "{0}iLoops/{1}/{2}/{3}{4}.tar.gz".format(options.Options().qout,
+					expectedOutput = "{0}iLoops/{1}/{2}/{3}{4}.tar.gz".format(options.Options().qout,
 																	   options.Options().inputType,
 																	   options.Options().iLoopsVersion,
 																	   isoform,filetag)
-
-				for isoform,thisLoopPattern in zip([nIso,tIso],[nInfo["iLoopsFamily"],tInfo["iLoopsFamily"]]):
 					if os.path.isfile(allProteomeOutput) or os.path.isfile(expectedOutput):
 						analyze = 1
 						comment = "Already analyzed."
