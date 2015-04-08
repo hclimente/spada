@@ -27,30 +27,27 @@ class StructuralAnalysis(method.Method):
 			tag = ""
 			if not options.Options().parallelRange:
 				self.joinFiles("_random")
-			#self.anchor_threshold = self.getThresholdFromRandom("anchor",95)
-			self.anchor_threshold = 1
-			#self.iupred_threshold = self.getThresholdFromRandom("iupred",95)
-			self.iupred_threshold = 1
-			#self.prosite_threshold = self.getThresholdFromRandom("prosite",95)
-			self.prosite_threshold = 0.5
+			self.anchor_threshold = self.getThreshold("anchor",80,tag="")
+			self.iupred_threshold = self.getThreshold("iupred",80,tag="")
+			self.prosite_threshold = self.getThreshold("prosite",80,tag="")
 
-		self._interpro_file = "{0}structural_analysis/interpro_analysis{1}{2}.tsv".format(options.Options().qout,tag,options.Options().filetag)
+		self._interpro_file = "{0}structural_analysis/interpro_analysis{1}.tsv".format(options.Options().qout,tag)
 		self.IP = open(self._interpro_file,"w")
 		self.ipHeader(self.IP)
 				
-		self._iupred_file = "{0}structural_analysis/iupred_analysis{1}{2}.tsv".format(options.Options().qout,tag,options.Options().filetag)
+		self._iupred_file = "{0}structural_analysis/iupred_analysis{1}.tsv".format(options.Options().qout,tag)
 		self.IU = open(self._iupred_file,"w")
 		self.iuHeader(self.IU)
 								
-		self._anchor_file = "{0}structural_analysis/anchor_analysis{1}{2}.tsv".format(options.Options().qout,tag,options.Options().filetag)
+		self._anchor_file = "{0}structural_analysis/anchor_analysis{1}.tsv".format(options.Options().qout,tag)
 		self.ANCHOR = open(self._anchor_file,"w")
 		self.anchorHeader(self.ANCHOR)
 				
-		self._prosite_file = "{0}structural_analysis/prosite_analysis{1}{2}.tsv".format(options.Options().qout,tag,options.Options().filetag)
+		self._prosite_file = "{0}structural_analysis/prosite_analysis{1}.tsv".format(options.Options().qout,tag)
 		self.PROSITE = open(self._prosite_file,"w")
 		self.prositeHeader(self.PROSITE)
 						
-		self._relevance_info = "{0}structural_analysis/structural_summary{1}{2}.tsv".format(options.Options().qout,tag,options.Options().filetag)
+		self._relevance_info = "{0}structural_analysis/structural_summary{1}.tsv".format(options.Options().qout,tag)
 		self.REL = open(self._relevance_info,"w")
 		self.summaryHeader(self.REL)
 				
@@ -355,12 +352,18 @@ class StructuralAnalysis(method.Method):
 
 		return anyPTM
 
-	def getThresholdFromRandom(self,sInputType,iQuantileThreshold,jaccardIndex=[]):
-		sRandomFile = "{0}structural_analysis/{1}_analysis_random.tsv".format(options.Options().qout,sInputType)
+	def getThreshold(self,sInputType,iQuantileThreshold,jaccardIndex=[],tag="_random"):
+
+		sRandomFile = "{0}structural_analysis/{1}_analysis{2}.tsv".format(options.Options().qout,sInputType,tag)
 		
+		if not os.path.isfile(sRandomFile):
+			return 1
 		if not jaccardIndex:
 			for line in utils.readTable(sRandomFile):
-				jaccardIndex.append(float(line[6]))
+				j = float(line[6])
+				# remove zeros
+				if j:
+					jaccardIndex.append(j)
 
 		threshold = np.percentile(jaccardIndex,iQuantileThreshold)
 
@@ -374,7 +377,7 @@ class StructuralAnalysis(method.Method):
 		outFile = "{0}structural_analysis/{1}_analysis{2}.tsv".format(options.Options().qout,sInputType,tag)
 			
 		if valueList:
-			threshold = self.getThresholdFromRandom(sInputType,iQuantileThreshold,valueList)
+			threshold = self.getThreshold(sInputType,iQuantileThreshold,valueList)
 			with open(outFile,"w") as OUT:
 				if sInputType=='iupred':
 					self.iuHeader(OUT)
@@ -415,16 +418,19 @@ class StructuralAnalysis(method.Method):
 
 		for root in roots:
 			if root in rootDict:
-				files = glob.glob("{0}structural_analysis/{1}_analysis_random_[0-9]*.tsv".format(options.Options().qout,root))
+				files = glob.glob("{0}structural_analysis/{1}_analysis{2}_[0-9]*.tsv".format(options.Options().qout,root,tag))
 				for aFile in files:
 					for line in utils.readTable(aFile):
-						rootDict[root].append(float(line[6]))
-				switches[root] = self.recalculateScores(root,95,rootDict[root],tag=tag)
-			else:
-				self.recalculateScores(root,95,tag=tag)
+						j = float(line[6])
+						# remove zeroes
+						if j:
+							rootDict[root].append(j)
 
-		if tag:
-			self.recalculateRelevance(switches,tag)
+				switches[root] = self.recalculateScores(root,80,rootDict[root],tag=tag)
+			else:
+				self.recalculateScores(root,80,tag=tag)
+
+		self.recalculateRelevance(switches,tag)
 
 	def recalculateRelevance(self,switches,tag):
 		files = glob.glob("{0}structural_analysis/structural_summary{1}_[0-9]*.tsv".format(options.Options().qout,tag))

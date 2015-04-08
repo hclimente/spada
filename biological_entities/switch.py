@@ -21,12 +21,11 @@ class IsoformSwitch:
 
 		#Relevance measure
 		self._iloops_change		 	= None
-		self._functional_change 	= None
+		self._domain_change 		= None
 		self._disorder_change 		= None
 		self._anchor_change 		= None
 		self._broken_surfaces 		= None
 		self._ptm_change 			= None
-		self._gps_change			= None
 		#Network analysis
 		self._guild_top1 			= None
 		self._guild_top5 			= None
@@ -58,10 +57,15 @@ class IsoformSwitch:
 	def tTranscript(self): return self._tumor_transcript
 
 	@property
-	def functionalChange(self): 
-		if self._functional_change is None:
+	def iloopsChange(self):
+		if self._iloops_change is None:
 			self.readRelevanceAnalysis()
-		return self._functional_change
+		return self._iloops_change
+	@property
+	def domainChange(self): 
+		if self._domain_change is None:
+			self.readRelevanceAnalysis()
+		return self._domain_change
 	@property
 	def disorderChange(self): 
 		if self._disorder_change is None:
@@ -78,11 +82,6 @@ class IsoformSwitch:
 			self.readRelevanceAnalysis()
 		return self._broken_surfaces
 	@property
-	def gpsChange(self): 
-		if self._gps_change is None:
-			self.readRelevanceAnalysis()
-		return self._gps_change
-	@property
 	def ptmChange(self): 
 		if self._ptm_change is None:
 			self.readRelevanceAnalysis()
@@ -94,11 +93,6 @@ class IsoformSwitch:
 	def guildTop5(self): return self._guild_top5
 	@property
 	def neighborhoodChange(self): return self._neighborhood_change
-	@property
-	def iloopsChange(self): 
-		if self._iloops_change is None:
-			self.readRelevanceAnalysis()
-		return self._iloops_change
 
 	@property
 	def is_relevant(self):
@@ -115,7 +109,7 @@ class IsoformSwitch:
 		"""
 		# cds_diff is required if there is any feature
 		# utr_diff only is impossible if a feature change is required
-		if self.cds_overlap and (self.disorderChange or self.iloopsChange or self.anchorChange or self.functionalChange or self.gpsChange or self.ptmChange):
+		if self.cds_overlap and (self.disorderChange or self.iloopsChange or self.anchorChange or self.domainChange or self.ptmChange):
 			return True
 		else:
 			return False
@@ -212,39 +206,24 @@ class IsoformSwitch:
 				res.setIsoformSpecific(True)
 
 	def readRelevanceAnalysis(self):
-		if not os.path.exists("{0}structural_analysis/structural_summary{1}.tsv".format(options.Options().qout,options.Options().filetag)):
+		randomTag = "_random" if self.patients==0.0 else ""
+		if not os.path.exists("{0}structural_analysis/structural_summary{1}.tsv".format(options.Options().qout,randomTag)):
 			raise Exception("Relevance information not generated.")
 			return False
 
-		for elements in utils.readTable("{0}structural_analysis/structural_summary{1}.tsv".format(options.Options().qout,options.Options().filetag)):
-			if elements[1] == self.nTx and elements[2] == self.tTx:
-				# QUITAR CUANDO SE ACTUALIZEN LOS RELEVANTES
-				if elements[3] == "True": self._iloops_change = True
-				elif elements[3] == "False": self._iloops_change = False
+		for elements in utils.readTable("{0}structural_analysis/structural_summary{1}.tsv".format(options.Options().qout,randomTag)):
+			if elements[2] == self.nTx and elements[3] == self.tTx:
+				if elements[4] == "True": self._iloops_change = True
+				elif elements[4] == "False": self._iloops_change = False
 
-				if elements[4] == "True": self._broken_surfaces = True
-				elif elements[4] == "False": self._broken_surfaces = False
-
-				if elements[5] == "True": self._functional_change =True 
-				elif elements[5] == "False": self._functional_change =False
+				if elements[5] == "True": self._domain_change = True 
+				elif elements[5] == "False": self._domain_change = False
 
 				if elements[6] == "True": self._disorder_change = True
 				elif elements[6] == "False": self._disorder_change = False
 
-				# if elements[3] == "True": self._iloops_change = True
-				# elif elements[3] == "False": self._iloops_change = False
+				if elements[7] == "True": self._anchor_change = True
+				elif elements[7] == "False": self._anchor_change = False
 
-				# if elements[4] == "True": self._functional_change =True 
-				# elif elements[4] == "False": self._functional_change =False
-
-				# if elements[5] == "True": self._disorder_change = True
-				# elif elements[5] == "False": self._disorder_change = False
-
-				# if elements[6] == "True": self._anchor_change = True
-				# elif elements[6] == "False": self._anchor_change = False
-
-				# if elements[7] == "True": self._ptm_change = True
-				# elif elements[7] == "False": self._ptm_change = False
-
-				# if elements[8] == "True": self._gps_change = True
-				# elif elements[8] == "False": self._gps_change = False
+				if elements[8] == "True": self._ptm_change = True
+				elif elements[8] == "False": self._ptm_change = False
