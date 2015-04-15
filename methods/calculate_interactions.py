@@ -138,7 +138,7 @@ class CalculateInteractions(method.Method):
 		if filetag:
 			candidatePartners.extend([ x for x,y in self._transcript_network.nodes(data=True) if y["gene_id"] in self._modGeneNetwork._net.neighbors(gene) ])
 
-		MULTIFASTA = open("{0}{1}{2}.fasta".format(options.Options().qout,basename,fileCounter), "w")
+		MULTIFASTA = open("{0}{1}.fasta".format(basename,fileCounter), "w")
 
 		with open("Data/{0}/UnifiedFasta_{1}.fa".format(inputType,iLoopsVersion),"r") as gcMULTIFASTA:
 			for line in gcMULTIFASTA:
@@ -150,7 +150,7 @@ class CalculateInteractions(method.Method):
 					if transcriptCounter >= 1499:
 						fileCounter += 1
 						MULTIFASTA.close()
-						MULTIFASTA = open("{0}{1}{2}.fasta".format(options.Options().qout,basename,fileCounter), "w")
+						MULTIFASTA = open("{0}{1}.fasta".format(basename,fileCounter), "w")
 						transcriptCounter = 0
 					
 					if not candidatePartners:
