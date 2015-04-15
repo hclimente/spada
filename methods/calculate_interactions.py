@@ -45,8 +45,9 @@ class CalculateInteractions(method.Method):
 		# dont analyze d2 yet
 		# self.interestingNeighborhood.extend(list(d2))
 
-		# remove files from Input dir
+		# remove files from Input and logs dirs
 		[ os.remove(x) for x in glob.glob("{0}Input/*".format(options.Options().qout)) ]
+		[ os.remove(x) for x in glob.glob("{0}logs/*".format(options.Options().qout)) ]
 
 	def run(self):
 		self.logger.info("Examining iLoops results.")
@@ -135,7 +136,7 @@ class CalculateInteractions(method.Method):
 		candidatePartners = []
 		if gene:
 			self.logger.info("Preparing FASTA files for all interactors of {0}.".format(gene))
-			basename = "{0}candidateLostPartners_".format(options.Options().qout)
+			basename = "{0}candidateLostPartners_{1}".format(options.Options().qout,gene)
 			candidatePartners = [ x for x,y in self._transcript_network.nodes(data=True) if y["gene_id"] in self._gene_network._net.neighbors(gene) ]
 			if not candidatePartners:
 				return False
@@ -186,7 +187,7 @@ class CalculateInteractions(method.Method):
 		self.createPartnersFastq(gene=gene)
 
 		gainedInteractions = glob.glob("{0}candidateGainPartners_*.fasta".format(options.Options().qout))
-		lostInteractions = glob.glob("{0}candidateLostPartners_*.fasta".format(options.Options().qout))
+		lostInteractions = glob.glob("{0}candidateLostPartners_{1}_*.fasta".format(options.Options().qout,gene))
 		allProteome = glob.glob("{0}allProteome_*.fasta".format(options.Options().qout))
 
 		partnersToTest = []
