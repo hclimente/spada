@@ -9,6 +9,7 @@ from methods import method
 
 import copy
 import fnmatch
+import glob
 import networkx as nx
 import os
 
@@ -115,32 +116,32 @@ class CalculateInteractions(method.Method):
 								comment = "Analyzed relative {0}.".format(iso)
 								break
 
-					import pdb
-					pdb.set_trace()
 					self.analyzeSwitch(gene,thisSwitch,filetag)
 
 					if analyze == 0: 
 						analyzedLoops[thisLoopPattern] = isoform
 
 	def analyzeSwitch(self,gene,thisSwitch,filetag):
-		self.createPartnersFastq(gene,thisSwitch,filetag)
-		self.launchIloops(thisSwitch)
+		if self.createPartnersFastq(gene,thisSwitch,filetag):
+			self.launchIloops(thisSwitch)
 
 	def createPartnersFastq(self,gene,thisSwitch,filetag=""):
 		self.logger.info("Preparing FASTA files for all transcripts.")
-		basename = "{0}testedPartners_".format(options.Options().qout)
+		[ os.remove(x) for x in glob.glob("testResults/TCGA/brca/testedPartners_*") ]
+		basename = "{0}testedPartners_{1}_".format(options.Options().qout,gene)
 
 		wannaWrite = False
 		fileCounter = 1
 		transcriptCounter = 0
-
-		familiesAdded = set()
 
 		candidatePartners = []
 		if filetag:
 			candidatePartners.extend([ x for x,y in self._transcript_network.nodes(data=True) if y["gene_id"] in self._gene_network._net.neighbors(gene) ])
 
 		MULTIFASTA = open("{0}{1}.fasta".format(basename,fileCounter), "w")
+
+		if not candidatePartners:
+			return False
 
 		with open("Data/{0}/UnifiedFasta_{1}.fa".format(options.Options().inputType,options.Options().iLoopsVersion),"r") as gcMULTIFASTA:
 			for line in gcMULTIFASTA:
@@ -149,26 +150,21 @@ class CalculateInteractions(method.Method):
 					loopFamily = line.strip().split("#")[3]
 					identifier = line[1:].strip().split("#")[0]
 
-					if transcriptCounter >= 1499:
+					if identifier in candidatePartners:
+						wannaWrite = True
+						transcriptCounter += 1
+						MULTIFASTA.write(">" + identifier + "\n")
+					
+					elif transcriptCounter == 1500:
 						fileCounter += 1
 						MULTIFASTA.close()
 						MULTIFASTA = open("{0}{1}.fasta".format(basename,fileCounter), "w")
 						transcriptCounter = 0
-					
-					if not candidatePartners:
-						if loopFamily and loopFamily not in familiesAdded:
-							familiesAdded.add(loopFamily)
-							wannaWrite = True
-							transcriptCounter += 1
-							MULTIFASTA.write(">" + identifier + "\n")
-					elif identifier in candidatePartners:
-						familiesAdded.add(loopFamily)
-						wannaWrite = True
-						transcriptCounter += 1
-						MULTIFASTA.write(">" + identifier + "\n")
-						
+
 				elif wannaWrite:
 					MULTIFASTA.write(line)
+
+		return True
 
 	def launchIloops(self,thisSwitch):
 		
