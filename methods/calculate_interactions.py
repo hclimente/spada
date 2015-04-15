@@ -196,7 +196,7 @@ class CalculateInteractions(method.Method):
 		for tx,seq in zip([thisSwitch.nTx,thisSwitch.tTx],[thisSwitch.nIsoform.seq,thisSwitch.tIsoform.seq]):
 		 	for fastaFile in partnersToTest:
 		 		batch += 1
-		 		tag = tx + "_" + batch
+		 		tag = "{0}_{1}".format(tx,batch)
 		 		self.getFinalFASTAandPairs(fastaFile,tx,seq,batch)
 		 			
 				utils.cmd("/soft/devel/python-2.7/bin/python",
