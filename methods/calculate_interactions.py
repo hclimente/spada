@@ -172,7 +172,9 @@ class CalculateInteractions(method.Method):
 
 		for tx,seq in zip([thisSwitch.nTx,thisSwitch.tTx],[thisSwitch.nIsoform.seq,thisSwitch.tIsoform.seq]):
 		 	for fastaFile in fnmatch.filter(os.listdir(options.Options().qout), "testedPartners_*.fasta"):
-		 		batch = (fastaFile.split(".")[0]).split("_")[1]
+				import pdb
+				pdb.set_trace()
+		 		batch = fastaFile.split(".")[0].split("_")[2]
 		 		tag = tx + "_" + batch
 		 		self.getFinalFASTAandPairs(tx,seq,batch)
 		 			
