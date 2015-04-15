@@ -177,11 +177,9 @@ class CalculateInteractions(method.Method):
 				elif wannaWrite:
 					MULTIFASTA.write(line)
 
-		return True
-
 	def launchIloops(self,gene,thisSwitch):
 		
-		self.logger.info("Launching iLoops.")
+		self.logger.info("Launching iLoops for switch {0},{1}".format(thisSwitch.nTx,thisSwitch.tTx))
 
 		self.createPartnersFastq(gene=gene)
 
@@ -226,6 +224,8 @@ class CalculateInteractions(method.Method):
 				self.logger.error("Error in generation of file.")
 
 	def getFinalFASTAandPairs(self,fastaFile,tx,seq,batch):
+		import pdb
+		pdb.set_trace()
 		tag = "{0}_{1}".format(tx,batch)
 		utils.cmd("cp",fastaFile,"{0}Input/{1}.fasta".format(options.Options().qout,tag))
 
