@@ -183,8 +183,6 @@ class CalculateInteractions(method.Method):
 
 	def launchIloops(self,gene,thisSwitch):
 		
-		self.logger.info("Launching iLoops for switch {0},{1}".format(thisSwitch.nTx,thisSwitch.tTx))
-
 		self.createPartnersFastq(gene=gene)
 
 		gainedInteractions = glob.glob("{0}candidateGainPartners_*.fasta".format(options.Options().qout))
@@ -202,6 +200,7 @@ class CalculateInteractions(method.Method):
 		 		batch += 1
 		 		tag = "{0}_{1}".format(tx,batch)
 		 		self.getFinalFASTAandPairs(fastaFile,tx,seq,batch)
+		 		self.logger.info("Launching iLoops {0}/{1} for switch {2},{3}".format(batch,len(partnersToTest),thisSwitch.nTx,thisSwitch.tTx))
 		 			
 				utils.cmd("/soft/devel/python-2.7/bin/python",
 						  "/sbi/programs/{0}/iLoops.py".format(options.Options().iLoopsVersion),
