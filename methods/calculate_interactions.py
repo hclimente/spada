@@ -123,7 +123,7 @@ class CalculateInteractions(method.Method):
 
 	def analyzeSwitch(self,gene,thisSwitch,filetag):
 		if self.createPartnersFastq(gene,thisSwitch,filetag):
-			self.launchIloops(thisSwitch)
+			self.launchIloops(gene,thisSwitch)
 
 	def createPartnersFastq(self,gene,thisSwitch,filetag=""):
 		self.logger.info("Preparing FASTA files for all transcripts.")
@@ -166,7 +166,7 @@ class CalculateInteractions(method.Method):
 
 		return True
 
-	def launchIloops(self,thisSwitch):
+	def launchIloops(self,gene,thisSwitch):
 		
 		self.logger.info("Launching iLoops.")
 
@@ -174,7 +174,7 @@ class CalculateInteractions(method.Method):
 		 	for fastaFile in fnmatch.filter(os.listdir(options.Options().qout), "testedPartners_*.fasta"):
 		 		batch = (fastaFile.split(".")[0]).split("_")[1]
 		 		tag = tx + "_" + batch
-		 		self.getFinalFASTAandPairs(tx,seq,batch)
+		 		self.getFinalFASTAandPairs(gene,tx,seq,batch)
 		 			
 				utils.cmd(	"/soft/devel/python-2.7/bin/python",
 							"/sbi/programs/{0}/iLoops.py".format(options.Options().iLoopsVersion),
@@ -201,10 +201,10 @@ class CalculateInteractions(method.Method):
 			else:
 				self.logger.error("Error in generation of file.")
 
-	def getFinalFASTAandPairs(self,tx,seq,batch):
+	def getFinalFASTAandPairs(self,gene,tx,seq,batch):
 		tag = tx + "_" + batch
 		utils.cmd("cp", 
-			"{0}testedPartners_{1}.fasta".format(options.Options().qout,batch), 
+			"{0}testedPartners_{1}_{2}.fasta".format(options.Options().qout,gene,batch), 
 			"{0}Input/{1}.fasta".format(options.Options().qout,tag))
 
 	 	with open("{0}Input/{1}.fasta".format(options.Options().qout,tag), "r") as SEQS, \
