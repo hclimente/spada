@@ -137,10 +137,14 @@ class CalculateInteractions(method.Method):
 			self.logger.info("Preparing FASTA files for all interactors of {0}.".format(gene))
 			basename = "{0}candidateLostPartners_".format(options.Options().qout)
 			candidatePartners = [ x for x,y in self._transcript_network.nodes(data=True) if y["gene_id"] in self._gene_network._net.neighbors(gene) ]
+			if not candidatePartners:
+				return False
 		elif filetag:
 			self.logger.info("Preparing FASTA files for all interesting partners.")
 			basename = "{0}candidateGainPartners_".format(options.Options().qout)
 			candidatePartners = [ x for x,y in self._transcript_network.nodes(data=True) if y["gene_id"] in self.interestingNeighborhood ]
+			if not candidatePartners:
+				return False
 		else:
 			self.logger.info("Preparing FASTA files for all genes.")
 			basename = "{0}allProteome_".format(options.Options().qout)
@@ -214,6 +218,8 @@ class CalculateInteractions(method.Method):
 
 			p = pruner.iLoopsOutput_pruner(tx, options.Options().qout + "Output/")
 			p.joinFiles()
+			import pdb
+			pdb.set_trace()
 			if p.makeLiteVersion():
 				utils.cmd("scp","-r", 
 					"{0}Output/{1}.tar.gz".format(options.Options().qout,tx), 
@@ -224,8 +230,6 @@ class CalculateInteractions(method.Method):
 				self.logger.error("Error in generation of file.")
 
 	def getFinalFASTAandPairs(self,fastaFile,tx,seq,batch):
-		import pdb
-		pdb.set_trace()
 		tag = "{0}_{1}".format(tx,batch)
 		utils.cmd("cp",fastaFile,"{0}Input/{1}.fasta".format(options.Options().qout,tag))
 
