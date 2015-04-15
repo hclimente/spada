@@ -123,7 +123,7 @@ class CalculateInteractions(method.Method):
 						analyzedLoops[thisLoopPattern] = isoform
 
 	def analyzeSwitch(self,gene,thisSwitch,filetag):
-		self.createPartnersFastq(thisSwitch,filetag)
+		self.createPartnersFastq(gene,thisSwitch,filetag)
 		self.launchIloops(thisSwitch)
 
 	def createPartnersFastq(self,gene,thisSwitch,filetag=""):
