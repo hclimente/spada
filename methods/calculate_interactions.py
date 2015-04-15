@@ -140,7 +140,7 @@ class CalculateInteractions(method.Method):
 
 		MULTIFASTA = open("{0}{1}.fasta".format(basename,fileCounter), "w")
 
-		with open("Data/{0}/UnifiedFasta_{1}.fa".format(inputType,iLoopsVersion),"r") as gcMULTIFASTA:
+		with open("Data/{0}/UnifiedFasta_{1}.fa".format(options.Options().inputType,options.Options().iLoopsVersion),"r") as gcMULTIFASTA:
 			for line in gcMULTIFASTA:
 				if ">" in line:
 					wannaWrite = False
