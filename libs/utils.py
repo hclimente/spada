@@ -107,10 +107,6 @@ def setEnvironment():
 		cmd("mv",".testOld/{0}/neighborhood_analysis".format(o.out),".testOld2/{0}/neighborhood_analysis".format(o.out))
 		cmd("mv","{0}/neighborhood_analysis".format(o.qout),".testOld/{0}/neighborhood_analysis".format(o.out))
 		cmd("mkdir", "{0}/neighborhood_analysis".format(o.qout))
-	elif o.initialStep == "launch-iloops":
-		cmd("rm",".testOld2/{0}/candidatesGaudi.lst".format(o.out))
-		cmd("mv",".testOld/{0}/candidatesGaudi.lst".format(o.out),".testOld2/{0}/".format(o.out))
-		cmd("mv","{0}/candidatesGaudi.lst".format(o.qout),".testOld/{0}/".format(o.out))
 	elif o.initialStep == "get-interaction-changes":
 		cmd("rm","-r",".testOld2/{0}/interaction_changes".format(o.out))
 		cmd("mv",".testOld/{0}/interaction_changes".format(o.out),".testOld2/{0}/interaction_changes".format(o.out))

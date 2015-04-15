@@ -45,9 +45,13 @@ class CalculateInteractions(method.Method):
 		# dont analyze d2 yet
 		# self.interestingNeighborhood.extend(list(d2))
 
+		# remove files from Input dir
+		[ os.remove(x) for x in glob.glob("{0}Input/*".format(options.Options().qout)) ]
+
 	def run(self):
 		self.logger.info("Examining iLoops results.")
-		self.selectIloopsSwitches("Drivers")
+		self.createPartnersFastq("Drivers_D0_and_D1")
+		self.selectIloopsSwitches("Drivers_D0_and_D1")
 
 	def selectIloopsSwitches(self,filetag=""):
 
@@ -116,32 +120,32 @@ class CalculateInteractions(method.Method):
 								comment = "Analyzed relative {0}.".format(iso)
 								break
 
-					self.analyzeSwitch(gene,thisSwitch,filetag)
+					self.launchIloops(gene,thisSwitch)
 
 					if analyze == 0: 
 						analyzedLoops[thisLoopPattern] = isoform
 
-	def analyzeSwitch(self,gene,thisSwitch,filetag):
-		if self.createPartnersFastq(gene,thisSwitch,filetag):
-			self.launchIloops(gene,thisSwitch)
-
-	def createPartnersFastq(self,gene,thisSwitch,filetag=""):
+	def createPartnersFastq(self,filetag="",gene=""):
 		self.logger.info("Preparing FASTA files for all transcripts.")
-		[ os.remove(x) for x in glob.glob("testResults/TCGA/brca/testedPartners_*") ]
-		basename = "{0}testedPartners_{1}_".format(options.Options().qout,gene)
-
+		
+		familiesAdded = set()
 		wannaWrite = False
 		fileCounter = 1
 		transcriptCounter = 0
 
 		candidatePartners = []
-		if filetag:
-			candidatePartners.extend([ x for x,y in self._transcript_network.nodes(data=True) if y["gene_id"] in self._gene_network._net.neighbors(gene) ])
+		if gene:
+			basename = "{0}candidateLostPartners_".format(options.Options().qout)
+			candidatePartners = [ x for x,y in self._transcript_network.nodes(data=True) if y["gene_id"] in self._gene_network._net.neighbors(gene) ]
+		elif filetag:
+			basename = "{0}candidateGainPartners_".format(options.Options().qout)
+			candidatePartners = [ x for x,y in self._transcript_network.nodes(data=True) if y["gene_id"] in self.interestingNeighborhood ]
+		else:
+			basename = "{0}allProteome_".format(options.Options().qout)
+
+		[ os.remove(x) for x in glob.glob("{0}*".format(basename)) ]
 
 		MULTIFASTA = open("{0}{1}.fasta".format(basename,fileCounter), "w")
-
-		if not candidatePartners:
-			return False
 
 		with open("Data/{0}/UnifiedFasta_{1}.fa".format(options.Options().inputType,options.Options().iLoopsVersion),"r") as gcMULTIFASTA:
 			for line in gcMULTIFASTA:
@@ -150,16 +154,23 @@ class CalculateInteractions(method.Method):
 					loopFamily = line.strip().split("#")[3]
 					identifier = line[1:].strip().split("#")[0]
 
-					if identifier in candidatePartners:
-						wannaWrite = True
-						transcriptCounter += 1
-						MULTIFASTA.write(">" + identifier + "\n")
-					
-					elif transcriptCounter == 1500:
+					if transcriptCounter == 1500:
 						fileCounter += 1
 						MULTIFASTA.close()
 						MULTIFASTA = open("{0}{1}.fasta".format(basename,fileCounter), "w")
 						transcriptCounter = 0
+
+					if loopFamily:
+						if candidatePartners:
+							if identifier in candidatePartners:
+								wannaWrite = True
+								transcriptCounter += 1
+								MULTIFASTA.write(">" + identifier + "\n")
+						elif loopFamily not in familiesAdded:
+							familiesAdded.add(loopFamily)
+							wannaWrite = True
+							transcriptCounter += 1
+							MULTIFASTA.write(">" + identifier + "\n")					
 
 				elif wannaWrite:
 					MULTIFASTA.write(line)
@@ -170,26 +181,36 @@ class CalculateInteractions(method.Method):
 		
 		self.logger.info("Launching iLoops.")
 
+		self.createPartnersFastq(gene=gene)
+
+		gainedInteractions = glob.glob("{0}candidateGainPartners_*.fasta".format(options.Options().qout))
+		lostInteractions = glob.glob("{0}candidateLostPartners_*.fasta".format(options.Options().qout))
+		allProteome = glob.glob("{0}allProteome_*.fasta".format(options.Options().qout))
+
+		partnersToTest = []
+		partnersToTest.extend(gainedInteractions)
+		partnersToTest.extend(lostInteractions)
+		partnersToTest.extend(allProteome)
+
+		batch = 0
 		for tx,seq in zip([thisSwitch.nTx,thisSwitch.tTx],[thisSwitch.nIsoform.seq,thisSwitch.tIsoform.seq]):
-		 	for fastaFile in fnmatch.filter(os.listdir(options.Options().qout), "testedPartners_*.fasta"):
-				import pdb
-				pdb.set_trace()
-		 		batch = fastaFile.split(".")[0].split("_")[2]
+		 	for fastaFile in partnersToTest:
+		 		batch += 1
 		 		tag = tx + "_" + batch
-		 		self.getFinalFASTAandPairs(gene,tx,seq,batch)
+		 		self.getFinalFASTAandPairs(fastaFile,tx,seq,batch)
 		 			
-				utils.cmd(	"/soft/devel/python-2.7/bin/python",
-							"/sbi/programs/{0}/iLoops.py".format(options.Options().iLoopsVersion),
-		 					"-f {0}Input/{1}.fasta".format(options.Options().qout,tag),
-		 					"-q {0}Input/{1}.net".format(options.Options().qout,tag),
-		 					"-j {0}Output/{1}".format(options.Options().qout,tag),
-		 					"-x {0}.xml".format(tag),
-		 					"-v",
-		 					"-g all",
-		 					"-n 25",
-		 					"-Q sbi",
-		 					"-c 1,5,6,7,8,9,10,11,12,13,14,15,20,30,40,50",
-		 					"2>&1 >{0}logs/{1}.log".format(options.Options().qout,tag) )
+				utils.cmd("/soft/devel/python-2.7/bin/python",
+						  "/sbi/programs/{0}/iLoops.py".format(options.Options().iLoopsVersion),
+		 				  "-f {0}Input/{1}.fasta".format(options.Options().qout,tag),
+		 				  "-q {0}Input/{1}.net".format(options.Options().qout,tag),
+		 				  "-j {0}Output/{1}".format(options.Options().qout,tag),
+		 				  "-x {0}.xml".format(tag),
+		 				  "-v",
+		 				  "-g all",
+		 				  "-n 25",
+		 				  "-Q sbi",
+		 				  "-c 1,5,6,7,8,9,10,11,12,13,14,15,20,30,40,50",
+		 				  "2>&1 >{0}logs/{1}.log".format(options.Options().qout,tag) )
 
 			p = pruner.iLoopsOutput_pruner(tx, options.Options().qout + "Output/")
 			p.joinFiles()
@@ -198,19 +219,16 @@ class CalculateInteractions(method.Method):
 					"{0}Output/{1}.tar.gz".format(options.Options().qout,tx), 
 					"hector@gencluster:~/iLoops/{0}/{1}".format(
 						options.Options().inputType,
-						options.Options().iLoopsVersion)
-					)
+						options.Options().iLoopsVersion) )
 			else:
 				self.logger.error("Error in generation of file.")
 
-	def getFinalFASTAandPairs(self,gene,tx,seq,batch):
-		tag = tx + "_" + batch
-		utils.cmd("cp", 
-			"{0}testedPartners_{1}_{2}.fasta".format(options.Options().qout,gene,batch), 
-			"{0}Input/{1}.fasta".format(options.Options().qout,tag))
+	def getFinalFASTAandPairs(self,fastaFile,tx,seq,batch):
+		tag = "{0}_{1}".format(tx,batch)
+		utils.cmd("cp",fastaFile,"{0}Input/{1}.fasta".format(options.Options().qout,tag))
 
-	 	with open("{0}Input/{1}.fasta".format(options.Options().qout,tag), "r") as SEQS, \
-	 		 open("{0}Input/{1}.net".format(options.Options().qout,tag), "w") as PAIRS:
+	 	with open("{0}Input/{1}.fasta".format(options.Options().qout,tag),"r") as SEQS, \
+	 		 open("{0}Input/{1}.net".format(options.Options().qout,tag),"w") as PAIRS:
 	 		for line in SEQS:
 	 			if ">" in line:
 	 				partner = line[1:].strip()
