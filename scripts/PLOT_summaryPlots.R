@@ -15,146 +15,20 @@ for (cancer in cancerTypes){
 }
 
 ################ CDS STUDY ################
-#CDS_study_all <- read.delim("CDS_study.tsv", header=FALSE)
-#CDS_study_all <- cbind(CDS_study_all,"All")
-#colnames(CDS_study_all) <- c("Cancer","Analysis","Both","Only_nIso","Only_tIso","None","Total","Relevance")
-
-CDS_study_rel <- read.delim("CDS_study_relevant.tsv", header=FALSE)
-CDS_study_rel <- cbind(CDS_study_rel,"Relevant")
-colnames(CDS_study_rel) <- c("Cancer","Analysis","Both","Only_nIso","Only_tIso","None","Total","Relevance")
-
-CDS_study_nrel <- read.delim("CDS_study_nonrelevant.tsv", header=FALSE)
-CDS_study_nrel <- cbind(CDS_study_nrel,"NonRelevant")
-colnames(CDS_study_nrel) <- c("Cancer","Analysis","Both","Only_nIso","Only_tIso","None","Total","Relevance")
-
-CDS_study <- rbind(CDS_study_rel,CDS_study_nrel)
+CDS_study <- read.delim("CDS_study.tsv", header=FALSE)
+colnames(CDS_study) <- c("Cancer","Analysis","Both","OnlyN","OnlyT","None","Random_Both","Random_OnlyN","Random_OnlyT","Random_None")
 
 ################ CDS CHANGE ################
-#CDS_change_all <- read.delim("CDS_change.tsv", header=FALSE)
-#CDS_change_all <- cbind(CDS_change_all,"All")
-#colnames(CDS_change_all) <- c("Cancer","Analysis","Yes","No","Total","Relevance")
-
-CDS_change_rel <- read.delim("CDS_change_relevant.tsv", header=FALSE)
-CDS_change_rel <- cbind(CDS_change_rel,"Relevant")
-colnames(CDS_change_rel) <- c("Cancer","Analysis","Yes","No","Total","Relevance")
-
-CDS_change_nrel <- read.delim("CDS_change_nonrelevant.tsv", header=FALSE)
-CDS_change_nrel <- cbind(CDS_change_nrel,"NonRelevant")
-colnames(CDS_change_nrel) <- c("Cancer","Analysis","Yes","No","Total","Relevance")
-
-CDS_change <- rbind(CDS_change_rel,CDS_change_nrel)
-CDS_change$Ratio <- CDS_change$Yes/CDS_change$Total
-
-plotTable_CDS_change <- data.frame()
-
-for (cancer in unique(CDS_change$Cancer)){
-  plotTable_CDS_change <- rbind(plotTable_CDS_change, t(CDS_change$Ratio[CDS_change$Cancer==cancer]))
-}
-colnames(plotTable_CDS_change) <- c("Rel","NonRel")
-
-png("CDS_change.png", width=1000, height=800)
-barplot(t(plotTable_CDS_change),beside=T,names.arg=unique(CDS_change$Cancer))
-graphics.off()
+CDS_change <- read.delim("CDS_change.tsv", header=FALSE)
+colnames(CDS_change) <- c("Cancer","Analysis","Random_Change","Random_NoChange","Change","NoChange","p","OR")
 
 ################ UTR CHANGE ################
-#UTR_change_all <- read.delim("UTR_change.tsv", header=FALSE)
-#UTR_change_all <- cbind(UTR_change_all,"All")
-#colnames(UTR_change_all) <- c("Cancer","Analysis","Yes","No","Total","Relevance")
-
-UTR_change_rel <- read.delim("UTR_change_relevant.tsv", header=FALSE)
-UTR_change_rel <- cbind(UTR_change_rel,"Relevant")
-colnames(UTR_change_rel) <- c("Cancer","Analysis","Yes","No","Total","Relevance")
-
-UTR_change_nrel <- read.delim("UTR_change_nonrelevant.tsv", header=FALSE)
-UTR_change_nrel <- cbind(UTR_change_nrel,"NonRelevant")
-colnames(UTR_change_nrel) <- c("Cancer","Analysis","Yes","No","Total","Relevance")
-
-UTR_change <- rbind(UTR_change_rel,UTR_change_nrel)
-UTR_change$Ratio <- UTR_change$Yes/UTR_change$Total
-
-plotTable_UTR_change <- data.frame()
-
-for (cancer in unique(UTR_change$Cancer)){
-  plotTable_UTR_change <- rbind(plotTable_UTR_change, t(UTR_change$Ratio[UTR_change$Cancer==cancer]))
-}
-colnames(plotTable_UTR_change) <- c("Rel","NonRel")
-
-png("UTR_change.png", width=1000, height=800)
-barplot(t(plotTable_UTR_change),beside=T,names.arg=unique(UTR_change$Cancer))
-graphics.off()
-
-################ RELEVANCE ANALYSIS ################
-Relevant <- read.delim("Relevant.tsv", header=FALSE)
-Relevant <- cbind(Relevant,"All")
-colnames(Relevant) <- c("Cancer","Analysis","Yes","No","Total","Relevance")
-
-Relevant$Ratio <- Relevant$Yes/Relevant$Total
-
-png("Relevant.png", width=1000, height=800)
-barplot(Relevant$Ratio,names.arg=unique(Relevant$Cancer))
-graphics.off()
-
-################ LOOPS ################
-#structural_loops_all <- read.delim("structural_loops.tsv", header=FALSE)
-#structural_loops_all <- cbind(structural_loops_all,"All")
-#colnames(structural_loops_all) <- c("Cancer","Different","Same","Only_nIso","Only_tIso","None","Total","Relevance")
-
-structural_loops_rel <- read.delim("structural_loops_relevant.tsv", header=FALSE)
-structural_loops_rel <- cbind(structural_loops_rel,"Relevant")
-colnames(structural_loops_rel) <- c("Cancer","Different","Same","Only_nIso","Only_tIso","None","Total","Relevance")
-
-structural_loops_nrel <- read.delim("structural_loops_nonrelevant.tsv", header=FALSE)
-structural_loops_nrel <- cbind(structural_loops_nrel,"NonRelevant")
-colnames(structural_loops_nrel) <- c("Cancer","Different","Same","Only_nIso","Only_tIso","None","Total","Relevance")
-
-structural_loops <- rbind(structural_loops_rel,structural_loops_nrel)
+UTR_change <- read.delim("UTR_change.tsv", header=FALSE)
+colnames(UTR_change) <- c("Cancer","Analysis","Random_Change","Random_NoChange","Change","NoChange","p","OR")
 
 ################ DRIVER AFFECTION ################
-#Driver_affection_all <- read.delim("Driver_affection.tsv", header=FALSE)
-#Driver_affection_all <- cbind(Driver_affection_all,"All")
-#colnames(Driver_affection_all) <- c("Cancer","Analysis","Yes","No","Total","Relevance")
-
-Driver_affection_rel <- read.delim("Driver_affection_relevant.tsv", header=FALSE)
-Driver_affection_rel <- cbind(Driver_affection_rel,"Relevant")
-colnames(Driver_affection_rel) <- c("Cancer","Analysis","Yes","No","Total","Relevance")
-
-Driver_affection_nrel <- read.delim("Driver_affection_nonrelevant.tsv", header=FALSE)
-Driver_affection_nrel <- cbind(Driver_affection_nrel,"NonRelevant")
-colnames(Driver_affection_nrel) <- c("Cancer","Analysis","Yes","No","Total","Relevance")
-
-Driver_affection <- rbind(Driver_affection_rel,Driver_affection_nrel)
-Driver_affection$Ratio <- Driver_affection$Yes/Driver_affection$Total
-
-plotTable_Driver_affection <- data.frame()
-
-for (cancer in unique(Driver_affection$Cancer)){
-  plotTable_Driver_affection <- rbind(plotTable_Driver_affection, t(Driver_affection$Ratio[Driver_affection$Cancer==cancer]))
-}
-colnames(plotTable_Driver_affection) <- c("Rel","NonRel")
-
-png("Driver_affection.png", width=1000, height=800)
-barplot(t(plotTable_Driver_affection),beside=T,names.arg=unique(Driver_affection$Cancer))
-graphics.off()
-
-################ EXON ANALYSIS ################
-#exons_all <- read.delim("exons.tsv", header=FALSE)
-#exons_all <- cbind(exons_all,"All")
-#colnames(exons_all) <- c("Cancer","switch","length","type","keepORF","position","Relevance")
-
-exons_rel <- read.delim("exons_relevant.tsv", header=FALSE)
-exons_rel <- cbind(exons_rel,"Relevant")
-colnames(exons_rel) <- c("Cancer","Switch","length","type","keepORF","position","Relevance")
-
-exons_nrel <- read.delim("exons_nonrelevant.tsv", header=FALSE)
-exons_nrel <- cbind(exons_nrel,"NonRelevant")
-colnames(exons_nrel) <- c("Cancer","Switch","length","type","keepORF","position","Relevance")
-
-exons <- rbind(exons_rel,exons_nrel)
-
-png("exon_length.png", width=1000, height=800)
-par(mar=c(9,3,5,2))
-boxplot(length~interaction(Relevance,Cancer),data=exons,outline=F,col=c("gray40","gray90"),las=2)
-graphics.off()
+Driver_D0 <- read.delim("Driver_D0_enrichment.tsv", header=FALSE)
+colnames(Driver_D0) <- c("Cancer","Analysis","Driver_Switch","Driver_NoSwitch","NonDriver_Switch","NonDriver_NoSwitch","p","OR")
 
 ################ exons per switch ################
 
@@ -432,11 +306,13 @@ colnames(exons) <- c("Cancer","Random","Switch","Origin","Type","Length","CDSLen
 cdsRelativeSize <- list()
 cdsPosition <- list()
 exonLength <- list()
-orfChange <- data.frame(cancer=c(),p=c(),oddsRation=c())
+orfChange <- data.frame(cancer=c(),p=c(),oddsRatio=c())
+exonOrigin <- data.frame(cancer=c(),p=c(),oddsRatio=c())
 for (knsur in cancerTypes){
-  cancer.exons = subset(exons,Cancer=knsur)
+  cancer.exons = subset(exons,Cancer==knsur)
   
-  p <- ggplot() + ggtitle(knsur) + theme_bw()
+  # cds relative size
+  p <- ggplot() + ggtitle(knsur) + theme_bw() + ylab("")
   p <- p + stat_ecdf(data=subset(cancer.exons,Random=="Random"), aes(x=CDSRelativeSize,colour="green"),show_guide = FALSE)
   p <- p + stat_ecdf(data=subset(cancer.exons,Random=="NonRandom"), aes(x=CDSRelativeSize,colour="red"),show_guide = FALSE)
   
@@ -457,40 +333,35 @@ for (knsur in cancerTypes){
   exonLength[[knsur]] <- p
   
   # orf
-  switches <- table(cancer.exons$KeepOrf[cancer.exons$Random=="NonRandom" & cancer.exons$Type=="CDS" ],exclude="None")
-  randomSwitches <- table(cancer.exons$KeepOrf[cancer.exons$Random=="Random"& cancer.exons$Type=="CDS" ],exclude="None")
+  switches <- table(cancer.exons$KeepOrf[cancer.exons$Random=="NonRandom"])
+  randomSwitches <- table(cancer.exons$KeepOrf[cancer.exons$Random=="Random"])
   
   cTable <- rbind(switches,randomSwitches)
   f <- fisher.test(cTable)
-  this.Data <- data.frame(cancer=knsur,p=f$p.value,oddsRation=f$estimate)
+  this.Data <- data.frame(cancer=knsur,p=f$p.value,oddsRatio=f$estimate)
   orfChange <- rbind(orfChange,this.Data)
+  
+  # type
+  switches <- table(cancer.exons$Type[cancer.exons$Random=="NonRandom" ])
+  randomSwitches <- table(cancer.exons$Type[cancer.exons$Random=="Random" ])
+  
+  cTable <- rbind(switches,randomSwitches)
+  f <- fisher.test(cTable)
+  this.Data <- data.frame(cancer=knsur,p=f$p.value,oddsRatio=f$estimate)
+  exonOrigin <- rbind(exonOrigin,this.Data)
 }
 
 png("exon_cds_relative_size.png", width=1000, height=800)
-grid.arrange(cdsRelativeSize)
+grid.arrange(cdsRelativeSize[["brca"]],cdsRelativeSize[["coad"]],cdsRelativeSize[["hnsc"]],cdsRelativeSize[["kich"]],cdsRelativeSize[["kirc"]],cdsRelativeSize[["kirp"]],cdsRelativeSize[["lihc"]],cdsRelativeSize[["luad"]],cdsRelativeSize[["lusc"]],cdsRelativeSize[["prad"]],cdsRelativeSize[["thca"]])
 graphics.off()
-
-
 
 png("exon_cds_position.png", width=1000, height=800)
-plot(ecdf(exons$Position[exons$Random=="NonRandom" & exons$Type=="CDS"]),col="green",main="Specific region relative position")
-lines(ecdf(exons$Position[exons$Random=="Random" & exons$Type=="CDS"]),col="red")
+grid.arrange(cdsPosition[["brca"]],cdsPosition[["coad"]],cdsPosition[["hnsc"]],cdsPosition[["kich"]],cdsPosition[["kirc"]],cdsPosition[["kirp"]],cdsPosition[["lihc"]],cdsPosition[["luad"]],cdsPosition[["lusc"]],cdsPosition[["prad"]],cdsPosition[["thca"]])
 graphics.off()
-
 
 png("exonlength.png", width=1000, height=800)
-plot(ecdf(log(exons$Length[exons$Random=="NonRandom"])),col="green",main="Specific region log(length)")
-lines(ecdf(log(exons$Length[exons$Random=="Random"])),col="red")
+grid.arrange(exonLength[["brca"]],exonLength[["coad"]],exonLength[["hnsc"]],exonLength[["kich"]],exonLength[["kirc"]],exonLength[["kirp"]],exonLength[["lihc"]],exonLength[["luad"]],exonLength[["lusc"]],exonLength[["prad"]],exonLength[["thca"]])
 graphics.off()
-
-
-
-
-# type
-switches <- table(exons$Type[exons$Random=="NonRandom" ])
-randomSwitches <- table(exons$Type[exons$Random=="Random" ])
-
-cTable <- rbind(switches,randomSwitches)
 
 ############ STUDY FEATURES ############
 analysis <- c("interpro","anchor","iupred","prosite")

@@ -1,8 +1,11 @@
 from biological_entities import aminoacid
 from interface import interpro_analysis
 from libs import utils
-from libs.SBI.structure import PDB
-from libs.SBI.structure.contacts import Complex
+try:
+	from libs.SBI.structure import PDB
+	from libs.SBI.structure.contacts import Complex
+except:
+	pass
 
 from Bio import pairwise2
 import logging
