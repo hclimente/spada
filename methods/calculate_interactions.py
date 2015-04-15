@@ -126,8 +126,7 @@ class CalculateInteractions(method.Method):
 						analyzedLoops[thisLoopPattern] = isoform
 
 	def createPartnersFastq(self,filetag="",gene=""):
-		self.logger.info("Preparing FASTA files for all transcripts.")
-		
+				
 		familiesAdded = set()
 		wannaWrite = False
 		fileCounter = 1
@@ -135,12 +134,15 @@ class CalculateInteractions(method.Method):
 
 		candidatePartners = []
 		if gene:
+			self.logger.info("Preparing FASTA files for all interactors of {0}.".format(gene))
 			basename = "{0}candidateLostPartners_".format(options.Options().qout)
 			candidatePartners = [ x for x,y in self._transcript_network.nodes(data=True) if y["gene_id"] in self._gene_network._net.neighbors(gene) ]
 		elif filetag:
+			self.logger.info("Preparing FASTA files for all interesting partners.")
 			basename = "{0}candidateGainPartners_".format(options.Options().qout)
 			candidatePartners = [ x for x,y in self._transcript_network.nodes(data=True) if y["gene_id"] in self.interestingNeighborhood ]
 		else:
+			self.logger.info("Preparing FASTA files for all genes.")
 			basename = "{0}allProteome_".format(options.Options().qout)
 
 		[ os.remove(x) for x in glob.glob("{0}*".format(basename)) ]
