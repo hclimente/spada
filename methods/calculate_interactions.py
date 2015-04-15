@@ -60,7 +60,7 @@ class CalculateInteractions(method.Method):
 		analyzedLoops = {}
 
 		for gene in self.interestingNeighborhood:
-			gInfo = self._modGeneNetwork._net.node[gene]
+			gInfo = self._gene_network._net.node[gene]
 
 			# write gene as potential interactor
 			for switchDict in [ x for x in gInfo["isoformSwitches"] if not x["noise"] and x["model"]]:
@@ -115,6 +115,8 @@ class CalculateInteractions(method.Method):
 								comment = "Analyzed relative {0}.".format(iso)
 								break
 
+					import pdb
+					pdb.set_trace()
 					self.analyzeSwitch(gene,thisSwitch,filetag)
 
 					if analyze == 0: 
@@ -136,7 +138,7 @@ class CalculateInteractions(method.Method):
 
 		candidatePartners = []
 		if filetag:
-			candidatePartners.extend([ x for x,y in self._transcript_network.nodes(data=True) if y["gene_id"] in self._modGeneNetwork._net.neighbors(gene) ])
+			candidatePartners.extend([ x for x,y in self._transcript_network.nodes(data=True) if y["gene_id"] in self._gene_network._net.neighbors(gene) ])
 
 		MULTIFASTA = open("{0}{1}.fasta".format(basename,fileCounter), "w")
 
