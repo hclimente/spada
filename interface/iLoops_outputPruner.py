@@ -1,16 +1,18 @@
 #!/soft/devel/python-2.7/bin/python
 
-import loxun
 from interface import iLoops_parser as parser
-from os import listdir
+from libs import utils
+
 from fnmatch import filter
-import tarfile
+import loxun
+from os import listdir
 import sys
+import tarfile
 
 class iLoopsOutput_pruner:
-	def __init__(self, transcript, workingDirectory):
+	def __init__(self, transcript,outDir):
 		self.transcriptName = transcript
-		self.wd 			= workingDirectory + "/"
+		self.wd 			= outDir + "/"
 
 	def getWd(self):		return self.wd
 	def getTxName(self):	return self.transcriptName
@@ -18,8 +20,8 @@ class iLoopsOutput_pruner:
 	def getOutFile(self):	return self.outFile
 
 	def _init_file(self):
-		self.outFile 		= open(self.getWd() + self.getTxName() + ".ips", "w")
-		self.writer			= loxun.XmlWriter(self.outFile)
+		self.outFile = open("{0}{1}.ips".format(self.getWd(),self.getTxName()), "w")
+		self.writer	 = loxun.XmlWriter(self.outFile)
 		self.getWriter().startTag("xml")
 	def _end_file(self): 
 		self.getWriter().endTag('xml')
@@ -127,8 +129,13 @@ class iLoopsOutput_pruner:
 if __name__ == '__main__':
 	
 	transcript = sys.argv[1]
-	workingDirectory = sys.argv[2]
+	outDir = sys.argv[2]
+	filetag = sys.argv[3]
+	inputType = sys.argv[4]
+	iLoopsVersion = sys.argv[5]
 
-	r = iLoopsOutput_pruner(transcript, workingDirectory)
-	r.joinFiles()
-	r.makeLiteVersion()
+	r = iLoopsOutput_pruner(transcript,outDir)
+	r.joinFiles(filetag)
+	r.makeLiteVersion(filetag)
+	utils.cmd("scp","-r", "{0}Output/{1}{2}.tar.gz".format(outDir,tx,filetag[:-1]), 
+			  "hector@gencluster:~/iLoops/{0}/{1}".format(inputType,iLoopsVersion) )

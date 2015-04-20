@@ -54,6 +54,7 @@ class CalculateInteractions(method.Method):
 	def run(self):
 		self.logger.info("Examining iLoops results.")
 
+		#filetag = "_"
 		filetag = "_gainedDrivers_D0_and_D1_lost_"
 		self.createPartnersFastq(filetag)
 		self.selectIloopsSwitches(filetag)
@@ -220,18 +221,17 @@ class CalculateInteractions(method.Method):
 		 	# 			  "-c 1,5,6,7,8,9,10,11,12,13,14,15,20,30,40,50",
 		 	# 			  "2>&1 >{0}logs/{1}.log".format(options.Options().qout,tag) )
 
-			p = pruner.iLoopsOutput_pruner(tx, options.Options().qout + "Output/")
-			p.joinFiles(filetag)
 			import pdb
 			pdb.set_trace()
-			if p.makeLiteVersion(filetag):
-				utils.cmd("scp","-r", 
-					"{0}Output/{1}.tar.gz".format(options.Options().qout,tx), 
-					"hector@gencluster:~/iLoops/{0}/{1}".format(
-						options.Options().inputType,
-						options.Options().iLoopsVersion) )
-			else:
-				self.logger.error("Error in generation of file.")
+			
+			task = []
+			task.append("/sbi/users/hectorc/SmartAS_experimental")
+			task.append(tx)
+			task.append(options.Options().qout + "Output/")
+			task.append(filetag)
+			task.append(options.Options().inputType)
+			task.append(options.Options().iLoopsVersion)
+			launchSingleJob(task,"iLoops_{0}{1}".format(tx,filetag))
 
 	def getFinalFASTAandPairs(self,fastaFile,tx,seq,batch):
 		tag = "{0}_{1}".format(tx,batch)

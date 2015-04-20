@@ -172,3 +172,33 @@ def launchJobs(gnNetwork,task):
 		jobid = s.runJob(jt)
 		randoms.append(jobid)
 		s.deleteJobTemplate(jt)
+
+def launchSingleJob(gnNetwork,task,name=""):
+	import drmaa
+
+	s = drmaa.Session()
+	s.initialize()
+
+	if not name:
+		import string
+		import random
+		name = 'SmartAS_task'
+		name += ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
+
+	natSpec = ""
+	natSpec += "-q normal -l 'qname=normal' "
+	natSpec += "-cwd "
+	natSpec += "-V "
+
+	jt = s.createJobTemplate()
+		
+	jt.remoteCommand = task[0]
+	jt.args = task[1:]
+	jt.joinFiles=True
+	jt.nativeSpecification = natSpec
+	jt.nativeSpecification += "-N {0}".format(name)
+	jt.nativeSpecification += "-e {0}logs/{1}.out.txt ".format(options.Options().qout,name)
+	jt.nativeSpecification += "-o {0}logs/{1}.err.txt".format(options.Options().qout,name)
+
+	jobid = s.runJob(jt)
+	s.deleteJobTemplate(jt)

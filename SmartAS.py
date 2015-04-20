@@ -6,6 +6,7 @@ from libs import options
 from libs import utils
 from methods import analyze_interactions
 from methods import calculate_interactions
+from methods import get_i3d_broken_interactions
 from methods import get_random_switches
 from methods import get_switches
 from methods import neighborhood_analysis
@@ -68,6 +69,12 @@ class SmartAS:
 				utils.launchJobs(s._gene_network,'structural_analysis')
 		else:
 			s.run()
+
+	def I3DBrokenInteractions(self):
+
+		i = get_i3d_broken_interactions.GetI3DBrokenInteractions(True,True)
+		i.clean()
+		i.run()
 
 	def neighborhoodAnalysis(self):
 
@@ -135,6 +142,8 @@ if __name__ == '__main__':
 		S.networkAnalysis(True)
 	elif options.Options().initialStep == "neighborhood-analysis":
 		S.neighborhoodAnalysis()
+	elif options.Options().initialStep == "get-i3d-broken-interactions":
+		S.I3DBrokenInteractions()		
 
 	# summarize results
 	elif options.Options().initialStep == "summary":
