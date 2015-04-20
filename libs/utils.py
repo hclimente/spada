@@ -186,7 +186,7 @@ def launchSingleJob(task,name=""):
 		name += ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
 
 	natSpec = ""
-	natSpec += "-q normal -l 'qname=normal' "
+	natSpec += "-q sbi -l 'qname=sbi' "
 	natSpec += "-cwd "
 	natSpec += "-V "
 
