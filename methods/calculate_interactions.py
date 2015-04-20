@@ -54,7 +54,7 @@ class CalculateInteractions(method.Method):
 	def run(self):
 		self.logger.info("Examining iLoops results.")
 
-		filetag += "gainedDrivers_D0_and_D1_lost_"
+		filetag = "_gainedDrivers_D0_and_D1_lost_"
 		self.createPartnersFastq(filetag)
 		self.selectIloopsSwitches(filetag)
 
