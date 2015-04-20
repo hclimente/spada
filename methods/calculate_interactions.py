@@ -231,7 +231,7 @@ class CalculateInteractions(method.Method):
 			task.append(filetag)
 			task.append(options.Options().inputType)
 			task.append(options.Options().iLoopsVersion)
-			launchSingleJob(task,"iLoops_{0}{1}".format(tx,filetag))
+			utils.launchSingleJob(task,"iLoops_{0}{1}".format(tx,filetag))
 
 	def getFinalFASTAandPairs(self,fastaFile,tx,seq,batch):
 		tag = "{0}_{1}".format(tx,batch)
