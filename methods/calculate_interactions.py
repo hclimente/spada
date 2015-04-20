@@ -221,9 +221,6 @@ class CalculateInteractions(method.Method):
 		 	# 			  "-c 1,5,6,7,8,9,10,11,12,13,14,15,20,30,40,50",
 		 	# 			  "2>&1 >{0}logs/{1}.log".format(options.Options().qout,tag) )
 
-			import pdb
-			pdb.set_trace()
-			
 			task = []
 			task.append("/sbi/users/hectorc/SmartAS_experimental/Pipeline/iLoops_outputPruner.py")
 			task.append(tx)

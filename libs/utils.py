@@ -200,5 +200,8 @@ def launchSingleJob(task,name=""):
 	jt.nativeSpecification += "-e {0}logs/{1}.out.txt ".format(options.Options().qout,name)
 	jt.nativeSpecification += "-o {0}logs/{1}.err.txt".format(options.Options().qout,name)
 
+	import pdb
+	pdb.set_trace()
+
 	jobid = s.runJob(jt)
 	s.deleteJobTemplate(jt)
