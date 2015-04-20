@@ -47,7 +47,8 @@ class CalculateInteractions(method.Method):
 
 		# remove files from Input and logs dirs
 		[ os.remove(x) for x in glob.glob("{0}Input/*".format(options.Options().qout)) ]
-		[ os.remove(x) for x in glob.glob("{0}Output/*".format(options.Options().qout)) ]
+		# QUITAR
+		#[ os.remove(x) for x in glob.glob("{0}Output/*".format(options.Options().qout)) ]
 		[ os.remove(x) for x in glob.glob("{0}logs/*".format(options.Options().qout)) ]
 		
 	def run(self):
@@ -205,19 +206,19 @@ class CalculateInteractions(method.Method):
 		 		tag = "{0}_{1}".format(tx,batch)
 		 		self.getFinalFASTAandPairs(fastaFile,tx,seq,batch)
 		 		self.logger.info("Launching iLoops {0}/{1} for switch {2},{3}".format(batch,len(partnersToTest),thisSwitch.nTx,thisSwitch.tTx))
-		 			
-				utils.cmd("/soft/devel/python-2.7/bin/python",
-						  "/sbi/programs/{0}/iLoops.py".format(options.Options().iLoopsVersion),
-		 				  "-f {0}Input/{1}.fasta".format(options.Options().qout,tag),
-		 				  "-q {0}Input/{1}.net".format(options.Options().qout,tag),
-		 				  "-j {0}Output/{1}".format(options.Options().qout,tag),
-		 				  "-x {0}.xml".format(tag),
-		 				  "-v",
-		 				  "-g all",
-		 				  "-n 25",
-		 				  "-Q sbi",
-		 				  "-c 1,5,6,7,8,9,10,11,12,13,14,15,20,30,40,50",
-		 				  "2>&1 >{0}logs/{1}.log".format(options.Options().qout,tag) )
+		 		# QUITAR
+				# utils.cmd("/soft/devel/python-2.7/bin/python",
+				# 		  "/sbi/programs/{0}/iLoops.py".format(options.Options().iLoopsVersion),
+		 	# 			  "-f {0}Input/{1}.fasta".format(options.Options().qout,tag),
+		 	# 			  "-q {0}Input/{1}.net".format(options.Options().qout,tag),
+		 	# 			  "-j {0}Output/{1}".format(options.Options().qout,tag),
+		 	# 			  "-x {0}.xml".format(tag),
+		 	# 			  "-v",
+		 	# 			  "-g all",
+		 	# 			  "-n 25",
+		 	# 			  "-Q sbi",
+		 	# 			  "-c 1,5,6,7,8,9,10,11,12,13,14,15,20,30,40,50",
+		 	# 			  "2>&1 >{0}logs/{1}.log".format(options.Options().qout,tag) )
 
 			p = pruner.iLoopsOutput_pruner(tx, options.Options().qout + "Output/")
 			p.joinFiles(filetag)
