@@ -30,6 +30,71 @@ colnames(UTR_change) <- c("Cancer","Analysis","Random_Change","Random_NoChange",
 Driver_D0 <- read.delim("Driver_D0_enrichment.tsv", header=FALSE)
 colnames(Driver_D0) <- c("Cancer","Analysis","Driver_Switch","Driver_NoSwitch","NonDriver_Switch","NonDriver_NoSwitch","p","OR")
 
+############# EXONS #################
+exons <- read.delim("exons.tsv",header=FALSE)
+colnames(exons) <- c("Cancer","Random","Switch","Origin","Type","Length","CDSLength","CDSRelativeSize","Position","KeepOrf")
+
+# cds relative size
+cdsRelativeSize <- list()
+cdsPosition <- list()
+exonLength <- list()
+orfChange <- data.frame(cancer=c(),p=c(),oddsRatio=c())
+exonOrigin <- data.frame(cancer=c(),p=c(),oddsRatio=c())
+for (knsur in cancerTypes){
+  cancer.exons = subset(exons,Cancer==knsur)
+  
+  # cds relative size
+  p <- ggplot() + ggtitle(knsur) + theme_bw() + ylab("")
+  p <- p + stat_ecdf(data=subset(cancer.exons,Random=="Random"), aes(x=CDSRelativeSize,colour="green"),show_guide = FALSE)
+  p <- p + stat_ecdf(data=subset(cancer.exons,Random=="NonRandom"), aes(x=CDSRelativeSize,colour="red"),show_guide = FALSE)
+  
+  cdsRelativeSize[[knsur]] <- p
+  
+  # cds position
+  p <- ggplot() + ggtitle(knsur) + theme_bw()
+  p <- p + stat_ecdf(data=subset(cancer.exons,Random=="Random"), aes(x=Position,colour="green"),show_guide = FALSE)
+  p <- p + stat_ecdf(data=subset(cancer.exons,Random=="NonRandom"), aes(x=Position,colour="red"),show_guide = FALSE)
+  
+  cdsPosition[[knsur]] <- p
+  
+  # length
+  p <- ggplot() + ggtitle(knsur) + theme_bw()
+  p <- p + stat_ecdf(data=subset(cancer.exons,Random=="Random"), aes(x=Length,colour="green"),show_guide = FALSE)
+  p <- p + stat_ecdf(data=subset(cancer.exons,Random=="NonRandom"), aes(x=Length,colour="red"),show_guide = FALSE)
+  
+  exonLength[[knsur]] <- p
+  
+  # orf
+  switches <- table(cancer.exons$KeepOrf[cancer.exons$Random=="NonRandom"])
+  randomSwitches <- table(cancer.exons$KeepOrf[cancer.exons$Random=="Random"])
+  
+  cTable <- rbind(switches,randomSwitches)
+  f <- fisher.test(cTable)
+  this.Data <- data.frame(cancer=knsur,p=f$p.value,oddsRatio=f$estimate)
+  orfChange <- rbind(orfChange,this.Data)
+  
+  # type
+  switches <- table(cancer.exons$Type[cancer.exons$Random=="NonRandom" ])
+  randomSwitches <- table(cancer.exons$Type[cancer.exons$Random=="Random" ])
+  
+  cTable <- rbind(switches,randomSwitches)
+  f <- fisher.test(cTable)
+  this.Data <- data.frame(cancer=knsur,p=f$p.value,oddsRatio=f$estimate)
+  exonOrigin <- rbind(exonOrigin,this.Data)
+}
+
+png("exon_cds_relative_size.png", width=1000, height=800)
+grid.arrange(cdsRelativeSize[["brca"]],cdsRelativeSize[["coad"]],cdsRelativeSize[["hnsc"]],cdsRelativeSize[["kich"]],cdsRelativeSize[["kirc"]],cdsRelativeSize[["kirp"]],cdsRelativeSize[["lihc"]],cdsRelativeSize[["luad"]],cdsRelativeSize[["lusc"]],cdsRelativeSize[["prad"]],cdsRelativeSize[["thca"]])
+graphics.off()
+
+png("exon_cds_position.png", width=1000, height=800)
+grid.arrange(cdsPosition[["brca"]],cdsPosition[["coad"]],cdsPosition[["hnsc"]],cdsPosition[["kich"]],cdsPosition[["kirc"]],cdsPosition[["kirp"]],cdsPosition[["lihc"]],cdsPosition[["luad"]],cdsPosition[["lusc"]],cdsPosition[["prad"]],cdsPosition[["thca"]])
+graphics.off()
+
+png("exonlength.png", width=1000, height=800)
+grid.arrange(exonLength[["brca"]],exonLength[["coad"]],exonLength[["hnsc"]],exonLength[["kich"]],exonLength[["kirc"]],exonLength[["kirp"]],exonLength[["lihc"]],exonLength[["luad"]],exonLength[["lusc"]],exonLength[["prad"]],exonLength[["thca"]])
+graphics.off()
+
 ################ exons per switch ################
 
 exonsPerSwitch_rel <- read.delim("exonsPerSwitch_relevant.tsv", header=FALSE)
@@ -296,72 +361,6 @@ suppressorTestDf$p <- apply(suppressorTestDf,1, function(x){
   k$p.value } )
 suppressorTestDf$p.adj <- p.adjust(suppressorTestDf$p)
 write.table(suppressorTestDf,file="~/Desktop/suppressorTest.tsv",sep="\t", row.names=F, col.names=F, quote=F)
-
-
-############# EXONS #################
-exons <- read.delim("exons.tsv",header=FALSE)
-colnames(exons) <- c("Cancer","Random","Switch","Origin","Type","Length","CDSLength","CDSRelativeSize","Position","KeepOrf")
-
-# cds relative size
-cdsRelativeSize <- list()
-cdsPosition <- list()
-exonLength <- list()
-orfChange <- data.frame(cancer=c(),p=c(),oddsRatio=c())
-exonOrigin <- data.frame(cancer=c(),p=c(),oddsRatio=c())
-for (knsur in cancerTypes){
-  cancer.exons = subset(exons,Cancer==knsur)
-  
-  # cds relative size
-  p <- ggplot() + ggtitle(knsur) + theme_bw() + ylab("")
-  p <- p + stat_ecdf(data=subset(cancer.exons,Random=="Random"), aes(x=CDSRelativeSize,colour="green"),show_guide = FALSE)
-  p <- p + stat_ecdf(data=subset(cancer.exons,Random=="NonRandom"), aes(x=CDSRelativeSize,colour="red"),show_guide = FALSE)
-  
-  cdsRelativeSize[[knsur]] <- p
-  
-  # cds position
-  p <- ggplot() + ggtitle(knsur) + theme_bw()
-  p <- p + stat_ecdf(data=subset(cancer.exons,Random=="Random"), aes(x=Position,colour="green"),show_guide = FALSE)
-  p <- p + stat_ecdf(data=subset(cancer.exons,Random=="NonRandom"), aes(x=Position,colour="red"),show_guide = FALSE)
-  
-  cdsPosition[[knsur]] <- p
-  
-  # length
-  p <- ggplot() + ggtitle(knsur) + theme_bw()
-  p <- p + stat_ecdf(data=subset(cancer.exons,Random=="Random"), aes(x=Length,colour="green"),show_guide = FALSE)
-  p <- p + stat_ecdf(data=subset(cancer.exons,Random=="NonRandom"), aes(x=Length,colour="red"),show_guide = FALSE)
-  
-  exonLength[[knsur]] <- p
-  
-  # orf
-  switches <- table(cancer.exons$KeepOrf[cancer.exons$Random=="NonRandom"])
-  randomSwitches <- table(cancer.exons$KeepOrf[cancer.exons$Random=="Random"])
-  
-  cTable <- rbind(switches,randomSwitches)
-  f <- fisher.test(cTable)
-  this.Data <- data.frame(cancer=knsur,p=f$p.value,oddsRatio=f$estimate)
-  orfChange <- rbind(orfChange,this.Data)
-  
-  # type
-  switches <- table(cancer.exons$Type[cancer.exons$Random=="NonRandom" ])
-  randomSwitches <- table(cancer.exons$Type[cancer.exons$Random=="Random" ])
-  
-  cTable <- rbind(switches,randomSwitches)
-  f <- fisher.test(cTable)
-  this.Data <- data.frame(cancer=knsur,p=f$p.value,oddsRatio=f$estimate)
-  exonOrigin <- rbind(exonOrigin,this.Data)
-}
-
-png("exon_cds_relative_size.png", width=1000, height=800)
-grid.arrange(cdsRelativeSize[["brca"]],cdsRelativeSize[["coad"]],cdsRelativeSize[["hnsc"]],cdsRelativeSize[["kich"]],cdsRelativeSize[["kirc"]],cdsRelativeSize[["kirp"]],cdsRelativeSize[["lihc"]],cdsRelativeSize[["luad"]],cdsRelativeSize[["lusc"]],cdsRelativeSize[["prad"]],cdsRelativeSize[["thca"]])
-graphics.off()
-
-png("exon_cds_position.png", width=1000, height=800)
-grid.arrange(cdsPosition[["brca"]],cdsPosition[["coad"]],cdsPosition[["hnsc"]],cdsPosition[["kich"]],cdsPosition[["kirc"]],cdsPosition[["kirp"]],cdsPosition[["lihc"]],cdsPosition[["luad"]],cdsPosition[["lusc"]],cdsPosition[["prad"]],cdsPosition[["thca"]])
-graphics.off()
-
-png("exonlength.png", width=1000, height=800)
-grid.arrange(exonLength[["brca"]],exonLength[["coad"]],exonLength[["hnsc"]],exonLength[["kich"]],exonLength[["kirc"]],exonLength[["kirp"]],exonLength[["lihc"]],exonLength[["luad"]],exonLength[["lusc"]],exonLength[["prad"]],exonLength[["thca"]])
-graphics.off()
 
 ############ STUDY FEATURES ############
 analysis <- c("interpro","anchor","iupred","prosite")

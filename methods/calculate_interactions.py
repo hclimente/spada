@@ -47,12 +47,15 @@ class CalculateInteractions(method.Method):
 
 		# remove files from Input and logs dirs
 		[ os.remove(x) for x in glob.glob("{0}Input/*".format(options.Options().qout)) ]
+		[ os.remove(x) for x in glob.glob("{0}Output/*".format(options.Options().qout)) ]
 		[ os.remove(x) for x in glob.glob("{0}logs/*".format(options.Options().qout)) ]
-
+		
 	def run(self):
 		self.logger.info("Examining iLoops results.")
-		self.createPartnersFastq("Drivers_D0_and_D1")
-		self.selectIloopsSwitches("Drivers_D0_and_D1")
+
+		filetag += "gainedDrivers_D0_and_D1_lost_"
+		self.createPartnersFastq(filetag)
+		self.selectIloopsSwitches(filetag)
 
 	def selectIloopsSwitches(self,filetag=""):
 
@@ -182,7 +185,7 @@ class CalculateInteractions(method.Method):
 				elif wannaWrite:
 					MULTIFASTA.write(line)
 
-	def launchIloops(self,gene,thisSwitch):
+	def launchIloops(self,gene,thisSwitch,filetag):
 		
 		self.createPartnersFastq(gene=gene)
 
@@ -217,10 +220,10 @@ class CalculateInteractions(method.Method):
 		 				  "2>&1 >{0}logs/{1}.log".format(options.Options().qout,tag) )
 
 			p = pruner.iLoopsOutput_pruner(tx, options.Options().qout + "Output/")
-			p.joinFiles()
+			p.joinFiles(filetag)
 			import pdb
 			pdb.set_trace()
-			if p.makeLiteVersion():
+			if p.makeLiteVersion(filetag):
 				utils.cmd("scp","-r", 
 					"{0}Output/{1}.tar.gz".format(options.Options().qout,tx), 
 					"hector@gencluster:~/iLoops/{0}/{1}".format(

@@ -39,41 +39,38 @@ class iLoopsOutput_pruner:
 		self.getWriter().newline()
 		self._change_pretty_state(True)
 
-	def makeLiteVersion(self):
+	def makeLiteVersion(self,tag="_"):
 		self._init_file()
 
-		xmlFile = self.getWd() + self.getTxName() + "_raw.ips"
+		xmlFile = "{0}{1}{2}raw.ips".format(self.getWd(),self.getTxName(),tag)
 		myParser = parser.iLoopsParser()
-		myParser.makeProteinsLite(
-									xmlOutput					  = self,
-									xmlOriginal					  = xmlFile,
-									output_proteins               = True, 
-									output_alignments             = False,
-									output_domain_mappings        = False,
-									output_protein_features       = True,
-									output_domain_assignations    = True,
-									output_interactions           = False,
-									output_interaction_signatures = False,
-									output_RF_results             = False,
-									output_RF_precisions          = False
-								 )
+		myParser.makeProteinsLite(xmlOutput					  	= self,
+								  xmlOriginal					= xmlFile,
+								  output_proteins               = True, 
+								  output_alignments             = False,
+								  output_domain_mappings        = False,
+								  output_protein_features       = True,
+								  output_domain_assignations    = True,
+								  output_interactions           = False,
+								  output_interaction_signatures = False,
+								  output_RF_results             = False,
+								  output_RF_precisions          = False)
 
-		myParser.makeInteractionsLite(
-										xmlOutput					  = self,
-										xmlOriginal					  = xmlFile,
-										output_proteins               = False, 
-										output_alignments             = False,
-										output_domain_mappings        = False,
-										output_protein_features       = False,
-										output_domain_assignations    = False,
-										output_interactions           = True,
-										output_interaction_signatures = False,
-										output_RF_results             = True,
-										output_RF_precisions          = True
-									  )
+		myParser.makeInteractionsLite(xmlOutput						= self,
+									  xmlOriginal					= xmlFile,
+									  output_proteins               = False, 
+									  output_alignments             = False,
+									  output_domain_mappings        = False,
+									  output_protein_features       = False,
+									  output_domain_assignations    = False,
+									  output_interactions           = True,
+									  output_interaction_signatures = False,
+									  output_RF_results             = True,
+									  output_RF_precisions          = True)
+
 		self._end_file()
 		self.checkConsistency()
-		self.makeTarfile()
+		self.makeTarfile(tag)
 
 		return True
 
@@ -81,22 +78,20 @@ class iLoopsOutput_pruner:
 		outFile = self.getWd() + self.getTxName() + ".ips"
 
 		myParser = parser.iLoopsParser()
-		myParser.results_parser(
-										xml_file					  = outFile, 
-										report_level				  = 0, 
-										output_proteins               = True, 
-										output_alignments             = True,
-										output_domain_mappings        = True,
-										output_protein_features       = True,
-										output_domain_assignations    = True,
-										output_interactions           = True,
-										output_interaction_signatures = True,
-										output_RF_results             = True,
-										output_RF_precisions          = True
-									  )
+		myParser.results_parser(xml_file					  = outFile, 
+								report_level				  = 0, 
+								output_proteins               = True, 
+								output_alignments             = True,
+								output_domain_mappings        = True,
+								output_protein_features       = True,
+								output_domain_assignations    = True,
+								output_interactions           = True,
+								output_interaction_signatures = True,
+								output_RF_results             = True,
+								output_RF_precisions          = True)
 
-	def joinFiles(self):
-		with open(self.getWd() + self.getTxName() + "_raw.ips", "w") as RAW_XML_JOIN:
+	def joinFiles(self,tag="_"):
+		with open("{0}{1}{2}raw.ips".format(self.getWd(),self.getTxName(),tag),"w") as RAW_XML_JOIN:
 			RAW_XML_JOIN.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n")
 			RAW_XML_JOIN.write("<xml>\n")
 
@@ -124,8 +119,8 @@ class iLoopsOutput_pruner:
 
 			RAW_XML_JOIN.write("</xml>\n")
 
-	def makeTarfile(self):
-		tar = tarfile.open(self.getWd() + self.getTxName() + ".tar.gz", "w:gz")
+	def makeTarfile(self,tag="_"):
+		tar = tarfile.open("{0}{1}{2}.tar.gz".format(self.getWd(),self.getTxName(),tag[:-1]), "w:gz")
 		tar.add(self.getWd() + "/" + self.getTxName() + ".ips", arcname = self.getTxName() + ".ips")
 		tar.close()
 

@@ -23,10 +23,15 @@ grep Driver_D0_enrichment ~/testResults/TCGA/*/result_summary/switches_onlyModel
 grep Driver_D0_patients ~/testResults/TCGA/*/result_summary/switches_onlyModels.tsv | cut -d':' -f2 >~/TCGA_analysis/Driver_D0_patients$tag.tsv
 grep Driver_D1_enrichment ~/testResults/TCGA/*/result_summary/switches_onlyModels.tsv | cut -d':' -f2 >~/TCGA_analysis/Driver_D1_enrichment$tag.tsv
 grep Driver_D1_patients ~/testResults/TCGA/*/result_summary/switches_onlyModels.tsv | cut -d':' -f2 >~/TCGA_analysis/Driver_D1_patients$tag.tsv
+grep Driver_relevance_enrichment ~/testResults/TCGA/*/result_summary/switches_onlyModels.tsv | cut -d':' -f2 >~/TCGA_analysis/Driver_D0_relevance$tag.tsv
+grep Driver_d1_relevance_enrichment ~/testResults/TCGA/*/result_summary/switches_onlyModels.tsv | cut -d':' -f2 >~/TCGA_analysis/Driver_D1_relevance$tag.tsv
 
 # exons.tsv
 ls ~/testResults/TCGA/*/result_summary/exons_onlyModels.tsv | xargs -n 1 tail -n +2 >~/TCGA_analysis/exons$tag.tsv
 cut -f1,2 ~/TCGA_analysis/exons$tag.tsv | sort | uniq -c | sed 's/^ \+//' | sed 's/ /\t/g' >~/TCGA_analysis/exonsPerSwitch$tag.tsv
+
+# isoform length
+ls ~/testResults/TCGA/*/result_summary/isoform_length_onlyModels.tsv | xargs -n 1 tail -n +2 >~/TCGA_analysis/isoform_length$tag.tsv
 
 # structural
 grep -v ^Cancer ~/testResults/TCGA/*/result_summary/structural_summary_onlyModels.tsv | cut -d':' -f2- >~/TCGA_analysis/structural_summary$tag.onlyModels.tsv
@@ -39,8 +44,6 @@ for knsur in $cancerTypes
 do
 	# protein_centrality.tsv nIso_length.tsv tIso_length.tsv
 	cp ~/testResults/TCGA/$knsur/result_summary/protein_centrality.tsv ~/TCGA_analysis/$knsur.protein_centrality$tag.tsv
-	cp ~/testResults/TCGA/$knsur/result_summary/nIso_length.tsv ~/TCGA_analysis/$knsur.nIso_length$tag.tsv
-	cp ~/testResults/TCGA/$knsur/result_summary/tIso_length.tsv ~/TCGA_analysis/$knsur.tIso_length$tag.tsv
 
 	# interpro anchor iupred prosite
 	cp ~/testResults/TCGA/$knsur/structural_analysis/anchor_analysis_random.tsv ~/TCGA_analysis/$knsur.anchor_analysis_random$tag.tsv
