@@ -174,31 +174,23 @@ def launchJobs(gnNetwork,task):
 		s.deleteJobTemplate(jt)
 
 def launchSingleJob(task,name=""):
-	import drmaa
-
-	s = drmaa.Session()
-	s.initialize()
-
+	
 	if not name:
 		import string
 		import random
 		name = 'SmartAS_task'
 		name += ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
 
-	natSpec = ""
-	natSpec += "-q sbi -l 'qname=sbi' "
-	natSpec += "-cwd "
-	natSpec += "-V "
+	with open("{0}/Input/{1}.sh".format(options.Options().qout,name[:-1]),'w') as OUT:
+		OUT.write("#$ -q sbi -l 'qname=sbi'\n")
+		OUT.write("#$ -cwd\n")
+		OUT.write("#$ -V\n")
+		OUT.write("#$ -N {0}\n".format(name[:-1]))
+		OUT.write("#$ -e {0}logs/{1}.out.txt\n".format(options.Options().qout,name))
+		OUT.write("#$ -o {0}logs/{1}.err.txt\n".format(options.Options().qout,name))
 
-	jt = s.createJobTemplate()
-		
-	jt.remoteCommand = task[0]
-	jt.args = task[1:]
-	jt.joinFiles=True
-	jt.nativeSpecification = natSpec
-	jt.nativeSpecification += "-N {0}".format(name)
-	jt.nativeSpecification += "-e {0}logs/{1}.out.txt ".format(options.Options().qout,name)
-	jt.nativeSpecification += "-o {0}logs/{1}.err.txt".format(options.Options().qout,name)
+		OUT.write(task)
 
-	jobid = s.runJob(jt)
-	s.deleteJobTemplate(jt)
+	import pdb
+	pdb.set_trace()
+	cmd("qsub {0}/Input/{1}.sh".format(options.Options().qout,name[:-1]))

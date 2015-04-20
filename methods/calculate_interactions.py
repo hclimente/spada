@@ -221,13 +221,9 @@ class CalculateInteractions(method.Method):
 		 	# 			  "-c 1,5,6,7,8,9,10,11,12,13,14,15,20,30,40,50",
 		 	# 			  "2>&1 >{0}logs/{1}.log".format(options.Options().qout,tag) )
 
-			task = []
-			task.append("/sbi/users/hectorc/SmartAS_experimental/Pipeline/iLoops_outputPruner.py")
-			task.append(tx)
-			task.append(options.Options().qout + "Output/")
-			task.append(filetag)
-			task.append(options.Options().inputType)
-			task.append(options.Options().iLoopsVersion)
+			task = "/sbi/users/hectorc/SmartAS_experimental/Pipeline/iLoops_outputPruner.py "
+			task += "{0} {1}Output/ {2}".format(tx,options.Options().qout,filetag)
+			task += "{0} {1}".format(options.Options().inputType,options.Options().iLoopsVersion)
 			utils.launchSingleJob(task,"iLoops_{0}{1}".format(tx,filetag))
 
 	def getFinalFASTAandPairs(self,fastaFile,tx,seq,batch):
