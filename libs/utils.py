@@ -173,7 +173,7 @@ def launchJobs(gnNetwork,task):
 		randoms.append(jobid)
 		s.deleteJobTemplate(jt)
 
-def launchSingleJob(gnNetwork,task,name=""):
+def launchSingleJob(task,name=""):
 	import drmaa
 
 	s = drmaa.Session()
