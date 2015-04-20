@@ -222,7 +222,7 @@ class CalculateInteractions(method.Method):
 		 	# 			  "2>&1 >{0}logs/{1}.log".format(options.Options().qout,tag) )
 
 			task = "/sbi/users/hectorc/SmartAS_experimental/Pipeline/interface/iLoops_outputPruner.py "
-			task += "{0} {1}Output/ {2}".format(tx,options.Options().qout,filetag)
+			task += "{0} {1}Output/ {2} ".format(tx,options.Options().qout,filetag)
 			task += "{0} {1}".format(options.Options().inputType,options.Options().iLoopsVersion)
 			utils.launchSingleJob(task,"iLoops_{0}{1}".format(tx,filetag))
 

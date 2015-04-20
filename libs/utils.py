@@ -186,11 +186,11 @@ def launchSingleJob(task,name=""):
 		OUT.write("#$ -cwd\n")
 		OUT.write("#$ -V\n")
 		OUT.write("#$ -N {0}\n".format(name[:-1]))
-		OUT.write("#$ -e {0}logs/{1}.out.txt\n".format(options.Options().qout,name))
-		OUT.write("#$ -o {0}logs/{1}.err.txt\n".format(options.Options().qout,name))
+		OUT.write("#$ -e {0}logs/{1}.out.txt\n".format(options.Options().qout,name[:-1]))
+		OUT.write("#$ -o {0}logs/{1}.err.txt\n".format(options.Options().qout,name[:-1]))
 
 		OUT.write(task)
 
+	cmd("qsub {0}/Input/{1}.sh".format(options.Options().qout,name[:-1]))
 	import pdb
 	pdb.set_trace()
-	cmd("qsub {0}/Input/{1}.sh".format(options.Options().qout,name[:-1]))
