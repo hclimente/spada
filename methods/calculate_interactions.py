@@ -125,7 +125,7 @@ class CalculateInteractions(method.Method):
 								comment = "Analyzed relative {0}.".format(iso)
 								break
 
-					self.launchIloops(gene,thisSwitch)
+					self.launchIloops(gene,thisSwitch,filetag)
 
 					if analyze == 0: 
 						analyzedLoops[thisLoopPattern] = isoform
