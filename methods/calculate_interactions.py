@@ -225,7 +225,7 @@ class CalculateInteractions(method.Method):
 			pdb.set_trace()
 			
 			task = []
-			task.append("/sbi/users/hectorc/SmartAS_experimental")
+			task.append("/sbi/users/hectorc/SmartAS_experimental/Pipeline/iLoops_outputPruner.py")
 			task.append(tx)
 			task.append(options.Options().qout + "Output/")
 			task.append(filetag)
