@@ -192,5 +192,3 @@ def launchSingleJob(task,name=""):
 		OUT.write(task)
 
 	cmd("qsub {0}/Input/{1}.sh".format(options.Options().qout,name[:-1]))
-	import pdb
-	pdb.set_trace()

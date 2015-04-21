@@ -476,6 +476,7 @@ class ResultSummary(method.Method):
 		switchFeatures = {}
 
 		Pfam = []
+		prosite = []
 		disorder = []
 		anchor = []
 
@@ -483,7 +484,7 @@ class ResultSummary(method.Method):
 			for element in utils.readTable("{0}structural_analysis/interpro_analysis{1}.tsv".format(options.Options().qout,filetag)):
 				if element[2]==switch.nTx and element[3]==switch.tTx:
 					if element[5]=="Pfam":
-						Pfam.append((element[7],element[4]))
+						Pfam.append(("{0}|{1}".format(element[6],element[7]),element[4]))
 
 		if switch.disorderChange:
 			for element in utils.readTable("{0}structural_analysis/iupred_analysis{1}.tsv".format(options.Options().qout,filetag)):
@@ -496,10 +497,17 @@ class ResultSummary(method.Method):
 				if element[2]==switch.nTx and element[3]==switch.tTx:
 					if float(element[-1]):
 						anchor.append((element[5],element[4]))
+
+		if switch.ptmChange:
+			for element in utils.readTable("{0}structural_analysis/prosite_analysis{1}.tsv".format(options.Options().qout,filetag)):
+				if element[2]==switch.nTx and element[3]==switch.tTx:
+					if float(element[-1]):
+						prosite.append((element[5],element[4]))
 			
 		switchFeatures["Pfam"] = Pfam
 		switchFeatures["iupred"] = disorder
 		switchFeatures["anchor"] = anchor
+		switchFeatures["prosite"] = prosite
 		
 		switchFeatures["Driver"] = int(info["Driver"])
 		switchFeatures["ASDriver"] = int(info["ASDriver"])

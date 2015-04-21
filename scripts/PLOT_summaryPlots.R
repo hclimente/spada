@@ -246,52 +246,53 @@ graphics.off()
 #exons_all <- cbind(exons_all,"All")
 #colnames(exons_all) <- c("Cancer","switch","length","type","keepORF","position","Relevance")
 
-structural_features_rel <- read.delim("structural_features_relevant.tsv", header=FALSE)
-structural_features_rel <- cbind(structural_features_rel,"Relevant")
-colnames(structural_features_rel) <- c("Cancer","Switch","Analysis","Action","Feature","Driver","Relevance")
+structural_features <- read.delim("structural_features.onlyModels.tsv", header=FALSE)
+colnames(structural_features) <- c("Cancer","Gene","Symbol","nIso","tIso","Random","Analysis","WhatsHappenning","Feature","Driver","ASDriver","DriverType")
 
-structural_features_nrel <- read.delim("structural_features_nonrelevant.tsv", header=FALSE)
-structural_features_nrel <- cbind(structural_features_nrel,"NonRelevant")
-colnames(structural_features_nrel) <- c("Cancer","Switch","Analysis","Action","Feature","Driver","Relevance")
+PfamSomethingHappening = structural_features[structural_features$Analysis=='Pfam' & structural_features$WhatsHappenning!="Nothing",]
+PfamNothingHappening = structural_features[structural_features$Analysis=='Pfam' & structural_features$WhatsHappenning!="Nothing",]
+a = sum(PfamSomethingHappening$Random == "NonRandom")
+b = sum(PfamSomethingHappening$Random == "Random")
+c = sum(PfamNothingHappening$Random == "NonRandom")
+d = sum(PfamNothingHappening$Random == "Random")
 
-structural_features <- rbind(structural_features_rel,structural_features_nrel)
+fisher.test(matrix(c(a,b,c,d),nrow=2,ncol=2))
 
-PfamDriver <-sort(table(structural_features$Feature[structural_features$Analysis=='Pfam' & structural_features$Relevance=="Relevant" & structural_features$Driver=="True"]),decreasing=TRUE)
+PfamDriver <- sort(table(structural_features$Feature[structural_features$Analysis=='Pfam' & structural_features$Driver==1 & structural_features$WhatsHappenning!="Nothing"]),decreasing=TRUE)
 PfamDriver <- PfamDriver[PfamDriver>0]
-PfamDriver <- 100*PfamDriver/length(structural_features$Feature[structural_features$Analysis=='Pfam' & structural_features$Relevance=="Relevant" & structural_features$Driver=="True"])
+PfamDriver <- 100*PfamDriver/length(structural_features$Feature[structural_features$Analysis=='Pfam' & structural_features$Driver==1 & structural_features$WhatsHappenning!="Nothing"])
 
-PfamNonDriver <-sort(table(structural_features$Feature[structural_features$Analysis=='Pfam' & structural_features$Relevance=="Relevant" & structural_features$Driver=="False"]),decreasing=TRUE)
+PfamNonDriver <-sort(table(structural_features$Feature[structural_features$Analysis=='Pfam' & structural_features$Driver==0 & structural_features$WhatsHappenning!="Nothing"]),decreasing=TRUE)
 PfamNonDriver <- PfamNonDriver[PfamNonDriver>0]
-PfamNonDriver <- 100*PfamNonDriver/length(structural_features$Feature[structural_features$Analysis=='Pfam' & structural_features$Relevance=="Relevant" & structural_features$Driver=="False"])
+PfamNonDriver <- 100*PfamNonDriver/length(structural_features$Feature[structural_features$Analysis=='Pfam' & structural_features$Driver==0 & structural_features$WhatsHappenning!="Nothing"])
 
-PfamDriverGained <-sort(table(structural_features$Feature[structural_features$Analysis=='Pfam' & structural_features$Relevance=="Relevant" & structural_features$Driver=="True" & structural_features$Action=="Gained in tumor"]),decreasing=TRUE)
-PfamDriverGained <- PfamDriverGained[PfamDriverGained>0]
-PfamDriverGained <- 100*PfamDriverGained/length(structural_features$Feature[structural_features$Analysis=='Pfam' & structural_features$Relevance=="Relevant" & structural_features$Driver=="True" & structural_features$Action=="Gained in tumor"])
+PfamDriverGained <- table(structural_features$Feature[structural_features$Analysis=='Pfam' & structural_features$Driver==1 & structural_features$WhatsHappenning=="Gained in tumor"])
+PfamDriverLost <- table(structural_features$Feature[structural_features$Analysis=='Pfam' & structural_features$Driver==1  & structural_features$WhatsHappenning=="Lost in tumor"])
+PfamDifference <- PfamDriverGained - PfamDriverLost 
+PfamDifference <- sort(PfamDifference,decreasing=TRUE)
+PfamDifference <- PfamDifference[PfamDifference!=0]
+write.table(PfamDifference,'PfamDifferences.txt',quote=F,col.names=F)
 
-PfamDriverLost <-sort(table(structural_features$Feature[structural_features$Analysis=='Pfam' & structural_features$Relevance=="Relevant" & structural_features$Driver=="True"  & structural_features$Action=="Lost in tumor"]),decreasing=TRUE)
-PfamDriverLost <- PfamDriverLost[PfamDriverLost>0]
-PfamDriverLost <- 100*PfamDriverLost/length(structural_features$Feature[structural_features$Analysis=='Pfam' & structural_features$Relevance=="Relevant" & structural_features$Driver=="True"  & structural_features$Action=="Lost in tumor"])
+ProSiteDriverGained <- sort(table(structural_features$Feature[structural_features$Analysis=='ProSitePatterns' & structural_features$Driver==1 & structural_features$WhatsHappenning=="Gained in tumor"]),decreasing=TRUE)
+ProSiteDriverLost <- sort(table(structural_features$Feature[structural_features$Analysis=='ProSitePatterns' & structural_features$Driver==1  & structural_features$WhatsHappenning=="Lost in tumor"]),decreasing=TRUE)
+ProSiteDifference <- ProSiteDriverGained - ProSiteDriverLost
+ProSiteDifference <- sort(ProSiteDifference,decreasing=TRUE)
+ProSiteDifference <- ProSiteDifference[ProSiteDifference!=0]
+write.table(ProSiteDifference,'ProSiteDifference.txt',quote=F,col.names=F)
 
-write.table(PfamDriver,'PfamDriver.txt',quote=F,col.names=F)
-write.table(PfamNonDriver,'PfamNonDriver.txt',quote=F,col.names=F)
-write.table(PfamDriverLost,'PfamDriverLost.txt',quote=F,col.names=F)
-write.table(PfamDriverGained,'PfamDriverGained.txt',quote=F,col.names=F)
 
-ProSitePatternsDriver <-sort(table(structural_features$Feature[structural_features$Analysis=='ProSitePatterns' & structural_features$Relevance=="Relevant" & structural_features$Driver=="True"]),decreasing=TRUE)
+ProSitePatternsDriver <-sort(table(structural_features$Feature[structural_features$Analysis=='ProSitePatterns' & structural_features$Driver=="True"]),decreasing=TRUE)
 ProSitePatternsDriver <- ProSitePatternsDriver[ProSitePatternsDriver>0]
-ProSitePatternsDriver <- 100*ProSitePatternsDriver/length(structural_features$Feature[structural_features$Analysis=='ProSitePatterns' & structural_features$Relevance=="Relevant" & structural_features$Driver=="True"])
+ProSitePatternsDriver <- 100*ProSitePatternsDriver/length(structural_features$Feature[structural_features$Analysis=='ProSitePatterns' & structural_features$Driver=="True"])
 
-ProSitePatternsNonDriver <-sort(table(structural_features$Feature[structural_features$Analysis=='ProSitePatterns' & structural_features$Relevance=="Relevant" & structural_features$Driver=="False"]),decreasing=TRUE)
+ProSitePatternsNonDriver <-sort(table(structural_features$Feature[structural_features$Analysis=='ProSitePatterns' & structural_features$Driver=="False"]),decreasing=TRUE)
 ProSitePatternsNonDriver <- ProSitePatternsNonDriver[ProSitePatternsNonDriver>0]
-ProSitePatternsNonDriver <- 100*ProSitePatternsNonDriver/length(structural_features$Feature[structural_features$Analysis=='ProSitePatterns' & structural_features$Relevance=="Relevant" & structural_features$Driver=="False"])
+ProSitePatternsNonDriver <- 100*ProSitePatternsNonDriver/length(structural_features$Feature[structural_features$Analysis=='ProSitePatterns' & structural_features$Driver=="False"])
 
-ProSitePatternsDriverGained <-sort(table(structural_features$Feature[structural_features$Analysis=='ProSitePatterns' & structural_features$Relevance=="Relevant" & structural_features$Driver=="True" & structural_features$Action=="Gained in tumor"]),decreasing=TRUE)
-ProSitePatternsDriverGained <- ProSitePatternsDriverGained[ProSitePatternsDriverGained>0]
-ProSitePatternsDriverGained <- 100*ProSitePatternsDriverGained/length(structural_features$Feature[structural_features$Analysis=='ProSitePatterns' & structural_features$Relevance=="Relevant" & structural_features$Driver=="True" & structural_features$Action=="Gained in tumor"])
 
-ProSitePatternsDriverLost <-sort(table(structural_features$Feature[structural_features$Analysis=='ProSitePatterns' & structural_features$Relevance=="Relevant" & structural_features$Driver=="True"  & structural_features$Action=="Lost in tumor"]),decreasing=TRUE)
+
 ProSitePatternsDriverLost <- ProSitePatternsDriverLost[ProSitePatternsDriverLost>0]
-ProSitePatternsDriverLost <- 100*ProSitePatternsDriverLost/length(structural_features$Feature[structural_features$Analysis=='ProSitePatterns' & structural_features$Relevance=="Relevant" & structural_features$Driver=="True"  & structural_features$Action=="Lost in tumor"])
+ProSitePatternsDriverLost <- 100*ProSitePatternsDriverLost/length(structural_features$Feature[structural_features$Analysis=='ProSitePatterns' & structural_features$Driver=="True"  & structural_features$Action=="Lost in tumor"])
 
 write.table(ProSitePatternsDriver,'ProSitePatternsDriver.txt',quote=F,col.names=F)
 write.table(ProSitePatternsNonDriver,'ProSitePatternsNonDriver.txt',quote=F,col.names=F)
