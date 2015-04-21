@@ -140,5 +140,5 @@ if __name__ == '__main__':
 	print("Files joined")
 	r.makeLiteVersion(filetag)
 	print("Lite made")
-	utils.cmd("scp","-r", "{0}Output/{1}{2}.tar.gz".format(outDir,transcript,filetag[:-1]), 
-			  "hector@gencluster:~/iLoops/{0}/{1}".format(inputType,iLoopsVersion) )
+	utils.cmd("cp","{0}Output/{1}{2}.tar.gz".format(outDir,transcript,filetag[:-1]), 
+			  "~/SmartAS_experimental/iLoops/{0}/{1}".format(inputType,iLoopsVersion) )

@@ -42,6 +42,9 @@ cancerTypes='brca coad hnsc kich kirc kirp lihc luad lusc prad thca'
 
 for knsur in $cancerTypes
 do
+	cp ~/testResults/TCGA/$knsur/candidateList_v5.tsv ~/TCGA_analysis/$knsur.candidateList$tag.tsv
+	cp ~/testResults/TCGA/$knsur/candidateList_v5.tsv /projects_rg/TCGA/users/hector/switches/$knsur.candidateList$tag.tsv
+
 	# protein_centrality.tsv nIso_length.tsv tIso_length.tsv
 	cp ~/testResults/TCGA/$knsur/result_summary/protein_centrality.tsv ~/TCGA_analysis/$knsur.protein_centrality$tag.tsv
 

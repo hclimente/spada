@@ -1,18 +1,63 @@
 library(plyr)
 library(ggplot2)
+library(reshape2)
 
 cancerTypes <- c("brca","coad","hnsc","kich","kirc","kirp","lihc","luad","lusc","prad","thca")
 workingDir <- "/genomics/users/hector/TCGA_analysis"
 setwd(workingDir)
 
+nPatients <- list()
+nPatients[["brca"]] <- 1036
+nPatients[["coad"]] <- 262
+nPatients[["hnsc"]] <- 422
+nPatients[["kich"]] <- 62
+nPatients[["kirc"]] <- 505
+nPatients[["kirp"]] <- 195
+nPatients[["lihc"]] <- 197
+nPatients[["luad"]] <- 488
+nPatients[["lusc"]] <- 483
+nPatients[["prad"]] <- 295
+nPatients[["thca"]] <- 497
+
 ################ CANDIDATES STUDY ################
+candidateList <- list()
 for (cancer in cancerTypes){
-	candidateList <- read.delim(paste0("~/SmartAS/testResults/TCGA/",cancer,"/candidateList_v3.tsv"))
-	plotcmd <- "plot(log(candidateList_v3$Patient_percentage),-log(candidateList_v3$Sensitivity))"
-	save.plot(plotcmd, file=paste0(cancer,"_patient-sensitivity.png"), dir=getwd(),w=1000, h=1000, format="png")
-	plotcmd <- "plot(sqrt(candidateList_v3$Patient_percentage),candidateList_v3$Precision)"
-	save.plot(plotcmd, file=paste0(cancer,"_patient-precision.png"), dir=getwd(),w=1000, h=1000, format="png")
+	candidateList[[cancer]] <- read.delim(paste0(cancer,".candidateList.tsv"))
+	candidateList[[cancer]] <- candidateList[[cancer]][candidateList[[cancer]]$IsModel==1 & candidateList[[cancer]]$IsRelevant==1 & candidateList[[cancer]]$NotNoise==1,]
+	candidateList[[cancer]]$NumPatients <- unlist(lapply(strsplit(as.character(candidateList[[cancer]]$Patients_affected),",",fixed=T),length))
+	candidateList[[cancer]]$Percentage <- candidateList[[cancer]]$NumPatients/nPatients[[cancer]]
+	candidateList[[cancer]]$Origin <- cancer
+	#plotcmd <- "plot(log(candidateList_v3$Patient_percentage),-log(candidateList_v3$Sensitivity))"
+	#save.plot(plotcmd, file=paste0(cancer,"_patient-sensitivity.png"), dir=getwd(),w=1000, h=1000, format="png")
+	#plotcmd <- "plot(sqrt(candidateList_v3$Patient_percentage),candidateList_v3$Precision)"
+	#save.plot(plotcmd, file=paste0(cancer,"_patient-precision.png"), dir=getwd(),w=1000, h=1000, format="png")
 }
+candidateList2 <- do.call("rbind", candidateList)
+accCandidateList <- ddply(candidateList2,.(GeneId,Symbol), summarise, cumsum=sum(Percentage))
+accCandidateList <- accCandidateList[order(-accCandidateList$cumsum),]
+
+candsMatrix <- list()
+for (gene in accCandidateList$GeneId[1:20]){
+  symbol = accCandidateList$Symbol[accCandidateList$GeneId==gene]
+  candsMatrix[[symbol]] <- list()
+  candsMatrix[[symbol]][["symbol"]] <- as.character(symbol)
+  for (cancer in cancerTypes){
+    if (gene %in% candidateList[[cancer]]$GeneId){
+      candsMatrix[[symbol]][[cancer]] <- candidateList[[cancer]]$Percentage[candidateList[[cancer]]$GeneId==gene]
+    } else{
+      candsMatrix[[symbol]][[cancer]] <- 0
+    }
+  }
+  candsMatrix[[symbol]] <- do.call("cbind", candsMatrix[[symbol]])
+}
+candsMatrix2 <- do.call("rbind", candsMatrix)
+rownames(candsMatrix2) <- candsMatrix2[,c("symbol")]
+candsMatrix2 <- candsMatrix2[,-c("symbol")]
+candsMatrix2.m <- melt(candsMatrix2)
+
+colors <- c("red","blue","red","blue","red","blue","red","blue","red","blue","red")
+
+ggplot(candsMatrix2.m,aes(x=Var1,y=value,fill=colors)) + geom_bar(stat="identity")
 
 ################ CDS STUDY ################
 CDS_study <- read.delim("CDS_study.tsv", header=FALSE)
@@ -279,6 +324,16 @@ PfamOncogeneDifferences <- PfamOncogeneGained - PfamOncogeneLost
 PfamOncogeneDifferences <- sort(PfamOncogeneDifferences,decreasing=TRUE)
 PfamOncogeneDifferences <- PfamOncogeneDifferences[PfamOncogeneDifferences!=0]
 write.table(PfamOncogeneDifferences,'PfamOncogeneDifferences.txt',quote=F,col.names=F)
+
+PfamSuppressorGained <- table(structural_features$Feature[structural_features$Analysis=='Pfam' & structural_features$DriverType=="suppressor" & structural_features$WhatsHappenning=="Gained in tumor"])
+PfamSuppressorLost <- table(structural_features$Feature[structural_features$Analysis=='Pfam' & structural_features$DriverType=="suppressor"  & structural_features$WhatsHappenning=="Lost in tumor"])
+PfamSuppressorDifferences <- PfamSuppressorGained - PfamSuppressorLost
+PfamSuppressorDifferences <- sort(PfamSuppressorDifferences,decreasing=TRUE)
+PfamSuppressorDifferences <- PfamSuppressorDifferences[PfamSuppressorDifferences!=0]
+write.table(PfamSuppressorDifferences,'PfamSuppressorDifferences.txt',quote=F,col.names=F)
+
+
+## ---- to review ---- ##
 
 ProSiteDriverGained <- sort(table(structural_features$Feature[structural_features$Analysis=='ProSitePatterns' & structural_features$Driver==1 & structural_features$WhatsHappenning=="Gained in tumor"]),decreasing=TRUE)
 ProSiteDriverLost <- sort(table(structural_features$Feature[structural_features$Analysis=='ProSitePatterns' & structural_features$Driver==1  & structural_features$WhatsHappenning=="Lost in tumor"]),decreasing=TRUE)
