@@ -268,10 +268,17 @@ PfamNonDriver <- 100*PfamNonDriver/length(structural_features$Feature[structural
 
 PfamDriverGained <- table(structural_features$Feature[structural_features$Analysis=='Pfam' & structural_features$Driver==1 & structural_features$WhatsHappenning=="Gained in tumor"])
 PfamDriverLost <- table(structural_features$Feature[structural_features$Analysis=='Pfam' & structural_features$Driver==1  & structural_features$WhatsHappenning=="Lost in tumor"])
-PfamDifference <- PfamDriverGained - PfamDriverLost 
-PfamDifference <- sort(PfamDifference,decreasing=TRUE)
-PfamDifference <- PfamDifference[PfamDifference!=0]
-write.table(PfamDifference,'PfamDifferences.txt',quote=F,col.names=F)
+PfamDriverDifferences <- PfamDriverGained - PfamDriverLost 
+PfamDriverDifferences <- sort(PfamDriverDifferences,decreasing=TRUE)
+PfamDriverDifferences <- PfamDriverDifferences[PfamDriverDifferences!=0]
+write.table(PfamDriverDifferences,'PfamDriverDifferences.txt',quote=F,col.names=F)
+
+PfamOncogeneGained <- table(structural_features$Feature[structural_features$Analysis=='Pfam' & structural_features$DriverType=="oncogene" & structural_features$WhatsHappenning=="Gained in tumor"])
+PfamOncogeneLost <- table(structural_features$Feature[structural_features$Analysis=='Pfam' & structural_features$DriverType=="oncogene"  & structural_features$WhatsHappenning=="Lost in tumor"])
+PfamOncogeneDifferences <- PfamOncogeneGained - PfamOncogeneLost
+PfamOncogeneDifferences <- sort(PfamOncogeneDifferences,decreasing=TRUE)
+PfamOncogeneDifferences <- PfamOncogeneDifferences[PfamOncogeneDifferences!=0]
+write.table(PfamOncogeneDifferences,'PfamOncogeneDifferences.txt',quote=F,col.names=F)
 
 ProSiteDriverGained <- sort(table(structural_features$Feature[structural_features$Analysis=='ProSitePatterns' & structural_features$Driver==1 & structural_features$WhatsHappenning=="Gained in tumor"]),decreasing=TRUE)
 ProSiteDriverLost <- sort(table(structural_features$Feature[structural_features$Analysis=='ProSitePatterns' & structural_features$Driver==1  & structural_features$WhatsHappenning=="Lost in tumor"]),decreasing=TRUE)

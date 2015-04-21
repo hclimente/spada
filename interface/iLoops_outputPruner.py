@@ -135,7 +135,10 @@ if __name__ == '__main__':
 	iLoopsVersion = sys.argv[5]
 
 	r = iLoopsOutput_pruner(transcript,outDir)
+	print("Pruned")
 	r.joinFiles(filetag)
+	print("Files joined")
 	r.makeLiteVersion(filetag)
-	utils.cmd("scp","-r", "{0}Output/{1}{2}.tar.gz".format(outDir,tx,filetag[:-1]), 
+	print("Lite made")
+	utils.cmd("scp","-r", "{0}Output/{1}{2}.tar.gz".format(outDir,transcript,filetag[:-1]), 
 			  "hector@gencluster:~/iLoops/{0}/{1}".format(inputType,iLoopsVersion) )

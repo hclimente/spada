@@ -28,9 +28,11 @@ class ResultSummary(method.Method):
 		self.switchStats["driverD0Test"] = { "Driver": {"NoSwitch": 0.0, "Switch": 0.0}, 
 										   	 "NonDriver": {"NoSwitch": 0.0, "Switch": 0.0} }
 		self.switchStats["driverD0Patients"] = { "Driver": [], "NonDriver": [] }
+		self.switchStats["driverD0PatientsRelevant"] = { "Driver": [], "NonDriver": [] }
 		self.switchStats["driverD1Test"] = { "D1Driver": {"NoSwitch": 0.0, "Switch": 0.0}, 
 										   	 "NonD1Driver": {"NoSwitch": 0.0, "Switch": 0.0} }
 		self.switchStats["driverD1Patients"] = { "D1Driver": [], "NonD1Driver": [] }
+		self.switchStats["driverD1PatientsRelevant"] = { "D1Driver": [], "NonD1Driver": [] }
 		self.switchStats["driverD0Relevance"] = { "Driver": {"NonRelevant": 0.0, "Relevant": 0.0}, 
 										   	"NonDriver": {"NonRelevant": 0.0, "Relevant": 0.0} }
 		self.switchStats["driverD1Relevance"] = { "D1Driver": {"NonRelevant": 0.0, "Relevant": 0.0}, 
@@ -176,8 +178,13 @@ class ResultSummary(method.Method):
 		# number of patients enrichment
 		if switchDict:
 			self.switchStats["driverD0Patients"][driverTag].append(len(switchDict["patients"]))
+			if thisSwitch.is_relevant:
+				self.switchStats["driverD0PatientsRelevant"][driverTag].append(len(switchDict["patients"]))
+			
 			if not info["Driver"]:
 				self.switchStats["driverD1Patients"][d1DriverTag].append(len(switchDict["patients"]))
+				if thisSwitch.is_relevant:
+					self.switchStats["driverD1PatientsRelevant"][d1DriverTag].append(len(switchDict["patients"]))
 		if switchDict is not None:
 			self.switchStats["driverD0Relevance"][driverTag][relevanceTag] += 1
 			if not info["Driver"]:
@@ -377,8 +384,18 @@ class ResultSummary(method.Method):
 			F.write("{0}\tDriver_D0_patients\t".format(options.Options().tag ))
 			F.write("{0}\t{1}\t".format(m1,m2))
 			
-			D,p = stats.ks_2samp(self.switchStats["driverD0Patients"]["Driver"],
+			z,p = stats.ranksums(self.switchStats["driverD0Patients"]["Driver"],
 								  self.switchStats["driverD0Patients"]["NonDriver"])
+
+			F.write("{0}\n".format(p) )
+
+			m1 = np.median(np.array(self.switchStats["driverD0PatientsRelevant"]["Driver"]))
+			m2 = np.median(np.array(self.switchStats["driverD0PatientsRelevant"]["NonDriver"]))
+			F.write("{0}\tDriver_D0_patients_relevant\t".format(options.Options().tag ))
+			F.write("{0}\t{1}\t".format(m1,m2))
+			
+			z,p = stats.ranksums(self.switchStats["driverD0PatientsRelevant"]["Driver"],
+								  self.switchStats["driverD0PatientsRelevant"]["NonDriver"])
 
 			F.write("{0}\n".format(p) )
 
@@ -388,8 +405,19 @@ class ResultSummary(method.Method):
 			F.write("{0}\tDriver_D1_patients\t".format(options.Options().tag ))
 			F.write("{0}\t{1}\t".format(m1,m2))
 			
-			D,p = stats.ks_2samp(self.switchStats["driverD1Patients"]["D1Driver"],
+			z,p = stats.ranksums(self.switchStats["driverD1Patients"]["D1Driver"],
 								  self.switchStats["driverD1Patients"]["NonD1Driver"])
+
+			F.write("{0}\n".format(p) )
+
+			m1 = np.median(np.array(self.switchStats["driverD1PatientsRelevant"]["D1Driver"]))
+			m2 = np.median(np.array(self.switchStats["driverD1PatientsRelevant"]["NonD1Driver"]))
+
+			F.write("{0}\tDriver_D1_patients_relevant\t".format(options.Options().tag ))
+			F.write("{0}\t{1}\t".format(m1,m2))
+			
+			z,p = stats.ranksums(self.switchStats["driverD1PatientsRelevant"]["D1Driver"],
+								  self.switchStats["driverD1PatientsRelevant"]["NonD1Driver"])
 
 			F.write("{0}\n".format(p) )
 
