@@ -47,7 +47,7 @@ class CalculateInteractions(method.Method):
 
 		# remove files from Input and logs dirs
 		[ os.remove(x) for x in glob.glob("{0}Input/*".format(options.Options().qout)) ]
-		[ os.remove(x) for x in glob.glob("{0}Output/*".format(options.Options().qout)) ]
+		[ utils.cmd("rm","-r",x) for x in glob.glob("{0}Output/*".format(options.Options().qout)) ]
 		[ os.remove(x) for x in glob.glob("{0}logs/*".format(options.Options().qout)) ]
 		
 	def run(self):
