@@ -110,8 +110,7 @@ class CalculateInteractions(method.Method):
 																	   options.Options().inputType,
 																	   options.Options().iLoopsVersion,
 																	   isoform,filetag)
-					import pdb
-					pdb.set_trace()
+
 					if os.path.isfile(allProteomeOutput) or os.path.isfile(expectedOutput):
 						analyze = 1
 						comment = "Already analyzed."
