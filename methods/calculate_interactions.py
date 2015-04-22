@@ -97,7 +97,7 @@ class CalculateInteractions(method.Method):
 					comment = "No different loops mapped by {0}.".format(options.Options().iLoopsVersion)
 				elif thisSwitch.nIsoform is None or thisSwitch.tIsoform is None:
 					analyze = -1
-					comment = "No UniProt mapped to at least one isoform.".format(options.Options().iLoopsVersion)
+					comment = "No UniProt mapped to at least one isoform."
 				if analyze < 0:
 					continue
 
