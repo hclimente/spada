@@ -465,22 +465,14 @@ class ResultSummary(method.Method):
 				nTx = switchElements[2]
 				tTx = switchElements[3]
 
-				for pfamDom in featureDict["Pfam"]:
-					F.write("{0}\t{1}\t".format(options.Options().tag,gene))
-					F.write("{0}\t{1}\t".format(symbol,nTx))
-					F.write("{0}\t{1}\tPfam\t".format(tTx,randomTag))
-					F.write("{0}\t{1}\t".format(pfamDom[1],pfamDom[0].replace(" ","_")))
-					F.write("{0}\t{1}\t".format(featureDict["Driver"],featureDict["ASDriver"]))
-					F.write("{0}\n".format(featureDict["DriverType"]))
-
-				# for iulong in featureDict["IUPREDLong"][0]:
-				# 	F.write("{0}\t{1}\tIUPREDLong\t".format(options.Options().tag,gene))
-				# 	F.write("{0}\t{1}\t{2}\t".format(symbol,nTx,tTx))
-
-				# 	F.write("{0}\t{1}\t".format(featureDict["IUPREDLong"][1],iulong))
-				# 	F.write("{0}\t{1}\t".format(featureDict["Relevant"],featureDict["Model"]))
-				# 	F.write("{0}\t{1}\t".format(featureDict["Noise"],featureDict["Driver"]))
-				# 	F.write("{0}\t{1}\n".format(featureDict["ASDriver"],featureDict["DriverType"]))
+				for analysis in ["Pfam","iupred","anchor","prosite"]:
+					for data in featureDict[analysis]:
+						F.write("{0}\t{1}\t".format(options.Options().tag,gene))
+						F.write("{0}\t{1}\t".format(symbol,nTx))
+						F.write("{0}\t{1}\t{2}\t".format(tTx,randomTag,analysis))
+						F.write("{0}\t{1}\t".format(data[1],data[0].replace(" ","_")))
+						F.write("{0}\t{1}\t".format(featureDict["Driver"],featureDict["ASDriver"]))
+						F.write("{0}\n".format(featureDict["DriverType"]))
 
 		# with open("{0}result_summary/structural_loops{1}.tsv".format(options.Options().qout,options.Options().filetag), "w" ) as F:
 		# 	F.write("Cancer\tDifferent\t")

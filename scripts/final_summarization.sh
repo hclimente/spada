@@ -20,9 +20,11 @@ grep CDS_study ~/testResults/TCGA/*/result_summary/switches_onlyModels.tsv | cut
 grep UTR_change ~/testResults/TCGA/*/result_summary/switches_onlyModels.tsv | cut -d':' -f2 >~/TCGA_analysis/UTR_change$tag.tsv
 
 grep Driver_D0_enrichment ~/testResults/TCGA/*/result_summary/switches_onlyModels.tsv | cut -d':' -f2 >~/TCGA_analysis/Driver_D0_enrichment$tag.tsv
-grep Driver_D0_patients ~/testResults/TCGA/*/result_summary/switches_onlyModels.tsv | cut -d':' -f2 >~/TCGA_analysis/Driver_D0_patients$tag.tsv
+grep Driver_D0_patients[^_] ~/testResults/TCGA/*/result_summary/switches_onlyModels.tsv | cut -d':' -f2 >~/TCGA_analysis/Driver_D0_patients$tag.tsv
+grep Driver_D0_patients_relevant ~/testResults/TCGA/*/result_summary/switches_onlyModels.tsv | cut -d':' -f2 >~/TCGA_analysis/Driver_D0_patientsRelevant$tag.tsv
 grep Driver_D1_enrichment ~/testResults/TCGA/*/result_summary/switches_onlyModels.tsv | cut -d':' -f2 >~/TCGA_analysis/Driver_D1_enrichment$tag.tsv
-grep Driver_D1_patients ~/testResults/TCGA/*/result_summary/switches_onlyModels.tsv | cut -d':' -f2 >~/TCGA_analysis/Driver_D1_patients$tag.tsv
+grep Driver_D1_patients[^_] ~/testResults/TCGA/*/result_summary/switches_onlyModels.tsv | cut -d':' -f2 >~/TCGA_analysis/Driver_D1_patients$tag.tsv
+grep Driver_D1_patients_relevant ~/testResults/TCGA/*/result_summary/switches_onlyModels.tsv | cut -d':' -f2 >~/TCGA_analysis/Driver_D1_patientsRelevant$tag.tsv
 grep Driver_relevance_enrichment ~/testResults/TCGA/*/result_summary/switches_onlyModels.tsv | cut -d':' -f2 >~/TCGA_analysis/Driver_D0_relevance$tag.tsv
 grep Driver_d1_relevance_enrichment ~/testResults/TCGA/*/result_summary/switches_onlyModels.tsv | cut -d':' -f2 >~/TCGA_analysis/Driver_D1_relevance$tag.tsv
 

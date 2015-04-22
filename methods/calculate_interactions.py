@@ -95,10 +95,11 @@ class CalculateInteractions(method.Method):
 				elif nInfo["iLoopsFamily"] == tInfo["iLoopsFamily"]:
 					analyze = -1
 					comment = "No different loops mapped by {0}.".format(options.Options().iLoopsVersion)
-
+				elif thisSwitch.nIsoform is None or thisSwitch.tIsoform is None:
+					analyze = -1
+					comment = "No UniProt mapped to at least one isoform.".format(options.Options().iLoopsVersion)
 				if analyze < 0:
 					continue
-
 
 				for isoform,thisLoopPattern in zip([nIso,tIso],[nInfo["iLoopsFamily"],tInfo["iLoopsFamily"]]):
 					allProteomeOutput = "{0}iLoops/{1}/{2}/{3}.tar.gz".format(options.Options().qout,
@@ -109,6 +110,8 @@ class CalculateInteractions(method.Method):
 																	   options.Options().inputType,
 																	   options.Options().iLoopsVersion,
 																	   isoform,filetag)
+					import pdb
+					pdb.set_trace()
 					if os.path.isfile(allProteomeOutput) or os.path.isfile(expectedOutput):
 						analyze = 1
 						comment = "Already analyzed."

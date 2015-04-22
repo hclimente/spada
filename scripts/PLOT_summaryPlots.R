@@ -33,7 +33,9 @@ for (cancer in cancerTypes){
 	#save.plot(plotcmd, file=paste0(cancer,"_patient-precision.png"), dir=getwd(),w=1000, h=1000, format="png")
 }
 candidateList2 <- do.call("rbind", candidateList)
-accCandidateList <- ddply(candidateList2,.(GeneId,Symbol), summarise, cumsum=sum(Percentage))
+
+# most frequent drivers
+accCandidateList <- ddply(candidateList2[candidateList2$Driver==1,],.(GeneId,Symbol), summarise, cumsum=sum(Percentage),patients=sum(NumPatients))
 accCandidateList <- accCandidateList[order(-accCandidateList$cumsum),]
 
 candsMatrix <- list()
@@ -43,7 +45,7 @@ for (gene in accCandidateList$GeneId[1:20]){
   candsMatrix[[symbol]][["symbol"]] <- as.character(symbol)
   for (cancer in cancerTypes){
     if (gene %in% candidateList[[cancer]]$GeneId){
-      candsMatrix[[symbol]][[cancer]] <- candidateList[[cancer]]$Percentage[candidateList[[cancer]]$GeneId==gene]
+      candsMatrix[[symbol]][[cancer]] <- as.numeric(candidateList[[cancer]]$Percentage[candidateList[[cancer]]$GeneId==gene])
     } else{
       candsMatrix[[symbol]][[cancer]] <- 0
     }
@@ -52,12 +54,41 @@ for (gene in accCandidateList$GeneId[1:20]){
 }
 candsMatrix2 <- do.call("rbind", candsMatrix)
 rownames(candsMatrix2) <- candsMatrix2[,c("symbol")]
-candsMatrix2 <- candsMatrix2[,-c("symbol")]
+candsMatrix2 <- candsMatrix2[,!(colnames(candsMatrix2) %in% c("symbol"))]
 candsMatrix2.m <- melt(candsMatrix2)
+colnames(candsMatrix2.m) <- c("Gene","Cancer","patients")
 
-colors <- c("red","blue","red","blue","red","blue","red","blue","red","blue","red")
+png("freqDrivers.png", width=1000, height=800)
+ggplot(candsMatrix2.m) + geom_bar(stat="identity",aes(x=Gene,y=patients,fill=Cancer))
+graphics.off()
 
-ggplot(candsMatrix2.m,aes(x=Var1,y=value,fill=colors)) + geom_bar(stat="identity")
+# most frequent genes
+accCandidateList <- ddply(candidateList2,.(GeneId,Symbol), summarise, cumsum=sum(Percentage),patients=sum(NumPatients))
+accCandidateList <- accCandidateList[order(-accCandidateList$cumsum),]
+
+candsMatrix <- list()
+for (gene in accCandidateList$GeneId[1:20]){
+  symbol = accCandidateList$Symbol[accCandidateList$GeneId==gene]
+  candsMatrix[[symbol]] <- list()
+  candsMatrix[[symbol]][["symbol"]] <- as.character(symbol)
+  for (cancer in cancerTypes){
+    if (gene %in% candidateList[[cancer]]$GeneId){
+      candsMatrix[[symbol]][[cancer]] <- as.numeric(candidateList[[cancer]]$Percentage[candidateList[[cancer]]$GeneId==gene])
+    } else{
+      candsMatrix[[symbol]][[cancer]] <- 0
+    }
+  }
+  candsMatrix[[symbol]] <- do.call("cbind", candsMatrix[[symbol]])
+}
+candsMatrix2 <- do.call("rbind", candsMatrix)
+rownames(candsMatrix2) <- candsMatrix2[,c("symbol")]
+candsMatrix2 <- candsMatrix2[,!(colnames(candsMatrix2) %in% c("symbol"))]
+candsMatrix2.m <- melt(candsMatrix2)
+colnames(candsMatrix2.m) <- c("Gene","Cancer","patients")
+
+png("freqGenes.png", width=1000, height=800)
+ggplot(candsMatrix2.m) + geom_bar(stat="identity",aes(x=Gene,y=patients,fill=Cancer))
+graphics.off()
 
 ################ CDS STUDY ################
 CDS_study <- read.delim("CDS_study.tsv", header=FALSE)
