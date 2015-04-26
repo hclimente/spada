@@ -17,7 +17,7 @@ class GetI3DBrokenInteractions(method.Method):
 
 		self.OUT = open("{0}i3d/i3d_broken.tsv".format(options.Options().qout),'w')
 		self.OUT.write("Gene\tSymbol\tnTx\ttTx\tUniprot\tTag\tWhatsHappening\t")
-		self.OUT.write("Percent\tp\tOR\tIsoformStructure\tIsoformSpecific\n")
+		self.OUT.write("Percent\tp\tOR\tSequenceCover\tIsoformStructure\tIsoformSpecific\n")
 		
 		for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network,partialCreation=False,removeNoise=True,only_models=True):
 			self.findBrokenSurfaces(thisSwitch,gene,info)
@@ -64,10 +64,12 @@ class GetI3DBrokenInteractions(method.Method):
 			if protein.hasPdbs and hasIsoSpecificResidues:
 				pval,OR,percent = self.getStatistics(protein)
 				isoInfo,isoSpec = protein.report()
+				seqCover = (len(isoInfo)-isoInfo.count("*"))/len(isoInfo)
 				self.OUT.write("{0}\t{1}\t{2}\t".format(gene,info["symbol"],nIso.tx))
 				self.OUT.write("{0}\t{1}\t{2}\t".format(tIso.tx,protein.uniprot,tag))
 				self.OUT.write("{0}\t{1}\t{2}\t".format(what,percent,pval))
-				self.OUT.write("{0}\t{1}\t{2}\n".format(OR,isoInfo,isoSpec))
+				self.OUT.write("{0}\t{1}\t{2}\n".format(OR,seqCover,isoInfo))
+				self.OUT.write("{0}\n".format(isoSpec))
 				protein.printPDBInfo()
 
 				return True
