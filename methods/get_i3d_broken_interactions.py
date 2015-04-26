@@ -8,11 +8,16 @@ class GetI3DBrokenInteractions(method.Method):
 	def __init__(self,gn_network,tx_network,gn_subnetwork=False):
 		method.Method.__init__(self, __name__, gn_network, tx_network, gn_subnetwork)
 
+		self.hallmarks = self.readGeneset("h.all.v5.0.entrez.gmt")
+		self.biologicalProcess = self.readGeneset("c5.bp.v4.0.entrez.gmt")
+
 	def run(self):
 
 		self.logger.info("Searching I3D broken surfaces.")
 
 		self.OUT = open("{0}i3d/i3d_broken.tsv".format(options.Options().qout),'w')
+		self.OUT.write("Gene\tSymbol\tnTx\ttTx\tUniprot\tTag\tWhatsHappening\t")
+		self.OUT.write("Percent\tp\tOR\tIsoformStructure\tIsoformSpecific\n")
 		
 		for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network,partialCreation=False,removeNoise=True,only_models=True):
 			self.findBrokenSurfaces(thisSwitch,gene,info)
@@ -23,12 +28,12 @@ class GetI3DBrokenInteractions(method.Method):
 		utils.cmd("rm","-r","{0}i3d".format(options.Options().qout))
 		utils.cmd("mkdir","{0}i3d".format(options.Options().qout))
 	
-	def findBrokenSurfaces(self,switch,gene,info):
+	def findBrokenSurfaces(self,thisSwitch,gene,info):
 
 		self.logger.debug("I3D: searching broken surfaces for gene {0}.".format(gene) )
 		
-		nIso = switch.nIsoform
-		tIso = switch.tIsoform
+		nIso = thisSwitch.nIsoform
+		tIso = thisSwitch.tIsoform
 
 		if nIso is None or tIso is None: return False
 		elif not nIso.uniprot and not tIso.uniprot: return False
@@ -43,12 +48,26 @@ class GetI3DBrokenInteractions(method.Method):
 
 		self.logger.debug("I3D: information found for gene {0}.".format(gene))
 
-		for protein,hasIsoSpecificResidues in zip([nIso,tIso],[nIsoSpecific,tIsoSpecific]):
+		tag = "Nothing"
+		if info["Driver"]:
+			tag = "Driver"
+		elif [ x for x in self._gene_network._net.neighbors(gene) if self._gene_network._net.node[x]["Driver"] ]:
+			tag = "d1"
+		elif [ x for x in self.hallmarks if gene in self.hallmarks[x] ]:
+			hallmark = [ x for x in self.hallmarks if gene in self.hallmarks[x] ][0]
+			tag = hallmark
+		elif [ x for x in self.biologicalProcess if gene in self.biologicalProcess[x] ]:
+			bp = [ x for x in self.biologicalProcess if gene in self.biologicalProcess[x] ][0]
+			tag = bp
+
+		for protein,hasIsoSpecificResidues,what in zip([nIso,tIso],[nIsoSpecific,tIsoSpecific],["nIso_interaction","tIso_interaction"]):
 			if protein.hasPdbs and hasIsoSpecificResidues:
-				pval,percent = self.getStatistics(protein)
+				pval,OR,percent = self.getStatistics(protein)
 				isoInfo,isoSpec = protein.report()
-				self.OUT.write("{0}\t{1}\t{2}\t{3}\t".format(gene,info["symbol"],protein.tx,protein.uniprot))
-				self.OUT.write("{0}\t{1}\t{2}\t{3}\n".format(percent,pval,isoInfo,isoSpec))
+				self.OUT.write("{0}\t{1}\t{2}\t".format(gene,info["symbol"],nIso.tx))
+				self.OUT.write("{0}\t{1}\t{2}\t".format(tIso.tx,protein.uniprot,tag))
+				self.OUT.write("{0}\t{1}\t{2}\t".format(what,percent,pval))
+				self.OUT.write("{0}\t{1}\t{2}\n".format(OR,isoInfo,isoSpec))
 				protein.printPDBInfo()
 
 				return True
@@ -79,7 +98,8 @@ class GetI3DBrokenInteractions(method.Method):
 		try: percent = float(stats["isoSp"]["I"])/(stats["isoSp"]["I"]+stats["nIsoSp"]["I"])*100
 		except ZeroDivisionError: percent = 0
 
-		pval = 0
+		pval = "NA"
+		OR = "NA"
 
 		for tag in ["S","B","I"]:
 			lst = [ x for x in ["S","B","I"] if x != tag ]
@@ -89,9 +109,27 @@ class GetI3DBrokenInteractions(method.Method):
 			for tag2 in lst: negIsoSp += stats["isoSp"][tag2]
 			for tag2 in lst: negIsoSp += stats["nIsoSp"][tag2]
 
-			p = fisher.pvalue(stats["isoSp"][tag], negIsoSp, stats["nIsoSp"][tag], negNIsoSp)
-			self.logger.debug("{0} - {1} p-values: left:{2}\tright:{3}.".format(protein.tx,tag,p.left_tail,p.right_tail))
+			p = fisher.pvalue(stats["isoSp"][tag],negIsoSp,stats["nIsoSp"][tag],negNIsoSp)
+			try:
+				oddsRatio = stats["isoSp"][tag]*stats["nIsoSp"][tag]/(negIsoSp*negNIsoSp)
+			except ZeroDivisionError: 
+				oddsRatio = "NA"
+			self.logger.debug("{0} - {1} p-values: left:{2}\tright:{3}. OR: {4}".format(protein.tx,tag,p.left_tail,p.right_tail,oddsRatio))
 
-			if tag == "I": pval = p.right_tail
+			if tag == "I": 
+				pval = p.right_tail
+				OR = oddsRatio
 
-		return (pval,percent)
+		return (pval,OR,percent)
+
+	def readGeneset(self,sSetFile):
+
+		geneSets = {}
+		geneSetFile = "{0}Data/Databases/{1}".format(options.Options().wd,sSetFile)
+
+		for line in utils.readTable(geneSetFile,header=False):
+			geneSet = line[0]
+			genes = line[2:]
+			geneSets[geneSet] = genes
+
+		return geneSets

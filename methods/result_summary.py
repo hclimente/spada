@@ -482,9 +482,9 @@ class ResultSummary(method.Method):
 		# 	F.write("{0}\t{1}\t".format(self.loops["loopsChange"]["onlyN"],self.loops["loopsChange"]["onlyT"]) )
 		# 	F.write("{0}\t{1}\n".format(self.loops["loopsChange"]["noLoops"]))
 
-	def changedStructuralFeatures(self,random,gene,info,switchDict,switch):	
+	def changedStructuralFeatures(self,random,gene,info,switchDict,thisSwitch):	
 
-		tag = "{0}_{1}_{2}_{3}".format(gene,info["symbol"],switch.nTx,switch.tTx)
+		tag = "{0}_{1}_{2}_{3}".format(gene,info["symbol"],thisSwitch.nTx,thisSwitch.tTx)
 
 		if random:
 			randomTag = "Random"
@@ -500,27 +500,27 @@ class ResultSummary(method.Method):
 		disorder = []
 		anchor = []
 
-		if switch.domainChange:
+		if thisSwitch.domainChange:
 			for element in utils.readTable("{0}structural_analysis/interpro_analysis{1}.tsv".format(options.Options().qout,filetag)):
-				if element[2]==switch.nTx and element[3]==switch.tTx:
+				if element[2]==thisSwitch.nTx and element[3]==thisSwitch.tTx:
 					if element[5]=="Pfam":
 						Pfam.append(("{0}|{1}".format(element[6],element[7]),element[4]))
 
-		if switch.disorderChange:
+		if thisSwitch.disorderChange:
 			for element in utils.readTable("{0}structural_analysis/iupred_analysis{1}.tsv".format(options.Options().qout,filetag)):
-				if element[2]==switch.nTx and element[3]==switch.tTx:
+				if element[2]==thisSwitch.nTx and element[3]==thisSwitch.tTx:
 					if float(element[-1]):
 						disorder.append((element[5],element[4]))
 
-		if switch.anchorChange:
+		if thisSwitch.anchorChange:
 			for element in utils.readTable("{0}structural_analysis/anchor_analysis{1}.tsv".format(options.Options().qout,filetag)):
-				if element[2]==switch.nTx and element[3]==switch.tTx:
+				if element[2]==thisSwitch.nTx and element[3]==thisSwitch.tTx:
 					if float(element[-1]):
 						anchor.append((element[5],element[4]))
 
-		if switch.ptmChange:
+		if thisSwitch.ptmChange:
 			for element in utils.readTable("{0}structural_analysis/prosite_analysis{1}.tsv".format(options.Options().qout,filetag)):
-				if element[2]==switch.nTx and element[3]==switch.tTx:
+				if element[2]==thisSwitch.nTx and element[3]==thisSwitch.tTx:
 					if float(element[-1]):
 						prosite.append((element[5],element[4]))
 			
@@ -532,7 +532,7 @@ class ResultSummary(method.Method):
 		switchFeatures["Driver"] = int(info["Driver"])
 		switchFeatures["ASDriver"] = int(info["ASDriver"])
 		switchFeatures["DriverType"] = info["DriverType"]
-		switchFeatures["Relevant"] = int(switch.is_relevant)
+		switchFeatures["Relevant"] = int(thisSwitch.is_relevant)
 		switchFeatures["Model"] = int(switchDict["model"])
 		switchFeatures["Noise"] = int(switchDict["noise"])
 
