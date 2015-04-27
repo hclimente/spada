@@ -196,7 +196,7 @@ class Protein:
 		seq 	= ""
 		isoSp 	= ""
 		for aResidue in self._structure:
-			if not aResidue.tag: 		seq += "*"
+			if aResidue.tag is None: 	seq += "*"
 			elif aResidue.tag == "NIS":	seq += "S"
 			elif aResidue.tag == "IS": 	seq += "I"
 			elif aResidue.tag == "B": 	seq += "B"
@@ -239,10 +239,12 @@ class Protein:
 		segment = []
 		gapped = []
 
-		for res in self._structure:
+		for res in sorted(self._structure,key=lambda x: x.num):
 			flag = False
 			if thing =="isoform-specific":
 				flag = res.isoformSpecific
+			elif thing =="non-isoform-specific":
+				flag = not res.isoformSpecific
 			elif thing =="anchor":
 				flag = res.isAnchored
 			elif thing =="disordered":

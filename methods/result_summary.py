@@ -54,6 +54,7 @@ class ResultSummary(method.Method):
 										  }
 
 		self.exonStats  = { "Random": [], "NonRandom": [] }
+		self.alternativeSplicingStats  = { "Random": [], "NonRandom": [] }
 
 		self.loops = {}
 		self.loops["loopsChange"] = {}
@@ -257,6 +258,15 @@ class ResultSummary(method.Method):
 					exonInfo["relativeSize"] = "NA"
 
 				self.exonStats[randomTag].append(exonInfo)
+
+		for nVersion,tVersion,tag in thisSwitch.analyzeSplicing():
+			exon = {}
+
+			exon["nVersion"] = 0 if nVersion is None else len(nVersion)
+			exon["tVersion"] = 0 if tVersion is None else len(tVersion)
+			exon["tag"] = tag
+
+			self.alternativeSplicingStats[randomTag].append(exon)
 		
 	def printSwitchInfo(self):
 
@@ -432,6 +442,14 @@ class ResultSummary(method.Method):
 					F.write("{0}\t{1}\t".format(exon["length"],exon["cdsLength"]))
 					F.write("{0}\t{1}\t".format(exon["relativeSize"],exon["position"]))
 					F.write("{0}\n".format(exon["keepORF"]))
+
+		with open("{0}result_summary/exons_new{1}.tsv".format(options.Options().qout,options.Options().filetag), "w" ) as F:
+			F.write("Cancer\tRandom\tnormalSegment\ttumorSegment\tTag\n");
+			for random in self.alternativeSplicingStats:
+				for niso,tiso,tag in self.alternativeSplicingStats[random]:
+					F.write("{0}\t{1}\t".format(options.Options(),random))
+					F.write("{0}\t{1}\t".format(niso,tiso))
+					F.write("{0}\n".format(tag))
 
 	def printStructutalInfo(self):
 

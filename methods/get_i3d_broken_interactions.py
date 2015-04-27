@@ -16,7 +16,7 @@ class GetI3DBrokenInteractions(method.Method):
 		self.logger.info("Searching I3D broken surfaces.")
 
 		self.OUT = open("{0}i3d/i3d_broken.tsv".format(options.Options().qout),'w')
-		self.OUT.write("Gene\tSymbol\tnTx\ttTx\tUniprot\tTag\tWhatsHappening\t")
+		self.OUT.write("Gene\tSymbol\tnTx\ttTx\tCancer\tUniprot\tTag\tWhatsHappening\t")
 		self.OUT.write("Percent\tp\tOR\tSequenceCover\tIsoformStructure\tIsoformSpecific\n")
 		
 		for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network,partialCreation=False,removeNoise=True,only_models=True):
@@ -64,12 +64,12 @@ class GetI3DBrokenInteractions(method.Method):
 			if protein.hasPdbs and hasIsoSpecificResidues:
 				pval,OR,percent = self.getStatistics(protein)
 				isoInfo,isoSpec = protein.report()
-				seqCover = (len(isoInfo)-isoInfo.count("*"))/len(isoInfo)
+				seqCover = float(len(isoInfo)-isoInfo.count("*"))/len(isoInfo)
 				self.OUT.write("{0}\t{1}\t{2}\t".format(gene,info["symbol"],nIso.tx))
-				self.OUT.write("{0}\t{1}\t{2}\t".format(tIso.tx,protein.uniprot,tag))
-				self.OUT.write("{0}\t{1}\t{2}\t".format(what,percent,pval))
-				self.OUT.write("{0}\t{1}\t{2}\n".format(OR,seqCover,isoInfo))
-				self.OUT.write("{0}\n".format(isoSpec))
+				self.OUT.write("{0}\t{1}\t{2}\t".format(tIso.tx,options.Options().tag,protein.uniprot))
+				self.OUT.write("{0}\t{1}\t{2}\t".format(tag,what,percent))
+				self.OUT.write("{0}\t{1}\t{2}\n".format(pval,OR,seqCover))
+				self.OUT.write("{0}\t{1}\n".format(isoInfo,isoSpec))
 				protein.printPDBInfo()
 
 				return True
@@ -83,13 +83,13 @@ class GetI3DBrokenInteractions(method.Method):
 
 		for residue in protein._structure: 
 			if residue.isoformSpecific:
-				if not residue.tag: 	 	stats["isoSp"]["u"] += 1
+				if residue.tag is None: 	stats["isoSp"]["u"] += 1
 				elif residue.tag == "IS":	stats["isoSp"]["I"] += 1
 				elif residue.tag == "NIS": 	stats["isoSp"]["S"] += 1
 				elif residue.tag == "B":  	stats["isoSp"]["B"]	+= 1
 
 			else:
-				if not residue.tag: 	 	stats["nIsoSp"]["u"] += 1
+				if residue.tag is None: 	stats["nIsoSp"]["u"] += 1
 				elif residue.tag == "IS":	stats["nIsoSp"]["I"] += 1
 				elif residue.tag == "NIS": 	stats["nIsoSp"]["S"] += 1
 				elif residue.tag == "B":  	stats["nIsoSp"]["B"] += 1

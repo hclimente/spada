@@ -71,3 +71,36 @@ class Transcript:
 		except ZeroDivisionError:
 			return None
 	
+	def getSegments(self,thing,minLength=1,gap=0):
+		segments = []
+		segment = []
+		gapped = []
+
+		reverseOrder = False if self._strand=='+' else True
+    
+		for nt in sorted(self._cds,reverse=reverseOrder):
+			flag = False
+			if thing =="isoform-specific":
+				flag = self._cds[nt]
+			elif thing =="non-isoform-specific":
+				flag = not self._cds[nt]
+
+			if flag:
+				if gapped:
+					segment.extend(gapped)
+					gapped = []
+				segment.append(nt)
+			elif segment:
+				if len(gapped) < gap:
+					gapped.append(nt)
+				else:
+					if len(segment) >= minLength:
+						segments.append(segment)
+
+					gapped = []
+					segment = []
+
+		if len(segment) >= minLength:
+			segments.append(segment)
+
+		return segments

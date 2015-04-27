@@ -227,3 +227,71 @@ class IsoformSwitch:
 
 				if elements[8] == "True": self._ptm_change = True
 				elif elements[8] == "False": self._ptm_change = False
+
+	def analyzeSplicing(self):
+
+		reverseOrder = False if self.nTranscript._strand=='+' else True
+
+		nSegments  = [ sorted(x,reverse=reverseOrder)[0] for x in self.nTranscript.getSegments("isoform-specific") ]
+		tSegments  = [ sorted(x,reverse=reverseOrder)[0] for x in self.tTranscript.getSegments("isoform-specific") ]
+		commonSegmentsN = [ sorted(x,reverse=reverseOrder)[0] for x in self.nTranscript.getSegments("non-isoform-specific") ]
+		commonSegmentsT = [ sorted(x,reverse=reverseOrder)[0] for x in self.tTranscript.getSegments("non-isoform-specific") ]
+		commonSegments = list(set(commonSegmentsN + commonSegmentsT))
+
+		allNormal = sorted(nSegments + commonSegments,reverse=reverseOrder)
+		allTumor = sorted(tSegments + commonSegments,reverse=reverseOrder)
+
+		equivalents = []
+
+		for thisSegment,otherSeg,thisTx,otherTx in zip([nSegments,tSegments],[tSegments,nSegments],[allNormal,allTumor],[allTumor,allNormal]):
+			for gPos in thisSegment:
+				nIdx = [ x for x,y in enumerate(thisTx) if y==gPos ][0]
+
+				if nIdx == 0:
+					if otherTx[0] in otherSeg:
+						equivalents.append((gPos,otherTx[0],'BEGINING'))
+					else:
+						equivalents.append((gPos,0,'BEGINING'))
+					
+				elif nIdx == len(thisTx)-1:
+					if otherTx[-1] in otherSeg:
+						equivalents.append((gPos,otherTx[-1],'ENDING'))
+					else:
+						equivalents.append((gPos,0,'ENDING'))
+				else:
+					nPrev = thisTx[nIdx-1]
+					nPost = thisTx[nIdx+1]
+
+					tPrevIdx = [ x for x,y in enumerate(otherTx) if y==nPrev ][0]
+					tPostIdx = [ x for x,y in enumerate(otherTx) if y==nPost ][0]
+
+					if abs(tPrevIdx-tPostIdx)==1:
+						equivalents.append((gPos,0,'MIDDLE'))
+					else:
+						equivalents.append((gPos,otherTx[tPrevIdx+1],'MIDDLE'))
+
+		nSegments  = self.nTranscript.getSegments("isoform-specific")
+		tSegments  = self.tTranscript.getSegments("isoform-specific")
+
+		segmentInfo = []
+
+		for onePos,otherPos,tag in equivalents:
+			inNormal = [ x for x in nSegments if onePos in x ]
+			inTumor = [ x for x in tSegments if onePos in x ]
+			if inNormal:
+				nVersion = inNormal[0]
+				if otherPos != 0:
+					tVersion = [ x for x in tSegments if otherPos in x ][0]
+				else:
+					tVersion = None
+			elif inTumor:
+				tVersion = inTumor[0]
+				if otherPos != 0:
+					nVersion = [ x for x in nSegments if otherPos in x ][0]
+				else:
+					nVersion = None
+			
+			if (nVersion,tVersion,tag) not in segmentInfo:
+				segmentInfo.append((nVersion,tVersion,tag))
+
+		return segmentInfo
