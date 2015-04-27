@@ -446,10 +446,10 @@ class ResultSummary(method.Method):
 		with open("{0}result_summary/exons_new{1}.tsv".format(options.Options().qout,options.Options().filetag), "w" ) as F:
 			F.write("Cancer\tRandom\tnormalSegment\ttumorSegment\tTag\n");
 			for random in self.alternativeSplicingStats:
-				for niso,tiso,tag in self.alternativeSplicingStats[random]:
-					F.write("{0}\t{1}\t".format(options.Options(),random))
-					F.write("{0}\t{1}\t".format(niso,tiso))
-					F.write("{0}\n".format(tag))
+				for exon in self.alternativeSplicingStats[random]:
+					F.write("{0}\t{1}\t".format(options.Options().tag,random))
+					F.write("{0}\t{1}\t".format(exon["nVersion"],exon["tVersion"]))
+					F.write("{0}\n".format(exon["tag"]))
 
 	def printStructutalInfo(self):
 
