@@ -192,3 +192,15 @@ def launchSingleJob(task,name=""):
 		OUT.write(task)
 
 	cmd("qsub {0}/Input/{1}.sh".format(options.Options().qout,name[:-1]))
+
+def readGeneset(sSetFile):
+
+	geneSets = {}
+	geneSetFile = "{0}Data/Databases/{1}".format(options.Options().wd,sSetFile)
+
+	for line in readTable(geneSetFile,header=False):
+		geneSet = line[0]
+		genes = line[2:]
+		geneSets[geneSet] = genes
+
+	return geneSets

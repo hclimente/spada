@@ -8,16 +8,17 @@ class GetI3DBrokenInteractions(method.Method):
 	def __init__(self,gn_network,tx_network,gn_subnetwork=False):
 		method.Method.__init__(self, __name__, gn_network, tx_network, gn_subnetwork)
 
-		self.hallmarks = self.readGeneset("h.all.v5.0.entrez.gmt")
-		self.biologicalProcess = self.readGeneset("c5.bp.v4.0.entrez.gmt")
+		self.hallmarks = utils.readGeneset("h.all.v5.0.entrez.gmt")
+		self.biologicalProcess = utils.readGeneset("c5.bp.v4.0.entrez.gmt")
 
 	def run(self):
 
 		self.logger.info("Searching I3D broken surfaces.")
 
 		self.OUT = open("{0}i3d/i3d_broken.tsv".format(options.Options().qout),'w')
-		self.OUT.write("Gene\tSymbol\tnTx\ttTx\tCancer\tUniprot\tTag\tWhatsHappening\t")
-		self.OUT.write("Percent\tp\tOR\tSequenceCover\tIsoformStructure\tIsoformSpecific\n")
+		self.OUT.write("Gene\tSymbol\tnTx\ttTx\tCancer\tUniprot\tAnnotation\tWhatsHappening\t")
+		self.OUT.write("InteractionAffection\tSequenceCover\tPartner\tPartnerAnnotation\t")
+		self.OUT.write("PartnerUniprot\tSequenceInformation\tIsoformSpecific\n")
 		
 		for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network,partialCreation=False,removeNoise=True,only_models=True):
 			self.findBrokenSurfaces(thisSwitch,gene,info)
@@ -48,29 +49,40 @@ class GetI3DBrokenInteractions(method.Method):
 
 		self.logger.debug("I3D: information found for gene {0}.".format(gene))
 
-		tag = "Nothing"
-		if info["Driver"]:
-			tag = "Driver"
-		elif [ x for x in self._gene_network._net.neighbors(gene) if self._gene_network._net.node[x]["Driver"] ]:
-			tag = "d1"
-		elif [ x for x in self.hallmarks if gene in self.hallmarks[x] ]:
-			hallmark = [ x for x in self.hallmarks if gene in self.hallmarks[x] ][0]
-			tag = hallmark
-		elif [ x for x in self.biologicalProcess if gene in self.biologicalProcess[x] ]:
-			bp = [ x for x in self.biologicalProcess if gene in self.biologicalProcess[x] ][0]
-			tag = bp
+		tag = self._gene_network.getGeneAnnotation(gene,self.hallmarks,self.biologicalProcess)
 
 		for protein,hasIsoSpecificResidues,what in zip([nIso,tIso],[nIsoSpecific,tIsoSpecific],["nIso_interaction","tIso_interaction"]):
 			if protein.hasPdbs and hasIsoSpecificResidues:
-				pval,OR,percent = self.getStatistics(protein)
-				isoInfo,isoSpec = protein.report()
-				seqCover = float(len(isoInfo)-isoInfo.count("*"))/len(isoInfo)
-				self.OUT.write("{0}\t{1}\t{2}\t".format(gene,info["symbol"],nIso.tx))
-				self.OUT.write("{0}\t{1}\t{2}\t".format(tIso.tx,options.Options().tag,protein.uniprot))
-				self.OUT.write("{0}\t{1}\t{2}\t".format(tag,what,percent))
-				self.OUT.write("{0}\t{1}\t{2}\n".format(pval,OR,seqCover))
-				self.OUT.write("{0}\t{1}\n".format(isoInfo,isoSpec))
+
 				protein.printPDBInfo()
+
+				for partner in set([ y for x in protein._structure for y in x._pdbMapping ]):
+					isoInfo,isoSpec = protein.report(partner)
+					coverage = float(len([ x for x in protein._structure if partner in x._pdbMapping ]))/len(protein._structure)*100
+					specific = [ x._pdbMapping[partner][1][:-1] for x in protein._structure if partner in x._pdbMapping and x.isoformSpecific ]
+					interact = [ x._pdbMapping[partner][1][:-1] for x in protein._structure if partner in x._pdbMapping and x._pdbMapping[partner][2]=="IS" ]
+					if not specific or not interact:
+						continue
+					else:
+						percent = float(len(set(interact) & set(specific)))/len(interact)*100
+
+					involvedUniprots = partner.split('/')[-1].split('-')[0:2]
+					partnerUniprot = involvedUniprots[0]
+					if involvedUniprots[0] == protein.uniprot:
+						partnerUniprot = involvedUniprots[1]
+
+					partnerGene = [ y["gene_id"] for x,y in self._transcript_network.nodes(data=True) if y["Uniprot"]==partnerUniprot ]
+					partnerSymbol = "None"
+					partnerTag = "Nothing"
+					if partnerGene:
+						partnerSymbol = self._gene_network._net.node[partnerGene[0]]["symbol"]
+						partnerTag = self._gene_network.getGeneAnnotation(partnerGene[0],self.hallmarks,self.biologicalProcess)
+
+					self.OUT.write("{0}\t{1}\t{2}\t".format(gene,info["symbol"],nIso.tx))
+					self.OUT.write("{0}\t{1}\t{2}\t".format(tIso.tx,options.Options().tag,protein.uniprot))
+					self.OUT.write("{0}\t{1}\t{2}\t".format(tag,what,percent))
+					self.OUT.write("{0}\t{1}\t{2}\t".format(coverage,partnerSymbol,partnerTag))
+					self.OUT.write("{0}\t{1}\t{2}\n".format(partnerUniprot,isoInfo,isoSpec))
 
 				return True
 
@@ -123,15 +135,3 @@ class GetI3DBrokenInteractions(method.Method):
 				OR = oddsRatio
 
 		return (pval,OR,percent)
-
-	def readGeneset(self,sSetFile):
-
-		geneSets = {}
-		geneSetFile = "{0}Data/Databases/{1}".format(options.Options().wd,sSetFile)
-
-		for line in utils.readTable(geneSetFile,header=False):
-			geneSet = line[0]
-			genes = line[2:]
-			geneSets[geneSet] = genes
-
-		return geneSets

@@ -572,3 +572,18 @@ class GeneNetwork(network.Network):
 			thisSwitch = self.createSwitch(switchDict,tx_network,partialCreation)
 
 			yield gene,info,switchDict,thisSwitch
+
+	def getGeneAnnotation(self,gene,hallmarksDict,biologicalProcessDict):
+		
+		annotation = "Nothing"
+
+		if self._net.node[gene]["Driver"]:
+			annotation = "Driver"
+		elif [ x for x in self._net.neighbors(gene) if self._net.node[x]["Driver"] ]:
+			annotation = "d1"
+		elif [ x for x in hallmarksDict if gene in hallmarksDict[x] ]:
+			annotation = [ x for x in hallmarksDict if gene in hallmarksDict[x] ][0]
+		elif [ x for x in biologicalProcessDict if gene in biologicalProcessDict[x] ]:
+			annotation = [ x for x in biologicalProcessDict if gene in biologicalProcessDict[x] ][0]
+
+		return annotation

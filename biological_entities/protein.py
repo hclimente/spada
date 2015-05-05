@@ -192,14 +192,25 @@ class Protein:
 
 		return True
 
-	def report(self):
+	def report(self,pdb=""):
 		seq 	= ""
 		isoSp 	= ""
 		for aResidue in self._structure:
-			if aResidue.tag is None: 	seq += "*"
-			elif aResidue.tag == "NIS":	seq += "S"
-			elif aResidue.tag == "IS": 	seq += "I"
-			elif aResidue.tag == "B": 	seq += "B"
+			if pdb:
+				if pdb not in aResidue._pdbMapping:
+					seq += "*"
+				else:
+					if aResidue._pdbMapping[pdb][2] == "NIS":
+						seq += "S"
+					elif aResidue._pdbMapping[pdb][2] == "IS":
+						seq += "I"
+					elif aResidue._pdbMapping[pdb][2] == "B":
+						seq += "B"
+			else:
+				if aResidue.tag is None: 	seq += "*"
+				elif aResidue.tag == "NIS":	seq += "S"
+				elif aResidue.tag == "IS": 	seq += "I"
+				elif aResidue.tag == "B": 	seq += "B"
 
 			if aResidue.isoformSpecific: 	isoSp += "X"
 			else: 							isoSp += "-"
@@ -217,7 +228,7 @@ class Protein:
 			interact = [ x._pdbMapping[pdb][1][:-1] for x in self._structure if pdb in x._pdbMapping and x._pdbMapping[pdb][2]=="IS" ]
 
 			if not isoSpec or not interact:
-				return
+				continue
 
 			logging.debug("{0}, load {1}".format(self._tx,pdb))
 			logging.debug("{0}, set bg_rgb=[1,1,1]".format(self._tx))
@@ -225,8 +236,8 @@ class Protein:
 			logging.debug("{0}, show cartoon, all".format(self._tx))
 			logging.debug("{0}, color black, all".format(self._tx))
 			logging.debug("{0}, color white, chain {1}".format(self._tx,chain))
-			logging.debug("{0}, select interact, chain {1} & resi {2}".format(self._tx,chain, "+".join(interact) ))
-			logging.debug("{0}, select isoSpecific, chain {1} & resi {2}".format(self._tx,chain, "+".join(isoSpec) ))
+			logging.debug("{0}, select interact, chain {1} & resi {2}".format(self._tx,chain,"+".join(interact) ))
+			logging.debug("{0}, select isoSpecific, chain {1} & resi {2}".format(self._tx,chain,"+".join(isoSpec) ))
 			logging.debug("{0}, color orange, isoSpecific".format(self._tx))
 			logging.debug("{0}, color red, interact & isoSpecific".format(self._tx))
 
