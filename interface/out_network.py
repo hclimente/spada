@@ -80,11 +80,14 @@ def outputGTF(gn_network,tx_network):
 
 def outCandidateList(gn_network,tx_network):
 	logging.info("Writing candidateList_v5.")
-	with open(options.Options().qout + "candidateList_v5.tsv", "w") as cList:
+	with open(options.Options().qout + "candidateList_v6.tsv", "w") as cList:
 		cList.write("GeneId\tSymbol\tNormal_transcript\tTumor_transcript\t")
-		cList.write("Normal_protein\tTumor_protein\tNotNoise\t")
+		cList.write("Normal_protein\tTumor_protein\tAnnotation\tNotNoise\t")
 		cList.write("IsModel\tIsRelevant\tDriver\tDruggable\tCDS\t")
 		cList.write("CDS_change\tUTR_change\tPatients_affected\n")
+
+		hallmarksDict = utils.readGeneset("h.all.v5.0.entrez.gmt")
+		bpDict = utils.readGeneset("c5.bp.v4.0.entrez.gmt")
 		
 		for gene,info,switchDict,switch in gn_network.iterate_switches_ScoreWise(tx_network,partialCreation=True,removeNoise=False):
 			nIso = switch.nTranscript
@@ -100,9 +103,12 @@ def outCandidateList(gn_network,tx_network):
 			if switch.cds_diff: 	 	cdsChange 	= True
 			if switch.utr_diff: 		utrChange 	= True
 
+			tag = gn_network.getGeneAnnotation(gene,hallmarksDict,bpDict)
+
 			cList.write("{0}\t{1}\t".format( gene, info["symbol"] ))
 			cList.write("{0}\t{1}\t".format( nIso.name, tIso.name ))
 			cList.write("{0}\t{1}\t".format( nUniprot, tUniprot ))
+			cList.write("{0}\t".format(tag))
 			cList.write("{0}\t{1}\t".format( int(not switchDict["noise"]), int(switchDict["model"]) ))
 			cList.write("{0}\t{1}\t".format( int(switch.is_relevant), int(info["Driver"]) ))
 			cList.write("{0}\t{1}\t".format( int(info["Druggable"]), int(cds) ))
