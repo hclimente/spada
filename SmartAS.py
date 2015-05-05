@@ -9,6 +9,7 @@ from methods import calculate_interactions
 from methods import get_i3d_broken_interactions
 from methods import get_random_switches
 from methods import get_switches
+from methods import mutation_comparison
 from methods import neighborhood_analysis
 from methods import network_analysis
 from methods import structural_analysis
@@ -81,6 +82,11 @@ class SmartAS:
 		n = neighborhood_analysis.NeighborhoodAnalysis(True,True)
 		n.run()
 
+	def compareSwitchesAndMutations(self):
+
+		m = mutation_comparison.MutationComparison(True,True)
+		m.run()
+
 	def summarizeResults(self):
 
 		s = result_summary.ResultSummary(True,True)
@@ -143,7 +149,9 @@ if __name__ == '__main__':
 	elif options.Options().initialStep == "neighborhood-analysis":
 		S.neighborhoodAnalysis()
 	elif options.Options().initialStep == "get-i3d-broken-interactions":
-		S.I3DBrokenInteractions()		
+		S.I3DBrokenInteractions()
+	elif options.Options().initialStep == "mutation-comparison":
+		S.compareSwitchesAndMutations()	
 
 	# summarize results
 	elif options.Options().initialStep == "summary":
