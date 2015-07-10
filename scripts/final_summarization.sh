@@ -1,7 +1,7 @@
 switches=$1
 
 if [ "$switches" == "all" ]
-    then 
+    then
     tag=""
 elif [ "$switches" == "relevant" ]
     then
@@ -127,7 +127,7 @@ do
     echo -e "Patient\tGene\tState\tCancer" >~/TCGA_analysis/hallmark_info/$hll_file
     for knsur in $cancerTypes
     do
-        grep -v ^Patient testResults/TCGA/$knsur/mutations/hallmark_info/$hll_file | cut -d':' -f2- | awk -v knsur=$knsur 'BEGIN{OFS="\t";} {print $0,knsur }' >>~/TCGA_analysis/hallmark_info/$hll_file
+        grep -v ^patient testResults/TCGA/$knsur/mutations/hallmark_info/$hll_file | cut -d':' -f2- | awk -v knsur=$knsur 'BEGIN{OFS="\t";} {print $0,knsur }' >>~/TCGA_analysis/hallmark_info/$hll_file
     done
 done
 
