@@ -2,7 +2,16 @@ library(ComplexHeatmap)
 library(GetoptLong)
 
 # arguments
-geneset_path <- "HALLMARK_XENOBIOTIC_METABOLISM_functional_mutations.tsv"
+setwd("/genomics/users/hector/TCGA_analysis/hallmark_info/")
+
+# args <- commandArgs(trailingOnly = TRUE)
+
+# geneset_path <- args[1]
+geneset_path <- "SWI_SNF_COMPEX_functional_mutations.tsv"
+hallmark_filename <- unlist(strsplit(x = geneset_path,split = "\\."))[1]
+hallmark_name <- gsub("_", " ", hallmark_filename)
+hallmark_name <- paste("OncoPrint",hallmark_name)
+
 filter_out_unfrequent <- TRUE
 
 # get matrix
@@ -207,6 +216,6 @@ ht_list = ha_pct + ht
 #########################################################
 # legend
 legend = legendGrob(labels = type_name[names(type_col)], pch = 15, gp = gpar(col = type_col), nrow = 1)
-pdf("oncoprint.pdf", width = 10, height = 10)
-draw(ht_list, newpage = FALSE, annotation_legend_side = "bottom", annotation_legend_list = list(legend), column_title = qq("OncoPrint"), column_title_gp = gpar(fontsize = 12, fontface = "bold"))
+pdf(paste0(hallmark_filename,".pdf"), width = 10, height = 10)
+draw(ht_list, newpage = FALSE, annotation_legend_side = "bottom", annotation_legend_list = list(legend), column_title = qq(hallmark_name), column_title_gp = gpar(fontsize = 12, fontface = "bold"))
 dev.off()
