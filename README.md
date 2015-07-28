@@ -68,3 +68,20 @@ Dependencies:
 		* time
 		* transcript
 		* xml.etree.ElementTree
+
+# Import your data #
+In order to import and analyze your externally calculated switches, you need the following things:
+* A list of your switches
+* A SmartAS experiment to copy the network from, with the same notation
+* A list of expressed transcripts
+
+The list of switches is a tab-delimited table with a header and a line per switch containing the gene name, the tumor isoform and the normal isoform. Its path is specified using the argument external-switches e.g. external-switches=my_switches.tsv. The table has the following format:
+
+```
+#!text
+
+# One line header e.g. Gene Tumor_isoform NormalIsoform
+Gene1 tumor_isoform normal_isoform
+Gene2 tumor_isoform normal_isoform
+
+```
