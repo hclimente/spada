@@ -8,92 +8,109 @@ from rpy2.robjects.vectors import FloatVector
 import pandas as pd
 from scipy.stats import fisher_exact
 
+import pdb
+
 class NeighborhoodAnalysis(method.Method):
-	def __init__(self, gn_network, tx_network, gn_subnetwork):
-		method.Method.__init__(self, __name__, gn_network, tx_network, gn_subnetwork)
+	def __init__(self,gn_network,tx_network):
+		method.Method.__init__(self,__name__,gn_network,tx_network)
+		self.logger.info("Preparing neighborhood analysis.")
+
+		self.switchesPerPatient = self.getPatientSwitches()
+
+		self.genesWithAnySwitch = set()
+		self.genesWithFunSwitch = set()
+		self.allGenes = set()
+
+		for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network,only_models=True,partialCreation=True,removeNoise=True):
+			self.genesWithAnySwitch.add(gene)
+
+			if [ x for x in self._gene_network._net.node[gene]["isoformSwitches"] if self._gene_network.createSwitch(x,self._transcript_network,True).is_relevant ]:
+				self.genesWithFunSwitch.add(gene)	
+
+		for gene,info in [ (x,y) for x,y in self._gene_network.nodes(data=True) if y["ExpressedTranscripts"] ]:
+			self.allGenes.add(gene)
 
 	def run(self):
-		self.logger.info("Neighborhood Analysis.")
+
+		self.logger.info("Running neighborhood analysis.")
 
 		#C2 Curated sets: canonical pathways
-		self.searchEnrichment("canonical_pathways", "c2.cp.v4.0.entrez.gmt","two-sided")
+		self.searchEnrichment("canonical_pathways","c2.cp.v4.0.entrez.gmt","two-sided")
 		#C5 GO gene sets: biological process
-		self.searchEnrichment("go_biological_process", "c5.bp.v4.0.entrez.gmt","two-sided")
+		self.searchEnrichment("go_biological_process","c5.bp.v4.0.entrez.gmt","two-sided")
 		#C6 Oncogenic signatures
-		self.searchEnrichment("oncogenic_signatures", "c6.all.v4.0.entrez.gmt","greater")
-		#C7 Immunologic signatures
-		self.searchEnrichment("immunologic_signatures", "c7.all.v4.0.entrez.gmt","greater")
+		self.searchEnrichment("oncogenic_signatures","c6.all.v4.0.entrez.gmt","greater")
+		#Cancer hallmarks
+		self.searchEnrichment("hallmarks","h.all.v5.0.entrez.gmt","greater")
 
-		#Look for enrichment in genes known to be involved in AS in cancer
-		self.searchEnrichment("asAffectedGenes_Angiogenesis","asAffected_Angiogenesis_list.csv","greater")
-		self.searchEnrichment("asAffectedGenes_Genes_with_cancer_AS_events","asAffected_Genes_with_cancer_AS_events_list.csv","greater")
-		self.searchEnrichment("asAffectedGenes_Apoptosis","asAffected_Apoptosis_list.csv","greater")
-		self.searchEnrichment("asAffectedGenes_InvasionAndMetastasis","asAffected_Invasion_&_Metastasis_list.csv","greater")
-		self.searchEnrichment("asAffectedGenes_Cancer_Therapy","asAffected_Cancer_Therapy_list.csv","greater")
-		self.searchEnrichment("asAffectedGenes_Proliferation","asAffected_Proliferation_list.csv","greater")
-		self.searchEnrichment("asAffectedGenes_DNA_damage","asAffected_DNA_damage_list.csv","greater")
-
-	def searchEnrichment(self,sTag,sSetFile,H1):
+	def searchEnrichment(self,sGenesetTag,sSetFile,H1):
 
 		geneSets = {}
 		geneSetFile = "{0}Data/Databases/{1}".format(options.Options().wd,sSetFile)
 
 		for line in utils.readTable(geneSetFile,header=False):
 			geneSet = line[0]
-			genes = line[2:]
+			genes = set(line[2:]) & self.allGenes
 			geneSets[geneSet] = {}
 			geneSets[geneSet]["allGenes"] = genes
-			geneSets[geneSet]["switchIn"] = set()
-			geneSets[geneSet]["switchOut"] = set()
-			geneSets[geneSet]["noswitchIn"] = set()
-			geneSets[geneSet]["noswitchOut"] = set()
 
-		# iterate genes with isoform switches
-		for gene,info,switchDict,switch in self._gene_network.iterate_relevantSwitches_ScoreWise(self._transcript_network,only_models=options.Options().onlyModels,partialCreation=True):
-			#Iterate over the genes that are expressed in the tissue
-			for geneSet in geneSets:
-				if gene not in geneSets[geneSet]["allGenes"]:
-					geneSets[geneSet]["switchOut"].add(gene)
-				else:
-					self._gene_network.update_node("neighborhoods",geneSet,gene_id=gene,secondKey=sTag)
-					geneSets[geneSet]["switchIn"].add(gene)
-
-		# iterate all genes and disregard previously iterated
-		for gene,info in [ (x,y) for x,y in self._gene_network.nodes(data=True) if y["ExpressedTranscripts"] ]:
-			for geneSet in geneSets:
-				if gene in geneSets[geneSet]["switchOut"] or gene in geneSets[geneSet]["switchIn"]:
-					continue
+		for s,switches in zip(["all","relevant"],[self.genesWithAnySwitch,self.genesWithFunSwitch]):
+			for g in geneSets:
+				geneSets[g][s] = {}
+				genes = geneSets[g]["allGenes"]
 				
-				if gene not in geneSets[geneSet]["allGenes"]:
-					geneSets[geneSet]["noswitchOut"].add(gene)
-				else:
-					geneSets[geneSet]["noswitchIn"].add(gene)
+				geneSets[g][s]["switchIn"] = switches & genes
+				geneSets[g][s]["switchOut"] = switches - genes
+				geneSets[g][s]["noSwitchIn"] = (self.allGenes - switches) & genes
+				geneSets[g][s]["noSwitchOut"] = (self.allGenes - switches) - genes
+				geneSets[g][s]["switchGenes"] = sorted([ self._gene_network._net.node[x]["symbol"] for x in geneSets[g][s]["switchIn"] ])
+
+				geneSets[g][s]["sg"]   = len(geneSets[g][s]["switchIn"])
+				geneSets[g][s]["nsg"]  = len(geneSets[g][s]["noSwitchIn"])
+				geneSets[g][s]["sng"]  = len(geneSets[g][s]["switchOut"])
+				geneSets[g][s]["nsng"] = len(geneSets[g][s]["noSwitchOut"])
+
+				lContingencyTable = [[geneSets[g][s]["sg"],geneSets[g][s]["nsg"]],
+									[geneSets[g][s]["sng"],geneSets[g][s]["nsng"]]]
+				OR,pval = fisher_exact(lContingencyTable,H1)
+
+				affection = []
+				for p in self.switchesPerPatient:
+					affection.append(len(genes & self.switchesPerPatient[p]))
+
+				geneSets[g][s]["affection"] = (float(sum(affection))/len(affection))/len(genes)
+				geneSets[g][s]["pval"] = pval
+				geneSets[g][s]["oddsRatio"] = OR
 		
-		for geneSet in geneSets:
-			iInGeneSet_withSwitches 	= len(geneSets[geneSet]["switchIn"])
-			iInGeneSet_withoutSwitches 	= len(geneSets[geneSet]["noswitchIn"])
-			iOutGeneSet_withSwitches 	= len(geneSets[geneSet]["switchOut"])
-			iOutGeneSet_withoutSwitches = len(geneSets[geneSet]["noswitchOut"])
+			stats = importr('stats')
+			p_adjust = stats.p_adjust(FloatVector([geneSets[x][s]["pval"] for x in geneSets]),method='BH')
 
-			lContingencyTable = [[iInGeneSet_withSwitches,iInGeneSet_withoutSwitches],
-								[iOutGeneSet_withSwitches,iOutGeneSet_withoutSwitches]]
-			fOddsRatio,fPval = fisher_exact(lContingencyTable,H1)
+			with open("{0}neighborhood_analysis/{1}_{2}{3}.txt".format(options.Options().qout,sGenesetTag,s,options.Options().filetag),"w") as OUT:
+				OUT.write("GeneSet\tCancer\tpval\tqval\tNormalizedAverageAffection\t")
+				OUT.write("SwitchingGenes\tOR\tsg\tsng\tnsg\tnsng\n")
+				for g,adj_p in zip(geneSets,p_adjust):
 
-			geneSets[geneSet]["pval"] = fPval
-			geneSets[geneSet]["oddsRatio"] = fOddsRatio
+					OUT.write("{0}\t{1}\t{2}\t".format(g,options.Options().tag,geneSets[g][s]["pval"]))
+					OUT.write("{0}\t{1}\t{2}\t".format(adj_p,geneSets[g][s]["affection"], ",".join(geneSets[g][s]["switchGenes"]) ))
+					OUT.write("{0}\t{1}\t{2}\t".format(geneSets[g][s]["oddsRatio"],geneSets[g][s]["sg"],geneSets[g][s]["sng"]))
+					OUT.write("{0}\t{1}\n".format(geneSets[g][s]["nsg"],geneSets[g][s]["nsng"]))
 
-		stats = importr('stats')
-		p_adjust = stats.p_adjust(FloatVector([geneSets[x]["pval"] for x in geneSets]), method='BH')
+	def getPatientSwitches(self):
 
-		with open("{0}neighborhood_analysis/{1}{2}.txt".format(options.Options().qout,sTag,options.Options().filetag),"w") as OUT:
-			OUT.write("GeneSet\tpval\tqval\tSwitchingGenes\tOddsRatio\n")
-			for geneSet,adj_p in zip(geneSets,p_adjust):
+		patients = []
+		[ patients.extend(z["patients"]) for x,y in self._gene_network.iterate_genes_ScoreWise() for z in y["isoformSwitches"] ]
+		patients = list(set(patients))
 
-				switchGenes = ",".join([ self._gene_network._net.node[x]["symbol"] for x in geneSets[geneSet]["switchIn"] ])
+		switchesPerPatient = dict([ [x,set()] for x in patients ])
 
-				OUT.write("{0}\t{1}\t".format(geneSet,geneSets[geneSet]["pval"]))
-				OUT.write("{0}\t{1}\t".format(adj_p,switchGenes))
-				OUT.write("{0}\n".format(geneSets[geneSet]["oddsRatio"]))
+		for g in self._gene_network.nodes():
+			info = self._gene_network._net.node[g]
+
+			for s in info["isoformSwitches"]:
+				for p in s["patients"]:
+					switchesPerPatient[p].add(g)
+
+		return switchesPerPatient
 
 	def findAffectedPathways(self,sTag,sSetFile):
 		affectedPathway = {}
@@ -119,7 +136,6 @@ class NeighborhoodAnalysis(method.Method):
 
 			for geneSet in affectedPathway:
 				OUT.write("{0}\t{1}\n".format(geneSet,'\t'.join(map(str,affectedPathway[geneSet]))))
-
 
 if __name__ == '__main__':
 	pass
