@@ -224,7 +224,36 @@ class GeneNetwork(network.Network):
 					break
 		'''
 
-	def importCandidates(self):
+	def importExternalCandidates(self,candidatesFile):
+		
+		self.logger.debug("Retrieving externally calculated isoform switches.")
+
+		for line in utils.readTable(candidatesFile):
+			Gene = line[0]
+
+			switch = {}
+			switch["tIso"] 			= line[1]
+			switch["nIso"] 			= line[2]
+			switch["score"] 		= 0.0
+			switch["patients"] 		= []
+			switch["precision"] 	= 0.0
+			switch["sensitivity"] 	= 0.0
+			switch["relevant"] 		= None
+			switch["model"] 		= True
+			switch["noise"] 		= False
+
+			self.update_node("isoformSwitches",switch,full_name=Gene)
+
+	def cleanNetwork(self):
+		
+		self.logger.debug("Cleaning imported network.")
+
+		# removing isoform switches
+		for gene,info in self.iterate_genes_ScoreWise():
+			self._net.node[gene]["isoformSwitches"] = []
+			self._update_node(gene,"score",0.01)
+
+	def importCandidates(self,candidatesFile):
 		"""Import a set of genes with an isoform switch from candidateList_v2.tsv.
 		"""
 		self.logger.debug("Retrieving calculated isoform switches.")
@@ -234,7 +263,7 @@ class GeneNetwork(network.Network):
 			samples = samples + len(options.Options().unpairedReplicates)
 		min_samples = round(samples * 0.1)
 
-		switches = pd.DataFrame.from_csv(options.Options().qout + "candidateList_v2.tsv", sep="\t", header=None, index_col=None)
+		switches = pd.DataFrame.from_csv(candidatesFile, sep="\t", header=None, index_col=None)
 		switches.columns = ["Gene","Transcript_normal","Transcript_tumor","Replicates","Patients","Precision","Sensitivity","PrecisionKmeans","PrecisionHclust","SensitivityKmeans","SensitivityHclust"]
 		switches.Replicates = switches.Replicates.astype(float)
 		switches.Patients = switches.Patients.str.split(",")
@@ -252,7 +281,8 @@ class GeneNetwork(network.Network):
 			self.update_node( "score", Score, full_name=Gene )
 
 		for index,row in switches.iterrows():
-			Gene 		= row["Gene"]
+			Gene = row["Gene"]
+
 			switch = {}
 			switch["nIso"] 			= row["Transcript_normal"]
 			switch["tIso"] 			= row["Transcript_tumor"]
@@ -456,7 +486,7 @@ class GeneNetwork(network.Network):
 			for switchDict in info["isoformSwitches"]:
 				if removeNoise and switchDict["noise"]:
 					continue
-				elif only_models and switchDict["model"]:
+				elif only_models and not switchDict["model"]:
 					continue
 
 				thisSwitch = self.createSwitch(switchDict,tx_network,partialCreation)
@@ -576,14 +606,16 @@ class GeneNetwork(network.Network):
 	def getGeneAnnotation(self,gene,hallmarksDict,biologicalProcessDict):
 		
 		annotation = "Nothing"
+		driverAnnotation = "Nothing"
 
 		if self._net.node[gene]["Driver"]:
-			annotation = "Driver"
+			driverAnnotation = "Driver"
 		elif [ x for x in self._net.neighbors(gene) if self._net.node[x]["Driver"] ]:
-			annotation = "d1"
-		elif [ x for x in hallmarksDict if gene in hallmarksDict[x] ]:
+			driverAnnotation = "d1"
+		
+		if [ x for x in hallmarksDict if gene in hallmarksDict[x] ]:
 			annotation = [ x for x in hallmarksDict if gene in hallmarksDict[x] ][0]
 		elif [ x for x in biologicalProcessDict if gene in biologicalProcessDict[x] ]:
 			annotation = [ x for x in biologicalProcessDict if gene in biologicalProcessDict[x] ][0]
 
-		return annotation
+		return (annotation,driverAnnotation)
