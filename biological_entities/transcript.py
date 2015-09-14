@@ -1,4 +1,8 @@
+from libs import utils
+from libs import options
+
 import logging
+import os
 
 class Transcript:
 	def __init__(self, name, properties):
@@ -8,6 +12,9 @@ class Transcript:
 		self._cds_coordinates 	= properties["cdsCoords"]
 		self._tx_coordinates 	= properties["txCoords"]
 		self._strand 			= properties["strand"]
+
+		self._pfam 				= {}
+		self._ptms 				= {}
 
 		#Create two dicts, clasifying all the nucleotides in CDS and UTR
 		#Value: isoform specific in this switch
@@ -23,7 +30,8 @@ class Transcript:
 			for exonStart,exonEnd in self._exons:
 				for gPos in range(exonStart, exonEnd):
 					if self._cds_coordinates:
-						if gPos >= cdsStart and gPos <= cdsEnd:
+						# notation in ucsc format: first pos included and last excluded
+						if gPos >= cdsStart and gPos < cdsEnd:
 							self._cds.setdefault(gPos, None)
 						else:
 							self._utr.setdefault(gPos, None)
@@ -43,7 +51,7 @@ class Transcript:
 			for exonEnd,exonStart in [ (x-1,y-1) for x,y in reversed(self._exons) ]:
 				for gPos in range(exonStart, exonEnd,-1):
 					if self._cds_coordinates:
-						if gPos <= cdsStart and gPos >= cdsEnd:
+						if gPos < cdsStart and gPos >= cdsEnd:
 							self._cds.setdefault(gPos, None)
 						else:
 							self._utr.setdefault(gPos, None)
@@ -62,6 +70,16 @@ class Transcript:
 			return {}
 		else:
 			return self._cds
+
+	@property
+	def cds_ordered(self): 
+		if len(self._cds) > 1:
+			reverseOrder = False if self._strand=='+' else True
+
+			for nt in sorted(self._cds,reverse=reverseOrder):
+				yield nt
+
+
 	@property
 	def cds_exclusive(self): 
 		exclusive = float(sum([ 1 for x in self._cds if self._cds[x] ]))
@@ -104,3 +122,33 @@ class Transcript:
 			segments.append(segment)
 
 		return segments
+
+	def readPfamDomains(self):
+		featFile = "{0}Data/{1}/InterPro/{2}.tsv".format(options.Options().wd,options.Options().inputType,self.name)
+
+		if not os.path.exists(featFile):
+			return
+
+		for line in utils.readTable(featFile,header=False):
+
+			if line[3] != "Pfam":
+				continue
+
+			domainId = "{0}|{1}".format(line[4],line[5]).replace(" ","_")
+
+			self._pfam.setdefault(domainId,[])
+			self._pfam[domainId].append((int(line[6]),int(line[7])))
+
+	def readProsite(self):
+
+		featFile = "{0}Data/{1}/ProSite/{2}.out".format(options.Options().wd,options.Options().inputType,self.name)
+
+		if not os.path.exists(featFile) or os.stat(featFile).st_size == 0:
+			return
+
+		for line in utils.readTable(featFile,header=False):
+
+			prositeId = line[-1].replace(" ","_")
+
+			self._ptms.setdefault(prositeId,[])
+			self._ptms[prositeId].append((int(line[-3].replace(" -","")),int(line[-2])))
