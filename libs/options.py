@@ -29,6 +29,8 @@ class Options(object):
         self._quickOut              = self._wd + "testResults/" + self._out
 
         self._parallelRange         = options.parallelRange
+        self._externalSwitchesFile  = options.externalSwitchesFile
+        self._parentTag             = options.parentTag
 
     # Getters ##
     @property
@@ -72,8 +74,11 @@ class Options(object):
         return filetag
 
     @property
-    def parallelRange(self):        return self._parallelRange
-    
+    def parallelRange(self):    return self._parallelRange
+    @property
+    def externalSwitchesFile(self): return self._externalSwitchesFile
+    @property
+    def parentTag(self): return self._parentTag
 
     def parseOptions(self, *args, **kwds):
         parser = Parser(prog="SmartAS.py", description = "Find significant alternative splicing switches. Analyze their functional impact.", epilog= "Hector Climente, 2014", fromfile_prefix_chars='@')
@@ -104,6 +109,10 @@ class Options(object):
                             help='Path of the specific drivers for the cancer type.')
         parser.add_argument('-p', '--parallel-range', dest='parallelRange', action='store', default='0',
                             type=int,help='Range of nodes if parallel.')
+        parser.add_argument('-e', '--external-switches', dest='externalSwitchesFile', action='store', default=None,
+                            type=str, help='File containing switches calculated with other methods.')
+        parser.add_argument('-x', '--parent-tag', dest='parentTag', action='store', default=None,
+                            type=str, help='Tag of another experiment to partially use the information.')
 
         parser.set_defaults(onlyModels=True)
         config_opt  = parser.parse_args()
