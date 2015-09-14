@@ -69,6 +69,7 @@ def setEnvironment():
 		cmd("mkdir", o.qout + "structural_analysis")
 		cmd("mkdir", o.qout + "neighborhood_analysis")
 		cmd("mkdir", o.qout + "result_summary")
+		cmd("mkdir", o.qout + "logs")
 
 	if o.initialStep == "get-switches":
 		
@@ -151,7 +152,8 @@ def launchJobs(gnNetwork,task):
 	s.initialize()
 
 	natSpec = ""
-	natSpec += "-q normal -l 'qname=normal' "
+	#natSpec += "-q normal -l 'qname=normal' "
+	natSpec += "-q short-high -l 'qname=short-high' "
 	natSpec += "-cwd "
 	natSpec += "-V "
 
@@ -172,6 +174,7 @@ def launchJobs(gnNetwork,task):
 		jobid = s.runJob(jt)
 		randoms.append(jobid)
 		s.deleteJobTemplate(jt)
+
 
 def launchSingleJob(task,name=""):
 	
