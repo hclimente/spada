@@ -16,9 +16,11 @@ class GetI3DBrokenInteractions(method.Method):
 		self.logger.info("Searching I3D broken surfaces.")
 
 		self.OUT = open("{0}i3d/i3d_broken.tsv".format(options.Options().qout),'w')
-		self.OUT.write("Gene\tSymbol\tnTx\ttTx\tCancer\tUniprot\tAnnotation\tWhatsHappening\t")
-		self.OUT.write("InteractionAffection\tSequenceCover\tPartner\tPartnerAnnotation\t")
-		self.OUT.write("PartnerUniprot\tSequenceInformation\tIsoformSpecific\n")
+
+		self.OUT.write("Cancer\tSymbol\tAnnotation\tPartner\tPartnerAnnotation\tWhatsHappening\t")
+		self.OUT.write("InteractionAffection\tSequenceCover\tPartnerSequenceCover\tGene\tnormalTranscript\ttumorTranscript\t")
+		self.OUT.write("Uniprot\tPartnerUniprot\tSequenceInformation\tIsoformSpecific\tPDB\tpymolCommands\n")
+
 		
 		for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network,partialCreation=False,removeNoise=True,only_models=True):
 			self.findBrokenSurfaces(thisSwitch,gene,info)
@@ -51,22 +53,22 @@ class GetI3DBrokenInteractions(method.Method):
 
 		tag = self._gene_network.getGeneAnnotation(gene,self.hallmarks,self.biologicalProcess)
 
-		for protein,hasIsoSpecificResidues,what in zip([nIso,tIso],[nIsoSpecific,tIsoSpecific],["nIso_interaction","tIso_interaction"]):
+		for protein,hasIsoSpecificResidues,what in zip([nIso,tIso],[nIsoSpecific,tIsoSpecific],["lost_in_tumor","gained_in_tumor"]):
 			if protein.hasPdbs and hasIsoSpecificResidues:
+				for pdbFile in protein._pdbs:
+					isoInfo,isoSpec = protein.report(pdbFile)
+					pymolCmd = protein.printPDBInfo(pdbFile)
 
-				protein.printPDBInfo()
-
-				for partner in set([ y for x in protein._structure for y in x._pdbMapping ]):
-					isoInfo,isoSpec = protein.report(partner)
-					coverage = float(len([ x for x in protein._structure if partner in x._pdbMapping ]))/len(protein._structure)*100
-					specific = [ x._pdbMapping[partner][1][:-1] for x in protein._structure if partner in x._pdbMapping and x.isoformSpecific ]
-					interact = [ x._pdbMapping[partner][1][:-1] for x in protein._structure if partner in x._pdbMapping and x._pdbMapping[partner][2]=="IS" ]
+					coverage = float(len([ x for x in protein._structure if pdbFile in x._pdbMapping ]))/len(protein._structure)*100
+					partnerCoverage = protein._pdbs[pdbFile]["seq2Coverage"]
+					specific = [ x._pdbMapping[pdbFile][1][:-1] for x in protein._structure if pdbFile in x._pdbMapping and x.isoformSpecific ]
+					interact = [ x._pdbMapping[pdbFile][1][:-1] for x in protein._structure if pdbFile in x._pdbMapping and x._pdbMapping[pdbFile][2]=="IS" ]
 					if not specific or not interact:
 						continue
 					else:
 						percent = float(len(set(interact) & set(specific)))/len(interact)*100
 
-					involvedUniprots = partner.split('/')[-1].split('-')[0:2]
+					involvedUniprots = pdbFile.split('/')[-1].split('-')[0:2]
 					partnerUniprot = involvedUniprots[0]
 					if involvedUniprots[0] == protein.uniprot:
 						partnerUniprot = involvedUniprots[1]
@@ -78,11 +80,12 @@ class GetI3DBrokenInteractions(method.Method):
 						partnerSymbol = self._gene_network._net.node[partnerGene[0]]["symbol"]
 						partnerTag = self._gene_network.getGeneAnnotation(partnerGene[0],self.hallmarks,self.biologicalProcess)
 
-					self.OUT.write("{0}\t{1}\t{2}\t".format(gene,info["symbol"],nIso.tx))
-					self.OUT.write("{0}\t{1}\t{2}\t".format(tIso.tx,options.Options().tag,protein.uniprot))
-					self.OUT.write("{0}\t{1}\t{2}\t".format(tag,what,percent))
-					self.OUT.write("{0}\t{1}\t{2}\t".format(coverage,partnerSymbol,partnerTag))
-					self.OUT.write("{0}\t{1}\t{2}\n".format(partnerUniprot,isoInfo,isoSpec))
+					self.OUT.write("{0}\t{1}\t{2}\t".format(options.Options().tag,info["symbol"],tag))
+					self.OUT.write("{0}\t{1}\t{2}\t".format(partnerSymbol,partnerTag,what))
+					self.OUT.write("{0}\t{1}\t{2}\t".format(percent,coverage,partnerCoverage))
+					self.OUT.write("{0}\t{1}\t{2}\t".format(gene,nIso.tx,tIso.tx))
+					self.OUT.write("{0}\t{1}\t{2}\t".format(protein.uniprot,partnerUniprot,isoInfo))
+					self.OUT.write("{0}\t{1}\t{2}\n".format(isoSpec,pdbFile,pymolCmd))
 
 				return True
 
