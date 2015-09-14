@@ -21,6 +21,7 @@ class Protein:
 		self._residueCorresp	= {}
 		self._has_pdbs			= False
 		self._features 			= []
+		self._pdbs				= {}
 
 		if self._sequence is not None:
 			for res in range(0, len(self._sequence) ):
@@ -36,6 +37,13 @@ class Protein:
 	def hasPdbs(self): return self._has_pdbs
 	@property
 	def seq(self): return self._sequence
+
+	@property
+	def structure_ordered(self): 
+		if len(self._structure) > 1:
+			for res in sorted(self._structure,key=lambda x: x.num):
+				yield res
+
 
 	def mapSubsequence(self, querySequence, strict=True):
 
@@ -68,13 +76,13 @@ class Protein:
 
 		return correspondence
 
-	def calculateVolumes(self, interaction, chain):
+	def calculateVolumes(self,interactionPdb,chain):
 
 		self._has_pdbs = True
 
 		#Generate the pdb object, extract the chain of interest and calculate volumes
 
-		pdb = PDB(interaction)
+		pdb = PDB(interactionPdb)
 		chainObj = pdb.get_chain_by_id(chain)
 		try:
 			chainObj.calculate_dssp()
@@ -106,19 +114,19 @@ class Protein:
 
  			if thisRes.identifier in buried:
 				self._structure[a[x]].setTag("B")
-				self._structure[a[x]]._pdbMapping[interaction] = ( chainObj.chain, thisRes.identifier, "B" )
+				self._structure[a[x]]._pdbMapping[interactionPdb] = ( chainObj.chain, thisRes.identifier, "B" )
 				logging.debug("{0}: residue {1}-{2} ({3} in sequence) detected as buried.".format(
-											interaction, chainObj.chain, thisRes.identifier, x))
+											interactionPdb, chainObj.chain, thisRes.identifier, x))
 			elif thisRes.identifier in non_interacting_surface:
 				self._structure[a[x]].setTag("NIS")
-				self._structure[a[x]]._pdbMapping[interaction] = ( chainObj.chain, thisRes.identifier, "NIS" )
+				self._structure[a[x]]._pdbMapping[interactionPdb] = ( chainObj.chain, thisRes.identifier, "NIS" )
 				logging.debug("{0}: residue {1}-{2} ({3} in sequence) detected as non-interacting surface.".format(
-											interaction, chainObj.chain, thisRes.identifier, x))
+											interactionPdb, chainObj.chain, thisRes.identifier, x))
 			elif thisRes.identifier in interacting_surface:
 				self._structure[a[x]].setTag("IS")
-				self._structure[a[x]]._pdbMapping[interaction] = ( chainObj.chain, thisRes.identifier, "IS" )
+				self._structure[a[x]]._pdbMapping[interactionPdb] = ( chainObj.chain, thisRes.identifier, "IS" )
 				logging.debug("{0}: residue {1}-{2} ({3} in sequence) detected as interacting surface.".format(
-											interaction, chainObj.chain, thisRes.identifier, x))
+											interactionPdb, chainObj.chain, thisRes.identifier, x))
 
 		return True
 
@@ -168,23 +176,42 @@ class Protein:
 
 		noInteractions = True
 
-		for line in utils.readTable("Data/Databases/Interactome3D/2014_01/interactions.dat"):
-			pdbFile = "Data/Databases/Interactome3D/2014_01/interactions/" + line[21]
+		for line in utils.readTable("Data/Databases/Interactome3D/2015_02/interactions.dat"):
+			pdbFile = "Data/Databases/Interactome3D/2015_02/interactions/" + line[21]
 
 			if self.uniprot == line[0]:
 				logging.debug("Relevant interaction for {0} at {1}.".format(self.tx, pdbFile))
 				try:
 					if self.calculateVolumes(pdbFile, "A"):
+						seqIdentity = float(line[9])
+						seqCoverage = float(line[10])
+						seq2Identity = float(line[16])
+						seq2Coverage = float(line[17])
 						noInteractions = False
+					else:
+						continue
 				except IndexError:
 					logging.debug("Error when calculating volumes at {0}.".format(pdbFile))
+					continue
 			elif self.uniprot == line[1]:
 				logging.debug("Relevant interaction for {0} at {1}.".format(self.tx, pdbFile))
 				try:
 					if self.calculateVolumes(pdbFile, "B"):
+						seqIdentity = float(line[16])
+						seqCoverage = float(line[17])
+						seq2Identity = float(line[9])
+						seq2Coverage = float(line[10])
 						noInteractions = False
+					else:
+						continue
 				except IndexError:
 					logging.debug("Error when calculating volumes at {0}.".format(pdbFile))
+					continue
+			else:
+				continue
+
+			self._pdbs[pdbFile] = { "seqIdentity": seqIdentity, "seqCoverage": seqCoverage,
+									"seq2Identity": seq2Identity, "seq2Coverage": seq2Coverage }
 
 		if noInteractions:
 			logging.debug("No relevant structures found for {0}, {1}.".format(self.tx,self.uniprot))
@@ -217,29 +244,33 @@ class Protein:
 
 		return (seq,isoSp)
 
-	def printPDBInfo(self):
-		for pdb in set([ y for x in self._structure for y in x._pdbMapping ]):
-			
-			chainsSet = set([ x._pdbMapping[pdb][0] for x in self._structure if pdb in x._pdbMapping ])
-			chain = set(chainsSet).pop()
-			if len(chainsSet) > 1:
-				logging.error("More than one chain for a protein in the PDB {0}, chains {1}.".format(pdb, chainsSet))
-			isoSpec = [ x._pdbMapping[pdb][1][:-1] for x in self._structure if pdb in x._pdbMapping and x.isoformSpecific ]
-			interact = [ x._pdbMapping[pdb][1][:-1] for x in self._structure if pdb in x._pdbMapping and x._pdbMapping[pdb][2]=="IS" ]
+	def printPDBInfo(self,pdb):
 
-			if not isoSpec or not interact:
-				continue
+		pymolString = ""
+	
+		chainsSet = set([ x._pdbMapping[pdb][0] for x in self._structure if pdb in x._pdbMapping ])
+		chain = set(chainsSet).pop()
+		if len(chainsSet) > 1:
+			logging.error("More than one chain for a protein in the PDB {0}, chains {1}.".format(pdb, chainsSet))
+		isoSpec = [ x._pdbMapping[pdb][1][:-1] for x in self._structure if pdb in x._pdbMapping and x.isoformSpecific ]
+		interact = [ x._pdbMapping[pdb][1][:-1] for x in self._structure if pdb in x._pdbMapping and x._pdbMapping[pdb][2]=="IS" ]
 
-			logging.debug("{0}, load {1}".format(self._tx,pdb))
-			logging.debug("{0}, set bg_rgb=[1,1,1]".format(self._tx))
-			logging.debug("{0}, hide all".format(self._tx))
-			logging.debug("{0}, show cartoon, all".format(self._tx))
-			logging.debug("{0}, color black, all".format(self._tx))
-			logging.debug("{0}, color white, chain {1}".format(self._tx,chain))
-			logging.debug("{0}, select interact, chain {1} & resi {2}".format(self._tx,chain,"+".join(interact) ))
-			logging.debug("{0}, select isoSpecific, chain {1} & resi {2}".format(self._tx,chain,"+".join(isoSpec) ))
-			logging.debug("{0}, color orange, isoSpecific".format(self._tx))
-			logging.debug("{0}, color red, interact & isoSpecific".format(self._tx))
+		if not isoSpec or not interact:
+			return "-"
+
+		pymolString += "load {0}; ".format(pdb)
+		pymolString += "set bg_rgb=[1,1,1]; "
+		pymolString += "hide all; "
+		pymolString += "show cartoon, all; "
+		pymolString += "color black, all; "
+		pymolString += "color white, chain {0}; ".format(chain)
+		pymolString += "select interact, chain {0} & resi {1}; ".format(chain,"+".join(interact) )
+		pymolString += "select isoSpecific, chain {0} & resi {1}; ".format(chain,"+".join(isoSpec) )
+		pymolString += "color blue, isoSpecific; "
+		pymolString += "color red, interact; "
+		pymolString += "color purple, interact & isoSpecific; "
+
+		return pymolString
 
 	def getFeatures(self,interproOut):
 		for featInfo in interpro_analysis.InterproAnalysis().readInterpro(interproOut,self):
@@ -250,7 +281,7 @@ class Protein:
 		segment = []
 		gapped = []
 
-		for res in sorted(self._structure,key=lambda x: x.num):
+		for res in self.structure_ordered:
 			flag = False
 			if thing =="isoform-specific":
 				flag = res.isoformSpecific
