@@ -10,6 +10,7 @@ from methods import get_i3d_broken_interactions
 from methods import get_random_switches
 from methods import get_switches
 from methods import mutation_comparison
+from methods import mutation_feature_overlap
 from methods import neighborhood_analysis
 from methods import network_analysis
 from methods import structural_analysis
@@ -65,7 +66,8 @@ class SmartAS:
 			import glob
 			files=glob.glob("{0}structural_analysis/interpro_analysis_[0-9]*.tsv".format(options.Options().qout))
 			if files:
-				s.joinFiles()
+				s.newJoinFiles()
+				#s.joinFiles()
 			else:
 				utils.launchJobs(s._gene_network,'structural_analysis')
 		else:
@@ -85,6 +87,7 @@ class SmartAS:
 	def compareSwitchesAndMutations(self):
 
 		m = mutation_comparison.MutationComparison(True,True)
+		m.clean()
 		m.run()
 
 	def summarizeResults(self):
@@ -96,6 +99,12 @@ class SmartAS:
 		
 		r = get_random_switches.GetRandomSwitches(True,True)
 		r.run()
+
+	def searchMutationFeatureOverlap(self):
+		
+		m = mutation_feature_overlap.MutationFeatureOverlap(True,True)
+		m.clean()
+		m.run()
 
 	def testing(self):
 
@@ -151,7 +160,9 @@ if __name__ == '__main__':
 	elif options.Options().initialStep == "get-i3d-broken-interactions":
 		S.I3DBrokenInteractions()
 	elif options.Options().initialStep == "mutation-comparison":
-		S.compareSwitchesAndMutations()	
+		S.compareSwitchesAndMutations()
+	elif options.Options().initialStep == "mutation-feature-overlap":
+		S.searchMutationFeatureOverlap()
 
 	# summarize results
 	elif options.Options().initialStep == "summary":
