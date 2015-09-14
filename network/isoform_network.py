@@ -92,22 +92,22 @@ class IsoformNetwork(network.Network):
 		for line in utils.readTable(options.Options().qout + "expression_normal.tsv"):
 			gene 		= line[0]
 			tx 			= line[1]
-			median_PSI 	= float(line[2]) if(line[2]) != "NA" else None
-			median_TPM 	= float(line[5]) if(line[5]) != "NA" else None
+			median_PSI 	= float(line[2]) if(line[2] != "NA") else None
+			median_TPM 	= float(line[5]) if(line[5] != "NA") else None
 			
 			if not self.add_node(tx, gene): continue
-			if median_PSI: self.update_node( tx, "median_PSI_N", median_PSI )
-			if median_TPM: self.update_node( tx, "median_TPM_N", median_TPM )
+			if median_PSI is not None: self.update_node( tx, "median_PSI_N", median_PSI )
+			if median_TPM is not None: self.update_node( tx, "median_TPM_N", median_TPM )
 
 		for line in utils.readTable(options.Options().qout + "expression_tumor.tsv"):
 			gene 		= line[0]
 			tx 			= line[1]
-			median_PSI 	= float(line[2]) if(line[2]) != "NA" else None
-			median_TPM 	= float(line[5]) if(line[5]) != "NA" else None
+			median_PSI 	= float(line[2]) if(line[2] != "NA") else None
+			median_TPM 	= float(line[5]) if(line[5] != "NA") else None
 
 			if not self.add_node(tx, gene): continue
-			if median_PSI: self.update_node( tx, "median_PSI_T", median_PSI )
-			if median_TPM: self.update_node( tx, "median_TPM_T", median_TPM )
+			if median_PSI is not None: self.update_node( tx, "median_PSI_T", median_PSI )
+			if median_TPM is not None: self.update_node( tx, "median_TPM_T", median_TPM )
 
 		# currentLoopFamily 	= ""
 		# for line in utils.readTable("Data/TCGA/UnifiedFasta_" + options.Options().iLoopsVersion + "_loopFamilies.txt", header=False):
