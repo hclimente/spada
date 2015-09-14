@@ -1,6 +1,7 @@
 library(plyr)
 library(ggplot2)
 library(reshape2)
+library(directlabels)
 
 cancerTypes <- c("brca","coad","hnsc","kich","kirc","kirp","lihc","luad","lusc","prad","thca")
 workingDir <- "/genomics/users/hector/TCGA_analysis"
@@ -48,7 +49,7 @@ unbalaceMeasure <- ddply(tempTable,.(GeneId,Symbol,Normal_transcript,Tumor_trans
 
 candidateList2 <- merge(unbalaceMeasure,candidateList2,by=c("GeneId","Symbol","Normal_transcript","Tumor_transcript"))
 
-#most frequent drivers
+#most frequent genes, ordered by sum of percentajes in cancer types
 for (annotation in c("All","Driver","d1")){
   ngenes <- 50
   
@@ -93,11 +94,63 @@ for (annotation in c("All","Driver","d1")){
   p <- p + scale_fill_manual(values=colorPalette) + ylab("Accumulated percentage")
   p <- p + theme(text = element_text(size=20),axis.text.x=element_text(angle=90,hjust=1,vjust=0.5,colour="black"))
   
-  png(paste0("freq",annotation,".png"), width=1000, height=800)
+  png(paste0("freq_",annotation,"_accumulatedFrequency.png"), width=1000, height=800)
   print(p)
   graphics.off()
   
 }
+
+#most frequent genes, ordered by sum of patients in cancer types
+for (annotation in c("All","Driver","d1")){
+  ngenes <- 50
+  
+  if (annotation=="All"){
+    selectVector <- matrix(T,nrow(candidateList2),1)
+  } else {
+    selectVector <- candidateList2$Annotation==annotation
+  }
+  
+  accCandidateList <- ddply(candidateList2[selectVector,],.(GeneId,Symbol), summarise, cumsum=sum(NumPatients))
+  accCandidateList <- accCandidateList[order(-accCandidateList$cumsum),]
+  
+  candsMatrix <- list()
+  for (gene in accCandidateList$GeneId[1:ngenes]){
+    symbol = accCandidateList$Symbol[accCandidateList$GeneId==gene]
+    candsMatrix[[symbol]] <- list()
+    candsMatrix[[symbol]][["symbol"]] <- as.character(symbol)
+    for (cancer in cancerTypes){
+      if (gene %in% candidateList[[cancer]]$GeneId){
+        candsMatrix[[symbol]][[cancer]] <- as.numeric(candidateList[[cancer]]$NumPatients[candidateList[[cancer]]$GeneId==gene])
+      } else{
+        candsMatrix[[symbol]][[cancer]] <- 0
+      }
+    }
+    candsMatrix[[symbol]] <- do.call("cbind", candsMatrix[[symbol]])
+  }
+  candsMatrix2 <- do.call("rbind", candsMatrix)
+  rownames(candsMatrix2) <- candsMatrix2[,c("symbol")]
+  
+  candsMatrix3 <- as.data.frame(matrix(as.numeric(as.character(candsMatrix2[,!(colnames(candsMatrix2) %in% c("symbol"))])),nrow=ngenes,ncol=11))
+  rownames(candsMatrix3) <- rownames(candsMatrix2)
+  colnames(candsMatrix3) <- cancerTypes
+  candsMatrix3 <- candsMatrix3[order(-rowSums(candsMatrix3)),]
+  candsMatrix3 <- candsMatrix3*100/11
+  candsMatrix3$Gene <- rownames(candsMatrix3)
+  
+  candsMatrix3.m <- melt(candsMatrix3)
+  colnames(candsMatrix3.m) <- c("Gene","Cancer","patients")
+  candsMatrix3.m$Gene <- factor(candsMatrix3.m$Gene,levels=as.factor(rownames(candsMatrix3)))
+  
+  p <- ggplot(candsMatrix3.m) + geom_bar(stat="identity",aes(x=Gene,y=patients,fill=Cancer))
+  p <- p + scale_fill_manual(values=colorPalette) + ylab("Number of patients")
+  p <- p + theme(text = element_text(size=20),axis.text.x=element_text(angle=90,hjust=1,vjust=0.5,colour="black"))
+  
+  png(paste0("freq_",annotation,"_numberOfPatients.png"), width=1000, height=800)
+  print(p)
+  graphics.off()
+  
+}
+
 
 ################ CDS STUDY ################
 CDS_study <- read.delim("CDS_study.tsv", header=FALSE)
@@ -621,7 +674,7 @@ gnset_merged <- gnset_merged[order(-gnset_merged$NewScore),]
 gnset_merged$Symbol <- factor(gnset_merged$Symbol,levels=as.factor(unique(gnset_merged$Symbol)))
 gnset_merged$Order=1:nrow(gnset_merged)
 
-write.table(gnset_merged[,c("Gene","Symbol","Score","Sign" )],'scoredMEGenesets.txt',quote=F,col.names=T,sep="\t",row.names=FALSE)
+write.table(gnset_merged[,c("Gene","Symbol","Hallmark","Score","Sign" )],'scoredMEGenesets.txt',quote=F,col.names=T,sep="\t",row.names=FALSE)
 file.copy('scoredMEGenesets.txt', "/projects_rg/TCGA/users/hector/mutation_comparison",overwrite=T)
 
 plotThreshold <- 6
@@ -635,6 +688,76 @@ p <- p + theme(axis.text.x=element_blank())
 ggsave("meGenesetScores.png",p)
 file.copy("meGenesetScores.png","/projects_rg/TCGA/users/hector/mutation_comparison",overwrite=T)
 
+################ MUTATION OVERLAP ################
+mutation_feature_overlap <- read.delim("mutation_switch_feature_overlap.txt", header=TRUE)
+
+pvals <- apply(mutation_feature_overlap[,c("MutationsInFeature","TotalMutations","FeatureSize")],1, function(x){ 
+  if (x[2]==0){
+    p <- 1
+  } else {
+    p <- binom.test(x[1],x[2],x[3]/100,"greater")
+    p <- p$p.value
+  }
+  p
+  } )
+adjpvalues <- p.adjust(pvals)
+
+mutation_feature_overlap$p <- pvals
+mutation_feature_overlap$adjp <- adjpvalues
+
+mutation_feature_overlap_sum <- ddply(mutation_feature_overlap,.(Gene,Symbol,Normal_transcript,Tumor_transcript,What,FeatureType,Feature,Driver,FeatureSize), summarise, inMut=sum(MutationsInFeature), totalMut=sum(TotalMutations) )
+mutation_feature_overlap_sum$Ratio = 100 * mutation_feature_overlap_sum$inMut/mutation_feature_overlap_sum$totalMut
+
+pvals <- apply(mutation_feature_overlap_sum[,c("inMut","totalMut","FeatureSize")],1, function(x){ 
+  if (x[2]==0){
+    p <- 1
+  } else {
+    p <- binom.test(x[1],x[2],x[3]/100,"greater")
+    p <- p$p.value
+  }
+  p
+} )
+adjpvalues <- p.adjust(pvals)
+
+mutation_feature_overlap_sum$p_mutation_overlap <- pvals
+mutation_feature_overlap_sum$adjp_mutation_overlap <- adjpvalues
+
+gn_fun <- read.delim(paste("gene","functional_mutations","functional_switches",'allCancers.txt',sep="_"), header=TRUE)
+gn_fun <- gn_fun[,c("Gene","Symbol","p_me")]
+
+mutation_feature_overlap_sum <- merge(mutation_feature_overlap_sum,gn_fun,by=c("Gene","Symbol"))
+
+# drivers
+p <- ggplot(subset(mutation_feature_overlap_sum, Driver=="True"),aes(-log10(p_me),-log10(p_mutation_overlap))) + geom_point()
+p <- p + geom_point(data=subset(mutation_feature_overlap_sum,Driver=="True" & p_mutation_overlap < 0.5 & p_me < 0.5),aes(-log10(p_me),-log10(p_mutation_overlap),color=Symbol))
+p <- p + theme_minimal()
+p <- direct.label(p)
+
+# all
+p <- ggplot(mutation_feature_overlap_sum,aes(-log10(p_me),-log10(p_mutation_overlap))) + geom_point()
+p <- p + geom_point(data=subset(mutation_feature_overlap_sum, p_mutation_overlap < 0.2 & p_me < 0.2),aes(-log10(p_me),-log10(p_mutation_overlap),color=Symbol))
+p <- p + theme_minimal()
+p <- direct.label(p)
+
+# filter by positive MEScore
+kk <- mutation_feature_overlap_sum
+kk <- kk[kk$Gene %in% geneScores$Gene[geneScores$Score>0],]
+
+p <- ggplot(kk,aes(-log10(p_me),-log10(p_mutation_overlap))) + geom_point()
+p <- p + geom_point(data=subset(kk, p_mutation_overlap < 0.2 & p_me < 0.2),aes(-log10(p_me),-log10(p_mutation_overlap),color=Symbol))
+p <- p + theme_minimal()
+p <- direct.label(p)
+
+
+p <- p + geom_text(data=subset(mutation_feature_overlap_sum,MutationScore >= 2 & MEScore > 0), aes(MEScore,MutationScore,label=Symbol))
+
+annotate("text", x=c(-0.2,0.9), y=c(33,32), label = c("my label", "label 2"))
+
+mutation_feature_overlap_sum <- mutation_feature_overlap_sum[order(-mutation_feature_overlap_sum$Ratio),]
+
+write.table(mutation_feature_overlap_sum,'mutation_switch_feature_overlap_allCancers.txt',quote=F,col.names=T,sep="\t",row.names=FALSE)
+file.copy('mutation_switch_feature_overlap_allCancers.txt',"/projects_rg/TCGA/users/hector/mutation_comparison",overwrite=T)
+
 ################ I3D ################
 i3d <- read.delim("i3d_broken.tsv", header=TRUE,row.names=NULL)
 colnames(i3d) <- c("Cancer","Symbol","Annotation","Partner","PartnerAnnotation","WhatsHappening","InteractionAffection","SequenceCover","PartnerCover","Gene","normalTranscript","tumorTranscript","Uniprot","PartnerUniprot","SequenceInformation","IsoformSpecific","PDB","pymolCommands")
@@ -643,6 +766,16 @@ i3d$Structure <- NULL
 i3d$Structure[grepl('-MDL-',i3d$PDB)] <- "MODEL"
 i3d$Structure[grepl('-EXP-',i3d$PDB)] <- "EXPERIMENTAL"
 i3d$Structure[grepl('-MDD-',i3d$PDB)] <- "DOMAIN_MODEL"
+
+i3d$DriverRelationship <- "No driver involved"
+i3d$DriverRelationship[grep("Driver",i3d$Annotation)] <- "Driver"
+i3d$DriverRelationship[grep("Driver",i3d$PartnerAnnotation)] <- "d1"
+i3d$DriverRelationship[Reduce(intersect,  list(grep("Driver",i3d$Annotation),grep("Driver",i3d$PartnerAnnotation)))] <- "Driver-Driver"
+
+p <- ggplot(i3d,aes(InteractionAffection,(SequenceCover+PartnerCover)/2)) + geom_point(aes(shape=DriverRelationship))
+p <- p + geom_point(data=subset(i3d,InteractionAffection > 60 & (SequenceCover+PartnerCover)/2 > 60),aes(InteractionAffection,(SequenceCover+PartnerCover)/2,color=Symbol,shape=DriverRelationship ))
+p <- p + theme_minimal()
+p <- direct.label(p)
 
 # take only interactions where both partners are sufficiently
 # described and the interaction is actually affected
