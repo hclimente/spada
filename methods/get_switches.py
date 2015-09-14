@@ -1,6 +1,7 @@
 from interface import export_to_MSAnalysis
 from interface import out_network
 from libs import options
+from libs import utils
 from methods import method
 from network import ucsc_gene_network, ucsc_isoform_network
 
@@ -12,7 +13,25 @@ class GetSwitches(method.Method):
 
 	def run(self):
 
-		self.calculateSwitches()
+		if not options.Options().externalSwitchesFile:
+			candidatesFile = self.calculateSwitches()
+			externalSwitches = False
+		else:
+			candidatesFile = options.Options().externalSwitchesFile
+			externalSwitches = True
+
+			# copy random structural_analysis, as it is computationally expensive
+			utils.cmd("cp",
+					  "{0}testResults/{1}/{2}/structural_analysis/*random*".format(options.Options().wd,options.Options().inputType,options.Options().parentTag),
+					  "{0}structural_analysis".format(options.Options().qout))
+
+			# copy random switches
+			utils.cmd("cp",
+					  "{0}testResults/{1}/{2}/randomGeneNetwork.pkl".format(options.Options().wd,options.Options().inputType,options.Options().parentTag),
+					  options.Options().qout)
+
+		self.createGeneNetwork(candidatesFile,externalSwitches=externalSwitches)
+		self.createTranscriptNetwork(externalSwitches=externalSwitches)
 
 		out_network.outputGTF(self._gene_network,self._transcript_network)
 		out_network.outCandidateList(self._gene_network,self._transcript_network)
@@ -88,29 +107,44 @@ class GetSwitches(method.Method):
 		s.deleteJobTemplate(jt)
 		s.exit()
 
-	def createGeneNetwork(self):
+		return "{0}candidateList_v2.tsv".format(options.Options().qout)
+
+	def createGeneNetwork(self,candidatesFile,externalSwitches):
 
 		self.logger.info("Creating gene network.")
 
-		if options.Options().inputType == "TCGA": 
-			self._gene_network = ucsc_gene_network.UCSCGeneNetwork()
+		if externalSwitches and options.Options().parentTag:
+			self._gene_network = cPickle.load(open("{0}testResults/{1}/{2}/geneNetwork.pkl".format(options.Options().wd,options.Options().inputType,options.Options().parentTag),"r"))
+			self._gene_network.createLogger()
+			self._gene_network.cleanNetwork()
 		else:
-			self.logger.error("Unrecognized input type {0}.".format(options.Options().inputType))
-			exit()
+			if options.Options().inputType == "TCGA": 
+				self._gene_network = ucsc_gene_network.UCSCGeneNetwork()
+			else:
+				self.logger.error("Unrecognized input type {0}.".format(options.Options().inputType))
+				exit()
 		
-		self.logger.debug("Reading gene info.")
-		self._gene_network.readGeneInfo()
-		self._gene_network.importDiffExpression()
-		if options.Options().specificDrivers:
-			self._gene_network.importSpecificDrivers()
-		
-		self._gene_network.importCandidates()
-		self._gene_network.calculateCompatibilityTable()
-		self._gene_network.importKnownInteractions()
+			self.logger.debug("Reading gene info.")
+			self._gene_network.readGeneInfo()
+			self._gene_network.importDiffExpression()
+			if options.Options().specificDrivers:
+				self._gene_network.importSpecificDrivers()
+			
+			self._gene_network.importKnownInteractions()
+
+		if not externalSwitches:
+			self._gene_network.importCandidates(candidatesFile)
+			self._gene_network.calculateCompatibilityTable()
+		else:
+			self._gene_network.importExternalCandidates(candidatesFile)
 
 		self._gene_network.saveNetwork("geneNetwork.pkl")
 
-	def createTranscriptNetwork(self, recover=False):
+	def createTranscriptNetwork(self,externalSwitches,recover=False):
+		if externalSwitches and options.Options().parentTag:
+			self._transcript_network = cPickle.load(open("{0}testResults/{1}/{2}/txNetwork.pkl".format(options.Options().wd,options.Options().inputType,options.Options().parentTag),"r"))
+			self._transcript_network.createLogger()
+		else:
 			if options.Options().inputType == "TCGA":
 				self._transcript_network = ucsc_isoform_network.UCSCIsoformNetwork()
 			else:
@@ -120,7 +154,8 @@ class GetSwitches(method.Method):
 			self.logger.info("Creating transcript network.")
 			self._transcript_network.importTranscriptome()
 			self._transcript_network.readTranscriptInfo()
-			self._transcript_network.saveNetwork("txNetwork.pkl")
+		
+		self._transcript_network.saveNetwork("txNetwork.pkl")
 
 if __name__ == '__main__':
 	pass
