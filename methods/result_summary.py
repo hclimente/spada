@@ -259,12 +259,36 @@ class ResultSummary(method.Method):
 
 				self.exonStats[randomTag].append(exonInfo)
 
-		for nVersion,tVersion,tag in thisSwitch.analyzeSplicing():
+		txCorresp = thisSwitch.analyzeSplicing()
+		orfChange = 0
+
+		for i in range(len(txCorresp)):
+			nVersion = txCorresp[i][0]
+			tVersion = txCorresp[i][1]
+
+			if nVersion == tVersion:
+				tag = "COMMON"
+			elif i == 0:
+				tag = "BEGINNING"
+			elif i == len(txCorresp) - 1:
+				tag = "ENDING"
+			else:
+				tag = "MIDDLE"
+			
 			exon = {}
 
+			exon["gene"] = gene
+			exon["symbol"] = info["symbol"]
+			exon["nTranscript"] = thisSwitch.nTx
+			exon["tTranscript"] = thisSwitch.tTx
 			exon["nVersion"] = 0 if nVersion is None else len(nVersion)
 			exon["tVersion"] = 0 if tVersion is None else len(tVersion)
 			exon["tag"] = tag
+
+			orfChange = orfChange + exon["nVersion"]%3 - exon["tVersion"]%3
+			if abs(orfChange) >= 3:
+				orfChange = orfChange - 3*np.sign(orfChange)
+			exon["orfChange"] = orfChange
 
 			self.alternativeSplicingStats[randomTag].append(exon)
 		
@@ -444,12 +468,14 @@ class ResultSummary(method.Method):
 					F.write("{0}\n".format(exon["keepORF"]))
 
 		with open("{0}result_summary/exons_new{1}.tsv".format(options.Options().qout,options.Options().filetag), "w" ) as F:
-			F.write("Cancer\tRandom\tnormalSegment\ttumorSegment\tTag\n");
+			F.write("Cancer\tRandom\tGene\tSymbol\tnTranscript\ttTranscript\tTag\tOrfChange\tnormalSegment\ttumorSegment\n");
 			for random in self.alternativeSplicingStats:
 				for exon in self.alternativeSplicingStats[random]:
 					F.write("{0}\t{1}\t".format(options.Options().tag,random))
-					F.write("{0}\t{1}\t".format(exon["nVersion"],exon["tVersion"]))
-					F.write("{0}\n".format(exon["tag"]))
+					F.write("{0}\t{1}\t".format(exon["gene"],exon["symbol"]))
+					F.write("{0}\t{1}\t".format(exon["nTranscript"],exon["tTranscript"]))
+					F.write("{0}\t{1}\t".format(exon["tag"],exon["orfChange"]))
+					F.write("{0}\t{1}\n".format(exon["nVersion"],exon["tVersion"]))
 
 	def printStructutalInfo(self):
 
