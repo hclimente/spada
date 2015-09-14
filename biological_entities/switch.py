@@ -4,6 +4,7 @@ import protein
 import transcript
 
 import os
+import operator
 
 class IsoformSwitch:
 	def __init__(self, nTx, tTx, score, patients,precision,sensitivity):
@@ -26,6 +27,13 @@ class IsoformSwitch:
 		self._anchor_change 		= None
 		self._broken_surfaces 		= None
 		self._ptm_change 			= None
+
+		#Relevance measure
+		self._deep_domain_change 	= {"Gained_in_tumor":[], "Lost_in_tumor":[], "Nothing":[] }
+		self._deep_disorder_change 	= {"Gained_in_tumor":[], "Lost_in_tumor":[], "Nothing":[] }
+		self._deep_anchor_change 	= {"Gained_in_tumor":[], "Lost_in_tumor":[], "Nothing":[] }
+		self._deep_ptm_change 		= {"Gained_in_tumor":[], "Lost_in_tumor":[], "Nothing":[] }
+
 		#Network analysis
 		self._guild_top1 			= None
 		self._guild_top5 			= None
@@ -228,70 +236,90 @@ class IsoformSwitch:
 				if elements[8] == "True": self._ptm_change = True
 				elif elements[8] == "False": self._ptm_change = False
 
+	def readDeepRelevanceAnalysis(self,skipDomain=False,skipIupred=False,skipAnchor=False,skipPtm=False):
+		if not self.is_relevant:
+			return
+
+		if self.domainChange and not skipDomain:
+			for line in utils.readTable("{0}structural_analysis/interpro_analysis.tsv".format(options.Options().qout)):
+				if line[2] == self.nTx and line[3] == self.tTx:
+					if "Gained" in line[4]:
+						self._deep_domain_change["Gained_in_tumor"].append("{0}|{1}".format(line[6],line[7].replace(" ","_")))
+					elif "Lost" in line[4]:
+						self._deep_domain_change["Lost_in_tumor"].append("{0}|{1}".format(line[6],line[7].replace(" ","_")))
+					elif "Nothing" in line[4]:
+						self._deep_domain_change["Nothing"].append("{0}|{1}".format(line[6],line[7].replace(" ","_")))
+
+		if self.disorderChange and not skipIupred:
+			for line in utils.readTable("{0}structural_analysis/iupred_analysis.tsv".format(options.Options().qout)):
+				if line[2] == self.nTx and line[3] == self.tTx and float(line[8]):
+					if "Gained" in line[4]:
+						self._deep_disorder_change["Gained_in_tumor"].append(line[5].replace(" ","_"))
+					elif "Lost" in line[4]:
+						self._deep_disorder_change["Lost_in_tumor"].append(line[5].replace(" ","_"))
+					elif "Nothing" in line[4]:
+						self._deep_disorder_change["Nothing"].append(line[5].replace(" ","_"))
+		
+		if self.anchorChange and not skipAnchor:
+			for line in utils.readTable("{0}structural_analysis/anchor_analysis.tsv".format(options.Options().qout)):
+				if line[2] == self.nTx and line[3] == self.tTx and float(line[8]):
+					if "Gained" in line[4]:
+						self._deep_anchor_change["Gained_in_tumor"].append(line[5].replace(" ","_"))
+					elif "Lost" in line[4]:
+						self._deep_anchor_change["Lost_in_tumor"].append(line[5].replace(" ","_"))
+					elif "Nothing" in line[4]:
+						self._deep_anchor_change["Nothing"].append(line[5].replace(" ","_"))
+			
+		if self.ptmChange and not skipPtm:
+			for line in utils.readTable("{0}structural_analysis/prosite_analysis.tsv".format(options.Options().qout)):
+				if line[2] == self.nTx and line[3] == self.tTx and float(line[8]):
+					if "Gained" in line[4]:
+						self._deep_ptm_change["Gained_in_tumor"].append(line[5].replace(" ","_"))
+					elif "Lost" in line[4]:
+						self._deep_ptm_change["Lost_in_tumor"].append(line[5].replace(" ","_"))
+					elif "Nothing" in line[4]:
+						self._deep_ptm_change["Nothing"].append(line[5].replace(" ","_"))
+
 	def analyzeSplicing(self):
 
-		reverseOrder = False if self.nTranscript._strand=='+' else True
+		# if one of the transcripts doesn't have an isoform described, there is no use
+		if not self.nIsoform or not self.tIsoform:
+			return []
 
-		nSegments  = [ sorted(x,reverse=reverseOrder)[0] for x in self.nTranscript.getSegments("isoform-specific") ]
-		tSegments  = [ sorted(x,reverse=reverseOrder)[0] for x in self.tTranscript.getSegments("isoform-specific") ]
-		commonSegmentsN = [ sorted(x,reverse=reverseOrder)[0] for x in self.nTranscript.getSegments("non-isoform-specific") ]
-		commonSegmentsT = [ sorted(x,reverse=reverseOrder)[0] for x in self.tTranscript.getSegments("non-isoform-specific") ]
-		commonSegments = list(set(commonSegmentsN + commonSegmentsT))
+		allN = sorted(self.nTranscript.getSegments("isoform-specific") + self.nTranscript.getSegments("non-isoform-specific"),key=operator.itemgetter(0))
+		allT = sorted(self.tTranscript.getSegments("isoform-specific") + self.tTranscript.getSegments("non-isoform-specific"),key=operator.itemgetter(0))
 
-		allNormal = sorted(nSegments + commonSegments,reverse=reverseOrder)
-		allTumor = sorted(tSegments + commonSegments,reverse=reverseOrder)
+		correspondence = []
+		c = []
+		for x1,x2 in enumerate(allN):
+			correspondenceFound = False
+			for y1,y2 in enumerate(allT):
+				intersect = list(set(x2) & set(y2))
+				if intersect:
+					correspondence.append([intersect,intersect])
+					c.append([x1,y1])
 
-		equivalents = []
-
-		for thisSegment,otherSeg,thisTx,otherTx in zip([nSegments,tSegments],[tSegments,nSegments],[allNormal,allTumor],[allTumor,allNormal]):
-			for gPos in thisSegment:
-				nIdx = [ x for x,y in enumerate(thisTx) if y==gPos ][0]
-
-				if nIdx == 0:
-					if otherTx[0] in otherSeg:
-						equivalents.append((gPos,otherTx[0],'BEGINING'))
-					else:
-						equivalents.append((gPos,0,'BEGINING'))
-					
-				elif nIdx == len(thisTx)-1:
-					if otherTx[-1] in otherSeg:
-						equivalents.append((gPos,otherTx[-1],'ENDING'))
-					else:
-						equivalents.append((gPos,0,'ENDING'))
+		for thisIso,otherIso,thisIdx,otherIdx in zip([allN,allT],[allT,allN],[0,1],[1,0]):
+			for pos in set(range(len(thisIso))) - set(x[thisIdx] for x in c):
+				thisCorrespondence = [None,None]
+				thisCorrespondence[thisIdx] = thisIso[pos]
+				if pos == 0:
+					if not [ x for x in c if x[otherIdx] == 0 ]:
+						thisCorrespondence[otherIdx] = otherIso[pos]
+				elif pos == len(thisIso) - 1:
+					if not [ x for x in c if x[otherIdx] == len(otherIso) - 1 ]:
+						thisCorrespondence[otherIdx] = otherIso[len(otherIso) - 1]
 				else:
-					nPrev = thisTx[nIdx-1]
-					nPost = thisTx[nIdx+1]
 
-					tPrevIdx = [ x for x,y in enumerate(otherTx) if y==nPrev ][0]
-					tPostIdx = [ x for x,y in enumerate(otherTx) if y==nPost ][0]
+					prevItem = sorted([ x for x in c if x[thisIdx]==pos-1 ],key=operator.itemgetter(otherIdx),reverse=True)[0]
+					nextItem = sorted([ x for x in c if x[thisIdx]==pos+1 ],key=operator.itemgetter(otherIdx))[0]
+		
+					if prevItem[otherIdx]+2 == nextItem[otherIdx]:
+						thisCorrespondence[otherIdx] = otherIso[prevItem[otherIdx]+2]
 
-					if abs(tPrevIdx-tPostIdx)==1:
-						equivalents.append((gPos,0,'MIDDLE'))
-					else:
-						equivalents.append((gPos,otherTx[tPrevIdx+1],'MIDDLE'))
+				if thisCorrespondence not in correspondence:
+					correspondence.append(thisCorrespondence)
 
-		nSegments  = self.nTranscript.getSegments("isoform-specific")
-		tSegments  = self.tTranscript.getSegments("isoform-specific")
+		correspondence = sorted(correspondence,key=lambda x: x[0][0] if x[0] else x[1][0],reverse=True if self.nTranscript._strand=='-' else False )
 
-		segmentInfo = []
-
-		for onePos,otherPos,tag in equivalents:
-			inNormal = [ x for x in nSegments if onePos in x ]
-			inTumor = [ x for x in tSegments if onePos in x ]
-			if inNormal:
-				nVersion = inNormal[0]
-				if otherPos != 0:
-					tVersion = [ x for x in tSegments if otherPos in x ][0]
-				else:
-					tVersion = None
-			elif inTumor:
-				tVersion = inTumor[0]
-				if otherPos != 0:
-					nVersion = [ x for x in nSegments if otherPos in x ][0]
-				else:
-					nVersion = None
-			
-			if (nVersion,tVersion,tag) not in segmentInfo:
-				segmentInfo.append((nVersion,tVersion,tag))
-
-		return segmentInfo
+		return correspondence
