@@ -7,6 +7,7 @@ from methods import structural_analysis
 import copy
 import cPickle
 import itertools
+import operator
 import random
 import os
 
@@ -20,15 +21,17 @@ class GetRandomSwitches(method.Method):
 		if not os.path.exists("{0}randomGeneNetwork.pkl".format(options.Options().qout)):
 			self.logger.info("Generating random switches.")
 
+			# QUITAR
+			os.rename("{0}kkrandomGeneNetwork.pkl".format(options.Options().qout),"{0}randomGeneNetwork.pkl".format(options.Options().qout))
 			# copy original gene network
-			self._gene_network.removeLogger()
-			gnNetCopy = copy.deepcopy(self._gene_network)
-			self._gene_network.createLogger()
-			gnNetCopy.createLogger()
+			#self._gene_network.removeLogger()
+			#gnNetCopy = copy.deepcopy(self._gene_network)
+			#self._gene_network.createLogger()
+			#gnNetCopy.createLogger()
 
 			# remove real switches and calculate new ones
-			self.sampleSwitches(gnNetCopy)
-			gnNetCopy.saveNetwork("randomGeneNetwork.pkl")
+			#self.sampleSwitches(gnNetCopy)
+			#gnNetCopy.saveNetwork("randomGeneNetwork.pkl")
 
 			utils.launchJobs(self._gene_network,"random")
 
@@ -46,14 +49,28 @@ class GetRandomSwitches(method.Method):
 
 		# create new ones
 		for gene,info in [ (x,y) for x,y in gnNetCopy.nodes(data=True) if len(y["ExpressedTranscripts"])>1 ]:
-			allSwitches = [ x for x in itertools.combinations(info["ExpressedTranscripts"],2) ]
-			random.shuffle(allSwitches)
-			allSwitches = allSwitches[0:self.MAX_SWITCHES]
+			# set normal isoform as the most expressed in normal, shuffle the rest for tumor
+			txExpression = [ (x,y['median_TPM_N']) for x,y in self._transcript_network.nodes(data=True) if y["gene_id"]==gene ]
+			nTx = max(txExpression, key=operator.itemgetter(1))[0]
+			nTxExpression = max(txExpression, key=operator.itemgetter(1))[1]
 
-			for oneSwitch in allSwitches:
+			if nTx not in info["ExpressedTranscripts"]:
+				self.logger.warning("Median most expressed transcript from gene {} is not considered expressed. Probably due to the threshold applied. Will be skipped. ".format(gene))
+				continue
+
+			txs = list(info["ExpressedTranscripts"])
+			txs.remove(nTx)
+
+			numSwitches = self.MAX_SWITCHES
+			if len(txs) < self.MAX_SWITCHES:
+				numSwitches = len(txs)
+
+			random.shuffle(txs)
+
+			for i in range(numSwitches):
 				switchDict = {}
-				switchDict["nIso"] = oneSwitch[0]
-				switchDict["tIso"] = oneSwitch[1]
+				switchDict["nIso"] = nTx
+				switchDict["tIso"] = txs[i]
 
 				switchDict["score"] = 0.0
 				switchDict["patients"] = 0.0
@@ -63,6 +80,25 @@ class GetRandomSwitches(method.Method):
 				switchDict["model"] = True
 
 				info["isoformSwitches"].append(switchDict)
+
+			# for completely random switches
+			# allSwitches = [ x for x in itertools.combinations(info["ExpressedTranscripts"],2) ]
+			# random.shuffle(allSwitches)
+			# allSwitches = allSwitches[0:self.MAX_SWITCHES]
+
+			# for oneSwitch in allSwitches:
+			# 	switchDict = {}
+			# 	switchDict["nIso"] = oneSwitch[0]
+			# 	switchDict["tIso"] = oneSwitch[1]
+
+			# 	switchDict["score"] = 0.0
+			# 	switchDict["patients"] = 0.0
+			# 	switchDict["precision"] = 0.0
+			# 	switchDict["sensitivity"] = 0.0
+			# 	switchDict["noise"] = False
+			# 	switchDict["model"] = True
+
+			# 	info["isoformSwitches"].append(switchDict)
 
 	def launchJobs(self):
 		import drmaa
