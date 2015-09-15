@@ -41,6 +41,9 @@ do
 		echo $models >>$cfgFile
 	fi
 
-	launchQ $fullTag "$fullTag"_$action
+	rm esmartas_"$fullTag"_$action.txt osmartas_"$fullTag"_$action.txt
+
+	#launchQ $fullTag "$fullTag"_$action
+	Pipeline/SmartAS.py -f "$fullTag"_$action.cfg
 
 done < "$fileList"
