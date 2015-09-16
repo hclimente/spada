@@ -21,17 +21,15 @@ class GetRandomSwitches(method.Method):
 		if not os.path.exists("{0}randomGeneNetwork.pkl".format(options.Options().qout)):
 			self.logger.info("Generating random switches.")
 
-			# QUITAR
-			os.rename("{0}kkrandomGeneNetwork.pkl".format(options.Options().qout),"{0}randomGeneNetwork.pkl".format(options.Options().qout))
 			# copy original gene network
-			#self._gene_network.removeLogger()
-			#gnNetCopy = copy.deepcopy(self._gene_network)
-			#self._gene_network.createLogger()
-			#gnNetCopy.createLogger()
+			self._gene_network.removeLogger()
+			gnNetCopy = copy.deepcopy(self._gene_network)
+			self._gene_network.createLogger()
+			gnNetCopy.createLogger()
 
 			# remove real switches and calculate new ones
-			#self.sampleSwitches(gnNetCopy)
-			#gnNetCopy.saveNetwork("randomGeneNetwork.pkl")
+			self.sampleSwitches(gnNetCopy)
+			gnNetCopy.saveNetwork("randomGeneNetwork.pkl")
 
 			utils.launchJobs(self._gene_network,"random")
 
