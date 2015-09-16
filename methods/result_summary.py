@@ -565,8 +565,7 @@ class ResultSummary(method.Method):
 		if thisSwitch.ptmChange:
 			for element in utils.readTable("{0}structural_analysis/prosite_analysis{1}.tsv".format(options.Options().qout,filetag)):
 				if element[2]==thisSwitch.nTx and element[3]==thisSwitch.tTx:
-					if float(element[-1]):
-						prosite.append((element[5],element[4]))
+					prosite.append((element[5],element[4]))
 			
 		switchFeatures["Pfam"] = Pfam
 		switchFeatures["iupred"] = disorder

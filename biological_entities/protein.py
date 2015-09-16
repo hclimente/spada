@@ -313,3 +313,86 @@ class Protein:
 			segments.append(segment)
 
 		return segments
+
+	def readAnchor(self):
+		outfile = "{0}Data/{1}/ANCHOR/{2}.txt".format(options.Options().wd,options.Options().inputType,self.tx)
+
+		if not os.path.isfile(outfile):
+			out = []
+			outfile = "{0}ANCHOR/{1}.txt".format(options.Options().wd,self.tx)
+			fFile = "{0}{1}{2}.fa".format(options.Options().qout,self.tx,options.Options().filetag)
+			with open(fFile,"w") as FASTA:
+				FASTA.write(">{0}\n{1}\n".format(self.tx,self.seq))
+
+			proc = utils.cmdOut(options.Options().wd+"Pipeline/libs/ANCHOR/anchor",fFile)
+			out = [ x.strip().split() for x in proc.stdout if "#" not in x ]
+			os.remove(fFile)
+
+			with open(outfile,"w") as ANCHORout:
+				for line in out:
+					resNum  = int(line[0])
+					residue	= line[1]
+					score 	= float(line[2].strip())
+					ANCHORout.write("{0}\t{1}\t{2}\n".format(resNum,residue,score))
+					thisRes = self._structure[resNum-1]
+
+					if residue != thisRes.res:
+						self.logger.error("Not matching residue in ANCHOR analysis, transcript {0}.".format(protein.tx))
+						continue
+
+					thisRes.set_anchorScore(score)
+
+		else:
+			with open(outfile) as ANCHORout:
+				for line in ANCHORout:
+					resNum  = int(line[0])
+					residue	= line[1]
+					score 	= float(line[2].strip())
+					thisRes = self._structure[resNum-1]
+
+					if residue != thisRes.res:
+						self.logger.error("Not matching residue in ANCHOR analysis, transcript {0}.".format(protein.tx))
+						continue
+
+					thisRes.set_anchorScore(score)
+
+	def readIupred(self,mode):
+
+		outfile = "{0}Data/{1}/IUPred/{2}.{3}.txt".format(options.Options().wd,options.Options().inputType,self.tx,mode)
+
+		if not os.path.isfile(outfile):
+			out = []
+			outfile = "{0}IUPred/{1}.{2}.txt".format(options.Options().wd,self.tx,mode)
+			fFile = "{0}{1}{2}.fa".format(options.Options().qout,self.tx,options.Options().filetag)
+			with open(fFile,"w") as FASTA:
+				FASTA.write(">{0}\n{1}\n".format(self.tx,self.seq))
+
+			proc = utils.cmdOut(options.Options().wd+"Pipeline/libs/bin/iupred/iupred",fFile,mode)
+			out = [ x.strip().split(" ") for x in proc.stdout if "#" not in x ]
+			os.remove(fFile)
+
+			with open(outfile,"w") as IUout:
+				for line in out:
+					resNum  = int(line[0])
+					residue	= line[1]
+					score 	= float(line[-1])
+					IUout.write("{0}\t{1}\t{2}\n".format(resNum,residue,score))
+
+					thisRes = self._structure[resNum-1]
+					if residue != thisRes.res:
+						self.logger.error("Not matching residue in ANCHOR analysis, transcript {0}.".format(protein.tx))
+						continue
+					thisRes.set_iuPredScore(score)
+					
+
+		else:
+			with open(outfile) as IUout:
+				for line in IUout:
+					resNum  = int(line[0])
+					residue	= line[1]
+					score 	= float(line[-1])
+					thisRes = self._structure[resNum-1]
+					if residue != thisRes.res:
+						self.logger.error("Not matching residue in ANCHOR analysis, transcript {0}.".format(protein.tx))
+						continue
+					thisRes.set_iuPredScore(score)

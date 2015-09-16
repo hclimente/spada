@@ -66,8 +66,7 @@ class SmartAS:
 			import glob
 			files=glob.glob("{0}structural_analysis/interpro_analysis_[0-9]*.tsv".format(options.Options().qout))
 			if files:
-				s.newJoinFiles()
-				#s.joinFiles()
+				s.joinFiles()
 			else:
 				utils.launchJobs(s._gene_network,'structural_analysis')
 		else:
