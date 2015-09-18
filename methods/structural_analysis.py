@@ -6,10 +6,8 @@ from libs import utils
 from methods import method
 
 from collections import Counter
-import fisher
 import glob
-import numpy as np
-import os
+import operator
 
 class StructuralAnalysis(method.Method):
 	def __init__(self,gn_network,tx_network,isRand=False):
@@ -110,14 +108,11 @@ class StructuralAnalysis(method.Method):
 		normalProtein = thisSwitch.nIsoform
 		tumorProtein = thisSwitch.tIsoform
 
-		for protein in [normalProtein,tumorProtein]:
-			if not protein: continue
-
-			interproFile = interpro_analysis.InterproAnalysis().launchAnalysis(protein.tx, protein.seq)
-			if not interproFile: continue
-			protein.getFeatures(interproFile)
-
 		if not normalProtein or not tumorProtein: return False
+
+		for protein in [normalProtein,tumorProtein]:
+			protein.readInterpro()
+		
 		if not normalProtein._features and not tumorProtein._features: return False
 		
 		nIsoFeatures = Counter([ x["accession"] for x in normalProtein._features ])
@@ -172,22 +167,19 @@ class StructuralAnalysis(method.Method):
 				isoform = protein.getSegments("isoform-specific")
 
 				for disorderedRegion in disordered:
+
 					whatsHappening = whatShouldBeHappening
 					disorderedRegionSet = set(disorderedRegion)
 
 					overlappingIsoSpecific = []
-
-					for isoSpecific in isoform:
-						isoSpecificSet = set(isoSpecific)
-
-						if isoSpecificSet & disorderedRegionSet:
-							overlappingIsoSpecific.extend(isoSpecific)
+					[ overlappingIsoSpecific.extend(x) for x in isoform if set(x) & disorderedRegionSet]
 					
 					if not overlappingIsoSpecific:
-						jaccard = 0
-						macroScore = 0
-						microScore = 0
+						jaccard = "NA"
+						macroScore = "NA"
+						microScore = "NA"
 						whatsHappening = "Nothing"
+						significant = 0
 
 					else:
 						overlappingIsoSpecificSet = set(overlappingIsoSpecific)
@@ -198,6 +190,7 @@ class StructuralAnalysis(method.Method):
 						jaccard = intersection/union
 						microScore = intersection/len(overlappingIsoSpecificSet)
 						macroScore = intersection/len(disorderedRegionSet)
+						significant = int(max(microScore,macroScore) > self.iupred_threshold)
 
 					motifSequence = ""
 					start = float("inf")
@@ -210,13 +203,12 @@ class StructuralAnalysis(method.Method):
 						if thisRes.num < start:
 							start = thisRes.num
 
-					significant = max(microScore,macroScore) > self.iupred_threshold
-
 					self.IU.write("{0}\t{1}\t".format(gene,info["symbol"]))
 					self.IU.write("{0}\t{1}\t".format(normalProtein.tx,tumorProtein.tx))
 					self.IU.write("{0}\t{1}\t".format(whatsHappening,motifSequence))
+					self.IU.write("{0}\t{1}\t".format(start,end))
 					self.IU.write("{0}\t{1}\t".format(jaccard,microScore))
-					self.IU.write("{0}\t{1}\n".format(macroScore,int(significant)))
+					self.IU.write("{0}\t{1}\n".format(macroScore,significant))
 
 					if significant:
 						anyIUpredSeq = True
@@ -246,18 +238,14 @@ class StructuralAnalysis(method.Method):
 				anchorRegionSet = set(anchorRegion)
 
 				overlappingIsoSpecific = []
-
-				for isoSpecific in isoform:
-					isoSpecificSet = set(isoSpecific)
-
-					if isoSpecificSet & anchorRegionSet:
-						overlappingIsoSpecific.extend(isoSpecific)
+				[ overlappingIsoSpecific.extend(x) for x in isoform if set(x) & anchorRegionSet]
 				
 				if not overlappingIsoSpecific:
-					jaccard = 0
-					macroScore = 0
-					microScore = 0
+					jaccard = "NA"
+					macroScore = "NA"
+					microScore = "NA"
 					whatsHappening = "Nothing"
+					significant = 0
 				else:
 					overlappingIsoSpecificSet = set(overlappingIsoSpecific)
 
@@ -267,6 +255,7 @@ class StructuralAnalysis(method.Method):
 					jaccard = intersection/union
 					microScore = intersection/len(overlappingIsoSpecificSet)
 					macroScore = intersection/len(anchorRegionSet)
+					significant = int(max(microScore,macroScore) > self.iupred_threshold)
 
 				motifSequence = ""
 				start = float("inf")
@@ -280,13 +269,12 @@ class StructuralAnalysis(method.Method):
 					if thisRes.num < start:
 						start = thisRes.num
 
-				significant = max(microScore,macroScore) > self.anchor_threshold
-
 				self.ANCHOR.write("{0}\t{1}\t".format(gene,info["symbol"]))
 				self.ANCHOR.write("{0}\t{1}\t".format(normalProtein.tx,tumorProtein.tx))
 				self.ANCHOR.write("{0}\t{1}\t".format(whatsHappening,motifSequence))
+				self.ANCHOR.write("{0}\t{1}\t".format(start,end))
 				self.ANCHOR.write("{0}\t{1}\t".format(jaccard,microScore))
-				self.ANCHOR.write("{0}\t{1}\n".format(macroScore,int(significant)))
+				self.ANCHOR.write("{0}\t{1}\n".format(macroScore,significant))
 
 				if significant:
 					anyAnchorSeq = True
@@ -309,16 +297,38 @@ class StructuralAnalysis(method.Method):
 				ptms.add(ptm)
 
 		for ptm in ptms:
-			nPtmRegions = thisSwitch.nIsoform.getSegments(ptm,minLength=1,gap=0)
-			tPtmRegions = thisSwitch.tIsoform.getSegments(ptm,minLength=1,gap=0)
-			nIsospRegions = thisSwitch.nIsoform.getSegments("isoform-specific")
-			tIsospRegions = thisSwitch.tIsoform.getSegments("isoform-specific")
+			ptmInfo = {}
+			for isoform in [thisSwitch.nIsoform,thisSwitch.tIsoform]:
+				ptmInfo[isoform.tx] = []
+				ptmRegions = isoform.getSegments(ptm,minLength=1,gap=0)
+				isospRegions = isoform.getSegments("isoform-specific")
 
-			nReps = 0 if not nPtmRegions else len(nPtmRegions)
-			tReps = 0 if not tPtmRegions else len(tPtmRegions)
-			maxReps = nReps if nReps > tReps else tReps
+				for region in ptmRegions:
 
-			for i in range(maxReps):
+					macroScore = float("-inf")
+					microScore = float("-inf")
+					jaccard = float("-inf")
+
+					thisIsosp = []
+					[ thisIsosp.extend(x) for x in isospRegions if set(x) & set(region) ]
+					intersection = float(len(set(region) & set(thisIsosp)))
+					ptmLength = float(len(set(region)))
+					isoSpLength = float(len(set(thisIsosp)))
+					macroScore = intersection/ptmLength
+					microScore =  float("-inf") if isoSpLength==0 else intersection/isoSpLength
+					jaccard = intersection/len(set(region) | set(thisIsosp))
+
+					ptmInfo[isoform.tx].append({"macro": macroScore, 
+									   "micro": microScore, "jaccard": jaccard})
+
+				ptmInfo[isoform.tx] = sorted(ptmInfo[isoform.tx], key=operator.itemgetter("macro"))
+
+			ptmInfoZipped = map(None, ptmInfo[thisSwitch.nIsoform.tx], ptmInfo[thisSwitch.tIsoform.tx])
+
+			for i in range(len(ptmInfoZipped)):
+
+				nDict = ptmInfoZipped[i][0]
+				tDict = ptmInfoZipped[i][1]
 
 				nMacroScore = "NA"
 				nMicroScore = "NA"
@@ -327,38 +337,31 @@ class StructuralAnalysis(method.Method):
 				tMicroScore = "NA"
 				tJaccard = "NA"
 
-				if i+1 <= nReps:
-					nThisIsosp = []
-					[ nThisIsosp.extend(x) for x in nIsospRegions if set(x) & set(nPtmRegions[i]) ]
-					intersection = float(len(set(nPtmRegions[i]) & set(nThisIsosp)))
-					nPtmLength = float(len(set(nPtmRegions[i])))
-					nIsoSpLength = float(len(set(nThisIsosp)))
-					nMacroScore = intersection/nPtmLength
-					nMicroScore =  "NA" if nIsoSpLength==0 else intersection/nIsoSpLength
-					nJaccard = intersection/len(set(nPtmRegions[i]) | set(nThisIsosp))
-					
-				if i+1 <= tReps:
-					tThisIsosp = []
-					[ tThisIsosp.extend(x) for x in tIsospRegions if set(x) & set(tPtmRegions[i]) ]
-					intersection = float(len(set(tPtmRegions[i]) & set(tThisIsosp)))
-					tPtmLength = float(len(set(tPtmRegions[i])))
-					tIsoSpLength = float(len(set(tThisIsosp)))
-					tMacroScore = intersection/tPtmLength
-					tMicroScore = "NA" if tIsoSpLength==0 else intersection/tIsoSpLength
-					tJaccard = intersection/len(set(tPtmRegions[i]) | set(tThisIsosp))
+				whatsHappening = "Nothing"
 
-				if i+1 <= nReps and i+1 <= tReps:
-					whatsHappening = "Nothing"
-				elif i+1 <= nReps:
-					whatsHappening = "Lost_in_tumor"
-					anyPTM = True
-				elif i+1 <= tReps:
-					whatsHappening = "Gained_in_tumor"
-					anyPTM = True
+				if nDict:
+					nMacroScore = "NA" if nDict["macro"] < 0 else nDict["macro"]
+					nMicroScore = "NA" if nDict["micro"] < 0 else nDict["micro"]
+					nJaccard = "NA" if nDict["jaccard"] < 0 else nDict["jaccard"]
+
+				if tDict:
+					tMacroScore = "NA" if tDict["macro"] < 0 else tDict["macro"]
+					tMicroScore = "NA" if tDict["micro"] < 0 else tDict["micro"]
+					tJaccard = "NA" if tDict["jaccard"] < 0 else tDict["jaccard"]
+
+				if nDict and tDict is None:
+					if nMacroScore != "NA" and nMacroScore > 0:
+						whatsHappening = "Lost_in_tumor"
+						anyPTM = True
+				elif tDict and nDict is None:
+					if tMacroScore != "NA" and tMacroScore > 0:
+						whatsHappening = "Gained_in_tumor"
+						anyPTM = True
 
 				self.PROSITE.write("{0}\t{1}\t{2}\t".format(gene,info["symbol"],thisSwitch.nTx))
 				self.PROSITE.write("{0}\t{1}\t{2}\t".format(thisSwitch.tTx,whatsHappening,ptm))
-				self.PROSITE.write("{0}/{1}\t{2}/{3}\t".format(i+1,nReps,i+1,tReps))
+				self.PROSITE.write("{0}/{1}\t".format(i+1,len(ptmInfo[thisSwitch.nIsoform.tx])))
+				self.PROSITE.write("{0}/{1}\t".format(i+1,len(ptmInfo[thisSwitch.tIsoform.tx])))
 				self.PROSITE.write("{0}\t{1}\t{2}\t".format(nMacroScore,nMicroScore,nJaccard))
 				self.PROSITE.write("{0}\t{1}\t{2}\n".format(tMacroScore,tMicroScore,tJaccard))
 
@@ -371,13 +374,13 @@ class StructuralAnalysis(method.Method):
 
 	def writeIUHeader(self,IU):
 		IU.write("Gene\tSymbol\tNormalTranscript\tTumorTranscript\t")
-		IU.write("What\tSequence\tJaccard\tmicroScore\tmacroScore\t")
-		IU.write("Significant\n")
+		IU.write("What\tSequence\tStartPos\tEndPos\tJaccard\t")
+		IU.write("microScore\tmacroScore\tSignificant\n")
 		
 	def writeANCHORHeader(self,ANCHOR):
 		ANCHOR.write("Gene\tSymbol\tNormalTranscript\tTumorTranscript\t")
-		ANCHOR.write("What\tSequence\tJaccard\tmicroScore\tmacroScore\t")
-		ANCHOR.write("Significant\n")
+		ANCHOR.write("What\tSequence\tStartPos\tEndPos\tJaccard\t")
+		ANCHOR.write("microScore\tmacroScore\tSignificant\n")
 
 	def writePrositeHeader(self,PROSITE):
 		PROSITE.write("Gene\tSymbol\tNormalTranscript\t")
