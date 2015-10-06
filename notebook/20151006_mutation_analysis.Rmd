@@ -1,0 +1,144 @@
+---
+title: "Features affected by mutations and switches"
+output:
+  html_document:
+    fig_caption: yes
+---
+
+```{r environment, echo=FALSE}
+source("~/SmartAS/Pipeline/scripts/variablesAndFunctions.r")
+library(knitr)
+wd <- paste0(workingDir,"/mutations/")
+```
+
+We studied how switches and mutations affect the same features of the genes. In this study, we will consider protein-affecting mutations only. The goal is to find features that might be activated or inactivated in tumor both through mutations and splicing changes.
+
+# Overlap in features affected by mutations and switches
+
+Make a binomial test to find switched features that are frequently mutated. The expected frequency is the relative size of the feature in the isoform (between 0 and 1); the obtained frequency is the proportion of mutations in the gene that affect that feature.
+
+## Per tumor type
+```{r}
+mut_feat_overlap <- read.delim(paste0(wd,"mutation_switch_feature_overlap.txt"), header=TRUE)
+colnames(mut_feat_overlap) <- c("Gene","Symbol","Cancer","Normal_transcript","Tumor_transcript","What","FeatureType","Feature","Ratio","Driver","TotalMutations","MutationsInFeature","FeatureSize")
+pvals <- apply(mut_feat_overlap[,c("MutationsInFeature","TotalMutations","FeatureSize")],1, function(x){ 
+  if (x[2]==0){
+    p <- 1
+  } else {
+    p <- binom.test(x[1],x[2],x[3],"greater")
+    p <- p$p.value
+  }
+  p
+} )
+adjpvalues <- p.adjust(pvals)
+
+mut_feat_overlap$p <- pvals
+mut_feat_overlap$adjp <- adjpvalues
+mut_feat_overlap <- mut_feat_overlap[order(mut_feat_overlap$p),]
+
+write.table(mut_feat_overlap,paste0(wd,'tables/mutation_switch_feature_overlap_withPVals.txt'),quote=F,col.names=T,sep="\t",row.names=FALSE)
+```
+
+```{r top30_byTumor, echo=FALSE}
+kable(head(unique(mut_feat_overlap[,c("Cancer","Symbol","What","Feature","Driver","p","adjp")]),n = 30),row.names = F, 
+      caption = "Top 30 more significant cases of overlap between mutations and switches",
+      digits=3)
+
+```
+
+Some interesting cases:
+
+* EGFR, due to the loss of the kinase domain. Also MEGF6.
+
+* Thrombospondins are secreted proteins with antiangiogenic abilities. 
+
+* Some domains related to transcription
+
+> The **FF domain** is present in a variety of nuclear transcription and splicing factors, as well as the p190 family of RhoGAPs.
+
+> **Zinc finger (Znf) domains** are relatively small protein motifs which contain multiple finger-like protrusions that make tandem contacts with their target molecule. [...] [T]hey are now recognised to bind DNA, RNA, protein and/or lipid substrates
+
+> **WD40-repeat** proteins are a large family found in all eukaryotes and are implicated in a variety of functions ranging from signal transduction and transcription regulation to cell cycle control, autophagy and apoptosis.
+
+
+### Aggregate all tumors
+```{r}
+mut_feat_overlap_agg <- ddply(mut_feat_overlap,
+                              .(Gene,Symbol,Normal_transcript,Tumor_transcript,What,
+                                FeatureType,Feature,Driver,FeatureSize), 
+                              summarise, inMut=sum(MutationsInFeature), 
+                              totalMut=sum(TotalMutations) )
+mut_feat_overlap_agg$Ratio = 100 * mut_feat_overlap_agg$inMut/mut_feat_overlap_agg$totalMut
+
+pvals <- apply(mut_feat_overlap_agg[,c("inMut","totalMut","FeatureSize")],1, function(x){ 
+  if (x[2]==0){
+    p <- 1
+  } else {
+    p <- binom.test(x[1],x[2],x[3],"greater")
+    p <- p$p.value
+  }
+  p
+} )
+adjpvalues <- p.adjust(pvals)
+
+mut_feat_overlap_agg$p_mutation_feature_overlap <- pvals
+mut_feat_overlap_agg$adjp_mutation_feature_overlap <- adjpvalues
+mut_feat_overlap_agg <- mut_feat_overlap_agg[order(mut_feat_overlap_agg$p_mutation_feature_overlap),]
+
+write.table(mut_feat_overlap_agg,paste0(wd,'tables/mutation_switch_feature_overlap_allCancers_withPVals.txt'),quote=F,col.names=T,sep="\t",row.names=FALSE)
+
+```
+
+```{r, fig.cap="*Mutations that affect a particular structural feature vs size of that particular feature. In purple, significant cases before multitesting correction; in orange, significant cases after multitesting correction.*", echo=FALSE}
+ggplot() + 
+  geom_point(data=mut_feat_overlap_agg,
+             aes(FeatureSize*100,Ratio)) + 
+  geom_point(data=subset(mut_feat_overlap_agg,p_mutation_feature_overlap<0.05),
+             aes(FeatureSize*100,Ratio),size=3,color="#7570b3") + 
+  geom_point(data=subset(mut_feat_overlap_agg,adjp_mutation_feature_overlap<0.05),
+             aes(FeatureSize*100,Ratio),size=4.5,color="#d95f02") + 
+  smartas_theme() + 
+  xlab("Feature size (as % of the total length)") + 
+  ylab("#mutations (as % of the total in the gene)")
+```
+
+
+There is a big overlap with the previous list regarding the top genes. It will be interesting to check if these mutations tend to appear in the same patients as the switch of in different ones. In order to do that, we will show the meScore for those genes:
+
+```{r significant_allTumors, echo=FALSE}
+meScore <- read.delim(paste0(wd,"tables/scoredMEGenes.txt"), header=TRUE)
+
+mg.df <- merge(subset(mut_feat_overlap_agg,p_mutation_feature_overlap < 0.05),meScore,by.x=c("Gene","Symbol","Normal_transcript","Tumor_transcript"),by.y=c("Gene","Symbol","nTx","tTx"))
+mg.df <- mg.df[order(-mg.df$Score),]
+
+kable(unique(mg.df[mg.df$p_mutation_feature_overlap < 0.05 & abs(mg.df$Score) > 0.5, c("Symbol","What","Feature","Driver","Score")]),row.names = F, 
+      caption = "Significant cases of overlap between mutations and switches (non-adjusted p < 0.05 and abs(meScore)>0.5), altogether with meScore. Ordered by meScore.",
+      digits=3)
+```
+
+```{r, fig.cap="*meScore vs fold-change, measured as the ratio between the proportion of mutations affecting the feature and the expected proportion (relative size of the feature). In purple, significant cases before multitesting correction; in orange, significant cases after multitesting correction.*", echo=FALSE}
+ggplot(mg.df,aes(Score,(inMut/totalMut)/FeatureSize)) + 
+  geom_point() + 
+  geom_point(data=subset(mg.df,p_mutation_feature_overlap<0.05),
+             aes(Score,(inMut/totalMut)/FeatureSize),
+                 size=3,color="#7570b3") + 
+  geom_point(data=subset(mg.df,adjp_mutation_feature_overlap<0.05),
+             aes(Score,(inMut/totalMut)/FeatureSize),
+                 size=4.5,color="#d95f02") + 
+  smartas_theme() + 
+  xlab("meScore") + ylab("Fold change")
+```
+
+It seems that the genes that accumulate most mutations in a splicing gained/lost feature have meScores close to 0. In the case that there are mutations equivalent to splicing alterations (meScore > 0), they seem to be less concentrated. This suggest that they are more specific, tumorogenic mutations, rather than random alterations.
+
+Looking more in detail to the genes with meScre > 0.7, we find:
+
+* EPS15: annotated as driver. Losing an EH domain, a [substrate for the tyrosine kinase activity of the epidermal growth factor receptor](http://www.ncbi.nlm.nih.gov/pubmed/11911876). 
+
+> To date, several EH-containing and EH-binding proteins have been identified, which establish in the cell a network of protein:protein interactions, defined as the EH network. This network coordinates cellular functions connected with endocytosis, actin remodeling and intracellular transduction of signals.
+
+  No I3D interaction is describing any change in this gene.
+
+* TDRD7
+* MCC: or Mutated In Colorectal Cancers...should be annotated as driver? ([candidate colorectal tumor suppressor gene that is thought to negatively regulate cell cycle progression](http://www.genecards.org/cgi-bin/carddisp.pl?gene=MCC)). The region might contain several phosphorylation sites.
+* CNTN4
