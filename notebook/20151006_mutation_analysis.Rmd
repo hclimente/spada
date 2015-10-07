@@ -1,8 +1,8 @@
 ---
 title: "Features affected by mutations and switches"
 output:
-  html_document:
-    fig_caption: yes
+  md_document:
+    variant: markdown_github
 ---
 
 ```{r environment, echo=FALSE}
@@ -13,11 +13,11 @@ wd <- paste0(workingDir,"/mutations/")
 
 We studied how switches and mutations affect the same features of the genes. In this study, we will consider protein-affecting mutations only. The goal is to find features that might be activated or inactivated in tumor both through mutations and splicing changes.
 
-# Overlap in features affected by mutations and switches
+# Specific switches: overlap in features affected by mutations and switches
 
 Make a binomial test to find switched features that are frequently mutated. The expected frequency is the relative size of the feature in the isoform (between 0 and 1); the obtained frequency is the proportion of mutations in the gene that affect that feature.
 
-## Per tumor type
+## Analysis per tumor type
 ```{r}
 mut_feat_overlap <- read.delim(paste0(wd,"mutation_switch_feature_overlap.txt"), header=TRUE)
 colnames(mut_feat_overlap) <- c("Gene","Symbol","Cancer","Normal_transcript","Tumor_transcript","What","FeatureType","Feature","Ratio","Driver","TotalMutations","MutationsInFeature","FeatureSize")
@@ -61,7 +61,7 @@ Some interesting cases:
 > **WD40-repeat** proteins are a large family found in all eukaryotes and are implicated in a variety of functions ranging from signal transduction and transcription regulation to cell cycle control, autophagy and apoptosis.
 
 
-### Aggregate all tumors
+## Analysis aggregating all tumors
 ```{r}
 mut_feat_overlap_agg <- ddply(mut_feat_overlap,
                               .(Gene,Symbol,Normal_transcript,Tumor_transcript,What,
@@ -102,7 +102,7 @@ ggplot() +
   ylab("#mutations (as % of the total in the gene)")
 ```
 
-
+## Comparison with meScores
 There is a big overlap with the previous list regarding the top genes. It will be interesting to check if these mutations tend to appear in the same patients as the switch of in different ones. In order to do that, we will show the meScore for those genes:
 
 ```{r significant_allTumors, echo=FALSE}
@@ -142,3 +142,118 @@ Looking more in detail to the genes with meScre > 0.7, we find:
 * TDRD7
 * MCC: or Mutated In Colorectal Cancers...should be annotated as driver? ([candidate colorectal tumor suppressor gene that is thought to negatively regulate cell cycle progression](http://www.genecards.org/cgi-bin/carddisp.pl?gene=MCC)). The region might contain several phosphorylation sites.
 * CNTN4
+
+# General overlap in features affected by mutations and switches
+
+We look for structural features that are frequently mutated and we compare them to the structural features that are usually switched. The interest is to look for splicing changes that are equivalent to mutation changes. We use the following parameters:
+* Mutation frequency: proportion of all the functional mutations that affect one particular feature. Measured taking into account only the features in the most abundant isoform of each gene.
+* Switch frequency: sum of all the patients that, per switch, have a feature affected.
+* Domain frequency: frequency of a feature in the proteome, counting the features in the most abundant isoform for each gene. Used to normalize the previous quantities.
+
+We annotated the domains relatively highly mutated and highly switched (highly meaning > quantile 95).
+
+## Analysis per tumor type
+```{r}
+feat_enrich <- read.delim(paste0(wd,'feature_enrichment.txt'), header=TRUE)
+feat_enrich <- feat_enrich[feat_enrich$DomainFrequency != 0,]
+feat_enrich$MutTotal <- feat_enrich$MutIn + feat_enrich$MutOut
+feat_enrich$SwitchesTotal <- feat_enrich$SwitchesIn + feat_enrich$SwitchesOut
+feat_enrich$MutFreq <- feat_enrich$MutIn/feat_enrich$MutTotal
+feat_enrich$SwitchFreq <- feat_enrich$SwitchesIn/feat_enrich$SwitchesTotal
+
+for (cancer in cancerTypes){
+  
+  cancer.feat_enrich <- feat_enrich[feat_enrich$Cancer==cancer,]
+  
+  # plot normalized mutation frequency and switched frequency
+  minMut <- quantile(cancer.feat_enrich$MutFreq/cancer.feat_enrich$DomainFrequency,0.95)
+  minSwitch <- quantile(cancer.feat_enrich$SwitchFreq/cancer.feat_enrich$DomainFrequency,0.95)
+  
+
+  # calculate regression coefficient
+  r.df <- cancer.feat_enrich[cancer.feat_enrich$MutFreq > 0 & cancer.feat_enrich$SwitchFreq > 0,]
+  r <- cor(log2(r.df$MutFreq/r.df$DomainFrequency),log2(r.df$SwitchFreq/r.df$DomainFrequency))
+  
+  cat(paste0(cancer,"\n"))
+  
+  p <- ggplot(cancer.feat_enrich,aes(log2(MutFreq/DomainFrequency),log2(SwitchFreq/DomainFrequency))) + 
+    geom_point() + 
+    geom_point(data=subset(cancer.feat_enrich, MutFreq/DomainFrequency > minMut & SwitchFreq/DomainFrequency > minSwitch),aes(log2(MutFreq/DomainFrequency),log2(SwitchFreq/DomainFrequency),color=Domain)) + 
+    smartas_theme() + 
+    geom_smooth(data=subset(cancer.feat_enrich,MutFreq>0 & SwitchFreq>0),method=lm) + 
+    geom_text(x=4,y=5,label=paste0("R = ",round(r,2)))
+  p <- direct.label(p)
+  
+  print(p)
+  
+  r <- cor(cancer.feat_enrich$MutFreq/cancer.feat_enrich$DomainFrequency,
+           cancer.feat_enrich$SwitchFreq/cancer.feat_enrich$DomainFrequency)
+  
+  p <- ggplot(cancer.feat_enrich,aes(MutFreq/DomainFrequency,SwitchFreq/DomainFrequency)) + 
+    geom_point() + 
+    geom_point(data=subset(cancer.feat_enrich, MutFreq/DomainFrequency > minMut & SwitchFreq/DomainFrequency > minSwitch),aes(MutFreq/DomainFrequency,SwitchFreq/DomainFrequency,color=Domain)) + 
+    smartas_theme() + 
+    geom_smooth(method=lm) + 
+    geom_text(x=20,y=100,label=paste0("R = ",round(r,2)))
+  p <- direct.label(p)
+  
+  print(p)
+  
+}
+```
+
+The non-logarithmic scale leads to think that usually changes achieved by splicing are not achieved by mutations and viceversa. Still, there are some outlier domains that are a bit outside the L-shape.
+
+When applying the log2 scale, some 
+
+## Analysis aggregating all tumors
+```{r}
+feat_enrich_agg <- ddply(feat_enrich,.(Domain), summarise, 
+                        MutIn=sum(MutIn), MutTotal=sum(MutTotal),
+                        SwitchesIn=sum(SwitchesIn), SwitchesTotal=sum(SwitchesTotal),
+                        MeanDomainFrequency=mean(DomainFrequency))
+feat_enrich_agg$MutFreq <- feat_enrich_agg$MutIn/feat_enrich_agg$MutTotal
+feat_enrich_agg$SwitchFreq <- feat_enrich_agg$SwitchesIn/feat_enrich_agg$SwitchesTotal
+
+minMut <- quantile(feat_enrich_agg$MutFreq/feat_enrich_agg$MeanDomainFrequency,0.95)
+minSwitch <- quantile(feat_enrich_agg$SwitchFreq/feat_enrich_agg$MeanDomainFrequency,0.95)
+
+# calculate regression coefficient
+r.df <- feat_enrich_agg[feat_enrich_agg$MutFreq > 0 & feat_enrich_agg$SwitchFreq > 0,]
+r <- cor(log2(r.df$MutFreq/r.df$MeanDomainFrequency),log2(r.df$SwitchFreq/r.df$MeanDomainFrequency))
+
+p <- ggplot(data=feat_enrich_agg,
+            aes(log2(MutFreq/MeanDomainFrequency),log2(SwitchFreq/MeanDomainFrequency))) + 
+  geom_point() + 
+  geom_point(data=subset(feat_enrich_agg,
+                         MutFreq/MeanDomainFrequency > minMut & 
+                         SwitchFreq/MeanDomainFrequency > minSwitch),
+             aes(log2(MutFreq/MeanDomainFrequency),
+                 log2(SwitchFreq/MeanDomainFrequency),
+                 color=Domain)) + 
+  smartas_theme() + 
+  geom_smooth(data=subset(feat_enrich_agg,MutFreq>0 & SwitchFreq>0),method=lm) + 
+  geom_text(x=4,y=5,label=paste0("R = ",round(r,2)))
+p <- direct.label(p)
+
+p
+
+r <- cor(feat_enrich_agg$MutFreq/feat_enrich_agg$MeanDomainFrequency,
+         feat_enrich_agg$SwitchFreq/feat_enrich_agg$MeanDomainFrequency)
+
+p <- ggplot(data=feat_enrich_agg,
+            aes(MutFreq/MeanDomainFrequency,SwitchFreq/MeanDomainFrequency)) + 
+  geom_point() + 
+  geom_point(data=subset(feat_enrich_agg,
+                         MutFreq/MeanDomainFrequency > minMut & 
+                         SwitchFreq/MeanDomainFrequency > minSwitch),
+             aes(MutFreq/MeanDomainFrequency,
+                 SwitchFreq/MeanDomainFrequency,
+                 color=Domain)) + 
+  smartas_theme() + 
+  geom_smooth(method=lm) + 
+  geom_text(x=20,y=100,label=paste0("R = ",round(r,2)))
+p <- direct.label(p)
+
+p
+```
