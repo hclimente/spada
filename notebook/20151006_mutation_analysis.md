@@ -1,3 +1,13 @@
+-   Specific switches: overlap in features affected by mutations and switches
+    -   Analysis per tumor type
+    -   Analysis aggregating all tumors
+    -   Comparison with meScores
+-   General overlap in features affected by mutations and switches
+    -   View of the dat
+        -   Analysis per tumor type
+    -   Analysis aggregating all tumors
+    -   Cluster in domain function
+
     ## Loading required package: grid
     ## Loading required package: quadprog
 
@@ -181,8 +191,10 @@ We look for structural features that are frequently mutated and we compare them 
 
 We annotated the domains relatively highly mutated and highly switched (highly meaning \> quantile 95).
 
-Analysis per tumor type
------------------------
+View of the dat
+---------------
+
+### Analysis per tumor type
 
 ``` r
 feat_enrich <- read.delim(paste0(wd,'feature_enrichment.txt'), header=TRUE)
@@ -194,29 +206,14 @@ feat_enrich$SwitchFreq <- feat_enrich$SwitchesIn/feat_enrich$SwitchesTotal
 
 for (cancer in cancerTypes){
   
+  cat(paste0(cancer,"\n"))
   cancer.feat_enrich <- feat_enrich[feat_enrich$Cancer==cancer,]
   
   # plot normalized mutation frequency and switched frequency
   minMut <- quantile(cancer.feat_enrich$MutFreq/cancer.feat_enrich$DomainFrequency,0.95)
   minSwitch <- quantile(cancer.feat_enrich$SwitchFreq/cancer.feat_enrich$DomainFrequency,0.95)
   
-
-  # calculate regression coefficient
-  r.df <- cancer.feat_enrich[cancer.feat_enrich$MutFreq > 0 & cancer.feat_enrich$SwitchFreq > 0,]
-  r <- cor(log2(r.df$MutFreq/r.df$DomainFrequency),log2(r.df$SwitchFreq/r.df$DomainFrequency))
-  
-  cat(paste0(cancer,"\n"))
-  
-  p <- ggplot(cancer.feat_enrich,aes(log2(MutFreq/DomainFrequency),log2(SwitchFreq/DomainFrequency))) + 
-    geom_point() + 
-    geom_point(data=subset(cancer.feat_enrich, MutFreq/DomainFrequency > minMut & SwitchFreq/DomainFrequency > minSwitch),aes(log2(MutFreq/DomainFrequency),log2(SwitchFreq/DomainFrequency),color=Domain)) + 
-    smartas_theme() + 
-    geom_smooth(data=subset(cancer.feat_enrich,MutFreq>0 & SwitchFreq>0),method=lm) + 
-    geom_text(x=4,y=5,label=paste0("R = ",round(r,2)))
-  p <- direct.label(p)
-  
-  print(p)
-  
+  # plot raw data
   r <- cor(cancer.feat_enrich$MutFreq/cancer.feat_enrich$DomainFrequency,
            cancer.feat_enrich$SwitchFreq/cancer.feat_enrich$DomainFrequency)
   
@@ -228,8 +225,7 @@ for (cancer in cancerTypes){
     geom_text(x=20,y=100,label=paste0("R = ",round(r,2)))
   p <- direct.label(p)
   
-  print(p)
-  
+  print(p)  
 }
 ```
 
@@ -237,54 +233,128 @@ for (cancer in cancerTypes){
 
     ## Loading required package: proto
 
-![](20151006_mutation_analysis_files/figure-markdown_github/unnamed-chunk-5-1.png) ![](20151006_mutation_analysis_files/figure-markdown_github/unnamed-chunk-5-2.png)
+![](20151006_mutation_analysis_files/figure-markdown_github/tumor_mutVsSwitch-1.png)
 
     ## coad
 
-![](20151006_mutation_analysis_files/figure-markdown_github/unnamed-chunk-5-3.png) ![](20151006_mutation_analysis_files/figure-markdown_github/unnamed-chunk-5-4.png)
+![](20151006_mutation_analysis_files/figure-markdown_github/tumor_mutVsSwitch-2.png)
 
     ## hnsc
 
-![](20151006_mutation_analysis_files/figure-markdown_github/unnamed-chunk-5-5.png) ![](20151006_mutation_analysis_files/figure-markdown_github/unnamed-chunk-5-6.png)
+![](20151006_mutation_analysis_files/figure-markdown_github/tumor_mutVsSwitch-3.png)
 
     ## kich
 
-![](20151006_mutation_analysis_files/figure-markdown_github/unnamed-chunk-5-7.png) ![](20151006_mutation_analysis_files/figure-markdown_github/unnamed-chunk-5-8.png)
+![](20151006_mutation_analysis_files/figure-markdown_github/tumor_mutVsSwitch-4.png)
 
     ## kirc
 
-![](20151006_mutation_analysis_files/figure-markdown_github/unnamed-chunk-5-9.png) ![](20151006_mutation_analysis_files/figure-markdown_github/unnamed-chunk-5-10.png)
+![](20151006_mutation_analysis_files/figure-markdown_github/tumor_mutVsSwitch-5.png)
 
     ## kirp
 
-![](20151006_mutation_analysis_files/figure-markdown_github/unnamed-chunk-5-11.png) ![](20151006_mutation_analysis_files/figure-markdown_github/unnamed-chunk-5-12.png)
+![](20151006_mutation_analysis_files/figure-markdown_github/tumor_mutVsSwitch-6.png)
 
     ## lihc
 
-![](20151006_mutation_analysis_files/figure-markdown_github/unnamed-chunk-5-13.png) ![](20151006_mutation_analysis_files/figure-markdown_github/unnamed-chunk-5-14.png)
+![](20151006_mutation_analysis_files/figure-markdown_github/tumor_mutVsSwitch-7.png)
 
     ## luad
 
-![](20151006_mutation_analysis_files/figure-markdown_github/unnamed-chunk-5-15.png) ![](20151006_mutation_analysis_files/figure-markdown_github/unnamed-chunk-5-16.png)
+![](20151006_mutation_analysis_files/figure-markdown_github/tumor_mutVsSwitch-8.png)
 
     ## lusc
 
-![](20151006_mutation_analysis_files/figure-markdown_github/unnamed-chunk-5-17.png) ![](20151006_mutation_analysis_files/figure-markdown_github/unnamed-chunk-5-18.png)
+![](20151006_mutation_analysis_files/figure-markdown_github/tumor_mutVsSwitch-9.png)
 
     ## prad
 
-![](20151006_mutation_analysis_files/figure-markdown_github/unnamed-chunk-5-19.png) ![](20151006_mutation_analysis_files/figure-markdown_github/unnamed-chunk-5-20.png)
+![](20151006_mutation_analysis_files/figure-markdown_github/tumor_mutVsSwitch-10.png)
 
     ## thca
 
-![](20151006_mutation_analysis_files/figure-markdown_github/unnamed-chunk-5-21.png) ![](20151006_mutation_analysis_files/figure-markdown_github/unnamed-chunk-5-22.png)
+![](20151006_mutation_analysis_files/figure-markdown_github/tumor_mutVsSwitch-11.png)
 
-The non-logarithmic scale leads to think that usually changes achieved by splicing are not achieved by mutations and viceversa. Still, there are some outlier domains that are a bit outside the L-shape.
+The non-logarithmic scale leads to think that usually changes achieved by splicing are not achieved by mutations and viceversa. Still, there are some outlier domains that are a bit outside the L-shape, suggesting that some features can either be affected by any mechanism. To find out about those, we remove the deatures that have 0 on either SwitchFreq or MutFreq, and perform a log2 to better observe them.
 
-When applying the log2 scale, some
+``` r
+  # plot log representations and remove those that have 0 on either side
+for (cancer in cancerTypes){
+  
+  cat(paste0(cancer,"\n"))
+  cancer.feat_enrich <- feat_enrich[feat_enrich$Cancer==cancer,]
+  
+  # plot normalized mutation frequency and switched frequency
+  minMut <- quantile(cancer.feat_enrich$MutFreq/cancer.feat_enrich$DomainFrequency,0.95)
+  minSwitch <- quantile(cancer.feat_enrich$SwitchFreq/cancer.feat_enrich$DomainFrequency,0.95)
+
+  # filter data and get correlation
+  r.df <- subset(cancer.feat_enrich, MutFreq != 0 & SwitchFreq != 0)
+  r <- cor(log2(r.df$MutFreq/r.df$DomainFrequency),
+           log2(r.df$SwitchFreq/r.df$DomainFrequency))
+  
+  p <- ggplot(r.df,aes(log2(MutFreq/DomainFrequency),log2(SwitchFreq/DomainFrequency))) + 
+    geom_point() + 
+    geom_point(data=subset(r.df, MutFreq/DomainFrequency > minMut & SwitchFreq/DomainFrequency > minSwitch),aes(log2(MutFreq/DomainFrequency),log2(SwitchFreq/DomainFrequency),color=Domain)) + 
+    smartas_theme() + 
+    geom_smooth(data=subset(r.df,MutFreq>0 & SwitchFreq>0),method=lm) + 
+    geom_text(x=-2,y=5,label=paste0("R = ",round(r,2)))
+  p <- direct.label(p)
+  
+  print(p)
+}
+```
+
+    ## brca
+
+![](20151006_mutation_analysis_files/figure-markdown_github/tumor_log_mutVsSwitch-1.png)
+
+    ## coad
+
+![](20151006_mutation_analysis_files/figure-markdown_github/tumor_log_mutVsSwitch-2.png)
+
+    ## hnsc
+
+![](20151006_mutation_analysis_files/figure-markdown_github/tumor_log_mutVsSwitch-3.png)
+
+    ## kich
+
+![](20151006_mutation_analysis_files/figure-markdown_github/tumor_log_mutVsSwitch-4.png)
+
+    ## kirc
+
+![](20151006_mutation_analysis_files/figure-markdown_github/tumor_log_mutVsSwitch-5.png)
+
+    ## kirp
+
+![](20151006_mutation_analysis_files/figure-markdown_github/tumor_log_mutVsSwitch-6.png)
+
+    ## lihc
+
+![](20151006_mutation_analysis_files/figure-markdown_github/tumor_log_mutVsSwitch-7.png)
+
+    ## luad
+
+![](20151006_mutation_analysis_files/figure-markdown_github/tumor_log_mutVsSwitch-8.png)
+
+    ## lusc
+
+![](20151006_mutation_analysis_files/figure-markdown_github/tumor_log_mutVsSwitch-9.png)
+
+    ## prad
+
+![](20151006_mutation_analysis_files/figure-markdown_github/tumor_log_mutVsSwitch-10.png)
+
+    ## thca
+
+![](20151006_mutation_analysis_files/figure-markdown_github/tumor_log_mutVsSwitch-11.png)
+
+When applying the log2 scale, not only some correlation appears, but some domains that appear to be interesting.
 
 Analysis aggregating all tumors
 -------------------------------
+
+We apply the same process to aggregated data from all tumors.
 
 ``` r
 feat_enrich_agg <- ddply(feat_enrich,.(Domain), summarise, 
@@ -297,30 +367,7 @@ feat_enrich_agg$SwitchFreq <- feat_enrich_agg$SwitchesIn/feat_enrich_agg$Switche
 minMut <- quantile(feat_enrich_agg$MutFreq/feat_enrich_agg$MeanDomainFrequency,0.95)
 minSwitch <- quantile(feat_enrich_agg$SwitchFreq/feat_enrich_agg$MeanDomainFrequency,0.95)
 
-# calculate regression coefficient
-r.df <- feat_enrich_agg[feat_enrich_agg$MutFreq > 0 & feat_enrich_agg$SwitchFreq > 0,]
-r <- cor(log2(r.df$MutFreq/r.df$MeanDomainFrequency),log2(r.df$SwitchFreq/r.df$MeanDomainFrequency))
-
-p <- ggplot(data=feat_enrich_agg,
-            aes(log2(MutFreq/MeanDomainFrequency),log2(SwitchFreq/MeanDomainFrequency))) + 
-  geom_point() + 
-  geom_point(data=subset(feat_enrich_agg,
-                         MutFreq/MeanDomainFrequency > minMut & 
-                         SwitchFreq/MeanDomainFrequency > minSwitch),
-             aes(log2(MutFreq/MeanDomainFrequency),
-                 log2(SwitchFreq/MeanDomainFrequency),
-                 color=Domain)) + 
-  smartas_theme() + 
-  geom_smooth(data=subset(feat_enrich_agg,MutFreq>0 & SwitchFreq>0),method=lm) + 
-  geom_text(x=4,y=5,label=paste0("R = ",round(r,2)))
-p <- direct.label(p)
-
-p
-```
-
-![](20151006_mutation_analysis_files/figure-markdown_github/unnamed-chunk-6-1.png)
-
-``` r
+# plot original data
 r <- cor(feat_enrich_agg$MutFreq/feat_enrich_agg$MeanDomainFrequency,
          feat_enrich_agg$SwitchFreq/feat_enrich_agg$MeanDomainFrequency)
 
@@ -341,4 +388,36 @@ p <- direct.label(p)
 p
 ```
 
-![](20151006_mutation_analysis_files/figure-markdown_github/unnamed-chunk-6-2.png)
+![](20151006_mutation_analysis_files/figure-markdown_github/aggregated_mutVsSwitch-1.png)
+
+``` r
+# plot log2 representations and remove those that have 0 on either side
+r.df <- subset(feat_enrich_agg, MutFreq != 0 & SwitchFreq != 0)
+r <- cor(log2(r.df$MutFreq/r.df$MeanDomainFrequency),
+         log2(r.df$SwitchFreq/r.df$MeanDomainFrequency))
+
+p <- ggplot(data=r.df,
+            aes(log2(MutFreq/MeanDomainFrequency),log2(SwitchFreq/MeanDomainFrequency))) + 
+  geom_point() + 
+  geom_point(data=subset(r.df,
+                         MutFreq/MeanDomainFrequency > minMut & 
+                         SwitchFreq/MeanDomainFrequency > minSwitch),
+             aes(log2(MutFreq/MeanDomainFrequency),
+                 log2(SwitchFreq/MeanDomainFrequency),
+                 color=Domain)) + 
+  smartas_theme() + 
+  geom_smooth(data=subset(r.df,MutFreq>0 & SwitchFreq>0),method=lm) + 
+  geom_text(x=-3,y=2,label=paste0("R = ",round(r,2)))
+p <- direct.label(p)
+
+p
+```
+
+![](20151006_mutation_analysis_files/figure-markdown_github/aggregated_log_mutVsSwitch-1.png)
+
+Similar results appear, but the correlation is quite lost, suggesting that the domains that need to be affected in each cancer type are tumor specific.
+
+Cluster in domain function
+--------------------------
+
+We wanted to know if there are some common functions between

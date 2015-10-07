@@ -3,6 +3,7 @@ title: "Features affected by mutations and switches"
 output:
   md_document:
     variant: markdown_github
+    toc: true
 ---
 
 ```{r environment, echo=FALSE}
@@ -152,40 +153,26 @@ We look for structural features that are frequently mutated and we compare them 
 
 We annotated the domains relatively highly mutated and highly switched (highly meaning > quantile 95).
 
-## Analysis per tumor type
-```{r}
+## View of the dat
+
+### Analysis per tumor type
+```{r tumor_mutVsSwitch}
 feat_enrich <- read.delim(paste0(wd,'feature_enrichment.txt'), header=TRUE)
 feat_enrich <- feat_enrich[feat_enrich$DomainFrequency != 0,]
-feat_enrich$MutTotal <- feat_enrich$MutIn + feat_enrich$MutOut
-feat_enrich$SwitchesTotal <- feat_enrich$SwitchesIn + feat_enrich$SwitchesOut
-feat_enrich$MutFreq <- feat_enrich$MutIn/feat_enrich$MutTotal
-feat_enrich$SwitchFreq <- feat_enrich$SwitchesIn/feat_enrich$SwitchesTotal
+feat_enrich$MutFreq <- feat_enrich$MutIn/feat_enrich$AllMuts
+feat_enrich$SwitchFreq <- feat_enrich$SwitchesIn/feat_enrich$AllSwitches
+feat_enrich$DomainFrequency <- feat_enrich$DomainCount/feat_enrich$AllDomains
 
 for (cancer in cancerTypes){
   
+  cat(paste0(cancer,"\n"))
   cancer.feat_enrich <- feat_enrich[feat_enrich$Cancer==cancer,]
   
   # plot normalized mutation frequency and switched frequency
   minMut <- quantile(cancer.feat_enrich$MutFreq/cancer.feat_enrich$DomainFrequency,0.95)
   minSwitch <- quantile(cancer.feat_enrich$SwitchFreq/cancer.feat_enrich$DomainFrequency,0.95)
   
-
-  # calculate regression coefficient
-  r.df <- cancer.feat_enrich[cancer.feat_enrich$MutFreq > 0 & cancer.feat_enrich$SwitchFreq > 0,]
-  r <- cor(log2(r.df$MutFreq/r.df$DomainFrequency),log2(r.df$SwitchFreq/r.df$DomainFrequency))
-  
-  cat(paste0(cancer,"\n"))
-  
-  p <- ggplot(cancer.feat_enrich,aes(log2(MutFreq/DomainFrequency),log2(SwitchFreq/DomainFrequency))) + 
-    geom_point() + 
-    geom_point(data=subset(cancer.feat_enrich, MutFreq/DomainFrequency > minMut & SwitchFreq/DomainFrequency > minSwitch),aes(log2(MutFreq/DomainFrequency),log2(SwitchFreq/DomainFrequency),color=Domain)) + 
-    smartas_theme() + 
-    geom_smooth(data=subset(cancer.feat_enrich,MutFreq>0 & SwitchFreq>0),method=lm) + 
-    geom_text(x=4,y=5,label=paste0("R = ",round(r,2)))
-  p <- direct.label(p)
-  
-  print(p)
-  
+  # plot raw data
   r <- cor(cancer.feat_enrich$MutFreq/cancer.feat_enrich$DomainFrequency,
            cancer.feat_enrich$SwitchFreq/cancer.feat_enrich$DomainFrequency)
   
@@ -197,58 +184,71 @@ for (cancer in cancerTypes){
     geom_text(x=20,y=100,label=paste0("R = ",round(r,2)))
   p <- direct.label(p)
   
-  print(p)
-  
+  print(p)  
 }
 ```
 
-The non-logarithmic scale leads to think that usually changes achieved by splicing are not achieved by mutations and viceversa. Still, there are some outlier domains that are a bit outside the L-shape.
+The non-logarithmic scale leads to think that usually changes achieved by splicing are not achieved by mutations and viceversa. Still, there are some outlier domains that are a bit outside the L-shape, suggesting that some features can either be affected by any mechanism. To find out about those, we remove the deatures that have 0 on either SwitchFreq or MutFreq, and perform a log2 to better observe them.
 
-When applying the log2 scale, some 
+
+```{r tumor_log_mutVsSwitch}
+  # plot log representations and remove those that have 0 on either side
+for (cancer in cancerTypes){
+  
+  cat(paste0(cancer,"\n"))
+  cancer.feat_enrich <- feat_enrich[feat_enrich$Cancer==cancer,]
+  
+  # plot normalized mutation frequency and switched frequency
+  minMut <- quantile(cancer.feat_enrich$MutFreq/cancer.feat_enrich$DomainFrequency,0.95)
+  minSwitch <- quantile(cancer.feat_enrich$SwitchFreq/cancer.feat_enrich$DomainFrequency,0.95)
+
+  # filter data and get correlation
+  r.df <- subset(cancer.feat_enrich, MutFreq != 0 & SwitchFreq != 0)
+  r <- cor(log2(r.df$MutFreq/r.df$DomainFrequency),
+           log2(r.df$SwitchFreq/r.df$DomainFrequency))
+  
+  p <- ggplot(r.df,aes(log2(MutFreq/DomainFrequency),log2(SwitchFreq/DomainFrequency))) + 
+    geom_point() + 
+    geom_point(data=subset(r.df, MutFreq/DomainFrequency > minMut & SwitchFreq/DomainFrequency > minSwitch),aes(log2(MutFreq/DomainFrequency),log2(SwitchFreq/DomainFrequency),color=Domain)) + 
+    smartas_theme() + 
+    geom_smooth(data=subset(r.df,MutFreq>0 & SwitchFreq>0),method=lm) + 
+    geom_text(x=-2,y=5,label=paste0("R = ",round(r,2)))
+  p <- direct.label(p)
+  
+  print(p)
+}
+```
+
+When applying the log2 scale, not only some correlation appears, but some domains that appear to be interesting.
 
 ## Analysis aggregating all tumors
-```{r}
+
+We apply the same process to aggregated data from all tumors.
+
+```{r aggregated_mutVsSwitch}
 feat_enrich_agg <- ddply(feat_enrich,.(Domain), summarise, 
-                        MutIn=sum(MutIn), MutTotal=sum(MutTotal),
-                        SwitchesIn=sum(SwitchesIn), SwitchesTotal=sum(SwitchesTotal),
-                        MeanDomainFrequency=mean(DomainFrequency))
-feat_enrich_agg$MutFreq <- feat_enrich_agg$MutIn/feat_enrich_agg$MutTotal
-feat_enrich_agg$SwitchFreq <- feat_enrich_agg$SwitchesIn/feat_enrich_agg$SwitchesTotal
+                        MutIn=sum(MutIn), AllMuts=sum(AllMuts),
+                        SwitchesIn=sum(SwitchesIn), AllSwitches=sum(AllSwitches),
+                        DomainCount=sum(DomainCount),AllDomains=sum(AllDomains))
+feat_enrich_agg$MutFreq <- feat_enrich_agg$MutIn/feat_enrich_agg$AllMuts
+feat_enrich_agg$SwitchFreq <- feat_enrich_agg$SwitchesIn/feat_enrich_agg$AllSwitches
+feat_enrich_agg$DomainFrequency <- feat_enrich_agg$DomainCount/feat_enrich_agg$AllDomains
 
-minMut <- quantile(feat_enrich_agg$MutFreq/feat_enrich_agg$MeanDomainFrequency,0.95)
-minSwitch <- quantile(feat_enrich_agg$SwitchFreq/feat_enrich_agg$MeanDomainFrequency,0.95)
+minMut <- quantile(feat_enrich_agg$MutFreq/feat_enrich_agg$DomainFrequency,0.95)
+minSwitch <- quantile(feat_enrich_agg$SwitchFreq/feat_enrich_agg$DomainFrequency,0.95)
 
-# calculate regression coefficient
-r.df <- feat_enrich_agg[feat_enrich_agg$MutFreq > 0 & feat_enrich_agg$SwitchFreq > 0,]
-r <- cor(log2(r.df$MutFreq/r.df$MeanDomainFrequency),log2(r.df$SwitchFreq/r.df$MeanDomainFrequency))
-
-p <- ggplot(data=feat_enrich_agg,
-            aes(log2(MutFreq/MeanDomainFrequency),log2(SwitchFreq/MeanDomainFrequency))) + 
-  geom_point() + 
-  geom_point(data=subset(feat_enrich_agg,
-                         MutFreq/MeanDomainFrequency > minMut & 
-                         SwitchFreq/MeanDomainFrequency > minSwitch),
-             aes(log2(MutFreq/MeanDomainFrequency),
-                 log2(SwitchFreq/MeanDomainFrequency),
-                 color=Domain)) + 
-  smartas_theme() + 
-  geom_smooth(data=subset(feat_enrich_agg,MutFreq>0 & SwitchFreq>0),method=lm) + 
-  geom_text(x=4,y=5,label=paste0("R = ",round(r,2)))
-p <- direct.label(p)
-
-p
-
-r <- cor(feat_enrich_agg$MutFreq/feat_enrich_agg$MeanDomainFrequency,
-         feat_enrich_agg$SwitchFreq/feat_enrich_agg$MeanDomainFrequency)
+# plot original data
+r <- cor(feat_enrich_agg$MutFreq/feat_enrich_agg$DomainFrequency,
+         feat_enrich_agg$SwitchFreq/feat_enrich_agg$DomainFrequency)
 
 p <- ggplot(data=feat_enrich_agg,
-            aes(MutFreq/MeanDomainFrequency,SwitchFreq/MeanDomainFrequency)) + 
+            aes(MutFreq/DomainFrequency,SwitchFreq/DomainFrequency)) + 
   geom_point() + 
   geom_point(data=subset(feat_enrich_agg,
-                         MutFreq/MeanDomainFrequency > minMut & 
-                         SwitchFreq/MeanDomainFrequency > minSwitch),
-             aes(MutFreq/MeanDomainFrequency,
-                 SwitchFreq/MeanDomainFrequency,
+                         MutFreq/DomainFrequency > minMut & 
+                         SwitchFreq/DomainFrequency > minSwitch),
+             aes(MutFreq/DomainFrequency,
+                 SwitchFreq/DomainFrequency,
                  color=Domain)) + 
   smartas_theme() + 
   geom_smooth(method=lm) + 
@@ -256,4 +256,70 @@ p <- ggplot(data=feat_enrich_agg,
 p <- direct.label(p)
 
 p
+
+```
+
+```{r aggregated_log_mutVsSwitch }
+
+# plot log2 representations and remove those that have 0 on either side
+r.df <- subset(feat_enrich_agg, MutFreq != 0 & SwitchFreq != 0)
+r <- cor(log2(r.df$MutFreq/r.df$DomainFrequency),
+         log2(r.df$SwitchFreq/r.df$DomainFrequency))
+
+p <- ggplot(data=r.df,
+            aes(log2(MutFreq/DomainFrequency),log2(SwitchFreq/DomainFrequency))) + 
+  geom_point() + 
+  geom_point(data=subset(r.df,
+                         MutFreq/DomainFrequency > minMut & 
+                         SwitchFreq/DomainFrequency > minSwitch),
+             aes(log2(MutFreq/DomainFrequency),
+                 log2(SwitchFreq/DomainFrequency),
+                 color=Domain)) + 
+  smartas_theme() + 
+  geom_smooth(data=subset(r.df,MutFreq>0 & SwitchFreq>0),method=lm) + 
+  geom_text(x=-3,y=2,label=paste0("R = ",round(r,2)))
+p <- direct.label(p)
+
+p
+```
+
+Similar results appear, but the correlation is quite lost, suggesting that the domains that need to be affected in each cancer type are tumor specific.
+
+## Cluster in domain function
+
+We wanted to know if the correlation improves if we aggregate the domains by function affected. So, maybe if domains that are only affected by mutations or by switches actually share some functions.
+
+```{r}
+prosite_annotation <- read.delim(paste0(workingDir,"/Data/Databases/prosite2go.clean.txt"),row.names = NULL,header=F)
+pfam_annotation <- read.delim(paste0(workingDir,"/Data/Databases/Pfam2go.clean.txt"),row.names = NULL,header=F)
+annotation <- rbind(prosite_annotation,pfam_annotation)
+
+colnames(annotation) <- c("id","GO")
+  
+z <- gsub(";GO:[[:digit:]]+", "", annotation$GO)
+z <- gsub("^GO:", "", z)
+z <- paste0(toupper(substring(z, 1,1)),substring(z, 2))
+  
+annotation$GO <- z
+
+feat_enrich_agg$id <- unlist(strsplit(as.character(feat_enrich_agg$Domain),"|",fixed = T))[c(T,F)]
+
+feat_enrich_agg <- merge(feat_enrich_agg,annotation,all.x=T)
+
+feat_function_aggregated <- ddply(feat_enrich_agg,.(GO),MutIn=sum(MutIn),AllMuts = sum(AllMuts), SwitchesIn = sum(SwitchesIn), AllSwitches = sum(AllSwitches))
+
+feat_function_aggregated$MutFreq <- feat_function_aggregated$MutIn/feat_function_aggregated$AllMuts
+feat_function_aggregated$SwitchFreq <- feat_function_aggregated$SwitchesIn/feat_function_aggregated$AllSwitches
+
+# plot original data
+r <- cor(feat_function_aggregated$MutFreq,feat_function_aggregated$SwitchFreq)
+
+p <- ggplot(data=feat_function_aggregated,aes(MutFreq,SwitchFreq)) + 
+  geom_point() + 
+  smartas_theme() + 
+  geom_smooth(method=lm) + 
+  geom_text(x=20,y=100,label=paste0("R = ",round(r,2)))
+
+p
+
 ```
