@@ -1,5 +1,7 @@
 ---
 title: "Features affected by mutations and switches"
+author: "Héctor Climente"
+date: "10/06/2015"
 output:
   md_document:
     variant: markdown_github
@@ -9,7 +11,19 @@ output:
 ```{r environment, echo=FALSE}
 source("~/SmartAS/Pipeline/scripts/variablesAndFunctions.r")
 library(knitr)
-wd <- paste0(workingDir,"/mutations/")
+results_filepath <- paste0(workingDir,"/mutations/")
+wd <- paste0("~/SmartAS/Pipeline/notebook/20151006_mutation_analysis_files/data/")
+```
+
+```{r get_files, echo=FALSE}
+dir.create(wd,recursive=T)
+
+file.copy(paste0(results_filepath,"mutation_switch_feature_overlap.txt"),wd,overwrite = T)
+file.copy(paste0(results_filepath,"tables/scoredMEGenes.txt"),wd,overwrite = T)
+file.copy(paste0(results_filepath,'feature_enrichment.txt'),wd,overwrite = T)
+file.copy(paste0(workingDir,"/Data/Databases/prosite2go.clean.txt"),wd,overwrite = T)
+file.copy(paste0(workingDir,"/Data/Databases/Pfam2go.clean.txt"),wd,overwrite = T)
+
 ```
 
 We studied how switches and mutations affect the same features of the genes. In this study, we will consider protein-affecting mutations only. The goal is to find features that might be activated or inactivated in tumor both through mutations and splicing changes.
@@ -21,7 +35,7 @@ Make a binomial test to find switched features that are frequently mutated. The 
 ## Analysis per tumor type
 ```{r}
 mut_feat_overlap <- read.delim(paste0(wd,"mutation_switch_feature_overlap.txt"), header=TRUE)
-colnames(mut_feat_overlap) <- c("Gene","Symbol","Cancer","Normal_transcript","Tumor_transcript","What","FeatureType","Feature","Ratio","Driver","TotalMutations","MutationsInFeature","FeatureSize")
+
 pvals <- apply(mut_feat_overlap[,c("MutationsInFeature","TotalMutations","FeatureSize")],1, function(x){ 
   if (x[2]==0){
     p <- 1
@@ -37,7 +51,7 @@ mut_feat_overlap$p <- pvals
 mut_feat_overlap$adjp <- adjpvalues
 mut_feat_overlap <- mut_feat_overlap[order(mut_feat_overlap$p),]
 
-write.table(mut_feat_overlap,paste0(wd,'tables/mutation_switch_feature_overlap_withPVals.txt'),quote=F,col.names=T,sep="\t",row.names=FALSE)
+write.table(mut_feat_overlap,paste0(results_filepath,'tables/mutation_switch_feature_overlap_withPVals.txt'),quote=F,col.names=T,sep="\t",row.names=FALSE)
 ```
 
 ```{r top30_byTumor, echo=FALSE}
@@ -66,7 +80,7 @@ Some interesting cases:
 ```{r}
 mut_feat_overlap_agg <- ddply(mut_feat_overlap,
                               .(Gene,Symbol,Normal_transcript,Tumor_transcript,What,
-                                FeatureType,Feature,Driver,FeatureSize), 
+                                DomainNumber,FeatureType,Feature,Driver,FeatureSize), 
                               summarise, inMut=sum(MutationsInFeature), 
                               totalMut=sum(TotalMutations) )
 mut_feat_overlap_agg$Ratio = 100 * mut_feat_overlap_agg$inMut/mut_feat_overlap_agg$totalMut
@@ -86,7 +100,7 @@ mut_feat_overlap_agg$p_mutation_feature_overlap <- pvals
 mut_feat_overlap_agg$adjp_mutation_feature_overlap <- adjpvalues
 mut_feat_overlap_agg <- mut_feat_overlap_agg[order(mut_feat_overlap_agg$p_mutation_feature_overlap),]
 
-write.table(mut_feat_overlap_agg,paste0(wd,'tables/mutation_switch_feature_overlap_allCancers_withPVals.txt'),quote=F,col.names=T,sep="\t",row.names=FALSE)
+write.table(mut_feat_overlap_agg,paste0(results_filepath,'tables/mutation_switch_feature_overlap_allCancers_withPVals.txt'),quote=F,col.names=T,sep="\t",row.names=FALSE)
 
 ```
 
@@ -107,7 +121,7 @@ ggplot() +
 There is a big overlap with the previous list regarding the top genes. It will be interesting to check if these mutations tend to appear in the same patients as the switch of in different ones. In order to do that, we will show the meScore for those genes:
 
 ```{r significant_allTumors, echo=FALSE}
-meScore <- read.delim(paste0(wd,"tables/scoredMEGenes.txt"), header=TRUE)
+meScore <- read.delim(paste0(wd,"scoredMEGenes.txt"), header=TRUE)
 
 mg.df <- merge(subset(mut_feat_overlap_agg,p_mutation_feature_overlap < 0.05),meScore,by.x=c("Gene","Symbol","Normal_transcript","Tumor_transcript"),by.y=c("Gene","Symbol","nTx","tTx"))
 mg.df <- mg.df[order(-mg.df$Score),]
@@ -158,10 +172,10 @@ We annotated the domains relatively highly mutated and highly switched (highly m
 ### Analysis per tumor type
 ```{r tumor_mutVsSwitch}
 feat_enrich <- read.delim(paste0(wd,'feature_enrichment.txt'), header=TRUE)
-feat_enrich <- feat_enrich[feat_enrich$DomainFrequency != 0,]
 feat_enrich$MutFreq <- feat_enrich$MutIn/feat_enrich$AllMuts
 feat_enrich$SwitchFreq <- feat_enrich$SwitchesIn/feat_enrich$AllSwitches
 feat_enrich$DomainFrequency <- feat_enrich$DomainCount/feat_enrich$AllDomains
+feat_enrich <- feat_enrich[feat_enrich$DomainFrequency != 0,]
 
 for (cancer in cancerTypes){
   
@@ -188,7 +202,7 @@ for (cancer in cancerTypes){
 }
 ```
 
-The non-logarithmic scale leads to think that usually changes achieved by splicing are not achieved by mutations and viceversa. Still, there are some outlier domains that are a bit outside the L-shape, suggesting that some features can either be affected by any mechanism. To find out about those, we remove the deatures that have 0 on either SwitchFreq or MutFreq, and perform a log2 to better observe them.
+The non-logarithmic scale leads to think that usually changes achieved by splicing are not achieved by mutations and viceversa. Still, there are some outlier domains that are a bit outside the L-shape, suggesting that some features can either be affected by any mechanism. To find out about those, we remove the features that have 0 on either SwitchFreq or MutFreq.
 
 
 ```{r tumor_log_mutVsSwitch}
@@ -204,22 +218,22 @@ for (cancer in cancerTypes){
 
   # filter data and get correlation
   r.df <- subset(cancer.feat_enrich, MutFreq != 0 & SwitchFreq != 0)
-  r <- cor(log2(r.df$MutFreq/r.df$DomainFrequency),
-           log2(r.df$SwitchFreq/r.df$DomainFrequency))
+  r <- cor(r.df$MutFreq/r.df$DomainFrequency,r.df$SwitchFreq/r.df$DomainFrequency)
   
-  p <- ggplot(r.df,aes(log2(MutFreq/DomainFrequency),log2(SwitchFreq/DomainFrequency))) + 
+  p <- ggplot(r.df,aes(MutFreq/DomainFrequency,SwitchFreq/DomainFrequency)) + 
     geom_point() + 
-    geom_point(data=subset(r.df, MutFreq/DomainFrequency > minMut & SwitchFreq/DomainFrequency > minSwitch),aes(log2(MutFreq/DomainFrequency),log2(SwitchFreq/DomainFrequency),color=Domain)) + 
+    geom_point(data=subset(r.df, MutFreq/DomainFrequency > minMut & SwitchFreq/DomainFrequency > minSwitch),aes(MutFreq/DomainFrequency,SwitchFreq/DomainFrequency,color=Domain)) + 
     smartas_theme() + 
-    geom_smooth(data=subset(r.df,MutFreq>0 & SwitchFreq>0),method=lm) + 
-    geom_text(x=-2,y=5,label=paste0("R = ",round(r,2)))
+    geom_smooth(method=lm) + 
+    geom_text(x=6,y=20,label=paste0("R = ",round(r,2)))
   p <- direct.label(p)
   
   print(p)
+  
 }
 ```
 
-When applying the log2 scale, not only some correlation appears, but some domains that appear to be interesting.
+Not only some correlation appears, but some domains that appear to be interesting are among the most highest mutated and switched.
 
 ## Analysis aggregating all tumors
 
@@ -256,28 +270,22 @@ p <- ggplot(data=feat_enrich_agg,
 p <- direct.label(p)
 
 p
-
 ```
 
 ```{r aggregated_log_mutVsSwitch }
 
 # plot log2 representations and remove those that have 0 on either side
 r.df <- subset(feat_enrich_agg, MutFreq != 0 & SwitchFreq != 0)
-r <- cor(log2(r.df$MutFreq/r.df$DomainFrequency),
-         log2(r.df$SwitchFreq/r.df$DomainFrequency))
+r <- cor(r.df$MutFreq/r.df$DomainFrequency,r.df$SwitchFreq/r.df$DomainFrequency)
 
-p <- ggplot(data=r.df,
-            aes(log2(MutFreq/DomainFrequency),log2(SwitchFreq/DomainFrequency))) + 
+p <- ggplot(data=r.df,aes(MutFreq/DomainFrequency,SwitchFreq/DomainFrequency)) + 
   geom_point() + 
-  geom_point(data=subset(r.df,
-                         MutFreq/DomainFrequency > minMut & 
+  geom_point(data=subset(r.df,MutFreq/DomainFrequency > minMut & 
                          SwitchFreq/DomainFrequency > minSwitch),
-             aes(log2(MutFreq/DomainFrequency),
-                 log2(SwitchFreq/DomainFrequency),
-                 color=Domain)) + 
+             aes(MutFreq/DomainFrequency,SwitchFreq/DomainFrequency,color=Domain)) + 
   smartas_theme() + 
-  geom_smooth(data=subset(r.df,MutFreq>0 & SwitchFreq>0),method=lm) + 
-  geom_text(x=-3,y=2,label=paste0("R = ",round(r,2)))
+  geom_smooth(method=lm) + 
+  geom_text(x=6,y=20,label=paste0("R = ",round(r,2)))
 p <- direct.label(p)
 
 p
@@ -289,37 +297,74 @@ Similar results appear, but the correlation is quite lost, suggesting that the d
 
 We wanted to know if the correlation improves if we aggregate the domains by function affected. So, maybe if domains that are only affected by mutations or by switches actually share some functions.
 
-```{r}
-prosite_annotation <- read.delim(paste0(workingDir,"/Data/Databases/prosite2go.clean.txt"),row.names = NULL,header=F)
-pfam_annotation <- read.delim(paste0(workingDir,"/Data/Databases/Pfam2go.clean.txt"),row.names = NULL,header=F)
-annotation <- rbind(prosite_annotation,pfam_annotation)
+The frequencies are calculated as the quotient between the "in" counts (mutations in the feature, switches affecting the feature, of number of times that feature is observed in the proteome) and the total number of counts.
 
+```{r feat_by_GO_preparation}
+
+# read GO termns
+prosite_annotation <- read.delim(paste0(wd,"prosite2go.clean.txt"),row.names = NULL,header=F)
+pfam_annotation <- read.delim(paste0(wd,"Pfam2go.clean.txt"),row.names = NULL,header=F)
+
+annotation <- rbind(prosite_annotation,pfam_annotation)
 colnames(annotation) <- c("id","GO")
-  
+
+# remove the GO prefix from all of them  
 z <- gsub(";GO:[[:digit:]]+", "", annotation$GO)
 z <- gsub("^GO:", "", z)
 z <- paste0(toupper(substring(z, 1,1)),substring(z, 2))
   
 annotation$GO <- z
 
+# get the interpro id for the domains
 feat_enrich_agg$id <- unlist(strsplit(as.character(feat_enrich_agg$Domain),"|",fixed = T))[c(T,F)]
 
+# merge the two tables. if a domain has several annotations, if will appear several times
 feat_enrich_agg <- merge(feat_enrich_agg,annotation,all.x=T)
 
-feat_function_aggregated <- ddply(feat_enrich_agg,.(GO),MutIn=sum(MutIn),AllMuts = sum(AllMuts), SwitchesIn = sum(SwitchesIn), AllSwitches = sum(AllSwitches))
+# aggregate by GO term and calculate the frequencies
+feat_function_aggregated <- ddply(feat_enrich_agg,.(GO),summarise,MutIn=sum(MutIn),AllMuts = sum(AllMuts), SwitchesIn = sum(SwitchesIn), AllSwitches = sum(AllSwitches), DomainCount=sum(DomainCount),AllDomains=sum(AllDomains))
 
 feat_function_aggregated$MutFreq <- feat_function_aggregated$MutIn/feat_function_aggregated$AllMuts
 feat_function_aggregated$SwitchFreq <- feat_function_aggregated$SwitchesIn/feat_function_aggregated$AllSwitches
+feat_function_aggregated$GOFrequency <- feat_function_aggregated$DomainCount/feat_function_aggregated$AllDomains
+```
+
+```{r feat_by_GO_raw}
 
 # plot original data
-r <- cor(feat_function_aggregated$MutFreq,feat_function_aggregated$SwitchFreq)
+r <- cor(feat_function_aggregated$MutFreq/feat_function_aggregated$GOFrequency,feat_function_aggregated$SwitchFreq/feat_function_aggregated$GOFrequency)
 
-p <- ggplot(data=feat_function_aggregated,aes(MutFreq,SwitchFreq)) + 
+p <- ggplot(data=feat_function_aggregated,aes(MutFreq/GOFrequency,SwitchFreq/GOFrequency)) + 
   geom_point() + 
   smartas_theme() + 
   geom_smooth(method=lm) + 
-  geom_text(x=20,y=100,label=paste0("R = ",round(r,2)))
+  geom_text(x=20,y=20,label=paste0("R = ",round(r,2)))
 
 p
-
 ```
+
+Same as before, there seems to be a mutual exclusion between functions affected by mutations and functions affected by alternative splicing.
+
+```{r feat_by_GO_filtered}
+
+r.df <- subset(feat_function_aggregated, SwitchFreq != 0 & MutFreq != 0)
+r <- cor(r.df$MutFreq/r.df$GOFrequency,r.df$SwitchFreq/r.df$GOFrequency)
+
+# show the extreme values
+minMut <- quantile(r.df$MutFreq/r.df$GOFrequency,0.95)
+minSwitch <- quantile(r.df$SwitchFreq/r.df$GOFrequency,0.95)
+
+p <- ggplot(data=r.df,aes(MutFreq/GOFrequency,SwitchFreq/GOFrequency)) + 
+  geom_point() + 
+  geom_point(data=subset(r.df,MutFreq/GOFrequency > minMut & 
+                         SwitchFreq/GOFrequency > minSwitch),
+             aes(MutFreq/GOFrequency,SwitchFreq/GOFrequency,color=GO)) +
+  smartas_theme() + 
+  geom_smooth(method=lm) + 
+  geom_text(x=6,y=20,label=paste0("R = ",round(r,2)))
+p <- direct.label(p)
+
+p
+```
+
+Removing the cases with perfect mutual exclusion only stresses the L-shape of the distribution. Only the urocanate metabolism stands out, same as in previous analyses. This amino acid is part of the degradation of the histidine, and any relation to cancer progression is not evident.
