@@ -1,0 +1,119 @@
+---
+title: "CoMEt"
+author: "Héctor Climente"
+date: "10/07/2015"
+output:
+  md_document:
+    variant: markdown_github
+---
+
+We wanted to use [CoMEt](https://github.com/raphael-group/comet) to find cases of mutual exclusion without a priori knowledge of genesets.
+
+```{r environment, include=FALSE}
+
+source("~/SmartAS/Pipeline/scripts/variablesAndFunctions.r")
+library(knitr)
+
+```
+
+# About CoMEt
+
+[CoMEt](http://www.genomebiology.com/2015/16/1/160). There are some parameters that have to be decided by the user.
+
+* Geneset size:
+* Output:
+  * Weight: coverage of a set M of k genes minus the coverage overlap (co-occurring mutations) of M.
+  * Phi (score): result of an exact test of mutual exclusivity.
+
+# Data preparation
+
+```{r prepraration}
+
+candidatesDf <- read.delim(paste0(workingDir,"/switches/tables/candidateList_splitByTumor_models_notNoise.txt"))
+
+# pick functional ones
+candidatesDf <- candidatesDf[candidatesDf$IsRelevant == 1,]
+
+for (cancer in cancerTypes){
+  cancer.df <- candidatesDf[candidatesDf$Tumor==cancer,c("GeneId","Patients_affected","Symbol")]
+  
+  genes_and_patients <- by(cancer.df,cancer.df$GeneId,function(x){
+    p <- intersect(unlist(strsplit(as.character(x$Patients_affected[1]),",")),commonPatients)
+    if (length(p)>0) {
+      data.frame("Patient"=p,"Gene"=x$Symbol[1])
+    }
+  })
+  genes_and_patients <- do.call("rbind",genes_and_patients)
+  
+  # create input for CoMEt
+  alt_matrix <- ddply(genes_and_patients,.(Patient),summarise,"Switches"=toString(Gene))
+  alt_matrix$Switches <- gsub(", ","\t",alt_matrix$Switches)
+  
+  write.table(alt_matrix,file=paste0(workingDir,"/switches/tables/",cancer,"_comet_onlySwitches.txt"),sep="\t", row.names=F, col.names=F, quote=F)
+}
+```
+
+The result is a matrix where each patient is in a row and the switched genes are tab-separated.
+
+# Run CoMEt
+
+```{r run }
+
+cancer <- "brca"
+genesetSize <- 4
+
+cometCommand <- paste("python","~/SmartAS/Pipeline_experimental/libs/comet/run_comet.py","-m", paste0(workingDir,"/switches/tables/",cancer,"_comet_onlySwitches.txt","-o",paste0("comet_",cancer),"-ks",genesetSize,sep=" ")
+
+system(cometCommand)
+
+output <- paste0("comet_",cancer,".sum.k",genesetSize,".1K.1.tsv")
+
+
+```
+
+```{r mutation_handle, eval=FALSE, include=FALSE}
+
+candidatesDf <- read.delim(paste0(workingDir,"/switches/tables/candidateList_splitByTumor_models_notNoise.txt"))
+
+# pick functional ones
+candidatesDf <- candidatesDf[candidatesDf$IsRelevant == 1,]
+
+allPatients_byCancerType <- ddply(candidatesDf,.(Tumor),summarise,patients=list(unique(unlist(strsplit(as.character(Patients_affected),",")))))
+
+cancer <- "brca"
+
+# read mutations
+mutations <- read.delim(paste0(workingDir,"/Data/TCGA/Rawdata/",cancer,"_gene_mutation-functional-count_full.txt"),header=F)
+
+# remove not assigned to patient and pcik genes and patients columns
+mutations <- mutations[mutations$V10!=".",c("V4","V10")]
+colnames(mutations) <- c("Gene","Patient")
+
+patient_info <- do.call("rbind",strsplit(as.character(mutations$Patient),";"))
+colnames(patient_info) <- c("Patient","Alteration")
+
+gene_info <- do.call("rbind",strsplit(as.character(mutations$Gene),"|",fixed=T))
+colnames(gene_info) <- c("Symbol","GeneId")
+
+mutations_f <- as.data.frame(cbind(gene_info,patient_info))
+
+mutations_f$Patient <- substr(mutations_f$Patient,1,nchar(as.character(mutations_f$Patient))-1)
+
+# intersect the patients with any switch and the patients with any mutation
+commonPatients <- intersect(allPatients_byCancerType$patients[allPatients_byCancerType$Tumor==cancer][[1]],mutations_f$Patient)
+
+patients <- by(candidatesDf[candidatesDf$Tumor==cancer,c("GeneId","Patients_affected")],candidatesDf$GeneId[candidatesDf$Tumor==cancer],function(x){
+  p <- intersect(unlist(strsplit(as.character(x[1,2]),",")),commonPatients)
+  if (length(p)>0) {
+    data.frame("Patient"=p,"GeneId"=x[1,1])
+  }
+})
+
+patients <- do.call("rbind",patients)
+
+mat <- ddply(patients,.(Patient),summarise,"Switches"=toString(GeneId))
+mat$Switches <- gsub(", ","\t",mat$Switches)
+
+write.table(mat,file=paste0(workingDir,"/switches/tables/",cancer,".patients.txt"),sep="\t", row.names=F, col.names=F, quote=F)
+
+```
