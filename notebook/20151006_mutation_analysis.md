@@ -1,13 +1,3 @@
-    ## [1] TRUE
-
-    ## [1] TRUE
-
-    ## [1] TRUE
-
-    ## [1] TRUE
-
-    ## [1] TRUE
-
 We studied how switches and mutations affect the same features of the genes. In this study, we will consider protein-affecting mutations only. The goal is to find features that might be activated or inactivated in tumor both through mutations and splicing changes.
 
 Specific switches: overlap in features affected by mutations and switches

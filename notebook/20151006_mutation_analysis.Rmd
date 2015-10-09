@@ -7,14 +7,14 @@ output:
     variant: markdown_github
 ---
 
-```{r environment, echo=FALSE, message=FALSE, warning=FALSE}
+```{r environment, include=FALSE }
 source("~/SmartAS/Pipeline/scripts/variablesAndFunctions.r")
 library(knitr)
 results_filepath <- paste0(workingDir,"/mutations/")
 wd <- paste0("~/SmartAS/Pipeline/notebook/20151006_mutation_analysis_files/data/")
 ```
 
-```{r get_files, echo=FALSE, message=FALSE, warning=FALSE, results=FALSE}
+```{r get_files, include=FALSE }
 dir.create(wd,recursive=T)
 
 file.copy(paste0(results_filepath,"mutation_switch_feature_overlap.txt"),wd,overwrite = T)
