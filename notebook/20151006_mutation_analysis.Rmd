@@ -5,17 +5,16 @@ date: "10/06/2015"
 output:
   md_document:
     variant: markdown_github
-    toc: true
 ---
 
-```{r environment, echo=FALSE}
+```{r environment, echo=FALSE, message=FALSE, warning=FALSE}
 source("~/SmartAS/Pipeline/scripts/variablesAndFunctions.r")
 library(knitr)
 results_filepath <- paste0(workingDir,"/mutations/")
 wd <- paste0("~/SmartAS/Pipeline/notebook/20151006_mutation_analysis_files/data/")
 ```
 
-```{r get_files, echo=FALSE}
+```{r get_files, echo=FALSE, message=FALSE, warning=FALSE, results=FALSE}
 dir.create(wd,recursive=T)
 
 file.copy(paste0(results_filepath,"mutation_switch_feature_overlap.txt"),wd,overwrite = T)
@@ -55,25 +54,30 @@ write.table(mut_feat_overlap,paste0(results_filepath,'tables/mutation_switch_fea
 ```
 
 ```{r top30_byTumor, echo=FALSE}
-kable(head(unique(mut_feat_overlap[,c("Cancer","Symbol","What","Feature","Driver","p","adjp")]),n = 30),row.names = F, 
-      caption = "Top 30 more significant cases of overlap between mutations and switches",
-      digits=3)
+df <- mut_feat_overlap[,c("Cancer","Symbol","What","Feature","Driver","p","adjp")]
+
+df$Feature <- gsub("|","-",df$Feature,fixed = T)
+df$Feature <- gsub("_"," ",df$Feature,fixed = T)
+
+kable(head(unique(df),n = 30),row.names = F, digits=3)
 
 ```
 
+*Table. Top 30 more significant cases of overlap between mutations and switches*
+
 Some interesting cases:
 
-* EGFR, due to the loss of the kinase domain. Also MEGF6.
+* LATS1: Protein kinase domain
 
-* Thrombospondins are secreted proteins with antiangiogenic abilities. 
+* ADAMTSL1: Thrombospondins are secreted proteins with antiangiogenic abilities. 
 
 * Some domains related to transcription
 
-> The **FF domain** is present in a variety of nuclear transcription and splicing factors, as well as the p190 family of RhoGAPs.
+> ARHGAP5: The **FF domain** is present in a variety of nuclear transcription and splicing factors, as well as the p190 family of RhoGAPs.
 
-> **Zinc finger (Znf) domains** are relatively small protein motifs which contain multiple finger-like protrusions that make tandem contacts with their target molecule. [...] [T]hey are now recognised to bind DNA, RNA, protein and/or lipid substrates
+> ZNF644: **Zinc finger (Znf) domains** are relatively small protein motifs which contain multiple finger-like protrusions that make tandem contacts with their target molecule. [...] [T]hey are now recognised to bind DNA, RNA, protein and/or lipid substrates
 
-> **WD40-repeat** proteins are a large family found in all eukaryotes and are implicated in a variety of functions ranging from signal transduction and transcription regulation to cell cycle control, autophagy and apoptosis.
+> APAF1: **WD40-repeat** proteins are a large family found in all eukaryotes and are implicated in a variety of functions ranging from signal transduction and transcription regulation to cell cycle control, autophagy and apoptosis.
 
 
 ## Analysis aggregating all tumors
@@ -104,7 +108,7 @@ write.table(mut_feat_overlap_agg,paste0(results_filepath,'tables/mutation_switch
 
 ```
 
-```{r, fig.cap="*Mutations that affect a particular structural feature vs size of that particular feature. In purple, significant cases before multitesting correction; in orange, significant cases after multitesting correction.*", echo=FALSE}
+```{r, echo=FALSE}
 ggplot() + 
   geom_point(data=mut_feat_overlap_agg,
              aes(FeatureSize*100,Ratio)) + 
@@ -117,21 +121,30 @@ ggplot() +
   ylab("#mutations (as % of the total in the gene)")
 ```
 
-## Comparison with meScores
-There is a big overlap with the previous list regarding the top genes. It will be interesting to check if these mutations tend to appear in the same patients as the switch of in different ones. In order to do that, we will show the meScore for those genes:
+*Figure. Mutations that affect a particular structural feature vs size of that particular feature. In purple, significant cases before multitesting correction; in orange, significant cases after multitesting correction.*
 
-```{r significant_allTumors, echo=FALSE}
+## Comparison with meScores
+There is a big overlap with the previous list regarding the top genes. It will be interesting to check if these mutations tend to appear in the same patients as the switch of in different ones. In order to do that, we will show the meScore for those genes.
+
+```{r significant_allTumors_preparation, echo=FALSE}
 meScore <- read.delim(paste0(wd,"scoredMEGenes.txt"), header=TRUE)
 
 mg.df <- merge(subset(mut_feat_overlap_agg,p_mutation_feature_overlap < 0.05),meScore,by.x=c("Gene","Symbol","Normal_transcript","Tumor_transcript"),by.y=c("Gene","Symbol","nTx","tTx"))
 mg.df <- mg.df[order(-mg.df$Score),]
-
-kable(unique(mg.df[mg.df$p_mutation_feature_overlap < 0.05 & abs(mg.df$Score) > 0.5, c("Symbol","What","Feature","Driver","Score")]),row.names = F, 
-      caption = "Significant cases of overlap between mutations and switches (non-adjusted p < 0.05 and abs(meScore)>0.5), altogether with meScore. Ordered by meScore.",
-      digits=3)
 ```
 
-```{r, fig.cap="*meScore vs fold-change, measured as the ratio between the proportion of mutations affecting the feature and the expected proportion (relative size of the feature). In purple, significant cases before multitesting correction; in orange, significant cases after multitesting correction.*", echo=FALSE}
+```{r significant_allTumors_table, echo=FALSE}
+df <- unique(mg.df[mg.df$p_mutation_feature_overlap < 0.05 & abs(mg.df$Score) > 0.7, c("Symbol","What","Feature","Driver","Score")])
+
+df$Feature <- gsub("|","-",df$Feature,fixed = T)
+df$Feature <- gsub("_"," ",df$Feature,fixed = T)
+
+kable(df,row.names = F, digits=3)
+```
+
+*Table. Cases with p < 0.05 for the overlap between mutations and a feature; and an abs(meScore) > 0.7 (arbitrary threshold).*
+
+```{r significant_allTumors_plot, echo=FALSE}
 ggplot(mg.df,aes(Score,(inMut/totalMut)/FeatureSize)) + 
   geom_point() + 
   geom_point(data=subset(mg.df,p_mutation_feature_overlap<0.05),
@@ -144,19 +157,23 @@ ggplot(mg.df,aes(Score,(inMut/totalMut)/FeatureSize)) +
   xlab("meScore") + ylab("Fold change")
 ```
 
+*Figure. meScore vs fold-change, measured as the ratio between the proportion of mutations affecting the feature and the expected proportion (relative size of the feature). In purple, significant cases before multitesting correction; in orange, significant cases after multitesting correction.*
+
 It seems that the genes that accumulate most mutations in a splicing gained/lost feature have meScores close to 0. In the case that there are mutations equivalent to splicing alterations (meScore > 0), they seem to be less concentrated. This suggest that they are more specific, tumorogenic mutations, rather than random alterations.
 
-Looking more in detail to the genes with meScre > 0.7, we find:
+A non-exhaustive look into the genes with meScore > 0.7, we find some interesting cases:
 
-* EPS15: annotated as driver. Losing an EH domain, a [substrate for the tyrosine kinase activity of the epidermal growth factor receptor](http://www.ncbi.nlm.nih.gov/pubmed/11911876). 
+* RAD50: [Component of the MRN complex, which plays a central role in double-strand break (DSB) repair, DNA recombination, maintenance of telomere integrity and meiosis.](http://www.uniprot.org/uniprot/Q92878)
+
+* SIPA1L2: Signal-Induced Proliferation-Associated 1 Like 2
+
+* Several drivers: INPPL1,EPS15,MITF
+
+  * EPS15: annotated as driver. Losing an EH domain, a [substrate for the tyrosine kinase activity of the epidermal growth factor receptor](http://www.ncbi.nlm.nih.gov/pubmed/11911876). No I3D interaction is describing any change in this gene.
 
 > To date, several EH-containing and EH-binding proteins have been identified, which establish in the cell a network of protein:protein interactions, defined as the EH network. This network coordinates cellular functions connected with endocytosis, actin remodeling and intracellular transduction of signals.
 
-  No I3D interaction is describing any change in this gene.
-
-* TDRD7
 * MCC: or Mutated In Colorectal Cancers...should be annotated as driver? ([candidate colorectal tumor suppressor gene that is thought to negatively regulate cell cycle progression](http://www.genecards.org/cgi-bin/carddisp.pl?gene=MCC)). The region might contain several phosphorylation sites.
-* CNTN4
 
 # General overlap in features affected by mutations and switches
 
@@ -167,9 +184,7 @@ We look for structural features that are frequently mutated and we compare them 
 
 We annotated the domains relatively highly mutated and highly switched (highly meaning > quantile 95).
 
-## View of the dat
-
-### Analysis per tumor type
+## Analysis per tumor type
 ```{r tumor_mutVsSwitch}
 feat_enrich <- read.delim(paste0(wd,'feature_enrichment.txt'), header=TRUE)
 feat_enrich$MutFreq <- feat_enrich$MutIn/feat_enrich$AllMuts
@@ -202,11 +217,10 @@ for (cancer in cancerTypes){
 }
 ```
 
-The non-logarithmic scale leads to think that usually changes achieved by splicing are not achieved by mutations and viceversa. Still, there are some outlier domains that are a bit outside the L-shape, suggesting that some features can either be affected by any mechanism. To find out about those, we remove the features that have 0 on either SwitchFreq or MutFreq.
+These plots leads to think that usually changes achieved by splicing are not achieved by mutations and viceversa. Still, there are some outlier domains that are a bit outside the L-shape, suggesting that some features can either be affected by any mechanism. To find out about those, we remove the features that have 0 on either SwitchFreq or MutFreq.
 
-
-```{r tumor_log_mutVsSwitch}
-  # plot log representations and remove those that have 0 on either side
+```{r tumor_rmOutliers_mutVsSwitch}
+# plot log representations and remove those that have 0 on either side
 for (cancer in cancerTypes){
   
   cat(paste0(cancer,"\n"))
@@ -233,7 +247,7 @@ for (cancer in cancerTypes){
 }
 ```
 
-Not only some correlation appears, but some domains that appear to be interesting are among the most highest mutated and switched.
+Some degree of correlation appears, particularly in the kidney tumors (kich,kirc,kirp). 
 
 ## Analysis aggregating all tumors
 
@@ -291,9 +305,9 @@ p <- direct.label(p)
 p
 ```
 
-Similar results appear, but the correlation is quite lost, suggesting that the domains that need to be affected in each cancer type are tumor specific.
+Similar results appear, but the correlation is non-existant, suggesting that the domains that need to be affected in each cancer type are tumor specific.
 
-## Cluster in domain function
+## Clustering by domain function
 
 We wanted to know if the correlation improves if we aggregate the domains by function affected. So, maybe if domains that are only affected by mutations or by switches actually share some functions.
 
