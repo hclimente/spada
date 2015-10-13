@@ -271,6 +271,8 @@ The L-shape seems kept in all the tumor types, reaffirming the mutual exclusion.
 
 In order to see if there is any feature enriched in mutations in general, as we do for individual switches, we want to check if any kind of domain is frequently mutated/switched more than expected.
 
+Below are plotted the with an adjusted p-value in either mutations or switches < 0.05, and a frequency higher than 0 in both axis. Also, tables with the top 10 domains ordered by mutation enrichment p-value, and filtered by adjusted p of enrichment in switches < 0.05.
+
 ```{r tumor_domainEnrichment_binomiarTest, results='asis' }
 
 for (cancer in cancerTypes){
@@ -310,8 +312,9 @@ for (cancer in cancerTypes){
   
   # show top 10 domains affected by mutations
   df <- cancer.feat_enrich[order(cancer.feat_enrich$p_mut),c("Domain","adjp_mut","adjp_swt")]
+  df <- df[df$adjp_swt < 0.05,]
 
-  df$Domain <- gsub("|","-",df$Domain,fixed = T)
+  df$Domain <- gsub("|"," - ",df$Domain,fixed = T)
   df$Domain <- gsub("_"," ",df$Domain,fixed = T)
 
   print(kable(head(df,n = 10),row.names = F, digits=3))
@@ -319,6 +322,8 @@ for (cancer in cancerTypes){
   
 }
 ```
+
+Kinase domains are frequently mutated, but not that frequently switched, except in some cases (PF07714).
 
 ## TO-DO
 
