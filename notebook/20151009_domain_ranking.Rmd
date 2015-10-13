@@ -231,12 +231,97 @@ p
 
 Removing the cases with perfect mutual exclusion only stresses the L-shape of the distribution. Only the urocanate metabolism stands out, same as in previous analyses. This amino acid is part of the degradation of the histidine, and any relation to cancer progression is not evident.
 
-## Future
+## Further study on mutual exclusion
+
+The L-shaped plots, might mean there is a mutual exclusion between features affected by mutations and alternative splicing. However, it may be just an illusion due to the outliers that reduce the resolution. So we make the same plot removing the outliers, outlier meaning points more extreme than quantile 95 in either axis.
+
+```{r tumor_mutVsSwitch_minusOutliers}
+
+for (cancer in cancerTypes){
+  
+  cat(paste0(cancer,"\n"))
+  cancer.feat_enrich <- feat_enrich[feat_enrich$Cancer==cancer,]
+  
+  # plot normalized mutation frequency and switched frequency
+  mutOutliers <- quantile(cancer.feat_enrich$MutFreq/cancer.feat_enrich$DomainFrequency,0.95)
+  switchOutliers <- quantile(cancer.feat_enrich$SwitchFreq/cancer.feat_enrich$DomainFrequency,0.95)
+  
+  # remove outliers
+  cancer.feat_enrich <- cancer.feat_enrich[cancer.feat_enrich$MutFreq/cancer.feat_enrich$DomainFrequency <= mutOutliers,]
+  cancer.feat_enrich <- cancer.feat_enrich[cancer.feat_enrich$SwitchFreq/cancer.feat_enrich$DomainFrequency <= switchOutliers,]
+  
+  # plot raw data
+  r <- cor(cancer.feat_enrich$MutFreq/cancer.feat_enrich$DomainFrequency,
+           cancer.feat_enrich$SwitchFreq/cancer.feat_enrich$DomainFrequency)
+  
+  p <- ggplot(cancer.feat_enrich,aes(MutFreq/DomainFrequency,SwitchFreq/DomainFrequency)) + 
+    geom_point() + 
+    smartas_theme() + 
+    geom_smooth(method=lm) + 
+    geom_text(x=4,y=3,label=paste0("R = ",round(r,2)))
+  
+  print(p)
+
+}
+```
+
+The L-shape seems kept in all the tumor types, reaffirming the mutual exclusion.
+
+## Binomial test between frequency of alterations and frequency of feature
+
+In order to see if there is any feature enriched in mutations in general, as we do for individual switches, we want to check if any kind of domain is frequently mutated/switched more than expected.
+
+```{r tumor_domainEnrichment_binomiarTest, results='asis' }
+
+for (cancer in cancerTypes){
+  
+  cat(paste0(cancer,"\n\n"))
+  cancer.feat_enrich <- feat_enrich[feat_enrich$Cancer==cancer,]
+  
+  # binomial tests to mutation affection and switch affection
+  cancer.feat_enrich$p_mut <- apply(cancer.feat_enrich[,c("MutIn","AllMuts","DomainFrequency")],1, function(x){ 
+    p <- binom.test(x[1],x[2],x[3],"greater")
+    p$p.value
+  } )
+  cancer.feat_enrich$adjp_mut <- p.adjust(cancer.feat_enrich$p_mut)
+  
+  cancer.feat_enrich$p_swt <- apply(cancer.feat_enrich[,c("SwitchesIn","AllSwitches","DomainFrequency")],1, function(x){ 
+    p <- binom.test(x[1],x[2],x[3],"greater")
+    p$p.value
+  } )
+  cancer.feat_enrich$adjp_swt <- p.adjust(cancer.feat_enrich$p_swt)
+  
+  # plot domains that are enriched either by mutation affection or by switch affection
+  cancer.feat_enrich <- cancer.feat_enrich[cancer.feat_enrich$adjp_swt < 0.05 | cancer.feat_enrich$adjp_mut < 0.05,]
+  
+  cancer.feat_enrich <- subset(cancer.feat_enrich, MutFreq != 0 & SwitchFreq != 0)
+  
+  r <- cor(cancer.feat_enrich$MutFreq/cancer.feat_enrich$DomainFrequency,
+         cancer.feat_enrich$SwitchFreq/cancer.feat_enrich$DomainFrequency)
+  
+  p <- ggplot(cancer.feat_enrich,aes(MutFreq/DomainFrequency,SwitchFreq/DomainFrequency)) + 
+    geom_point() + 
+    smartas_theme() + 
+    geom_smooth(method=lm) + 
+    geom_text(x=4,y=50,label=paste0("R = ",round(r,2)))
+  
+  print(p)
+  cat("\n")
+  
+  # show top 10 domains affected by mutations
+  df <- cancer.feat_enrich[order(cancer.feat_enrich$p_mut),c("Domain","adjp_mut","adjp_swt")]
+
+  df$Domain <- gsub("|","-",df$Domain,fixed = T)
+  df$Domain <- gsub("_"," ",df$Domain,fixed = T)
+
+  print(kable(head(df,n = 10),row.names = F, digits=3))
+  cat("\n")
+  
+}
+```
+
+## TO-DO
 
 We want to be able to rank domains based on mutations, and to know if that is possible. 
 
-1) The L-shaped mutual exclusion may be just an illusion due to the outliers that reduce the resolution.
-
 2) The normalization by domain frequency might not be correct
-
-3) We should compare the frequency of each switched domain to the frequency of the domain, via the binomial test.

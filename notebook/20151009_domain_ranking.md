@@ -305,13 +305,329 @@ p
 
 Removing the cases with perfect mutual exclusion only stresses the L-shape of the distribution. Only the urocanate metabolism stands out, same as in previous analyses. This amino acid is part of the degradation of the histidine, and any relation to cancer progression is not evident.
 
-Future
-------
+Further study on mutual exclusion
+---------------------------------
+
+The L-shaped plots, might mean there is a mutual exclusion between features affected by mutations and alternative splicing. However, it may be just an illusion due to the outliers that reduce the resolution. So we make the same plot removing the outliers, outlier meaning points more extreme than quantile 95 in either axis.
+
+``` r
+for (cancer in cancerTypes){
+  
+  cat(paste0(cancer,"\n"))
+  cancer.feat_enrich <- feat_enrich[feat_enrich$Cancer==cancer,]
+  
+  # plot normalized mutation frequency and switched frequency
+  mutOutliers <- quantile(cancer.feat_enrich$MutFreq/cancer.feat_enrich$DomainFrequency,0.95)
+  switchOutliers <- quantile(cancer.feat_enrich$SwitchFreq/cancer.feat_enrich$DomainFrequency,0.95)
+  
+  # remove outliers
+  cancer.feat_enrich <- cancer.feat_enrich[cancer.feat_enrich$MutFreq/cancer.feat_enrich$DomainFrequency <= mutOutliers,]
+  cancer.feat_enrich <- cancer.feat_enrich[cancer.feat_enrich$SwitchFreq/cancer.feat_enrich$DomainFrequency <= switchOutliers,]
+  
+  # plot raw data
+  r <- cor(cancer.feat_enrich$MutFreq/cancer.feat_enrich$DomainFrequency,
+           cancer.feat_enrich$SwitchFreq/cancer.feat_enrich$DomainFrequency)
+  
+  p <- ggplot(cancer.feat_enrich,aes(MutFreq/DomainFrequency,SwitchFreq/DomainFrequency)) + 
+    geom_point() + 
+    smartas_theme() + 
+    geom_smooth(method=lm) + 
+    geom_text(x=4,y=3,label=paste0("R = ",round(r,2)))
+  
+  print(p)
+
+}
+```
+
+    ## brca
+
+![](20151009_domain_ranking_files/figure-markdown_github/tumor_mutVsSwitch_minusOutliers-1.png)
+
+    ## coad
+
+![](20151009_domain_ranking_files/figure-markdown_github/tumor_mutVsSwitch_minusOutliers-2.png)
+
+    ## hnsc
+
+![](20151009_domain_ranking_files/figure-markdown_github/tumor_mutVsSwitch_minusOutliers-3.png)
+
+    ## kich
+
+![](20151009_domain_ranking_files/figure-markdown_github/tumor_mutVsSwitch_minusOutliers-4.png)
+
+    ## kirc
+
+![](20151009_domain_ranking_files/figure-markdown_github/tumor_mutVsSwitch_minusOutliers-5.png)
+
+    ## kirp
+
+![](20151009_domain_ranking_files/figure-markdown_github/tumor_mutVsSwitch_minusOutliers-6.png)
+
+    ## lihc
+
+![](20151009_domain_ranking_files/figure-markdown_github/tumor_mutVsSwitch_minusOutliers-7.png)
+
+    ## luad
+
+![](20151009_domain_ranking_files/figure-markdown_github/tumor_mutVsSwitch_minusOutliers-8.png)
+
+    ## lusc
+
+![](20151009_domain_ranking_files/figure-markdown_github/tumor_mutVsSwitch_minusOutliers-9.png)
+
+    ## prad
+
+![](20151009_domain_ranking_files/figure-markdown_github/tumor_mutVsSwitch_minusOutliers-10.png)
+
+    ## thca
+
+![](20151009_domain_ranking_files/figure-markdown_github/tumor_mutVsSwitch_minusOutliers-11.png)
+
+The L-shape seems kept in all the tumor types, reaffirming the mutual exclusion.
+
+Binomial test between frequency of alterations and frequency of feature
+-----------------------------------------------------------------------
+
+In order to see if there is any feature enriched in mutations in general, as we do for individual switches, we want to check if any kind of domain is frequently mutated/switched more than expected.
+
+``` r
+for (cancer in cancerTypes){
+  
+  cat(paste0(cancer,"\n\n"))
+  cancer.feat_enrich <- feat_enrich[feat_enrich$Cancer==cancer,]
+  
+  # binomial tests to mutation affection and switch affection
+  cancer.feat_enrich$p_mut <- apply(cancer.feat_enrich[,c("MutIn","AllMuts","DomainFrequency")],1, function(x){ 
+    p <- binom.test(x[1],x[2],x[3],"greater")
+    p$p.value
+  } )
+  cancer.feat_enrich$adjp_mut <- p.adjust(cancer.feat_enrich$p_mut)
+  
+  cancer.feat_enrich$p_swt <- apply(cancer.feat_enrich[,c("SwitchesIn","AllSwitches","DomainFrequency")],1, function(x){ 
+    p <- binom.test(x[1],x[2],x[3],"greater")
+    p$p.value
+  } )
+  cancer.feat_enrich$adjp_swt <- p.adjust(cancer.feat_enrich$p_swt)
+  
+  # plot domains that are enriched either by mutation affection or by switch affection
+  cancer.feat_enrich <- cancer.feat_enrich[cancer.feat_enrich$adjp_swt < 0.05 | cancer.feat_enrich$adjp_mut < 0.05,]
+  
+  cancer.feat_enrich <- subset(cancer.feat_enrich, MutFreq != 0 & SwitchFreq != 0)
+  
+  r <- cor(cancer.feat_enrich$MutFreq/cancer.feat_enrich$DomainFrequency,
+         cancer.feat_enrich$SwitchFreq/cancer.feat_enrich$DomainFrequency)
+  
+  p <- ggplot(cancer.feat_enrich,aes(MutFreq/DomainFrequency,SwitchFreq/DomainFrequency)) + 
+    geom_point() + 
+    smartas_theme() + 
+    geom_smooth(method=lm) + 
+    geom_text(x=4,y=50,label=paste0("R = ",round(r,2)))
+  
+  print(p)
+  cat("\n")
+  
+  # show top 10 domains affected by mutations
+  df <- cancer.feat_enrich[order(cancer.feat_enrich$p_mut),c("Domain","adjp_mut","adjp_swt")]
+
+  df$Domain <- gsub("|","-",df$Domain,fixed = T)
+  df$Domain <- gsub("_"," ",df$Domain,fixed = T)
+
+  print(kable(head(df,n = 10),row.names = F, digits=3))
+  cat("\n")
+  
+}
+```
+
+brca
+
+![](20151009_domain_ranking_files/figure-markdown_github/tumor_domainEnrichment_binomiarTest-1.png)
+
+| Domain                                                    |  adjp\_mut|  adjp\_swt|
+|:----------------------------------------------------------|----------:|----------:|
+| PS50011-PROTEIN KINASE DOM Protein kinase domain profile. |          0|          1|
+| PF00069-Protein kinase domain                             |          0|          1|
+| PF07714-Protein tyrosine kinase                           |          0|          1|
+| PF00520-Ion transport protein                             |          0|          0|
+| PS51419-RAB small GTPase Rab1 family profile.             |          0|          1|
+| PS50268-CADHERIN 2 Cadherins domain profile.              |          0|          1|
+| PF00118-TCP-1/cpn60 chaperonin family                     |          0|          1|
+| PS51421-RAS small GTPase Ras family profile.              |          0|          1|
+| PS50057-FERM 3 FERM domain profile.                       |          0|          0|
+| PF00028-Cadherin domain                                   |          0|          1|
+
+coad
+
+![](20151009_domain_ranking_files/figure-markdown_github/tumor_domainEnrichment_binomiarTest-2.png)
+
+| Domain                                                            |  adjp\_mut|  adjp\_swt|
+|:------------------------------------------------------------------|----------:|----------:|
+| PS50011-PROTEIN KINASE DOM Protein kinase domain profile.         |          0|          1|
+| PF00069-Protein kinase domain                                     |          0|          1|
+| PS51421-RAS small GTPase Ras family profile.                      |          0|          1|
+| PS50850-MFS Major facilitator superfamily (MFS) profile.          |          0|          1|
+| PS51420-RHO small GTPase Rho family profile.                      |          0|          0|
+| PF00071-Ras family                                                |          0|          0|
+| PS50322-GLN RICH Glutamine-rich region profile.                   |          0|          1|
+| PF00129-Class I Histocompatibility antigen, domains alpha 1 and 2 |          0|          1|
+| PF07690-Major Facilitator Superfamily                             |          0|          1|
+| PF07714-Protein tyrosine kinase                                   |          0|          0|
+
+hnsc
+
+![](20151009_domain_ranking_files/figure-markdown_github/tumor_domainEnrichment_binomiarTest-3.png)
+
+| Domain                                                    |  adjp\_mut|  adjp\_swt|
+|:----------------------------------------------------------|----------:|----------:|
+| PF00069-Protein kinase domain                             |          0|      1.000|
+| PS50011-PROTEIN KINASE DOM Protein kinase domain profile. |          0|      1.000|
+| PF07714-Protein tyrosine kinase                           |          0|      0.000|
+| PS51082-WH2 WH2 domain profile.                           |          0|      0.000|
+| PF00102-Protein-tyrosine phosphatase                      |          0|      0.000|
+| PS51421-RAS small GTPase Ras family profile.              |          0|      0.021|
+| PS51419-RAB small GTPase Rab1 family profile.             |          0|      1.000|
+| PS51420-RHO small GTPase Rho family profile.              |          0|      0.000|
+| PS50311-CYS RICH Cysteine-rich region profile.            |          0|      0.000|
+| PF00656-Caspase domain                                    |          0|      1.000|
+
+kich
+
+![](20151009_domain_ranking_files/figure-markdown_github/tumor_domainEnrichment_binomiarTest-4.png)
+
+| Domain                                                          |  adjp\_mut|  adjp\_swt|
+|:----------------------------------------------------------------|----------:|----------:|
+| PF07992-Pyridine nucleotide-disulphide oxidoreductase           |       0.06|      0.000|
+| PF00076-RNA recognition motif. (a.k.a. RRM, RBD, or RNP domain) |       1.00|      0.000|
+| PF01663-Type I phosphodiesterase / nucleotide pyrophosphatase   |       1.00|      0.050|
+| PS50324-SER RICH Serine-rich region profile.                    |       1.00|      0.000|
+| PF00675-Insulinase (Peptidase family M16)                       |       1.00|      0.000|
+| PS50057-FERM 3 FERM domain profile.                             |       1.00|      0.000|
+| PF09286-Pro-kumamolisin, activation domain                      |       1.00|      0.049|
+| PF01044-Vinculin family                                         |       1.00|      0.000|
+| PS51676-FF FF domain profile.                                   |       1.00|      0.000|
+| PF05193-Peptidase M16 inactive domain                           |       1.00|      0.000|
+
+kirc
+
+![](20151009_domain_ranking_files/figure-markdown_github/tumor_domainEnrichment_binomiarTest-5.png)
+
+| Domain                                                    |  adjp\_mut|  adjp\_swt|
+|:----------------------------------------------------------|----------:|----------:|
+| PF00069-Protein kinase domain                             |      0.000|      1.000|
+| PS50011-PROTEIN KINASE DOM Protein kinase domain profile. |      0.000|      1.000|
+| PF07714-Protein tyrosine kinase                           |      0.000|      0.000|
+| PF03028-Dynein heavy chain and region D6 of dynein motor  |      0.000|      0.426|
+| PF00856-SET domain                                        |      0.002|      1.000|
+| PF00155-Aminotransferase class I and II                   |      0.010|      0.000|
+| PS51421-RAS small GTPase Ras family profile.              |      0.028|      1.000|
+| PS51419-RAB small GTPase Rab1 family profile.             |      0.029|      1.000|
+| PS51082-WH2 WH2 domain profile.                           |      0.111|      0.000|
+| PS50313-GLU RICH Glutamic acid-rich region profile.       |      0.538|      0.000|
+
+kirp
+
+![](20151009_domain_ranking_files/figure-markdown_github/tumor_domainEnrichment_binomiarTest-6.png)
+
+| Domain                                                                           |  adjp\_mut|  adjp\_swt|
+|:---------------------------------------------------------------------------------|----------:|----------:|
+| PS50850-MFS Major facilitator superfamily (MFS) profile.                         |      0.000|          1|
+| PF07714-Protein tyrosine kinase                                                  |      0.000|          1|
+| PS50011-PROTEIN KINASE DOM Protein kinase domain profile.                        |      0.000|          1|
+| PF00069-Protein kinase domain                                                    |      0.000|          1|
+| PF07690-Major Facilitator Superfamily                                            |      0.000|          1|
+| PS51419-RAB small GTPase Rab1 family profile.                                    |      0.023|          1|
+| PS51421-RAS small GTPase Ras family profile.                                     |      0.033|          1|
+| PS50057-FERM 3 FERM domain profile.                                              |      0.036|          1|
+| PF00648-Calpain family cysteine protease                                         |      0.198|          0|
+| PS50203-CALPAIN CAT Cysteine proteinase, calpain-type, catalytic domain profile. |      0.198|          0|
+
+lihc
+
+![](20151009_domain_ranking_files/figure-markdown_github/tumor_domainEnrichment_binomiarTest-7.png)
+
+| Domain                                                           |  adjp\_mut|  adjp\_swt|
+|:-----------------------------------------------------------------|----------:|----------:|
+| PS50011-PROTEIN KINASE DOM Protein kinase domain profile.        |      0.000|      1.000|
+| PF00069-Protein kinase domain                                    |      0.000|      1.000|
+| PF00118-TCP-1/cpn60 chaperonin family                            |      0.000|      1.000|
+| PS50294-WD REPEATS REGION Trp-Asp (WD) repeats circular profile. |      0.000|      1.000|
+| PS51421-RAS small GTPase Ras family profile.                     |      0.000|      0.000|
+| PF00102-Protein-tyrosine phosphatase                             |      0.000|      1.000|
+| PF00155-Aminotransferase class I and II                          |      0.001|      1.000|
+| PF00664-ABC transporter transmembrane region                     |      0.004|      0.000|
+| PS51419-RAB small GTPase Rab1 family profile.                    |      0.006|      1.000|
+| PF08423-Rad51                                                    |      0.013|      0.049|
+
+luad
+
+![](20151009_domain_ranking_files/figure-markdown_github/tumor_domainEnrichment_binomiarTest-8.png)
+
+| Domain                                                    |  adjp\_mut|  adjp\_swt|
+|:----------------------------------------------------------|----------:|----------:|
+| PS51421-RAS small GTPase Ras family profile.              |          0|          1|
+| PS50268-CADHERIN 2 Cadherins domain profile.              |          0|          1|
+| PF00028-Cadherin domain                                   |          0|          1|
+| PF07714-Protein tyrosine kinase                           |          0|          1|
+| PS51420-RHO small GTPase Rho family profile.              |          0|          0|
+| PS51419-RAB small GTPase Rab1 family profile.             |          0|          1|
+| PF00069-Protein kinase domain                             |          0|          1|
+| PS50011-PROTEIN KINASE DOM Protein kinase domain profile. |          0|          1|
+| PF00071-Ras family                                        |          0|          0|
+| PF03098-Animal haem peroxidase                            |          0|          1|
+
+lusc
+
+![](20151009_domain_ranking_files/figure-markdown_github/tumor_domainEnrichment_binomiarTest-9.png)
+
+| Domain                                                    |  adjp\_mut|  adjp\_swt|
+|:----------------------------------------------------------|----------:|----------:|
+| PS50011-PROTEIN KINASE DOM Protein kinase domain profile. |          0|          1|
+| PF00069-Protein kinase domain                             |          0|          1|
+| PF07714-Protein tyrosine kinase                           |          0|          1|
+| PS50268-CADHERIN 2 Cadherins domain profile.              |          0|          1|
+| PF00028-Cadherin domain                                   |          0|          1|
+| PF12710-haloacid dehalogenase-like hydrolase              |          0|          1|
+| PF00443-Ubiquitin carboxyl-terminal hydrolase             |          0|          1|
+| PS51421-RAS small GTPase Ras family profile.              |          0|          1|
+| PS51419-RAB small GTPase Rab1 family profile.             |          0|          1|
+| PF00664-ABC transporter transmembrane region              |          0|          1|
+
+prad
+
+![](20151009_domain_ranking_files/figure-markdown_github/tumor_domainEnrichment_binomiarTest-10.png)
+
+| Domain                                                        |  adjp\_mut|  adjp\_swt|
+|:--------------------------------------------------------------|----------:|----------:|
+| PS50011-PROTEIN KINASE DOM Protein kinase domain profile.     |      0.000|          1|
+| PF00069-Protein kinase domain                                 |      0.000|          1|
+| PF07714-Protein tyrosine kinase                               |      0.000|          1|
+| PS01179-PID Phosphotyrosine interaction domain (PID) profile. |      0.459|          0|
+| PS51421-RAS small GTPase Ras family profile.                  |      0.728|          0|
+| PS50323-ARG RICH Arginine-rich region profile.                |      1.000|          0|
+| PS50311-CYS RICH Cysteine-rich region profile.                |      1.000|          0|
+| PF00640-Phosphotyrosine interaction domain (PTB/PID)          |      1.000|          0|
+| PF00149-Calcineurin-like phosphoesterase                      |      1.000|          0|
+| PS51420-RHO small GTPase Rho family profile.                  |      1.000|          0|
+
+thca
+
+![](20151009_domain_ranking_files/figure-markdown_github/tumor_domainEnrichment_binomiarTest-11.png)
+
+| Domain                                                                          |  adjp\_mut|  adjp\_swt|
+|:--------------------------------------------------------------------------------|----------:|----------:|
+| PS51420-RHO small GTPase Rho family profile.                                    |          0|      0.000|
+| PS51421-RAS small GTPase Ras family profile.                                    |          0|      0.000|
+| PF00071-Ras family                                                              |          0|      1.000|
+| PF00082-Subtilase family                                                        |          1|      0.000|
+| PF03028-Dynein heavy chain and region D6 of dynein motor                        |          1|      0.000|
+| PS51433-PNT Pointed (PNT) domain profile.                                       |          1|      0.000|
+| PF05193-Peptidase M16 inactive domain                                           |          1|      0.000|
+| PF00566-Rab-GTPase-TBC domain                                                   |          1|      0.000|
+| PS50929-ABC TM1F ABC transporter integral membrane type-1 fused domain profile. |          1|      0.000|
+| PS50313-GLU RICH Glutamic acid-rich region profile.                             |          1|      0.024|
+
+TO-DO
+-----
 
 We want to be able to rank domains based on mutations, and to know if that is possible.
 
-1.  The L-shaped mutual exclusion may be just an illusion due to the outliers that reduce the resolution.
-
-2.  The normalization by domain frequency might not be correct
-
-3.  We should compare the frequency of each switched domain to the frequency of the domain, via the binomial test.
+1.  The normalization by domain frequency might not be correct
