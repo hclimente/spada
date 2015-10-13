@@ -1,17 +1,39 @@
+---
+title: "General overlap in features affected by mutations and switches"
+author: "Héctor Climente"
+date: "10/09/2015"
+output:
+  md_document:
+    variant: markdown_github
+---
+
+```{r environment, include=FALSE }
+source("~/SmartAS/Pipeline/scripts/variablesAndFunctions.r")
+library(knitr)
+results_filepath <- paste0(workingDir,"/mutations/")
+wd <- paste0("~/SmartAS/Pipeline/notebook/20151009_domain_ranking_files/data/")
+```
+
+```{r get_files, include=FALSE }
+dir.create(wd,recursive=T)
+
+file.copy(paste0(results_filepath,'feature_enrichment.txt'),wd,overwrite = T)
+file.copy(paste0(workingDir,"/Data/Databases/prosite2go.clean.txt"),wd,overwrite = T)
+file.copy(paste0(workingDir,"/Data/Databases/Pfam2go.clean.txt"),wd,overwrite = T)
+```
+
 We look for structural features that are frequently mutated and we compare them to the structural features that are usually switched. The interest is to look for splicing changes that are equivalent to mutation changes. We use the following parameters:
 
--   Mutation frequency: proportion of all the functional mutations that affect one particular feature. Measured taking into account only the features in the most abundant isoform of each gene.
+* Mutation frequency: proportion of all the functional mutations that affect one particular feature. Measured taking into account only the features in the most abundant isoform of each gene.
 
--   Switch frequency: sum of all the patients that, per switch, have a feature affected.
+* Switch frequency: sum of all the patients that, per switch, have a feature affected.
 
--   Domain frequency: frequency of a feature in the proteome, counting the features in the most abundant isoform for each gene. Used to normalize the previous quantities.
+* Domain frequency: frequency of a feature in the proteome, counting the features in the most abundant isoform for each gene. Used to normalize the previous quantities.
 
-We annotated the domains relatively highly mutated and highly switched (highly meaning \> quantile 95).
+We annotated the domains relatively highly mutated and highly switched (highly meaning > quantile 95).
 
-Analysis per tumor type
------------------------
-
-``` r
+## Analysis per tumor type
+```{r tumor_mutVsSwitch}
 feat_enrich <- read.delim(paste0(wd,'feature_enrichment.txt'), header=TRUE)
 feat_enrich$MutFreq <- feat_enrich$MutIn/feat_enrich$AllMuts
 feat_enrich$SwitchFreq <- feat_enrich$SwitchesIn/feat_enrich$AllSwitches
@@ -43,55 +65,9 @@ for (cancer in cancerTypes){
 }
 ```
 
-    ## brca
-
-    ## Loading required package: proto
-
-![](20151009_domain_ranking_files/figure-markdown_github/tumor_mutVsSwitch-1.png)
-
-    ## coad
-
-![](20151009_domain_ranking_files/figure-markdown_github/tumor_mutVsSwitch-2.png)
-
-    ## hnsc
-
-![](20151009_domain_ranking_files/figure-markdown_github/tumor_mutVsSwitch-3.png)
-
-    ## kich
-
-![](20151009_domain_ranking_files/figure-markdown_github/tumor_mutVsSwitch-4.png)
-
-    ## kirc
-
-![](20151009_domain_ranking_files/figure-markdown_github/tumor_mutVsSwitch-5.png)
-
-    ## kirp
-
-![](20151009_domain_ranking_files/figure-markdown_github/tumor_mutVsSwitch-6.png)
-
-    ## lihc
-
-![](20151009_domain_ranking_files/figure-markdown_github/tumor_mutVsSwitch-7.png)
-
-    ## luad
-
-![](20151009_domain_ranking_files/figure-markdown_github/tumor_mutVsSwitch-8.png)
-
-    ## lusc
-
-![](20151009_domain_ranking_files/figure-markdown_github/tumor_mutVsSwitch-9.png)
-
-    ## prad
-
-![](20151009_domain_ranking_files/figure-markdown_github/tumor_mutVsSwitch-10.png)
-
-    ## thca
-
-![](20151009_domain_ranking_files/figure-markdown_github/tumor_mutVsSwitch-11.png)
-
 These plots leads to think that usually changes achieved by splicing are not achieved by mutations and viceversa. Still, there are some outlier domains that are a bit outside the L-shape, suggesting that some features can either be affected by any mechanism. To find out about those, we remove the features that have 0 on either SwitchFreq or MutFreq.
 
-``` r
+```{r tumor_rmOutliers_mutVsSwitch}
 # plot log representations and remove those that have 0 on either side
 for (cancer in cancerTypes){
   
@@ -119,58 +95,13 @@ for (cancer in cancerTypes){
 }
 ```
 
-    ## brca
+Some degree of correlation appears, particularly in the kidney tumors (kich,kirc,kirp). 
 
-![](20151009_domain_ranking_files/figure-markdown_github/tumor_rmOutliers_mutVsSwitch-1.png)
-
-    ## coad
-
-![](20151009_domain_ranking_files/figure-markdown_github/tumor_rmOutliers_mutVsSwitch-2.png)
-
-    ## hnsc
-
-![](20151009_domain_ranking_files/figure-markdown_github/tumor_rmOutliers_mutVsSwitch-3.png)
-
-    ## kich
-
-![](20151009_domain_ranking_files/figure-markdown_github/tumor_rmOutliers_mutVsSwitch-4.png)
-
-    ## kirc
-
-![](20151009_domain_ranking_files/figure-markdown_github/tumor_rmOutliers_mutVsSwitch-5.png)
-
-    ## kirp
-
-![](20151009_domain_ranking_files/figure-markdown_github/tumor_rmOutliers_mutVsSwitch-6.png)
-
-    ## lihc
-
-![](20151009_domain_ranking_files/figure-markdown_github/tumor_rmOutliers_mutVsSwitch-7.png)
-
-    ## luad
-
-![](20151009_domain_ranking_files/figure-markdown_github/tumor_rmOutliers_mutVsSwitch-8.png)
-
-    ## lusc
-
-![](20151009_domain_ranking_files/figure-markdown_github/tumor_rmOutliers_mutVsSwitch-9.png)
-
-    ## prad
-
-![](20151009_domain_ranking_files/figure-markdown_github/tumor_rmOutliers_mutVsSwitch-10.png)
-
-    ## thca
-
-![](20151009_domain_ranking_files/figure-markdown_github/tumor_rmOutliers_mutVsSwitch-11.png)
-
-Some degree of correlation appears, particularly in the kidney tumors (kich,kirc,kirp).
-
-Analysis aggregating all tumors
--------------------------------
+## Analysis aggregating all tumors
 
 We apply the same process to aggregated data from all tumors.
 
-``` r
+```{r aggregated_mutVsSwitch}
 feat_enrich_agg <- ddply(feat_enrich,.(Domain), summarise, 
                         MutIn=sum(MutIn), AllMuts=sum(AllMuts),
                         SwitchesIn=sum(SwitchesIn), AllSwitches=sum(AllSwitches),
@@ -203,9 +134,8 @@ p <- direct.label(p)
 p
 ```
 
-![](20151009_domain_ranking_files/figure-markdown_github/aggregated_mutVsSwitch-1.png)
+```{r aggregated_log_mutVsSwitch }
 
-``` r
 # plot log2 representations and remove those that have 0 on either side
 r.df <- subset(feat_enrich_agg, MutFreq != 0 & SwitchFreq != 0)
 r <- cor(r.df$MutFreq/r.df$DomainFrequency,r.df$SwitchFreq/r.df$DomainFrequency)
@@ -223,18 +153,16 @@ p <- direct.label(p)
 p
 ```
 
-![](20151009_domain_ranking_files/figure-markdown_github/aggregated_log_mutVsSwitch-1.png)
-
 Similar results appear, but the correlation is non-existant, suggesting that the domains that need to be affected in each cancer type are tumor specific.
 
-Clustering by domain function
------------------------------
+## Clustering by domain function
 
 We wanted to know if the correlation improves if we aggregate the domains by function affected. So, maybe if domains that are only affected by mutations or by switches actually share some functions.
 
 The frequencies are calculated as the quotient between the "in" counts (mutations in the feature, switches affecting the feature, of number of times that feature is observed in the proteome) and the total number of counts.
 
-``` r
+```{r feat_by_GO_preparation}
+
 # read GO termns
 prosite_annotation <- read.delim(paste0(wd,"prosite2go.clean.txt"),row.names = NULL,header=F)
 pfam_annotation <- read.delim(paste0(wd,"Pfam2go.clean.txt"),row.names = NULL,header=F)
@@ -263,7 +191,8 @@ feat_function_aggregated$SwitchFreq <- feat_function_aggregated$SwitchesIn/feat_
 feat_function_aggregated$GOFrequency <- feat_function_aggregated$DomainCount/feat_function_aggregated$AllDomains
 ```
 
-``` r
+```{r feat_by_GO_raw}
+
 # plot original data
 r <- cor(feat_function_aggregated$MutFreq/feat_function_aggregated$GOFrequency,feat_function_aggregated$SwitchFreq/feat_function_aggregated$GOFrequency)
 
@@ -276,11 +205,10 @@ p <- ggplot(data=feat_function_aggregated,aes(MutFreq/GOFrequency,SwitchFreq/GOF
 p
 ```
 
-![](20151009_domain_ranking_files/figure-markdown_github/feat_by_GO_raw-1.png)
-
 Same as before, there seems to be a mutual exclusion between functions affected by mutations and functions affected by alternative splicing.
 
-``` r
+```{r feat_by_GO_filtered}
+
 r.df <- subset(feat_function_aggregated, SwitchFreq != 0 & MutFreq != 0)
 r <- cor(r.df$MutFreq/r.df$GOFrequency,r.df$SwitchFreq/r.df$GOFrequency)
 
@@ -301,17 +229,14 @@ p <- direct.label(p)
 p
 ```
 
-![](20151009_domain_ranking_files/figure-markdown_github/feat_by_GO_filtered-1.png)
-
 Removing the cases with perfect mutual exclusion only stresses the L-shape of the distribution. Only the urocanate metabolism stands out, same as in previous analyses. This amino acid is part of the degradation of the histidine, and any relation to cancer progression is not evident.
 
-Future
-------
+## Future
 
-We want to be able to rank domains based on mutations, and to know if that is possible.
+We want to be able to rank domains based on mutations, and to know if that is possible. 
 
-1.  The L-shaped mutual exclusion may be just an illusion due to the outliers that reduce the resolution.
+1) The L-shaped mutual exclusion may be just an illusion due to the outliers that reduce the resolution.
 
-2.  The normalization by domain frequency might not be correct
+2) The normalization by domain frequency might not be correct
 
-3.  We should compare the frequency of each switched domain to the frequency of the domain, via the binomial test.
+3) We should compare the frequency of each switched domain to the frequency of the domain, via the binomial test.
