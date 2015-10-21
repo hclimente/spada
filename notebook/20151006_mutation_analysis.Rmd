@@ -3,8 +3,8 @@ title: "Specific switches: overlap in features affected by mutations and switche
 author: "Héctor Climente"
 date: "10/06/2015"
 output:
-  md_document:
-    variant: markdown_github
+  html_document:
+    toc: true
 ---
 
 ```{r environment, include=FALSE }

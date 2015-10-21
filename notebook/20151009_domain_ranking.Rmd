@@ -3,13 +3,14 @@ title: "General overlap in features affected by mutations and switches"
 author: "Héctor Climente"
 date: "10/09/2015"
 output:
-  md_document:
-    variant: markdown_github
+  html_document:
+    toc: true
 ---
 
 ```{r environment, include=FALSE }
 source("~/SmartAS/Pipeline/scripts/variablesAndFunctions.r")
 library(knitr)
+library(DT)
 results_filepath <- paste0(workingDir,"/mutations/")
 wd <- paste0("~/SmartAS/Pipeline/notebook/20151009_domain_ranking_files/data/")
 ```
@@ -32,7 +33,9 @@ We look for structural features that are frequently mutated and we compare them 
 
 We annotated the domains relatively highly mutated and highly switched (highly meaning > quantile 95).
 
-## Analysis per tumor type
+# Correlation between the frequency that mutations and switches affect each feature
+
+## Analysis by tumor type
 ```{r tumor_mutVsSwitch}
 feat_enrich <- read.delim(paste0(wd,'feature_enrichment.txt'), header=TRUE)
 feat_enrich$MutFreq <- feat_enrich$MutIn/feat_enrich$AllMuts
@@ -178,13 +181,14 @@ z <- paste0(toupper(substring(z, 1,1)),substring(z, 2))
 annotation$GO <- z
 
 # get the interpro id for the domains
-feat_enrich_agg$id <- unlist(strsplit(as.character(feat_enrich_agg$Domain),"|",fixed = T))[c(T,F)]
+feat_enrich_agg.go <- feat_enrich_agg
+feat_enrich_agg.go$id <- unlist(strsplit(as.character(feat_enrich_agg.go$Domain),"|",fixed = T))[c(T,F)]
 
 # merge the two tables. if a domain has several annotations, if will appear several times
-feat_enrich_agg <- merge(feat_enrich_agg,annotation,all.x=T)
+feat_enrich_agg.go <- merge(feat_enrich_agg.go,annotation,all.x=T)
 
 # aggregate by GO term and calculate the frequencies
-feat_function_aggregated <- ddply(feat_enrich_agg,.(GO),summarise,MutIn=sum(MutIn),AllMuts = sum(AllMuts), SwitchesIn = sum(SwitchesIn), AllSwitches = sum(AllSwitches), DomainCount=sum(DomainCount),AllDomains=sum(AllDomains))
+feat_function_aggregated <- ddply(feat_enrich_agg.go,.(GO),summarise,MutIn=sum(MutIn),AllMuts = sum(AllMuts), SwitchesIn = sum(SwitchesIn), AllSwitches = sum(AllSwitches), DomainCount=sum(DomainCount),AllDomains=sum(AllDomains))
 
 feat_function_aggregated$MutFreq <- feat_function_aggregated$MutIn/feat_function_aggregated$AllMuts
 feat_function_aggregated$SwitchFreq <- feat_function_aggregated$SwitchesIn/feat_function_aggregated$AllSwitches
@@ -231,7 +235,7 @@ p
 
 Removing the cases with perfect mutual exclusion only stresses the L-shape of the distribution. Only the urocanate metabolism stands out, same as in previous analyses. This amino acid is part of the degradation of the histidine, and any relation to cancer progression is not evident.
 
-## Further study on mutual exclusion
+## Repeat, filtering the data
 
 The L-shaped plots, might mean there is a mutual exclusion between features affected by mutations and alternative splicing. However, it may be just an illusion due to the outliers that reduce the resolution. So we make the same plot removing the outliers, outlier meaning points more extreme than quantile 95 in either axis.
 
@@ -267,9 +271,11 @@ for (cancer in cancerTypes){
 
 The L-shape seems kept in all the tumor types, reaffirming the mutual exclusion.
 
-## Binomial test between frequency of alterations and frequency of feature
+# Binomial test between frequency of alterations and frequency of feature
 
 In order to see if there is any feature enriched in mutations in general, as we do for individual switches, we want to check if any kind of domain is frequently mutated/switched more than expected.
+
+## Analysis by tumor type
 
 Below are plotted the with an adjusted p-value in either mutations or switches < 0.05, and a frequency higher than 0 in both axis. Also, tables with the top 10 domains ordered by mutation enrichment p-value, and filtered by adjusted p of enrichment in switches < 0.05.
 
@@ -295,7 +301,6 @@ for (cancer in cancerTypes){
   
   # plot domains that are enriched either by mutation affection or by switch affection
   cancer.feat_enrich <- cancer.feat_enrich[cancer.feat_enrich$adjp_swt < 0.05 | cancer.feat_enrich$adjp_mut < 0.05,]
-  
   cancer.feat_enrich <- subset(cancer.feat_enrich, MutFreq != 0 & SwitchFreq != 0)
   
   r <- cor(cancer.feat_enrich$MutFreq/cancer.feat_enrich$DomainFrequency,
@@ -314,8 +319,12 @@ for (cancer in cancerTypes){
   df <- cancer.feat_enrich[order(cancer.feat_enrich$p_mut),c("Domain","adjp_mut","adjp_swt")]
   df <- df[df$adjp_swt < 0.05,]
 
+  # prepare colums for print
   df$Domain <- gsub("|"," - ",df$Domain,fixed = T)
   df$Domain <- gsub("_"," ",df$Domain,fixed = T)
+  
+  df$adjp_mut <- format(df$adjp_mut,scientific=TRUE)
+  df$adjp_swt <- format(df$adjp_swt,scientific=TRUE)
 
   print(kable(head(df,n = 10),row.names = F, digits=3))
   cat("\n")
@@ -323,10 +332,61 @@ for (cancer in cancerTypes){
 }
 ```
 
-Kinase domains are frequently mutated, but not that frequently switched, except in some cases (PF07714).
+Kinase domains are frequently mutated, but not that frequently switched, except in some cases (PF07714). Also, there are some recurrent domains such as (RAS small GTPase and RHO small GTPase). 
 
-## TO-DO
+## Analysis aggregating all tumors
+
+Although there seems to be a correlation between tumor type and domain affected, it is interesting to aggregate the results to find out if the important domains are kept.
+
+```{r aggregated_domainEnrichment_binomiarTest}
+
+feat_enrich_agg.enrichment <- feat_enrich_agg
+
+feat_enrich_agg.enrichment$p_mut <- apply(feat_enrich_agg.enrichment[,c("MutIn","AllMuts","DomainFrequency")],1, function(x){ 
+  p <- binom.test(x[1],x[2],x[3],"greater")
+  p$p.value
+} )
+feat_enrich_agg.enrichment$adjp_mut <- p.adjust(feat_enrich_agg.enrichment$p_mut)
+
+feat_enrich_agg.enrichment$p_swt <- apply(feat_enrich_agg.enrichment[,c("SwitchesIn","AllSwitches","DomainFrequency")],1, function(x){ 
+  p <- binom.test(x[1],x[2],x[3],"greater")
+  p$p.value
+} )
+feat_enrich_agg.enrichment$adjp_swt <- p.adjust(feat_enrich_agg.enrichment$p_swt)
+
+# filter out no significant and only affected by one mechanism
+df <- feat_enrich_agg.enrichment[feat_enrich_agg.enrichment$adjp_swt < 0.05 | feat_enrich_agg.enrichment$adjp_mut < 0.05,]
+df <- subset(df, MutFreq != 0 & SwitchFreq != 0)
+  
+r <- cor(df$MutFreq/df$DomainFrequency,df$SwitchFreq/df$DomainFrequency)
+  
+ggplot(df,aes(MutFreq/DomainFrequency,SwitchFreq/DomainFrequency)) + 
+  geom_point() + 
+  smartas_theme() + 
+  geom_smooth(method=lm) + 
+  geom_text(x=4,y=50,label=paste0("R = ",round(r,2)))
+
+# show top 50 domains affected by mutations
+df <- feat_enrich_agg.enrichment[order(feat_enrich_agg.enrichment$p_mut),c("Domain","adjp_mut","adjp_swt","MutFreq","SwitchFreq","DomainFrequency")]
+df <- df[df$adjp_mut < 0.05 | df$adjp_swt < 0.05,]
+
+# prepare colums for print
+df$Domain <- gsub("|"," - ",df$Domain,fixed = T)
+df$Domain <- gsub("_"," ",df$Domain,fixed = T)
+
+df$adjp_mut <- format(df$adjp_mut,digits=3)
+df$adjp_swt <- format(df$adjp_swt,digits=3)
+df$fc_mut <- round(df$MutFreq/df$DomainFrequency,2)
+df$fc_swt <- round(df$SwitchFreq/df$DomainFrequency,2)
+
+df <- df[order(-df$fc_mut),]
+
+datatable(df[,c("Domain","adjp_mut","adjp_swt","fc_mut","fc_swt")])
+
+```
+
+# TO-DO
 
 We want to be able to rank domains based on mutations, and to know if that is possible. 
 
-2) The normalization by domain frequency might not be correct
+1. The expected frequency of mutation should be the length of a domain divided by the total length of the proteome.

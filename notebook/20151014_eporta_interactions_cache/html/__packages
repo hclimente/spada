@@ -1,0 +1,10 @@
+base
+plyr
+ggplot2
+reshape2
+quadprog
+directlabels
+gridExtra
+knitr
+DT
+RColorBrewer

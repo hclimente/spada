@@ -1,0 +1,109 @@
+---
+title: "Interactome3D Analysis"
+author: "Héctor Climente"
+date: "10/18/2015"
+output: 
+  html_document:
+    toc: true
+---
+
+```{r environment, include=FALSE }
+source("~/SmartAS/Pipeline/scripts/variablesAndFunctions.r")
+library(knitr)
+library(DT)
+results_filepath <- paste0(workingDir,"/structural_analysis/")
+wd <- paste0("~/SmartAS/Pipeline/notebook/20151014_eporta_interactions_files/data/")
+```
+
+```{r get_files, include=FALSE }
+dir.create(wd,recursive=T)
+
+file.copy(paste0(results_filepath,"i3d_broken.tsv"),wd,overwrite = T)
+file.copy(paste0(workingDir,"/switches/tables/candidateList_allCancers_models_notNoise.txt"),wd,overwrite = T)
+
+```
+
+We used Interactome3D to study the effects of switches on real protein-protein interactions. If one of the isoforms of the switch is present in one interaction AND the other isoform only present has lost regions of the CDS due to the switch (no new CDS region), thne the switch is susceptible of being studied using I3D. If the other isoform gained any region, its consequences on the interaction would be more difficult to assess.
+
+# Overview
+
+```{r i3d_overview }
+
+i3d <- read.delim(paste0(wd,"i3d_broken.tsv"),row.names=NULL)
+
+i3d$DriverRelationship <- "No driver involved"
+i3d$DriverRelationship[grep("Driver",i3d$Annotation)] <- "Driver"
+i3d$DriverRelationship[grep("Driver",i3d$PartnerAnnotation)] <- "d1"
+i3d$DriverRelationship[Reduce(intersect,  list(grep("Driver",i3d$Annotation),grep("Driver",i3d$PartnerAnnotation)))] <- "Driver-Driver"
+
+# number of interactions
+nrow(i3d)
+
+# number of unique interactions
+nrow(unique(i3d[,c("Gene","normalTranscript","tumorTranscript","Partner")]))
+
+# i3d considers complete the structures that cover at least 80% of the sequence
+i3d_complete <- i3d[i3d$SequenceCover>80 & i3d$PartnerCover>80,!colnames(i3d) %in% c("SequenceInformation","IsoformSpecific","PDB")]
+i3d_complete_uniq <- unique(i3d_complete[,c("Symbol","Gene","Partner","normalTranscript","tumorTranscript","InteractionAffection","Annotation","PartnerAnnotation")])
+
+# number of complete interactions
+nrow(i3d_complete)
+
+# number of unique complete interactions
+nrow(i3d_complete_uniq)
+
+```
+
+Interactome3D yields a total of 5821 interactions aggregating the different cancer types, 20% of which (1190) are unique. If we stick to complete interactions, those structures where both interactors cover more than 80% of the sequences, there are 1242 structures representing a switch, 18.7% of them are unique (232).
+
+```{r interface_affectation}
+
+ggplot(i3d_complete_uniq, aes(InteractionAffection)) + 
+  geom_histogram(binwidth=5,fill="#c0392b", alpha=0.75) + 
+  smartas_theme() + 
+  labs(x="Percentage of the interface lost", y="Frequency") + 
+  geom_hline(yintercept=0, size=0.4, color="black") + 
+  scale_x_continuous(breaks=seq(0,100, by=5))
+
+```
+
+Most of the switches do not affect the interface, or affect very little of it. However, there are some that totally disappear with the switch. Thus, even if PPI affectation is not the main mechanism involved in switch hypothetical driverness, it might play a role in many cases. If any, there might be a "bump" in the plot around the 50%, maybe marking some useful threshold. In any case, it seems like a good threshold to use...
+
+```{r interface_broken_genes_test1}
+
+candidatesDf_agg <- read.delim(paste0(wd,"candidateList_allCancers_models_notNoise.txt"))
+
+# split by percent of the interface affected
+# Group 1: switches that affect >= 50% of the interface
+# Group 2: switches that affect < 50% of the interface
+x <- unique(i3d_complete_uniq[i3d_complete_uniq$InteractionAffection >= 50, c( "Gene","normalTranscript","tumorTranscript")])
+colnames(x) <- c("GeneId","Normal_transcript","Tumor_transcript")
+y <- unique(i3d_complete_uniq[i3d_complete_uniq$InteractionAffection < 50, c( "Gene","normalTranscript","tumorTranscript")])
+colnames(y) <- c("GeneId","Normal_transcript","Tumor_transcript")
+
+studyGroups(x,y,candidatesDf_agg)
+
+```
+
+Nothing interesting comes up. Switches with high affection affect more patients and are enriched in d=1, but non-significantly.
+
+```{r interface_broken_genes_test2}
+
+# create two groups
+# Group 1: switches that affect >= 50% of the interface
+# Group 2: all the other switches
+x <- unique(i3d_complete_uniq[i3d_complete_uniq$InteractionAffection >= 50, c( "Gene","normalTranscript","tumorTranscript")])
+colnames(x) <- c("GeneId","Normal_transcript","Tumor_transcript")
+y <- candidatesDf_agg[! candidatesDf_agg$GeneId %in% x$GeneId &
+                      ! candidatesDf_agg$Normal_transcript %in% x$Normal_transcript &
+                      ! candidatesDf_agg$Tumor_transcript %in% x$Tumor_transcript &
+                        as.logical(candidatesDf_agg$IsRelevant),
+                      c("GeneId","Normal_transcript","Tumor_transcript")]
+
+studyGroups(x,y,candidatesDf_agg)
+
+```
+
+Testing the group with affectation >= 50% against the rest of the relevant switches is juicier. We see that the first ones tend to affect more patients and to be spread across more tumors. Also, they affet hallmarks more frequently.
+
+# Particular cases

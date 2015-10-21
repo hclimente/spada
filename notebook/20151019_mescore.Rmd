@@ -1,0 +1,38 @@
+---
+title: "Mutual exclusion study"
+author: "Héctor Climente"
+date: "10/19/2015"
+output:
+  html_document:
+    toc: true
+---
+
+```{r environment, include=FALSE }
+source("~/SmartAS/Pipeline/scripts/variablesAndFunctions.r")
+library(knitr)
+library(DT)
+results_filepath <- paste0(workingDir,"/mutations/")
+wd <- paste0("~/SmartAS/Pipeline/notebook/20151019_domain_ranking_files/data/")
+```
+
+```{r get_files, include=FALSE }
+dir.create(wd,recursive=T)
+
+file.copy(paste0(results_filepath,'gene_functional_mutations_functional_switches.txt'),wd,overwrite = T)
+```
+
+```{r statistic_exploration_1}
+
+meAnalysis <- read.delim(paste0(wd,'gene_functional_mutations_functional_switches.txt'))
+
+f <- apply(meAnalysis[,colnames(meAnalysis) %in% c("ms","m","s","n")],1, function(x){
+    f <- fisher.test(x=matrix(x+1,nrow=2,ncol=2),alternative="less")
+    c(p=f$p.value,or=f$estimate)} )
+
+f.df <- as.data.frame(t(f))
+colnames(f.df) <- c("p_me","OR_me")
+
+pp <- cbind(meAnalysis,f.df)
+
+
+```
