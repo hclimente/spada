@@ -1,0 +1,16 @@
+{
+  "_virtualApp": {
+    "router": [
+      {
+        "module": "basic-auth",
+        "options": {
+          "username": "env:BASIC_AUTH_USERNAME",
+          "password": "env:BASIC_AUTH_PASSWORD"
+        }
+      },
+      {
+        "module": "webpage"
+      }
+    ]
+  }
+}
