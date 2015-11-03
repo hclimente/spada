@@ -117,9 +117,13 @@ class MutationFeatureOverlap(method.Method):
 
 				for f in affectedFeats:
 					for inMuts,allMuts,ratio,featSize,mutationTypes in affectedFeats[f]:
-						featureMutationCounts.setdefault(f,0)
+						featureMutationCounts.setdefault(f,
+							{"Frame_Shift_Del": 0,"Frame_Shift_Ins": 0,
+							 "In_Frame_Del": 0,"In_Frame_Ins": 0,
+							 "Missense_Mutation": 0,"Nonsense_Mutation": 0,
+							 "Nonstop_Mutation": 0})
 						for t in mutationTypes:
-							featureMutationCounts[f] += 1
+							featureMutationCounts[f][t] += 1
 
 		return featureMutationCounts
 
@@ -355,7 +359,7 @@ class MutationFeatureOverlap(method.Method):
 	def printFeatureFreq(self,featSwitchCounts,featMutationCounts,featCounts,featSizeCounts,totalProteomeSize):
 
 		totalMuts  		= sum([ featMutationCounts[x] for x in featMutationCounts ])
-		totalSwitches 	= sum([ featSwitchCounts[x] for x in featSwitchCounts ])
+		totalSwitches 	= sum([ featSwitchCounts[x][y] for x in featSwitchCounts for y in featSwitchCounts[x] ])
 		totalCounts 	= sum([ featCounts[x] for x in featCounts ])
 
 		## QUITAR
@@ -363,14 +367,16 @@ class MutationFeatureOverlap(method.Method):
 
 		with open("{0}mutations/feature_enrichment.txt".format(options.Options().qout),"w") as OUT:
 			OUT.write("Cancer\tDomain\tMutRatio\tSwitchRatio\tMutIn\tAllMuts\t")
-			OUT.write("SwitchesIn\tAllSwitches\tDomainCount\tAllDomains\tDomainSize\tTotalProteomeSize\n")
+			OUT.write("SwitchesIn\tAllSwitches\tDomainCount\tAllDomains\tDomainSize\t")
+			OUT.write("TotalProteomeSize\tFrame_Shift_Del\tFrame_Shift_Ins\tIn_Frame_Del\t")
+			OUT.write("In_Frame_Ins\tMissense_Mutation\tNonsense_Mutation\tNonstop_Mutation\n")
 
 			allDomains = featMutationCounts.keys()
 			allDomains.extend(featSwitchCounts.keys())
 
 			for f in set(allDomains):
 				if f in featMutationCounts:
-					mutIn = int(featMutationCounts[f])
+					mutIn = sum([ featSwitchCounts[f][x] for x in featSwitchCounts[f] ])
 				else:
 					mutIn = 0
 
@@ -393,7 +399,14 @@ class MutationFeatureOverlap(method.Method):
 				OUT.write("{0}\t{1}\t{2}\t".format(options.Options().tag,f,mutRatio))
 				OUT.write("{0}\t{1}\t{2}\t".format(switchRatio,mutIn,totalMuts))
 				OUT.write("{0}\t{1}\t{2}\t".format(switchesIn,totalSwitches,c))
-				OUT.write("{0}\t{1}\t{2}\n".format(totalCounts,k,totalProteomeSize))
+				OUT.write("{0}\t{1}\t{2}\t".format(totalCounts,k,totalProteomeSize))
+				OUT.write("{}\t".format(featSwitchCounts[f]["Frame_Shift_Del"]))
+				OUT.write("{}\t".format(featSwitchCounts[f]["Frame_Shift_Ins"]))
+				OUT.write("{}\t".format(featSwitchCounts[f]["In_Frame_Del"]))
+				OUT.write("{}\t".format(featSwitchCounts[f]["In_Frame_Ins"]))
+				OUT.write("{}\t".format(featSwitchCounts[f]["Missense_Mutation"]))
+				OUT.write("{}\t".format(featSwitchCounts[f]["Nonsense_Mutation"]))
+				OUT.write("{}\n".format(featSwitchCounts[f]["Nonstop_Mutation"]))
 
 	def printOverlap(self,featureOverlap):
 		with open("{0}mutations/mutation_switch_feature_overlap.txt".format(options.Options().qout),"w") as F:
