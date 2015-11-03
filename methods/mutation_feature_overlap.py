@@ -24,7 +24,6 @@ class MutationFeatureOverlap(method.Method):
 		## CALCULATE DOMAIN ALTERATION FREQUENCY IN GENERAL
 		# get affection of prosite/pfams by switches and mutations
 		featSwitchCounts = self.getFeatureSwitchFrequency()
-		featSwitchCounts = {}
 		featMutationCounts = self.getFeatureMutationFrequency()
 
 		# get frequency of feature in the proteome (only most expressed iso per gene)
