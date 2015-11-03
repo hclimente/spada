@@ -31,6 +31,8 @@ class Options(object):
         self._parallelRange         = options.parallelRange
         self._externalSwitchesFile  = options.externalSwitchesFile
         self._parentTag             = options.parentTag
+        # step for gene packs to parallelize
+        self._step                  = 200
 
     # Getters ##
     @property
@@ -79,6 +81,8 @@ class Options(object):
     def externalSwitchesFile(self): return self._externalSwitchesFile
     @property
     def parentTag(self): return self._parentTag
+    @property
+    def step(self): return self._step
 
     def parseOptions(self, *args, **kwds):
         parser = Parser(prog="SmartAS.py", description = "Find significant alternative splicing switches. Analyze their functional impact.", epilog= "Hector Climente, 2014", fromfile_prefix_chars='@')

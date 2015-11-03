@@ -111,7 +111,7 @@ class GetRandomSwitches(method.Method):
 
 		randoms = []
 
-		for startingNode in range(1,len(self._gene_network.nodes()),20):
+		for startingNode in range(1,len(self._gene_network.nodes()),options.Options().step):
 			cfg = options.Options().printToFile(filename="random_{0}_node{1}".format(options.Options().tag,startingNode),parallelRange=startingNode,onlyModels=False)
 			jt = s.createJobTemplate()
 			
