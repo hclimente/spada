@@ -17,7 +17,7 @@ class AminoAcid:
 		self._iuPred_score 		= None
 		self._anchor_score 		= None
 		self._kinases 	 		= set()
-		self._ptms 				= []
+		self._feature			= []
 
 	@property
 	def res(self): return self._res

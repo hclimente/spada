@@ -31,19 +31,19 @@ class StructuralAnalysis(method.Method):
 
 		self._interpro_file = "{0}structural_analysis/interpro_analysis{1}.tsv".format(options.Options().qout,tag)
 		self.IP = open(self._interpro_file,"w")
-		self.writeIPHeader(self.IP)
+		self.writeKnownFeatureHeader(self.IP)
 				
 		self._iupred_file = "{0}structural_analysis/iupred_analysis{1}.tsv".format(options.Options().qout,tag)
 		self.IU = open(self._iupred_file,"w")
-		self.writeIUHeader(self.IU)
+		self.writeDisorderedRegionHeader(self.IU)
 								
 		self._anchor_file = "{0}structural_analysis/anchor_analysis{1}.tsv".format(options.Options().qout,tag)
 		self.ANCHOR = open(self._anchor_file,"w")
-		self.writeANCHORHeader(self.ANCHOR)
+		self.writeDisorderedRegionHeader(self.ANCHOR)
 				
 		self._prosite_file = "{0}structural_analysis/prosite_analysis{1}.tsv".format(options.Options().qout,tag)
 		self.PROSITE = open(self._prosite_file,"w")
-		self.writePrositeHeader(self.PROSITE)
+		self.writeKnownFeatureHeader(self.PROSITE)
 						
 		self._relevance_info = "{0}structural_analysis/structural_summary{1}.tsv".format(options.Options().qout,tag)
 		self.REL = open(self._relevance_info,"w")
@@ -67,11 +67,10 @@ class StructuralAnalysis(method.Method):
 			if not thisSwitch.nIsoform or not thisSwitch.tIsoform: 
 				continue
 
-			thisSwitch._iloops_change 	  = self.archDBAnalysis(thisSwitch,gene,info,isoInfo)
-			thisSwitch._functional_change = self.interproAnalysis(thisSwitch,gene,info)
-			thisSwitch._disorder_change   = self.disorderAnalysis(thisSwitch,gene,info)
-			thisSwitch._anchor_change     = self.anchorAnalysis(thisSwitch,gene,info)
-			thisSwitch._ptm_change 		  = self.prositeAnalysis(thisSwitch,gene,info)
+			thisSwitch._iloops_change 	  							= self.archDBAnalysis(thisSwitch,gene,info,isoInfo)
+			(thisSwitch._functional_change,thisSwitch._ptm_change) 	= self.knownFeaturesAnalysis(thisSwitch,gene,info)
+			thisSwitch._disorder_change   							= self.disorderAnalysis(thisSwitch,gene,info)
+			thisSwitch._anchor_change    							= self.anchorAnalysis(thisSwitch,gene,info)
 
 			self.REL.write("{0}\t{1}\t".format(gene,info["symbol"]))
 			self.REL.write("{0}\t{1}\t".format(thisSwitch.nTx,thisSwitch.tTx))
@@ -100,54 +99,6 @@ class StructuralAnalysis(method.Method):
 				return False
 
 		return False
-
-	def interproAnalysis(self,thisSwitch,gene,info):
-
-		self.logger.debug("InterPro: searching changes for gene {0}.".format(gene) )
-		
-		normalProtein = thisSwitch.nIsoform
-		tumorProtein = thisSwitch.tIsoform
-
-		if not normalProtein or not tumorProtein: return False
-
-		for protein in [normalProtein,tumorProtein]:
-			protein.readInterpro()
-		
-		if not normalProtein._features and not tumorProtein._features: return False
-		
-		nIsoFeatures = Counter([ x["accession"] for x in normalProtein._features ])
-		tIsoFeatures = Counter([ x["accession"] for x in tumorProtein._features ])
-
-		nIso_uniqFeats = dict([ (x,nIsoFeatures[x]-tIsoFeatures.get(x,0)) for x in nIsoFeatures if nIsoFeatures[x]-tIsoFeatures.get(x,0) > 0 ])
-		tIso_uniqFeats = dict([ (x,tIsoFeatures[x]-nIsoFeatures.get(x,0)) for x in tIsoFeatures if tIsoFeatures[x]-nIsoFeatures.get(x,0) > 0 ])
-
-		iterationZip = zip([nIsoFeatures,tIsoFeatures],[nIso_uniqFeats,tIso_uniqFeats],[normalProtein,tumorProtein],["Lost_in_tumor","Gained_in_tumor"])
-
-		for features,uniqFeatures,protein,whatShouldBeHappening in iterationZip:
-			for f in features:
-		
-				whatsHappening = "Nothing"
-				featInfo = [ x for x in protein._features if x["accession"]==f ][0]
-				notInUniq = 0
-				if f in uniqFeatures:
-					whatsHappening = whatShouldBeHappening
-					notInUniq = uniqFeatures[f]
-
-				self.IP.write("{0}\t{1}\t{2}\t".format(gene,info["symbol"],thisSwitch.nTx))
-				self.IP.write("{0}\t{1}\t".format(thisSwitch.tTx,whatsHappening))
-				self.IP.write("{0}\t{1}\t".format(featInfo["analysis"],featInfo["accession"]))
-				self.IP.write("{0}\t{1}\t".format(featInfo["description"].replace(" ","_"),features[f]))
-				self.IP.write("{0}\n".format(notInUniq))
-
-				toSave = [featInfo["analysis"],featInfo["accession"],featInfo["description"],notInUniq]
-				if thisSwitch._domain_change is None:
-					thisSwitch._domain_change = []
-				thisSwitch._domain_change.append(toSave)
-
-		if thisSwitch._domain_change: 
-			self.logger.debug("InterPro: information found for gene {0}.".format(gene))
-			return True
-		else: return False
 
 	def disorderAnalysis(self,thisSwitch,gene,info):
 
@@ -281,113 +232,100 @@ class StructuralAnalysis(method.Method):
 
 		return anyAnchorSeq
 
-	def prositeAnalysis(self,thisSwitch,gene,info):
-		anyPTM = False
-		ptms = set()
+	def knownFeaturesAnalysis(self,thisSwitch,gene,info):
+		anyFeature = {"Prosite":False,"InterPro":False}
+		features = {"Prosite":set(),"InterPro":set()}
+		prosites = set()
+		interpros = set()
 
-		for tx,iso in zip([thisSwitch.nTranscript,thisSwitch.tTranscript],[thisSwitch.nIsoform,thisSwitch.tIsoform]):
-			tx.readProsite()
+		for isoform in [thisSwitch.nIsoform,thisSwitch.tIsoform]:
+			isoform.readProsite()
+			isoform.readInterpro()
 
-			for ptm in tx._ptms:
-				for start,end in tx._ptms[ptm]:
-					for resNum in range(start,end):
-						thisRes = iso._structure[resNum-1]
-						thisRes._ptms.append(ptm)
+		[ features["Prosite"].add(x) for i in [thisSwitch.nIsoform,thisSwitch.tIsoform] for x in i._prosite ]
+		[ features["InterPro"].add("{0}|{1}".format(x['accession'],x['description'])) for i in [thisSwitch.nIsoform,thisSwitch.tIsoform] for x in i._pfam ]
 
-				ptms.add(ptm)
+		for OUT,featType in zip([self.IP,self.PROSITE],["InterPro","Prosite"]):
+			for feature in features[featType]:
+				featInfo = {}
+				for isoform in [thisSwitch.nIsoform,thisSwitch.tIsoform]:
+					featInfo[isoform.tx] = []
+					featRegions = isoform.getSegments(feature,minLength=1,gap=0)
+					isospRegions = isoform.getSegments("isoform-specific")
 
-		for ptm in ptms:
-			ptmInfo = {}
-			for isoform in [thisSwitch.nIsoform,thisSwitch.tIsoform]:
-				ptmInfo[isoform.tx] = []
-				ptmRegions = isoform.getSegments(ptm,minLength=1,gap=0)
-				isospRegions = isoform.getSegments("isoform-specific")
+					for region in featRegions:
 
-				for region in ptmRegions:
+						macroScore = float("-inf")
+						microScore = float("-inf")
+						jaccard = float("-inf")
 
-					macroScore = float("-inf")
-					microScore = float("-inf")
-					jaccard = float("-inf")
+						thisIsosp = []
+						[ thisIsosp.extend(x) for x in isospRegions if set(x) & set(region) ]
+						intersection = float(len(set(region) & set(thisIsosp)))
+						featLength = float(len(set(region)))
+						isoSpLength = float(len(set(thisIsosp)))
+						macroScore = intersection/featLength
+						microScore =  float("-inf") if isoSpLength==0 else intersection/isoSpLength
+						jaccard = intersection/len(set(region) | set(thisIsosp))
 
-					thisIsosp = []
-					[ thisIsosp.extend(x) for x in isospRegions if set(x) & set(region) ]
-					intersection = float(len(set(region) & set(thisIsosp)))
-					ptmLength = float(len(set(region)))
-					isoSpLength = float(len(set(thisIsosp)))
-					macroScore = intersection/ptmLength
-					microScore =  float("-inf") if isoSpLength==0 else intersection/isoSpLength
-					jaccard = intersection/len(set(region) | set(thisIsosp))
+						featInfo[isoform.tx].append({"macro": macroScore, 
+										   "micro": microScore, "jaccard": jaccard})
 
-					ptmInfo[isoform.tx].append({"macro": macroScore, 
-									   "micro": microScore, "jaccard": jaccard})
+					featInfo[isoform.tx] = sorted(featInfo[isoform.tx], key=operator.itemgetter("macro"))
 
-				ptmInfo[isoform.tx] = sorted(ptmInfo[isoform.tx], key=operator.itemgetter("macro"))
+				featInfoZipped = map(None, featInfo[thisSwitch.nIsoform.tx], featInfo[thisSwitch.tIsoform.tx])
 
-			ptmInfoZipped = map(None, ptmInfo[thisSwitch.nIsoform.tx], ptmInfo[thisSwitch.tIsoform.tx])
+				for i in range(len(featInfoZipped)):
 
-			for i in range(len(ptmInfoZipped)):
+					nDict = featInfoZipped[i][0]
+					tDict = featInfoZipped[i][1]
 
-				nDict = ptmInfoZipped[i][0]
-				tDict = ptmInfoZipped[i][1]
+					nMacroScore = "NA"
+					nMicroScore = "NA"
+					nJaccard = "NA"
+					tMacroScore = "NA"
+					tMicroScore = "NA"
+					tJaccard = "NA"
 
-				nMacroScore = "NA"
-				nMicroScore = "NA"
-				nJaccard = "NA"
-				tMacroScore = "NA"
-				tMicroScore = "NA"
-				tJaccard = "NA"
+					whatsHappening = "Nothing"
 
-				whatsHappening = "Nothing"
+					if nDict:
+						nMacroScore = "NA" if nDict["macro"] < 0 else nDict["macro"]
+						nMicroScore = "NA" if nDict["micro"] < 0 else nDict["micro"]
+						nJaccard = "NA" if nDict["jaccard"] < 0 else nDict["jaccard"]
 
-				if nDict:
-					nMacroScore = "NA" if nDict["macro"] < 0 else nDict["macro"]
-					nMicroScore = "NA" if nDict["micro"] < 0 else nDict["micro"]
-					nJaccard = "NA" if nDict["jaccard"] < 0 else nDict["jaccard"]
+					if tDict:
+						tMacroScore = "NA" if tDict["macro"] < 0 else tDict["macro"]
+						tMicroScore = "NA" if tDict["micro"] < 0 else tDict["micro"]
+						tJaccard = "NA" if tDict["jaccard"] < 0 else tDict["jaccard"]
 
-				if tDict:
-					tMacroScore = "NA" if tDict["macro"] < 0 else tDict["macro"]
-					tMicroScore = "NA" if tDict["micro"] < 0 else tDict["micro"]
-					tJaccard = "NA" if tDict["jaccard"] < 0 else tDict["jaccard"]
+					if nDict and tDict is None:
+						if nMacroScore != "NA" and nMacroScore > 0:
+							whatsHappening = "Lost_in_tumor"
+							anyFeature[featType] = True
+					elif tDict and nDict is None:
+						if tMacroScore != "NA" and tMacroScore > 0:
+							whatsHappening = "Gained_in_tumor"
+							anyFeature[featType] = True
 
-				if nDict and tDict is None:
-					if nMacroScore != "NA" and nMacroScore > 0:
-						whatsHappening = "Lost_in_tumor"
-						anyPTM = True
-				elif tDict and nDict is None:
-					if tMacroScore != "NA" and tMacroScore > 0:
-						whatsHappening = "Gained_in_tumor"
-						anyPTM = True
+					OUT.write("{0}\t{1}\t{2}\t".format(gene,info["symbol"],thisSwitch.nTx))
+					OUT.write("{0}\t{1}\t{2}\t".format(thisSwitch.tTx,whatsHappening,feature))
+					OUT.write("{0}/{1}\t".format(i+1,len(featInfo[thisSwitch.nIsoform.tx])))
+					OUT.write("{0}/{1}\t".format(i+1,len(featInfo[thisSwitch.tIsoform.tx])))
+					OUT.write("{0}\t{1}\t{2}\t".format(nMacroScore,nMicroScore,nJaccard))
+					OUT.write("{0}\t{1}\t{2}\n".format(tMacroScore,tMicroScore,tJaccard))
 
-				self.PROSITE.write("{0}\t{1}\t{2}\t".format(gene,info["symbol"],thisSwitch.nTx))
-				self.PROSITE.write("{0}\t{1}\t{2}\t".format(thisSwitch.tTx,whatsHappening,ptm))
-				self.PROSITE.write("{0}/{1}\t".format(i+1,len(ptmInfo[thisSwitch.nIsoform.tx])))
-				self.PROSITE.write("{0}/{1}\t".format(i+1,len(ptmInfo[thisSwitch.tIsoform.tx])))
-				self.PROSITE.write("{0}\t{1}\t{2}\t".format(nMacroScore,nMicroScore,nJaccard))
-				self.PROSITE.write("{0}\t{1}\t{2}\n".format(tMacroScore,tMicroScore,tJaccard))
+		return anyFeature["InterPro"],anyFeature["Prosite"]
 
-		return anyPTM
+	def writeKnownFeatureHeader(self,OUT):
+		OUT.write("Gene\tSymbol\tNormalTranscript\tTumorTranscript\t")
+		OUT.write("What\tFeature\tnormalReps\ttumorReps\tnMacroScore\t")
+		OUT.write("nMicroScore\tnJaccard\ttMacroScore\ttMicroScore\ttJaccard\n")
 
-	def writeIPHeader(self,IP):
-		IP.write("Gene\tSymbol\tNormalTranscript\tTumorTranscript\t")
-		IP.write("What\tAnalysis\tFeature_accesion\tFeature\tRepetitions\t")
-		IP.write("Exclusive repetitions\n")
-
-	def writeIUHeader(self,IU):
-		IU.write("Gene\tSymbol\tNormalTranscript\tTumorTranscript\t")
-		IU.write("What\tSequence\tStartPos\tEndPos\tJaccard\t")
-		IU.write("microScore\tmacroScore\tSignificant\n")
-		
-	def writeANCHORHeader(self,ANCHOR):
-		ANCHOR.write("Gene\tSymbol\tNormalTranscript\tTumorTranscript\t")
-		ANCHOR.write("What\tSequence\tStartPos\tEndPos\tJaccard\t")
-		ANCHOR.write("microScore\tmacroScore\tSignificant\n")
-
-	def writePrositeHeader(self,PROSITE):
-		PROSITE.write("Gene\tSymbol\tNormalTranscript\t")
-		PROSITE.write("tTumorTranscript\tWhat\tFeature\t")
-		PROSITE.write("normalReps\ttumorReps\tnMacroScore\t")
-		PROSITE.write("nMicroScore\tnJaccard\ttMacroScore\t")
-		PROSITE.write("tMicroScore\ttJaccard\n")
+	def writeDisorderedRegionHeader(self,OUT):
+		OUT.write("Gene\tSymbol\tNormalTranscript\tTumorTranscript\t")
+		OUT.write("What\tSequence\tStartPos\tEndPos\tJaccard\t")
+		OUT.write("microScore\tmacroScore\tSignificant\n")
 		
 	def writeSummaryHeader(self,REL):
 		REL.write("Gene\tSymbol\tNormalTranscript\tTumorTranscript\t")
@@ -410,10 +348,10 @@ class StructuralAnalysis(method.Method):
 				self.REL.close()
 		
 			with open(outFile,"w") as OUT:
-				if root=='interpro_analysis': self.writeIPHeader(OUT)
-				elif root=='iupred_analysis': self.writeIUHeader(OUT)
-				elif root=='anchor_analysis': self.writeANCHORHeader(OUT)
-				elif root=='prosite_analysis': self.writePrositeHeader(OUT)
+				if root=='interpro_analysis': self.writeKnownFeatureHeader(OUT)
+				elif root=='iupred_analysis': self.writeDisorderedRegionHeader(OUT)
+				elif root=='anchor_analysis': self.writeDisorderedRegionHeader(OUT)
+				elif root=='prosite_analysis': self.writeKnownFeatureHeader(OUT)
 				elif root=='structural_summary': self.writeSummaryHeader(OUT)
 						
 				for aFile in files:

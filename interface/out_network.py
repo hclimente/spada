@@ -79,10 +79,10 @@ def outputGTF(gn_network,tx_network):
 					tGTF.write("{0};patients_affected={1}\n".format(line.strip(), switch[1] ))
 
 def outCandidateList(gn_network,tx_network):
-	logging.info("Writing candidateList_v6.")
-	with open(options.Options().qout + "candidateList_v6.tsv", "w") as cList:
+	logging.info("Writing candidateList.")
+	with open(options.Options().qout + "candidateList_smartas.tsv", "w") as cList:
 		cList.write("GeneId\tSymbol\tNormal_transcript\tTumor_transcript\t")
-		cList.write("Normal_protein\tTumor_protein\tAnnotation\tNotNoise\t")
+		cList.write("Normal_protein\tTumor_protein\tAnnotation\tDriverAnnotation\tNotNoise\t")
 		cList.write("IsModel\tIsRelevant\tDriver\tDruggable\tCDS\t")
 		cList.write("CDS_change\tUTR_change\tPatients_affected\n")
 
@@ -108,12 +108,12 @@ def outCandidateList(gn_network,tx_network):
 			except Exception:
 				relevance = None
 
-			tag = gn_network.getGeneAnnotation(gene,hallmarksDict,bpDict)
+			annotation,driverAnnotation = gn_network.getGeneAnnotation(gene,hallmarksDict,bpDict)
 
 			cList.write("{0}\t{1}\t".format( gene, info["symbol"] ))
 			cList.write("{0}\t{1}\t".format( nIso.name, tIso.name ))
 			cList.write("{0}\t{1}\t".format( nUniprot, tUniprot ))
-			cList.write("{0}\t".format(tag))
+			cList.write("{0}\t{1}\t".format( annotation,driverAnnotation ))
 			cList.write("{0}\t{1}\t".format( int(not switchDict["noise"]), int(switchDict["model"]) ))
 			cList.write("{0}\t{1}\t".format( relevance, int(info["Driver"]) ))
 			cList.write("{0}\t{1}\t".format( int(info["Druggable"]), int(cds) ))

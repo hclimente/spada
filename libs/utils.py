@@ -159,7 +159,7 @@ def launchJobs(gnNetwork,task):
 
 	randoms = []
 
-	for startingNode in range(1,len(gnNetwork.nodes()),20):
+	for startingNode in range(1,len(gnNetwork.nodes()),options.Options().step):
 		cfg = options.Options().printToFile(filename="{0}_{1}_node{2}".format(options.Options().tag,task,startingNode),parallelRange=startingNode,onlyModels=False)
 		jt = s.createJobTemplate()
 		

@@ -27,7 +27,7 @@ class SmartAS:
 		self.logger = logging.getLogger()
 
 		self.logger.info("SmartAS - Finding significant AS events")
-		self.logger.info("Hector Climente - GRIB 2014")
+		self.logger.info("Hector Climente - GRIB 2014-2015")
 
 	def importData(self):
 
@@ -67,6 +67,7 @@ class SmartAS:
 			files=glob.glob("{0}structural_analysis/interpro_analysis_[0-9]*.tsv".format(options.Options().qout))
 			if files:
 				s.joinFiles()
+				out_network.outCandidateList(s._gene_network,s._transcript_network)
 			else:
 				utils.launchJobs(s._gene_network,'structural_analysis')
 		else:

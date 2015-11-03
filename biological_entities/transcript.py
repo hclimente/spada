@@ -79,7 +79,6 @@ class Transcript:
 			for nt in sorted(self._cds,reverse=reverseOrder):
 				yield nt
 
-
 	@property
 	def cds_exclusive(self): 
 		exclusive = float(sum([ 1 for x in self._cds if self._cds[x] ]))
@@ -128,6 +127,9 @@ class Transcript:
 
 		if not os.path.exists(featFile):
 			return
+		elif self._pfam:
+			# already read
+			return
 
 		for line in utils.readTable(featFile,header=False):
 
@@ -144,6 +146,9 @@ class Transcript:
 		featFile = "{0}Data/{1}/ProSite/{2}.out".format(options.Options().wd,options.Options().inputType,self.name)
 
 		if not os.path.exists(featFile) or os.stat(featFile).st_size == 0:
+			return
+		elif self._ptms:
+			# already read
 			return
 
 		for line in utils.readTable(featFile,header=False):

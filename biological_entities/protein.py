@@ -1,6 +1,8 @@
 from biological_entities import aminoacid
 from interface import interpro_analysis
+from libs import options
 from libs import utils
+
 try:
 	from libs.SBI.structure import PDB
 	from libs.SBI.structure.contacts import Complex
@@ -9,6 +11,7 @@ except:
 
 from Bio import pairwise2
 import logging
+import os
 
 class Protein:
 	def __init__(self, tx, txInfo):
@@ -20,7 +23,8 @@ class Protein:
 		self._structure			= []
 		self._residueCorresp	= {}
 		self._has_pdbs			= False
-		self._features 			= []
+		self._pfam 				= []
+		self._prosite			= {}
 		self._pdbs				= {}
 
 		if self._sequence is not None:
@@ -274,7 +278,7 @@ class Protein:
 
 	def getFeatures(self,interproOut):
 		for featInfo in interpro_analysis.InterproAnalysis().readInterpro(interproOut,self):
-			self._features.append(featInfo)
+			self._pfam.append(featInfo)
 
 	def getSegments(self,thing,minLength=1,gap=0):
 		segments = []
@@ -292,7 +296,7 @@ class Protein:
 			elif thing =="disordered":
 				flag = res.isDisordered
 			else:
-				flag = thing in res._ptms
+				flag = thing in res._feature
 
 			if flag:
 				if gapped:
@@ -337,24 +341,23 @@ class Protein:
 					thisRes = self._structure[resNum-1]
 
 					if residue != thisRes.res:
-						self.logger.error("Not matching residue in ANCHOR analysis, transcript {0}.".format(protein.tx))
+						self.logger.error("Not matching residue in ANCHOR analysis, transcript {0}.".format(self.tx))
 						continue
 
 					thisRes.set_anchorScore(score)
 
 		else:
-			with open(outfile) as ANCHORout:
-				for line in ANCHORout:
-					resNum  = int(line[0])
-					residue	= line[1]
-					score 	= float(line[2].strip())
-					thisRes = self._structure[resNum-1]
+			for line in utils.readTable(outfile,header=False):
+				resNum  = int(line[0])
+				residue	= line[1]
+				score 	= float(line[2].strip())
+				thisRes = self._structure[resNum-1]
 
-					if residue != thisRes.res:
-						self.logger.error("Not matching residue in ANCHOR analysis, transcript {0}.".format(protein.tx))
-						continue
+				if residue != thisRes.res:
+					self.logger.error("Not matching residue in ANCHOR analysis, transcript {0}.".format(self.tx))
+					continue
 
-					thisRes.set_anchorScore(score)
+				thisRes.set_anchorScore(score)
 
 	def readIupred(self,mode):
 
@@ -380,19 +383,102 @@ class Protein:
 
 					thisRes = self._structure[resNum-1]
 					if residue != thisRes.res:
-						self.logger.error("Not matching residue in ANCHOR analysis, transcript {0}.".format(protein.tx))
+						self.logger.error("Not matching residue in ANCHOR analysis, transcript {0}.".format(self.tx))
 						continue
 					thisRes.set_iuPredScore(score)
 					
 
 		else:
-			with open(outfile) as IUout:
-				for line in IUout:
-					resNum  = int(line[0])
-					residue	= line[1]
-					score 	= float(line[-1])
+			for line in utils.readTable(outfile,header=False):
+				resNum  = int(line[0])
+				residue	= line[1]
+				score 	= float(line[-1])
+				thisRes = self._structure[resNum-1]
+
+				if residue != thisRes.res:
+					self.logger.error("Not matching residue in ANCHOR analysis, transcript {0}.".format(self.tx))
+					continue
+
+				thisRes.set_iuPredScore(score)
+
+	def readInterpro(self):
+
+		outfile = "{0}Data/{1}/InterPro/{2}.tsv".format(options.Options().wd,options.Options().inputType,self.tx)
+		acceptedAnalysis = ["Pfam"]
+
+		if not os.path.isfile(outfile):
+			return 
+
+		else:
+			for line in utils.readTable(outfile,header=False):
+				# https://code.google.com/p/interproscan/wiki/OutputFormats#Tab-separated_values_format_%28TSV%29
+				protein_accession	= line[0] #Protein Accession
+				md5_digest			= line[1] #Sequence MD5 digest
+				seq_length			= line[2] #Sequence Length
+				analysis			= line[3] #Analysis
+				signature_accession = line[4] #Signature Accession
+				signature_descript  = line[5].replace(" ","_") #Signature Description
+				start				= int(line[6]) #Start location
+				stop				= int(line[7]) #Stop location
+				try:
+					 score			= float(line[8]) #Score - is the e-value of the match reported by member database method
+				except ValueError:
+					 score			= None
+				status				= True if line[9] == "T" else False #Status - is the status of the match (T: true)
+				date				= line[10] #Date - is the date of the run
+				if len(line) > 11:
+					interpro_annotation = line[11] #(InterPro annotations - accession)
+				else:
+					interpro_annotation = ""
+				if len(line) > 12:
+					interpro_descript	= line[12] #(InterPro annotations - description)
+				else:
+					interpro_descript	= ""
+				if len(line) > 13:
+					go_annotation		= line[13] #(GO annotations)
+				else:
+					go_annotation		= ""
+				if len(line) > 14:
+					pathway_annotation  = line[14] #(Pathways annotations)
+				else:
+					pathway_annotation  = ""
+				tx = protein_accession.strip().split("#")[0]
+				if score and score > 0.01: 
+					 continue
+				elif analysis not in acceptedAnalysis: 
+					 continue
+				elif tx != self.tx:
+					 raise Exception("Error reading InterPro features for {0}. Invalid identifier {1} found.".format(self.tx,tx))
+				
+				for resNum in range(start,stop):
 					thisRes = self._structure[resNum-1]
-					if residue != thisRes.res:
-						self.logger.error("Not matching residue in ANCHOR analysis, transcript {0}.".format(protein.tx))
-						continue
-					thisRes.set_iuPredScore(score)
+					thisRes._feature.append("{0}|{1}".format(signature_accession,signature_descript))
+				
+				featInfo = {}
+				featInfo["region"]		= [start,stop]
+				featInfo["accession"]	= signature_accession
+				featInfo["description"]	= signature_descript
+				featInfo["analysis"]	= analysis
+				featInfo["go"]	  		= go_annotation
+				self._pfam.append(featInfo)
+
+
+	def readProsite(self):
+
+		featFile = "{0}Data/{1}/ProSite/{2}.out".format(options.Options().wd,options.Options().inputType,self.tx)
+
+		if not os.path.exists(featFile) or os.stat(featFile).st_size == 0:
+			return
+
+		for line in utils.readTable(featFile,header=False):
+
+			prositeId = line[-1].replace(" ","_")
+
+			self._prosite.setdefault(prositeId,[])
+			self._prosite[prositeId].append((int(line[-3].replace(" -","")),int(line[-2])))
+
+			for ptm in self._prosite:
+				for start,end in self._prosite[ptm]:
+					for resNum in range(start,end):
+						thisRes = self._structure[resNum-1]
+						thisRes._feature.append(ptm)
