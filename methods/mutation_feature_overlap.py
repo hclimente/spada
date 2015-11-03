@@ -23,8 +23,7 @@ class MutationFeatureOverlap(method.Method):
 
 		## CALCULATE DOMAIN ALTERATION FREQUENCY IN GENERAL
 		# get affection of prosite/pfams by switches and mutations
-		# QUITAR
-		#featSwitchCounts = self.getFeatureSwitchFrequency()
+		featSwitchCounts = self.getFeatureSwitchFrequency()
 		featSwitchCounts = {}
 		featMutationCounts = self.getFeatureMutationFrequency()
 
@@ -136,10 +135,10 @@ class MutationFeatureOverlap(method.Method):
 			thisSwitch.readDeepRelevanceAnalysis(skipIupred=True,skipAnchor=True)
 
 			for featType in [thisSwitch._deep_domain_change,thisSwitch._deep_ptm_change]:
-				for change in ["Gained_in_tumor","Lost_in_tumor"]:
-					for f in featType[change]:
-						featSwitchCounts.setdefault(f,0)
-						featSwitchCounts[f] += len(switchDict["patients"])
+				for c in ["Gained_in_tumor","Lost_in_tumor"]:
+					for f in featType[c]:
+						featSwitchCounts.setdefault(f,{"Gained_in_tumor": 0,"Lost_in_tumor": 0})
+						featSwitchCounts[f][c] += len(switchDict["patients"])
 			
 		return featSwitchCounts
 
@@ -358,17 +357,14 @@ class MutationFeatureOverlap(method.Method):
 
 	def printFeatureFreq(self,featSwitchCounts,featMutationCounts,featCounts,featSizeCounts,totalProteomeSize):
 
-		totalMuts  		= sum([ featMutationCounts[x] for x in featMutationCounts ])
+		totalMuts  		= sum([ featMutationCounts[x][y] for x in featMutationCounts for y in featMutationCounts[x] ])
 		totalSwitches 	= sum([ featSwitchCounts[x][y] for x in featSwitchCounts for y in featSwitchCounts[x] ])
 		totalCounts 	= sum([ featCounts[x] for x in featCounts ])
 
-		## QUITAR
-		totalSwitches = 1
-
 		with open("{0}mutations/feature_enrichment.txt".format(options.Options().qout),"w") as OUT:
-			OUT.write("Cancer\tDomain\tMutRatio\tSwitchRatio\tMutIn\tAllMuts\t")
-			OUT.write("SwitchesIn\tAllSwitches\tDomainCount\tAllDomains\tDomainSize\t")
-			OUT.write("TotalProteomeSize\tFrame_Shift_Del\tFrame_Shift_Ins\tIn_Frame_Del\t")
+			OUT.write("Cancer\tFeature\tMutRatio\tSwitchRatio\tMutIn\tAllMuts\t")
+			OUT.write("SwitchesInLost\tSwitchesInGain\tAllSwitches\tDomainCount\tAllDomains\t")
+			OUT.write("DomainSize\tTotalProteomeSize\tFrame_Shift_Del\tFrame_Shift_Ins\tIn_Frame_Del\t")
 			OUT.write("In_Frame_Ins\tMissense_Mutation\tNonsense_Mutation\tNonstop_Mutation\n")
 
 			allDomains = featMutationCounts.keys()
@@ -381,9 +377,11 @@ class MutationFeatureOverlap(method.Method):
 					mutIn = 0
 
 				if f in featSwitchCounts:
-					switchesIn = featSwitchCounts[f]
+					switchesInLost = featSwitchCounts[f]["Lost_in_tumor"]
+					switchesInGain = featSwitchCounts[f]["Gained_in_tumor"]
 				else:
-					switchesIn = 0
+					switchesInLost = 0
+					switchesInGain = 0
 
 				# if not present in the most abundant isoform add a really low value
 				if f in featCounts:
@@ -393,13 +391,10 @@ class MutationFeatureOverlap(method.Method):
 					c = 0
 					k = 0
 
-				mutRatio = mutIn/totalMuts
-				switchRatio = float(switchesIn)/totalSwitches
-
-				OUT.write("{0}\t{1}\t{2}\t".format(options.Options().tag,f,mutRatio))
-				OUT.write("{0}\t{1}\t{2}\t".format(switchRatio,mutIn,totalMuts))
-				OUT.write("{0}\t{1}\t{2}\t".format(switchesIn,totalSwitches,c))
-				OUT.write("{0}\t{1}\t{2}\t".format(totalCounts,k,totalProteomeSize))
+				OUT.write("{}\t{}\t{}\t".format(options.Options().tag,f,mutIn))
+				OUT.write("{}\t{}\t{}\t".format(totalMuts,switchesInLost,switchesInGain))
+				OUT.write("{}\t{}\t{}\t".format(totalSwitches,c,totalCounts))
+				OUT.write("{}\t{}\t".format(k,totalProteomeSize))
 				OUT.write("{}\t".format(featSwitchCounts[f]["Frame_Shift_Del"]))
 				OUT.write("{}\t".format(featSwitchCounts[f]["Frame_Shift_Ins"]))
 				OUT.write("{}\t".format(featSwitchCounts[f]["In_Frame_Del"]))
