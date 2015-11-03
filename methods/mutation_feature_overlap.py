@@ -285,7 +285,6 @@ class MutationFeatureOverlap(method.Method):
 						mutProteinRange = mutations[tx.name][m][1]
 	
 						# overlap between mutations and features
-						## add ["Frame_Shift_Del","Frame_Shift_Ins","Nonsense_Mutation"]
 						if mutProteinRange & featureProteinRange:
 							inMuts += len(thoseMutations)
 							mutsOnAnyFeature.add(m)
@@ -293,6 +292,19 @@ class MutationFeatureOverlap(method.Method):
 							for t in thoseMutations:
 								mutationTypes.setdefault(t,0)
 								mutationTypes[t] += 1
+
+						# if there is a mutation that affects the feature without being on it
+						elif set(thoseMutations) & set(["Frame_Shift_Del","Frame_Shift_Ins","Nonsense_Mutation"]):
+							extProteinRange = set(range(1,end+1))
+
+							if mutProteinRange & extProteinRange:
+								for t in thoseMutations:
+									if t in ["Frame_Shift_Del","Frame_Shift_Ins","Nonsense_Mutation"]:
+										inMuts += 1
+										mutsOnAnyFeature.add(m)
+								
+										mutationTypes.setdefault(t,0)
+										mutationTypes[t] += 1
 
 					mutationsInFeature.setdefault(f,[])
 					mutationsInFeature[f].append((inMuts,featSize,mutationTypes))
@@ -345,6 +357,9 @@ class MutationFeatureOverlap(method.Method):
 		totalMuts  		= sum([ featMutationCounts[x] for x in featMutationCounts ])
 		totalSwitches 	= sum([ featSwitchCounts[x] for x in featSwitchCounts ])
 		totalCounts 	= sum([ featCounts[x] for x in featCounts ])
+
+		## QUITAR
+		totalSwitches = 1
 
 		with open("{0}mutations/feature_enrichment.txt".format(options.Options().qout),"w") as OUT:
 			OUT.write("Cancer\tDomain\tMutRatio\tSwitchRatio\tMutIn\tAllMuts\t")
