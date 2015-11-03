@@ -15,23 +15,29 @@ class MutationFeatureOverlap(method.Method):
 
 		self.mutations = self.readMutations()
 
-		# with open("{0}/domain_mutation.txt".format(options.Options().qout)) as OUT:
-		# 	OUT.write("Domain\tScore\n")
-		# 	for i in range(len(self.domainMutationFrequency)):
-		# 		OUT.write("{0}\t{1}\n".format(self.domainMutationFrequency[i][0],self.domainMutationFrequency[i][1]))
-
 	def clean(self):
 		utils.cmd("mkdir","{0}mutations".format(options.Options().qout))
 		utils.cmd("rm","{0}mutations/mutation_switch_feature_overlap.txt".format(options.Options().qout))
 
 	def run(self):
 
-		domainSwitchFrequency,totalChanges = self.getDomainSwitchFrequency()
-		domainMutationFrequency,totalMuts = self.getDomainMutationFrequency()
-		domainFrequency = self.getDomainFrequency()
-	
-		self.printResults(domainSwitchFrequency,domainMutationFrequency,domainFrequency,totalMuts,totalChanges)
+		## CALCULATE DOMAIN ALTERATION FREQUENCY IN GENERAL
+		# get affection of prosite/pfams by switches and mutations
+		# QUITAR
+		#featSwitchCounts = self.getFeatureSwitchFrequency()
+		featSwitchCounts = {}
+		featMutationCounts = self.getFeatureMutationFrequency()
 
+		# get frequency of feature in the proteome (only most expressed iso per gene)
+		featCounts,featSizeCounts,totalProteomeSize = self.getFeatureFrequency()
+	
+		# print frequency of affection
+		self.printFeatureFreq(featSwitchCounts,featMutationCounts,featCounts,featSizeCounts,totalProteomeSize)
+
+		# QUITAR
+		exit()
+
+		## CALCULATE MUTATION FREQUENCY ON SWITCHED DOMAINS
 		featureOverlap = []
 		
 		for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network,only_models=True,relevance=True,partialCreation=True):
@@ -42,29 +48,13 @@ class MutationFeatureOverlap(method.Method):
 			switchMutations = self.getSwitchMutations(self.mutations[gene],thisSwitch.nTranscript,thisSwitch.tTranscript)
 
 			if thisSwitch.domainChange:
-				f = self.countMutations(gene,info,switchMutations,"Pfam_domain",thisSwitch)
-				featureOverlap.extend(f)
-			if thisSwitch.disorderChange:
-				f = self.countMutations(gene,info,switchMutations,"disorder",thisSwitch)
-				featureOverlap.extend(f)
-			if thisSwitch.anchorChange:
-				f = self.countMutations(gene,info,switchMutations,"anchor",thisSwitch)
+				f = self.countMutations(gene,info,switchMutations,"interpro",thisSwitch)
 				featureOverlap.extend(f)
 			if thisSwitch.ptmChange:
-				f = self.countMutations(gene,info,switchMutations,"Prosite_pattern",thisSwitch)
+				f = self.countMutations(gene,info,switchMutations,"prosite",thisSwitch)
 				featureOverlap.extend(f)
 
-		with open("{0}mutations/mutation_switch_feature_overlap.txt".format(options.Options().qout),"w") as F:
-			# F.write("Gene\tSymbol\tCancer\tNormal_transcript\tTumor_transcript\t")
-			# F.write("What\tFeatureType\tFeature\tRatio\tDriver\t")
-			# F.write("MutationsInFeature\tTotalMutations\tFeatureSize\n")
-
-			for f in featureOverlap:
-				F.write("{0}\t{1}\t{2}\t".format(f["gene"],f["info"]["symbol"],options.Options().tag) )
-				F.write("{0}\t{1}\t{2}\t".format(f["nTx"],f["tTx"],f["what"]) )
-				F.write("{0}\t{1}\t{2}\t".format(f["featureType"],f["feature"],f["ratio"]) )
-				F.write("{0}\t{1}\t{2}\t".format(f["info"]["Driver"],f["inMuts"],f["totalMuts"]) )
-				F.write("{0}\n".format(f["featureSize"]) )
+		self.printOverlap(featureOverlap)
 
 	def readMutations(self):
 
@@ -75,34 +65,39 @@ class MutationFeatureOverlap(method.Method):
 		for line in utils.readTable(mutFile,header=False):
 
 			geneID,geneSymbol = self._gene_network.nameFilter(full_name=line[3])
-			mutations.setdefault(geneID,[])
+			mutations.setdefault(geneID,{})
 
 			# get patient
-			patient = line[9]
+			mutInfo = line[9]
 
-			if patient==".":
+			if mutInfo==".":
 				continue
+
+			mutType = mutInfo.split(";")[1]
 
 			# get genomic positions
 			start = int(line[7])
 			end = int(line[8])
 
-			mutInfo = {"start": start, "end": end}
+			mutInfo = (start,end)
 			
-			mutations[geneID].append(mutInfo)
+			mutations[geneID].setdefault(mutInfo,[])
+			mutations[geneID][mutInfo].append(mutType)
 
 		return mutations
 
-	def getDomainMutationFrequency(self):
+	def getFeatureMutationFrequency(self):
 
-		totalMuts = 0
-		domainMutationFrequency = {}
+		featureMutationCounts = {}
 
 		for gene,info in self._gene_network.iterate_genes_ScoreWise():
 			if gene not in self.mutations:
 				continue
 
-			txs = [ (x,info["median_TPM_N"]) for x,info in self._transcript_network.nodes(data=True) if info["gene_id"]==gene ]
+			# get most-abundant, coding transcript as representative of the gene
+			txs = [ (x,info["median_TPM_N"]) for x,info in self._transcript_network.nodes(data=True) if info["gene_id"]==gene and info["proteinSequence"] ]
+
+			if not txs: continue
 
 			maxTpm = max([ x[1] for x in txs ])
 
@@ -111,41 +106,49 @@ class MutationFeatureOverlap(method.Method):
 
 			tx = transcript.Transcript(txname,txinfo)
 
+			# get mutations affecting said transcript
+			# mutations = { (genomicPos1,genomicPos2): ([mut1,mut2...],set(cdsPos1,cdsPos2...)), ... }
 			mutations = self.getSwitchMutations(self.mutations[gene],tx,None)
-			affectedDomains = self.getFeaturesAffectedByMutation("Pfam_domain",mutations,tx,None)
-			affectedDomains = affectedDomains[txname]
 
-			for dom in affectedDomains:
-				domainMutationFrequency.setdefault(dom,0)
-				domainMutationFrequency[dom] += affectedDomains[dom][0]
-				totalMuts += affectedDomains[dom][0]
+			for t in ["interpro","prosite"]:
+				# get the features affected by a mutation
+				affectedFeats = self.getFeaturesAffectedByMutation(t,mutations,tx,None,False)
+				affectedFeats = affectedFeats[txname]
 
-		return (domainMutationFrequency,totalMuts)
+				for f in affectedFeats:
+					for inMuts,allMuts,ratio,featSize,mutationTypes in affectedFeats[f]:
+						featureMutationCounts.setdefault(f,0)
+						for t in mutationTypes:
+							featureMutationCounts[f] += 1
 
-	def getDomainSwitchFrequency(self):
+		return featureMutationCounts
 
-		totalChanges = 0
-		domainSwitchFrequency = {}
+	def getFeatureSwitchFrequency(self):
 
-		for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network,partialCreation=True,removeNoise=True):
+		featSwitchCounts = {}
 
-			thisSwitch.readDeepRelevanceAnalysis(skipIupred=True,skipAnchor=True,skipPtm=True)
+		for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network,partialCreation=True,only_models=True):
 
-			for change in ["Gained_in_tumor","Lost_in_tumor"]:
-				for dom in thisSwitch._deep_domain_change[change]:
-					domainSwitchFrequency.setdefault(dom,0)
-					domainSwitchFrequency[dom] += 1
-					totalChanges += 1
+			thisSwitch.readDeepRelevanceAnalysis(skipIupred=True,skipAnchor=True)
 
-		return (domainSwitchFrequency,totalChanges)
+			for featType in [thisSwitch._deep_domain_change,thisSwitch._deep_ptm_change]:
+				for change in ["Gained_in_tumor","Lost_in_tumor"]:
+					for f in featType[change]:
+						featSwitchCounts.setdefault(f,0)
+						featSwitchCounts[f] += len(switchDict["patients"])
+			
+		return featSwitchCounts
 
-	def getDomainFrequency(self):
-		domainFrequency = {}
-		totalCounts = 0
+	def getFeatureFrequency(self):
+		featCounts = {}
+		featSizeCounts = {}
+		totalProteomeSize = 0
 
 		for gene,info in self._gene_network.iterate_genes_ScoreWise():
 
-			txs = [ (x,info["median_TPM_N"]) for x,info in self._transcript_network.nodes(data=True) if info["gene_id"]==gene ]
+			txs = [ (x,info["median_TPM_N"]) for x,info in self._transcript_network.nodes(data=True) if info["gene_id"]==gene and info["proteinSequence"] ]
+
+			if not txs: continue
 
 			maxTpm = max([ x[1] for x in txs ])
 
@@ -154,40 +157,42 @@ class MutationFeatureOverlap(method.Method):
 
 			tx = transcript.Transcript(txname,txinfo)
 			tx.readPfamDomains()
+			tx.readProsite()
+			totalProteomeSize += len(self._transcript_network._net.node[tx.name]["proteinSequence"])
 
-			for domainId in tx._pfam:
-				for start,end in tx._pfam[domainId]:
-					domainFrequency.setdefault(domainId,0.0)
-					domainFrequency[domainId] += 1
-					totalCounts += 1
+			for featType in [tx._ptms,tx._pfam]:
+				for f in featType:
+					for start,end in featType[f]:
+						featCounts.setdefault(f,0.0)
+						featSizeCounts.setdefault(f,0.0)
+						featCounts[f] += 1
+						featSizeCounts[f] += end - start
 
-		for domainId in domainFrequency:
-			domainFrequency[domainId] = domainFrequency[domainId]/totalCounts
-
-		return domainFrequency
+		return (featCounts,featSizeCounts,totalProteomeSize)
 
 	def getSwitchMutations(self,geneMutations,nTranscript,tTranscript):
 
 		switchMutations = {}
 
+		# if there is an overlap between mutation and any transcript 
+		# CDS, include those mutations
 		for tx in [nTranscript,tTranscript]:
 			if not tx:
 				continue
 
 			txName = tx.name
-			switchMutations[txName] = []
+			switchMutations[txName] = {}
 
 			cds = [ x for x in tx.cds_ordered ]
-			for mutation in geneMutations:
-				
-				mutationRegion = range(mutation["start"],mutation["end"])
-				mutationRegion = set(mutationRegion)
+			for m in geneMutations:
 
+				mutationRegion = set(range(m[0],m[1]))
+				
 				affectedRegionTx = set(cds) & mutationRegion
-				affectedRegionProt = set([ cds.index(x)/3 for x in affectedRegionTx ])
+				affectedRegionProt = set([ (cds.index(x)/3)+1 for x in affectedRegionTx ])
 
 				if affectedRegionProt:
-					switchMutations[txName].append(affectedRegionProt)
+					switchMutations[txName][m] = (geneMutations[m],affectedRegionProt)
 
 		return switchMutations
 
@@ -196,89 +201,53 @@ class MutationFeatureOverlap(method.Method):
 		featureOverlap = []
 
 		switchAffected = self.getFeaturesAffectedBySwitch(alterationType,thisSwitch)
-		mutationAffected = self.getFeaturesAffectedByMutation(alterationType,mutations,thisSwitch.nTranscript,thisSwitch.tTranscript)
+		mutationAffected = self.getFeaturesAffectedByMutation(alterationType,mutations,thisSwitch.nTranscript,thisSwitch.tTranscript,True)
 
 		for tx in switchAffected:
-			for feature in switchAffected[tx]:
-				if feature not in mutationAffected[tx]:
-					continue
+			for f in switchAffected[tx]:
+				if switchAffected[tx][f] != len(mutationAffected[tx][f]):
+					self.logger.error("Differing number of features for gene {}.".format(gene))
 
-				if thisSwitch.nTx == tx:
-					what = "Lost_in_tumor"
-				elif thisSwitch.tTx == tx:
-					what = "Gained_in_tumor"
+				for i in range(switchAffected[tx][f]):
+					inMuts,allMuts,ratio,featSize,mutationTypes = mutationAffected[tx][f][i]
 
-				d = { "gene": gene, "info": info, 
-					  "totalMuts": mutationAffected[tx][feature][1],
-					  "inMuts": mutationAffected[tx][feature][0],
-					  "nTx": thisSwitch.nTx, "tTx": thisSwitch.tTx,
-					  "feature": feature, "featureType": alterationType, 
-					  "ratio": mutationAffected[tx][feature][2], "what": what,
-					  "featureSize": mutationAffected[tx][feature][3] }
+					if thisSwitch.nTx == tx:
+						what = "Lost_in_tumor"
+					elif thisSwitch.tTx == tx:
+						what = "Gained_in_tumor"
 
-				featureOverlap.append(d)
+					d = { "gene": gene, "info": info, 
+						  "inMuts": inMuts, "totalMuts": allMuts,
+						  "nTx": thisSwitch.nTx, "tTx": thisSwitch.tTx,
+						  "feature": f, "featureType": alterationType, 
+						  "ratio": ratio, "what": what, "featureSize": featSize,
+						  "domainNumber": i }
+
+					featureOverlap.append(d)
 
 		return featureOverlap
 
 	def getFeaturesAffectedBySwitch(self,alterationType,thisSwitch):
-		switchAffected = { thisSwitch.nTx: [], thisSwitch.tTx: [] }
 
-		if alterationType=="Pfam_domain":
-			domainFile = "{0}structural_analysis/interpro_analysis.tsv".format(options.Options().qout)
+		switchAffected = { thisSwitch.nTx: {}, thisSwitch.tTx: {} }
+		switchedFeature = []
 
-			for line in utils.readTable(domainFile):
-				skipFlag = False
-				if (line[2] != thisSwitch.nTx and line[3] != thisSwitch.tTx):
-					skipFlag = True
-				elif line[4]=="Nothing":
-					skipFlag = True
-					
-				if skipFlag:
-					continue
+		if alterationType=="interpro":
+			thisSwitch.readDeepRelevanceAnalysis(skipIupred=True,skipPtm=True,skipAnchor=True)
+			switchedFeature = thisSwitch._deep_domain_change
 
-				if line[4] == "Lost_in_tumor":
-					tx = thisSwitch.nTx
-				elif line[4] == "Gained_in_tumor":
-					tx = thisSwitch.tTx
-				
-				switchAffected[tx].append("{0}:{1}".format(line[6],line[7]).replace(" ","_") )
-
-		# elif alterationType=="disorder":
-		# 	disorderFile = "{0}structural_analysis/iupred_analysis.tsv".format(options.Options().qout)
-
-		# 	for line in utils.readTable(disorderFile):
-		# 		skipFlag = False
-
-		# 		# skip it its not this switch
-		# 		if (line[2] != thisSwitch.nTx and line[3] != thisSwitch.tTx):
-		# 			skipFlag = True
-
-		# 		# skip if nothing happens
-		# 		elif line[4]=="Nothing":
-		# 			skipFlag = True
-
-		# 		# skip if the motif is non significant
-		# 		elif int(line[8]):
-		# 			skipFlag = True
-					
-		# 		if skipFlag:
-		# 			continue
-				
-		# 		switchAffected.append(line[5])
-
-		elif alterationType=="anchor":
-			thisSwitch.readDeepRelevanceAnalysis(skipDomain=True,skipIupred=True,skipPtm=True)
-
-		elif alterationType=="Prosite_pattern":
+		elif alterationType=="prosite":
 			thisSwitch.readDeepRelevanceAnalysis(skipDomain=True,skipIupred=True,skipAnchor=True)
+			switchedFeature = thisSwitch._deep_ptm_change
 
-			for tx,change in zip([thisSwitch.tTx,thisSwitch.nTx],["Gained_in_tumor","Lost_in_tumor"]):
-				for feat in thisSwitch._deep_ptm_change[change]:
-					switchAffected[tx].append(feat)
+		for tx,change in zip([thisSwitch.tTx,thisSwitch.nTx],["Gained_in_tumor","Lost_in_tumor"]):
+			for feat in switchedFeature[change]:
+				switchAffected[tx].setdefault(feat,0)
+				switchAffected[tx][feat] += 1
 
 		return switchAffected
 
-	def getFeaturesAffectedByMutation(self,alterationType,mutations,nTranscript,tTranscript):
+	def getFeaturesAffectedByMutation(self,alterationType,mutations,nTranscript,tTranscript,onlySwitched):
 
 		mutationAffected = {}
 
@@ -288,100 +257,142 @@ class MutationFeatureOverlap(method.Method):
 				continue
 
 			mutationAffected.setdefault(tx.name,{})
+			mutationsInFeature = {}
 
-			if alterationType=="Pfam_domain":
-
+			# get iterated features
+			features = {}
+			if alterationType=="interpro":
 				tx.readPfamDomains()
-
-				for domainId in tx._pfam:
-					for start,end in tx._pfam[domainId]:
-
-						inMuts = 0.0
-						allMuts = 0.0
-
-						featureProteinRange = set(range(start, end+1 ))
-						domainSize = float(len(featureProteinRange))/(len(tx.cds)/3)
-
-						for mutation in mutations[tx.name]:
-							if mutation & featureProteinRange:
-								inMuts += 1
-							
-							allMuts += 1
-
-						if inMuts == 0 and allMuts == 0:
-							p = float("nan")
-							ratio = float("nan")
-						elif allMuts == 0:
-							p = float("nan")
-							ratio = float("inf")
-						else:
-							p = scipy.stats.binom_test(inMuts, n=allMuts,p=domainSize)
-							ratio = 100 * inMuts/allMuts
-						
-						p = scipy.stats.binom_test(inMuts, n=allMuts,p=domainSize)
-
-						mutationAffected[tx.name][domainId] = (inMuts,allMuts,ratio,domainSize)
-
-			elif alterationType=="Prosite_pattern":
-				
+				features = tx._pfam
+			elif alterationType=="prosite":
 				tx.readProsite()
+				features = tx._ptms
 
-				for prositeId in tx._ptms:
-					for start,end in tx._ptms[prositeId]:
+			mutsOnAnyFeature = set()
 
-						inMuts = 0.0
-						allMuts = 0.0
+			# iterate features and find mutations affecting them
+			for f in features:
+				for start,end in features[f]:
+					
+					inMuts = 0
+					mutationTypes = {}
+					featureProteinRange = set(range(start, end+1 ))
+					featSize = float(len(featureProteinRange))/(len(tx.cds)/3)
 
-						featureProteinRange = set(range(start, end+1 ))
-						featureSize = 100 * len(featureProteinRange)/(len(tx.cds)/3)
+					for m in mutations[tx.name]:
 
-						for mutation in mutations[tx.name]:
-							if mutation & featureProteinRange:
-								inMuts += 1
+						thoseMutations = mutations[tx.name][m][0]
+						mutProteinRange = mutations[tx.name][m][1]
+	
+						# overlap between mutations and features
+						## add ["Frame_Shift_Del","Frame_Shift_Ins","Nonsense_Mutation"]
+						if mutProteinRange & featureProteinRange:
+							inMuts += len(thoseMutations)
+							mutsOnAnyFeature.add(m)
 							
-							allMuts += 1
+							for t in thoseMutations:
+								mutationTypes.setdefault(t,0)
+								mutationTypes[t] += 1
 
-						if inMuts == 0 and allMuts == 0:
-							ratio = float("nan")
-						elif allMuts == 0:
-							ratio = float("inf")
-						else:
-							ratio = 100 * inMuts/allMuts
-						
-						mutationAffected[tx.name][prositeId] = (inMuts,allMuts,ratio,featureSize)
+					mutationsInFeature.setdefault(f,[])
+					mutationsInFeature[f].append((inMuts,featSize,mutationTypes))
+
+			allMuts = sum([ len(mutations[tx.name][x][0]) for x in mutsOnAnyFeature ])
+
+			for f in mutationsInFeature:
+				mutationAffected[tx.name].setdefault(f,[])
+				for inMuts,featSize,mutationTypes in mutationsInFeature[f]:
+					if inMuts == 0 and allMuts == 0:
+						ratio = float("nan")
+					else:
+						ratio = 100 * float(inMuts)/allMuts
+					mutationAffected[tx.name][f].append((inMuts,allMuts,ratio,featSize,mutationTypes))
+
+		if onlySwitched:
+			filteredMutationAffected = {}
+
+			for tx in [nTranscript,tTranscript]:
+				if tx is not None: 
+					filteredMutationAffected.setdefault(tx.name,{})
+
+			for line in utils.readTable("{}structural_analysis/{}_analysis.tsv".format(options.Options().qout,alterationType)):
+				if nTranscript is not None and line[2] != nTranscript.name:
+					continue
+				elif tTranscript is not None and line[3] != tTranscript.name:
+					continue
+				
+				if line[4] != "Nothing":
+					for x,tx in zip([6,7],[nTranscript,tTranscript]):
+						if tx is None:
+							continue 
+
+						reps = [ int(y) for y in line[x].split("/") ]
+
+						if reps[0] > reps[1]:
+							continue
+
+						f = line[5].replace(" ","_")
+
+						filteredMutationAffected[tx.name].setdefault(f,[])
+						filteredMutationAffected[tx.name][f].append(mutationAffected[tx.name][f][reps[0]-1])
+
+			mutationAffected = filteredMutationAffected
 
 		return mutationAffected
 
-	def printResults(self,domainSwitchFrequency,domainMutationFrequency,domainFrequency,totalMuts,totalSwitches):
-		with open("{0}domain_enrichment.txt".format(options.Options().qout),"w") as OUT:
-			OUT.write("Cancer\tDomain\tMutRatio\tSwitchRatio\tMutIn\tMutOut\tSwitchesIn\tSwitchesOut\tDomainFrequency\n")
+	def printFeatureFreq(self,featSwitchCounts,featMutationCounts,featCounts,featSizeCounts,totalProteomeSize):
 
-			allDomains = domainMutationFrequency.keys()
-			allDomains.extend(domainSwitchFrequency.keys())
+		totalMuts  		= sum([ featMutationCounts[x] for x in featMutationCounts ])
+		totalSwitches 	= sum([ featSwitchCounts[x] for x in featSwitchCounts ])
+		totalCounts 	= sum([ featCounts[x] for x in featCounts ])
 
-			for domainId in set(allDomains):
-				if domainId in domainMutationFrequency:
-					mutIn = int(domainMutationFrequency[domainId])
+		with open("{0}mutations/feature_enrichment.txt".format(options.Options().qout),"w") as OUT:
+			OUT.write("Cancer\tDomain\tMutRatio\tSwitchRatio\tMutIn\tAllMuts\t")
+			OUT.write("SwitchesIn\tAllSwitches\tDomainCount\tAllDomains\tDomainSize\tTotalProteomeSize\n")
+
+			allDomains = featMutationCounts.keys()
+			allDomains.extend(featSwitchCounts.keys())
+
+			for f in set(allDomains):
+				if f in featMutationCounts:
+					mutIn = int(featMutationCounts[f])
 				else:
 					mutIn = 0
 
-				if domainId in domainSwitchFrequency:
-					switchesIn = domainSwitchFrequency[domainId]
+				if f in featSwitchCounts:
+					switchesIn = featSwitchCounts[f]
 				else:
 					switchesIn = 0
 
-				# QUITAR VER SI TIENE SENTIDO QUE NO ESTE EN ESTE DICCIONARIO
-				if domainId in domainFrequency:
-					freq = domainFrequency[domainId]
+				# if not present in the most abundant isoform add a really low value
+				if f in featCounts:
+					c = featCounts[f]
+					k = featSizeCounts[f]
 				else:
-					freq = 0
+					c = 0
+					k = 0
 
 				mutRatio = mutIn/totalMuts
 				switchRatio = float(switchesIn)/totalSwitches
 
-				OUT.write("{0}\t{1}\t{2}\t".format(options.Options().tag,domainId,mutRatio))
-				OUT.write("{0}\t{1}\t{2}\t".format(switchRatio,mutIn,int(totalMuts-mutIn)))
-				OUT.write("{0}\t{1}\t{2}\n".format(switchesIn,totalSwitches-switchesIn,freq))
+				OUT.write("{0}\t{1}\t{2}\t".format(options.Options().tag,f,mutRatio))
+				OUT.write("{0}\t{1}\t{2}\t".format(switchRatio,mutIn,totalMuts))
+				OUT.write("{0}\t{1}\t{2}\t".format(switchesIn,totalSwitches,c))
+				OUT.write("{0}\t{1}\t{2}\n".format(totalCounts,k,totalProteomeSize))
+
+	def printOverlap(self,featureOverlap):
+		with open("{0}mutations/mutation_switch_feature_overlap.txt".format(options.Options().qout),"w") as F:
+			F.write("Gene\tSymbol\tCancer\tNormal_transcript\tTumor_transcript\t")
+			F.write("What\tFeatureType\tFeature\tDomainNumber\tRatio\tDriver\t")
+			F.write("MutationsInFeature\tTotalMutations\tFeatureSize\n")
+
+			for f in featureOverlap:
+				F.write("{0}\t{1}\t{2}\t".format(f["gene"],f["info"]["symbol"],options.Options().tag) )
+				F.write("{0}\t{1}\t{2}\t".format(f["nTx"],f["tTx"],f["what"]) )
+				F.write("{0}\t{1}\t{2}\t".format(f["featureType"],f["feature"],f["domainNumber"]) )
+				F.write("{0}\t{1}\t{2}\t".format(f["ratio"],f["info"]["Driver"],f["inMuts"]) )
+				F.write("{0}\t{1}\n".format(f["totalMuts"],f["featureSize"]) )
+
 
 if __name__ == '__main__':
 	pass
