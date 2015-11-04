@@ -22,17 +22,11 @@ class MutationFeatureOverlap(method.Method):
 	def run(self):
 
 		## CALCULATE DOMAIN ALTERATION FREQUENCY IN GENERAL
-		# get affection of prosite/pfams by switches and mutations
+		# get affection of prosite/pfams by switches
 		#featSwitchCounts = self.getFeatureSwitchFrequency()
-		# QUITAR
-		featSwitchCounts = {}
-		self.getFeatureMutationFrequency()
-
-		# get frequency of feature in the proteome (only most expressed iso per gene)
-		self.getFeatureFrequency()
-	
-		# print frequency of affection
-		#self.printFeatureFreq(featSwitchCounts,featMutationCounts,featCounts,featSizeCounts,totalProteomeSize)
+		# get affection of prosite/pfams by mutations and their frequency
+		# in the proteome (only most expressed iso per gene)
+		self.studyFeaturesMutationsAndSize()
 
 		exit()
 
@@ -85,15 +79,19 @@ class MutationFeatureOverlap(method.Method):
 
 		return mutations
 
-	def getFeatureMutationFrequency(self):
+	def studyFeaturesMutationsAndSize(self):
 
 		featureMutationCounts = {}
 
-		with open("{0}mutations/mutations_enrichment.txt".format(options.Options().qout),"w") as OUT:
-			OUT.write("Cancer\tGene\tSymbol\tTranscript\tAnalysis\tFeature\t#\t")
-			OUT.write("Frame_Shift_Del\tFrame_Shift_Ins\tIn_Frame_Del\t")
-			OUT.write("In_Frame_Ins\tMissense_Mutation\tNonsense_Mutation\tNonstop_Mutation\t")
-			OUT.write("Frame_Shift_Del_out\tFrame_Shift_Ins_out\tNonsense_Mutation_out\n")
+		with open("{0}mutations/mutations_enrichment.txt".format(options.Options().qout),"w") as MUT, open("{0}mutations/features_information.txt".format(options.Options().qout),"w") as FT:
+
+			MUT.write("Cancer\tGene\tSymbol\tTranscript\tAnalysis\tFeature\tn\t")
+			MUT.write("Frame_Shift_Del\tFrame_Shift_Ins\tIn_Frame_Del\t")
+			MUT.write("In_Frame_Ins\tMissense_Mutation\tNonsense_Mutation\tNonstop_Mutation\t")
+			MUT.write("Frame_Shift_Del_out\tFrame_Shift_Ins_out\tNonsense_Mutation_out\n")
+
+			FT.write("Cancer\tGene\tSymbol\tTranscript\tTPM\tAnalysis\tFeature\t")
+			FT.write("n\tFeatureLength\tStart\tEnd\tProteinLength\n")
 						
 			for gene,info in self._gene_network.iterate_genes_ScoreWise():
 				if gene not in self.mutations:
@@ -110,31 +108,45 @@ class MutationFeatureOverlap(method.Method):
 				txinfo = self._transcript_network._net.node[txname]
 
 				tx = transcript.Transcript(txname,txinfo)
+				tx.readPfamDomains()
+				tx.readProsite()
+
+				proteinLength = len(self._transcript_network._net.node[tx.name]["proteinSequence"])
 
 				# get mutations affecting said transcript
 				# mutations = { (genomicPos1,genomicPos2): ([mut1,mut2...],set(cdsPos1,cdsPos2...)), ... }
 				mutations = self.getSwitchMutations(self.mutations[gene],tx,None)
 
-				for t in ["Pfam","prosite"]:
+				for a,featType in zip(["prosite","Pfam"],[tx._ptms,tx._pfam]):
 					# get the features affected by a mutation
-					affectedFeats = self.getFeaturesAffectedByMutation(t,mutations,tx,None,False)
+					affectedFeats = self.getFeaturesAffectedByMutation(a,mutations,tx,None,False)
 					affectedFeats = affectedFeats[txname]
 
 					for f in affectedFeats:
 						i = 1
 						for inMuts,allMuts,ratio,featSize,mutationTypes in affectedFeats[f]:
-							OUT.write("{}\t{}\t{}\t".format(options.Options().tag,gene,info["symbol"]))
-							OUT.write("{}\t{}\t{}\t".format(txname,t,f))
-							OUT.write("{}\t{}\t".format(i,mutationTypes["Frame_Shift_Del"]))
-							OUT.write("{}\t".format(mutationTypes["Frame_Shift_Ins"]))
-							OUT.write("{}\t".format(mutationTypes["In_Frame_Del"]))
-							OUT.write("{}\t".format(mutationTypes["In_Frame_Ins"]))
-							OUT.write("{}\t".format(mutationTypes["Missense_Mutation"]))
-							OUT.write("{}\t".format(mutationTypes["Nonsense_Mutation"]))
-							OUT.write("{}\t".format(mutationTypes["Nonstop_Mutation"]))
-							OUT.write("{}\t".format(mutationTypes["Frame_Shift_Del_out"]))
-							OUT.write("{}\t".format(mutationTypes["Frame_Shift_Ins_out"]))
-							OUT.write("{}\n".format(mutationTypes["Nonsense_Mutation_out"]))
+							MUT.write("{}\t{}\t{}\t".format(options.Options().tag,gene,info["symbol"]))
+							MUT.write("{}\t{}\t{}\t".format(txname,a,f))
+							MUT.write("{}\t{}\t".format(i,mutationTypes["Frame_Shift_Del"]))
+							MUT.write("{}\t".format(mutationTypes["Frame_Shift_Ins"]))
+							MUT.write("{}\t".format(mutationTypes["In_Frame_Del"]))
+							MUT.write("{}\t".format(mutationTypes["In_Frame_Ins"]))
+							MUT.write("{}\t".format(mutationTypes["Missense_Mutation"]))
+							MUT.write("{}\t".format(mutationTypes["Nonsense_Mutation"]))
+							MUT.write("{}\t".format(mutationTypes["Nonstop_Mutation"]))
+							MUT.write("{}\t".format(mutationTypes["Frame_Shift_Del_out"]))
+							MUT.write("{}\t".format(mutationTypes["Frame_Shift_Ins_out"]))
+							MUT.write("{}\n".format(mutationTypes["Nonsense_Mutation_out"]))
+
+							i += 1
+
+					for f in featType:
+						i = 1
+						for start,end in featType[f]:
+							FT.write("{}\t{}\t{}\t".format(options.Options().tag,gene,info["symbol"]))
+							FT.write("{}\t{}\t{}\t".format(txname,maxTpm,a))
+							FT.write("{}\t{}\t{}\t".format(f,i,end - start))
+							FT.write("{}\t{}\t{}\n".format(start,end,proteinLength))
 
 							i += 1
 
@@ -153,37 +165,6 @@ class MutationFeatureOverlap(method.Method):
 						featSwitchCounts[f][c] += len(switchDict["patients"])
 			
 		return featSwitchCounts
-
-	def getFeatureFrequency(self):
-		with open("{0}mutations/features_information.txt".format(options.Options().qout),"w") as OUT:
-			OUT.write("Cancer\tGene\tSymbol\tTranscript\tAnalysis\tFeature\t")
-			OUT.write("#\tFeatureLength\tProteinLength\n")
-
-			for gene,info in self._gene_network.iterate_genes_ScoreWise():
-
-				txs = [ (x,i["median_TPM_N"]) for x,i in self._transcript_network.nodes(data=True) if i["gene_id"]==gene and i["proteinSequence"] ]
-
-				if not txs: continue
-
-				maxTpm = max([ x[1] for x in txs ])
-
-				txname = [ x for x,tpm in txs if tpm==maxTpm ][0]
-				txinfo = self._transcript_network._net.node[txname]
-
-				tx = transcript.Transcript(txname,txinfo)
-				tx.readPfamDomains()
-				tx.readProsite()
-				proteinLength = self._transcript_network._net.node[tx.name]["proteinSequence"]
-
-				for a,featType in (["ProSite","Pfam"],[tx._ptms,tx._pfam]):
-					for f in featType:
-						i = 1
-						for start,end in featType[f]:
-							OUT.write("{}\t{}\t{}\t".format(options.Options().tag,gene,info["symbol"]))
-							OUT.write("{}\t{}\t{}\t".format(txname,a,f))
-							OUT.write("{}\t{}\t{}\t".format(i,end - start,proteinLength))
-
-							i += 1
 
 	def getSwitchMutations(self,geneMutations,nTranscript,tTranscript):
 
@@ -368,54 +349,6 @@ class MutationFeatureOverlap(method.Method):
 			mutationAffected = filteredMutationAffected
 
 		return mutationAffected
-
-	def printFeatureFreq(self,featSwitchCounts,featMutationCounts,featCounts,featSizeCounts,totalProteomeSize):
-
-		totalMuts  		= sum([ featMutationCounts[x][y] for x in featMutationCounts for y in featMutationCounts[x] ])
-		totalSwitches 	= sum([ featSwitchCounts[x][y] for x in featSwitchCounts for y in featSwitchCounts[x] ])
-		totalCounts 	= sum([ featCounts[x] for x in featCounts ])
-
-		with open("{0}mutations/feature_enrichment.txt".format(options.Options().qout),"w") as OUT:
-			OUT.write("Cancer\tFeature\tMutRatio\tSwitchRatio\tMutIn\tAllMuts\t")
-			OUT.write("SwitchesInLost\tSwitchesInGain\tAllSwitches\tDomainCount\tAllDomains\t")
-			OUT.write("DomainSize\tTotalProteomeSize\tFrame_Shift_Del\tFrame_Shift_Ins\tIn_Frame_Del\t")
-			OUT.write("In_Frame_Ins\tMissense_Mutation\tNonsense_Mutation\tNonstop_Mutation\n")
-
-			allDomains = featMutationCounts.keys()
-			allDomains.extend(featSwitchCounts.keys())
-
-			for f in set(allDomains):
-				if f in featMutationCounts:
-					mutIn = sum([ featMutationCounts[f][x] for x in featMutationCounts[f] ])
-				else:
-					mutIn = 0
-
-				if f in featSwitchCounts:
-					switchesInLost = featSwitchCounts[f]["Lost_in_tumor"]
-					switchesInGain = featSwitchCounts[f]["Gained_in_tumor"]
-				else:
-					switchesInLost = 0
-					switchesInGain = 0
-
-				# if not present in the most abundant isoform add a really low value
-				if f in featCounts:
-					c = featCounts[f]
-					k = featSizeCounts[f]
-				else:
-					c = 0
-					k = 0
-
-				OUT.write("{}\t{}\t{}\t".format(options.Options().tag,f,mutIn))
-				OUT.write("{}\t{}\t{}\t".format(totalMuts,switchesInLost,switchesInGain))
-				OUT.write("{}\t{}\t{}\t".format(totalSwitches,c,totalCounts))
-				OUT.write("{}\t{}\t".format(k,totalProteomeSize))
-				OUT.write("{}\t".format(featSwitchCounts[f]["Frame_Shift_Del"]))
-				OUT.write("{}\t".format(featSwitchCounts[f]["Frame_Shift_Ins"]))
-				OUT.write("{}\t".format(featSwitchCounts[f]["In_Frame_Del"]))
-				OUT.write("{}\t".format(featSwitchCounts[f]["In_Frame_Ins"]))
-				OUT.write("{}\t".format(featSwitchCounts[f]["Missense_Mutation"]))
-				OUT.write("{}\t".format(featSwitchCounts[f]["Nonsense_Mutation"]))
-				OUT.write("{}\n".format(featSwitchCounts[f]["Nonstop_Mutation"]))
 
 	def printOverlap(self,featureOverlap):
 		with open("{0}mutations/mutation_switch_feature_overlap.txt".format(options.Options().qout),"w") as F:
