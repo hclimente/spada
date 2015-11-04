@@ -23,7 +23,9 @@ class MutationFeatureOverlap(method.Method):
 
 		## CALCULATE DOMAIN ALTERATION FREQUENCY IN GENERAL
 		# get affection of prosite/pfams by switches and mutations
-		featSwitchCounts = self.getFeatureSwitchFrequency()
+		#featSwitchCounts = self.getFeatureSwitchFrequency()
+		# QUITAR
+		featSwitchCounts = {}
 		featMutationCounts = self.getFeatureMutationFrequency()
 
 		# get frequency of feature in the proteome (only most expressed iso per gene)
@@ -32,7 +34,6 @@ class MutationFeatureOverlap(method.Method):
 		# print frequency of affection
 		self.printFeatureFreq(featSwitchCounts,featMutationCounts,featCounts,featSizeCounts,totalProteomeSize)
 
-		# QUITAR
 		exit()
 
 		## CALCULATE MUTATION FREQUENCY ON SWITCHED DOMAINS
@@ -120,8 +121,9 @@ class MutationFeatureOverlap(method.Method):
 							 "In_Frame_Del": 0,"In_Frame_Ins": 0,
 							 "Missense_Mutation": 0,"Nonsense_Mutation": 0,
 							 "Nonstop_Mutation": 0})
+
 						for t in mutationTypes:
-							featureMutationCounts[f][t] += 1
+							featureMutationCounts[f][t] += mutationTypes[t]
 
 		return featureMutationCounts
 
@@ -165,8 +167,8 @@ class MutationFeatureOverlap(method.Method):
 			for featType in [tx._ptms,tx._pfam]:
 				for f in featType:
 					for start,end in featType[f]:
-						featCounts.setdefault(f,0.0)
-						featSizeCounts.setdefault(f,0.0)
+						featCounts.setdefault(f,0)
+						featSizeCounts.setdefault(f,0)
 						featCounts[f] += 1
 						featSizeCounts[f] += end - start
 
@@ -287,7 +289,6 @@ class MutationFeatureOverlap(method.Method):
 						mutProteinRange = mutations[tx.name][m][1]
 	
 						# overlap between mutations and features
-						## add ["Frame_Shift_Del","Frame_Shift_Ins","Nonsense_Mutation"]
 						if mutProteinRange & featureProteinRange:
 							inMuts += len(thoseMutations)
 							mutsOnAnyFeature.add(m)
@@ -295,6 +296,16 @@ class MutationFeatureOverlap(method.Method):
 							for t in thoseMutations:
 								mutationTypes.setdefault(t,0)
 								mutationTypes[t] += 1
+
+						# check upstream mutations that affect the domain too
+						elif set(["Frame_Shift_Del","Frame_Shift_Ins","Nonsense_Mutation"]) & set(thoseMutations):
+							extendedProteinRange = set(range(1,end+1))
+
+							if mutProteinRange & extendedProteinRange:
+								for t in thoseMutations:
+									if t in ["Frame_Shift_Del","Frame_Shift_Ins","Nonsense_Mutation"]:
+										mutationTypes.setdefault(t,0)
+										mutationTypes[t] += 1
 
 					mutationsInFeature.setdefault(f,[])
 					mutationsInFeature[f].append((inMuts,featSize,mutationTypes))
@@ -359,7 +370,7 @@ class MutationFeatureOverlap(method.Method):
 
 			for f in set(allDomains):
 				if f in featMutationCounts:
-					mutIn = sum([ featSwitchCounts[f][x] for x in featSwitchCounts[f] ])
+					mutIn = sum([ featMutationCounts[f][x] for x in featMutationCounts[f] ])
 				else:
 					mutIn = 0
 
