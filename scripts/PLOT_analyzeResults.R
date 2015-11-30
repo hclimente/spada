@@ -1,37 +1,9 @@
 #!/soft/R/R-3.2.1/bin/Rscript
 
-# 0 - ENVIRONMENT ---------------------
-library(plyr)
-library(ggplot2)
-library(reshape2)
-library(directlabels)
-library(gridExtra)
+tryCatch(source("~/SmartAS/Pipeline/scripts/variablesAndFunctions.r"),error=function(e){})
+tryCatch(source("~/Pipeline/scripts/variablesAndFunctions.r"),error=function(e){})
 
-cancerTypes <- c("brca","coad","hnsc","kich","kirc","kirp","lihc","luad","lusc","prad","thca")
-workingDir <- "/genomics/users/hector/TCGA_analysis"
-source("Pipeline/scripts/smartas_theme.R")
 setwd(workingDir)
-
-colorPalette <- c("#CC79A7","#636363","#F0E442","#006D2C","#31A354","#74C476","#FC8D59","#08519C","#3182BD","#D55E00","#5E3C99","#000000","#969696","#EDF8FB","#B3CDE3","#8C96C6","#88419D","#D94701","#2171B5","#FD8D3C","#6BAED6","#FD8D3C","#33A02C","#E31A1C","#FF7F00","#6A3D9A","#B15928","#377EB8","#E41A1C")
-names(colorPalette) <- c("brca","coad","hnsc","kich","kirc","kirp","lihc","luad","lusc","prad","thca","coad-hyper","coad-hypo","brca-basal","brca-her2","brca-luminala","brca-luminalb","expression-up","expression-down","psi-up","psi-down","odds","a3","a5","mx","ri","se","normal","tumor")
-
-nPatients <- list()
-nPatients[["brca"]] <- 1036
-nPatients[["coad"]] <- 262
-nPatients[["hnsc"]] <- 422
-nPatients[["kich"]] <- 62
-nPatients[["kirc"]] <- 505
-nPatients[["kirp"]] <- 195
-nPatients[["lihc"]] <- 197
-nPatients[["luad"]] <- 488
-nPatients[["lusc"]] <- 483
-nPatients[["prad"]] <- 295
-nPatients[["thca"]] <- 497
-nPatients[["total"]] <- sum(1036,262,422,62,505,195,197,488,483,295,497)
-
-nPatientsDf <- as.data.frame(do.call("rbind",nPatients))
-nPatientsDf$Cancer <- rownames(nPatientsDf)
-colnames(nPatientsDf) <- c("TotalPatients","Cancer")
 
 # 1 - CANDIDATES STUDY ---------------------
 # 1.1 - read all candidate lists ====
@@ -43,10 +15,10 @@ for (cancer in cancerTypes){
   candidateList[[cancer]] <- candidateList[[cancer]][candidateList[[cancer]]$IsModel==1 & candidateList[[cancer]]$NotNoise==1,]
   candidateList[[cancer]]$NumPatients <- unlist(lapply(strsplit(as.character(candidateList[[cancer]]$Patients_affected),",",fixed=T),length))
   candidateList[[cancer]]$Percentage <- candidateList[[cancer]]$NumPatients/nPatients[[cancer]]
-  candidateList[[cancer]]$Origin <- cancer
+  candidateList[[cancer]]$Tumor <- cancer
 }
 candidatesDf <- do.call("rbind", candidateList)
-candidatesDf <- merge(candidatesDf,nPatientsDf,by.x="Origin",by.y="Cancer")
+candidatesDf <- merge(candidatesDf,nPatientsDf,by.x="Tumor",by.y="Cancer")
 
 # join driver type
 driverTypesFile <- paste0(workingDir,"/Data/Databases/cancer_networks_SuppTables_v7_S7.csv")
@@ -57,7 +29,8 @@ candidatesDf <- merge(candidatesDf,driverTypes,all.x=TRUE)
 candidatesDf$DriverType <- as.character(candidatesDf$DriverType)
 candidatesDf$DriverType[is.na(candidatesDf$DriverType)] <- "No"
 
-write.table(candidatesDf_agg,'tables/candidateList_splitByTumor_models_notNoise.txt',quote=F,row.names=F, sep="\t")
+write.table(candidatesDf,'tables/candidateList_splitByTumor_models_notNoise.txt',quote=F,row.names=F, sep="\t")
+rm(driverTypes,driverTypesFile)
 
 setwd(workingDir)
 
@@ -66,9 +39,10 @@ setwd("switches")
 
 # calculate aggregated table (sum patients, etc.) and calculate unbalance as the minimun p of enrichment in a fisher test
 candidatesDf_agg <- ddply(candidatesDf,.(GeneId,Symbol,Normal_transcript,Tumor_transcript,
-                                         Normal_protein,Tumor_protein,Annotation,IsRelevant,
-                                         Driver,Druggable,CDS,CDS_change,UTR_change),
-                          summarise, CancerAffected=paste(Origin,collapse = ","),
+                                         Normal_protein,Tumor_protein,Annotation,DriverAnnotation,
+                                         IsRelevant,Driver,DriverType,Druggable,CDS,CDS_change,
+                                         UTR_change),
+                          summarise, CancerAffected=paste(Tumor,collapse = ","),
                           Patients=paste(Patients_affected,collapse = ","), 
                           PatientNumber=sum(NumPatients), 
                           Percentage=sum(NumPatients)/nPatients[["total"]],
@@ -80,10 +54,22 @@ candidatesDf_agg <- ddply(candidatesDf,.(GeneId,Symbol,Normal_transcript,Tumor_t
                               if (x[2]!=0){
                                 f <- fisher.test(matrix(x[1:4],ncol=2),alternative="greater"); 
                                 f$p.value
-                              } else { 0 } } )))
+                              } else { 0 } } )),
+                          Entropy=-sum((NumPatients/TotalPatients)/
+                                         sum(NumPatients/TotalPatients)*
+                                         log2(
+                                           (NumPatients/TotalPatients)/
+                                             sum(NumPatients/TotalPatients))
+                                       )/log2(length(NumPatients))
+                          )
 
 candidatesDf_agg <- candidatesDf_agg[order(-candidatesDf_agg$Percentage),]
-candidatesDf_agg <- candidatesDf_agg[,c("GeneId","Symbol","Normal_transcript","Tumor_transcript","Normal_protein","Tumor_protein","Annotation","IsRelevant","Driver","Druggable","CDS","CDS_change","UTR_change","CancerAffected","PatientNumber","Percentage","p.unbalance","Patients")]
+candidatesDf_agg <- candidatesDf_agg[,c("GeneId","Symbol","Normal_transcript","Tumor_transcript",
+                                        "Normal_protein","Tumor_protein","Annotation",
+                                        "DriverAnnotation","IsRelevant","Driver","DriverType",
+                                        "Druggable","CDS","CDS_change","UTR_change",
+                                        "CancerAffected","PatientNumber","Percentage",
+                                        "p.unbalance","Patients","Entropy")]
 write.table(candidatesDf_agg,'tables/candidateList_allCancers_models_notNoise.txt',quote=F,row.names=F, sep="\t")
 
 setwd(workingDir)
@@ -91,119 +77,158 @@ setwd(workingDir)
 # 1.3 - calculate most frequent genes altered ====
 setwd("switches")
 
-#most frequent genes, ordered by sum of percentajes in cancer types
-for (effect in c("allGenes","functionalGenes")){
-  for (annotation in c("allGenes","Driver","d1")){
-    ngenes <- 50
-    
-    if (annotation=="allGenes"){
-      genesSelection <- matrix(T,nrow(candidatesDf),1)
-    } else {
-      genesSelection <- candidatesDf$Annotation==annotation
-    }
-    
-    if (effect=="functionalGenes") { 
-      functionalSelection <- as.logical(candidatesDf$IsRelevant)
-    } else {
-      functionalSelection <- matrix(T,nrow(candidatesDf),1)
-    }
-    
-    accCandidateList <- ddply(candidatesDf[genesSelection & functionalSelection,],.(GeneId,Symbol), summarise, cumsum=sum(Percentage),patients=sum(NumPatients))
-    accCandidateList <- accCandidateList[order(-accCandidateList$cumsum),]
-    
-    candsMatrix <- list()
-    for (gene in accCandidateList$GeneId[1:ngenes]){
-      symbol = accCandidateList$Symbol[accCandidateList$GeneId==gene]
-      candsMatrix[[symbol]] <- list()
-      candsMatrix[[symbol]][["symbol"]] <- as.character(symbol)
-      for (cancer in cancerTypes){
-        if (gene %in% candidateList[[cancer]]$GeneId){
-          candsMatrix[[symbol]][[cancer]] <- as.numeric(candidateList[[cancer]]$Percentage[candidateList[[cancer]]$GeneId==gene])
-        } else{
-          candsMatrix[[symbol]][[cancer]] <- 0
-        }
+#most frequent genes
+for (thing in c("numberPatients","percentagePatients")){
+  for (effect in c("allGenes","functionalGenes")){
+    for (annotation in c("allGenes","Driver","d1")){
+      ngenes <- 50
+      
+      if (annotation=="allGenes"){
+        genesSelection <- matrix(T,nrow(candidatesDf),1)
+      } else {
+        genesSelection <- candidatesDf$DriverAnnotation==annotation
       }
-      candsMatrix[[symbol]] <- do.call("cbind", candsMatrix[[symbol]])
+      
+      if (effect=="functionalGenes") { 
+        functionalSelection <- as.logical(candidatesDf$IsRelevant)
+      } else {
+        functionalSelection <- matrix(T,nrow(candidatesDf),1)
+      }
+
+      if (thing=="numberPatients"){
+        accCandidateList <- ddply(candidatesDf[genesSelection & functionalSelection,],.(GeneId,Symbol), summarise, cumsum=sum(NumPatients))
+      } else if (thing=="percentagePatients"){
+        accCandidateList <- ddply(candidatesDf[genesSelection & functionalSelection,],.(GeneId,Symbol), summarise, cumsum=sum(Percentage))
+      }
+      
+      accCandidateList <- accCandidateList[order(-accCandidateList$cumsum),]
+      
+      candsMatrix <- list()
+      for (gene in accCandidateList$GeneId[1:ngenes]){
+        symbol = accCandidateList$Symbol[accCandidateList$GeneId==gene]
+        candsMatrix[[symbol]] <- list()
+        candsMatrix[[symbol]][["symbol"]] <- as.character(symbol)
+        for (cancer in cancerTypes){
+          if (gene %in% candidateList[[cancer]]$GeneId){
+            if (thing=="numberPatients"){
+              candsMatrix[[symbol]][[cancer]] <- as.numeric(candidateList[[cancer]]$NumPatients[candidateList[[cancer]]$GeneId==gene])
+            } else if (thing=="percentagePatients"){
+              candsMatrix[[symbol]][[cancer]] <- as.numeric(candidateList[[cancer]]$Percentage[candidateList[[cancer]]$GeneId==gene])
+            }
+          } else{
+            candsMatrix[[symbol]][[cancer]] <- 0
+          }
+        }
+        candsMatrix[[symbol]] <- do.call("cbind", candsMatrix[[symbol]])
+      }
+      candsMatrix2 <- do.call("rbind", candsMatrix)
+      rownames(candsMatrix2) <- candsMatrix2[,c("symbol")]
+      
+      candsMatrix3 <- as.data.frame(matrix(as.numeric(as.character(candsMatrix2[,!(colnames(candsMatrix2) %in% c("symbol"))])),nrow=ngenes,ncol=11))
+      rownames(candsMatrix3) <- rownames(candsMatrix2)
+      colnames(candsMatrix3) <- cancerTypes
+      candsMatrix3 <- candsMatrix3[order(-rowSums(candsMatrix3)),]
+      if (thing=="percentagePatients"){
+        candsMatrix3 <- candsMatrix3*100/11
+      }
+      candsMatrix3$Gene <- rownames(candsMatrix3)
+      
+      candsMatrix3.m <- melt(candsMatrix3)
+      colnames(candsMatrix3.m) <- c("Gene","Cancer","patients")
+      selectVector <- candsMatrix3.m$Gene %in% candidatesDf$Symbol[as.logical(candidatesDf$Driver)]
+      candsMatrix3.m$Gene[selectVector] <- paste0("*",candsMatrix3.m$Gene[selectVector])
+      candsMatrix3.m$Gene <- factor(candsMatrix3.m$Gene,levels=as.factor(unique(candsMatrix3.m$Gene)))
+      
+      p <- ggplot(candsMatrix3.m) + 
+        geom_bar(stat="identity",aes(x=Gene,y=patients,fill=Cancer)) + 
+        scale_fill_manual(values=colorPalette) + 
+        ylab(thing) + 
+        theme(text = element_text(size=20),axis.text.x=element_text(angle=90,hjust=1,vjust=0.5,colour="black"))
+      
+      ggsave(paste0("figures/",paste("genes",thing,annotation,effect,paste0("top",ngenes,"genes"),"allCancers.png",sep="_")),p,width = 12)
+      
     }
-    candsMatrix2 <- do.call("rbind", candsMatrix)
-    rownames(candsMatrix2) <- candsMatrix2[,c("symbol")]
-    
-    candsMatrix3 <- as.data.frame(matrix(as.numeric(as.character(candsMatrix2[,!(colnames(candsMatrix2) %in% c("symbol"))])),nrow=ngenes,ncol=11))
-    rownames(candsMatrix3) <- rownames(candsMatrix2)
-    colnames(candsMatrix3) <- cancerTypes
-    candsMatrix3 <- candsMatrix3[order(-rowSums(candsMatrix3)),]
-    candsMatrix3 <- candsMatrix3*100/11
-    candsMatrix3$Gene <- rownames(candsMatrix3)
-    
-    candsMatrix3.m <- melt(candsMatrix3)
-    colnames(candsMatrix3.m) <- c("Gene","Cancer","patients")
-    candsMatrix3.m$Gene <- factor(candsMatrix3.m$Gene,levels=as.factor(rownames(candsMatrix3)))
-    
-    p <- ggplot(candsMatrix3.m) + geom_bar(stat="identity",aes(x=Gene,y=patients,fill=Cancer))
-    p <- p + scale_fill_manual(values=colorPalette) + ylab("Accumulated percentage")
-    p <- p + theme(text = element_text(size=20),axis.text.x=element_text(angle=90,hjust=1,vjust=0.5,colour="black"))
-    
-    ggsave(paste("figures/freqNumberOfPatients",annotation,effect,"allCancers.png",sep="_"),p,width = 12)
-    
   }
 }
 
-#most frequent genes, ordered by sum of patients in cancer types
-for (effect in c("allGenes","functionalGenes")){
-  for (annotation in c("allGenes","Driver","d1")){
-    ngenes <- 50
-    
-    if (annotation=="allGenes"){
-      genesSelection <- matrix(T,nrow(candidatesDf),1)
-    } else {
-      genesSelection <- candidatesDf$Annotation==annotation
-    }
-    
-    if (effect=="functionalGenes") { 
-      functionalSelection <- as.logical(candidatesDf$IsRelevant)
-    } else {
-      functionalSelection <- matrix(T,nrow(candidatesDf),1)
-    }
-    
-    accCandidateList <- ddply(candidatesDf[genesSelection & functionalSelection,],.(GeneId,Symbol), summarise, cumsum=sum(NumPatients))
-    accCandidateList <- accCandidateList[order(-accCandidateList$cumsum),]
-    
-    candsMatrix <- list()
-    for (gene in accCandidateList$GeneId[1:ngenes]){
-      symbol = accCandidateList$Symbol[accCandidateList$GeneId==gene]
-      candsMatrix[[symbol]] <- list()
-      candsMatrix[[symbol]][["symbol"]] <- as.character(symbol)
-      for (cancer in cancerTypes){
-        if (gene %in% candidateList[[cancer]]$GeneId){
-          candsMatrix[[symbol]][[cancer]] <- as.numeric(candidateList[[cancer]]$NumPatients[candidateList[[cancer]]$GeneId==gene])
-        } else{
-          candsMatrix[[symbol]][[cancer]] <- 0
-        }
+#most frequent switches
+for (thing in c("numberPatients","percentagePatients")){
+  for (effect in c("allGenes","functionalGenes")){
+    for (annotation in c("allGenes","Driver","d1")){
+      ngenes <- 50
+      
+      if (annotation=="allGenes"){
+        genesSelection <- matrix(T,nrow(candidatesDf),1)
+      } else {
+        genesSelection <- candidatesDf$DriverAnnotation==annotation
       }
-      candsMatrix[[symbol]] <- do.call("cbind", candsMatrix[[symbol]])
+      
+      if (effect=="functionalGenes") { 
+        functionalSelection <- as.logical(candidatesDf$IsRelevant)
+      } else {
+        functionalSelection <- matrix(T,nrow(candidatesDf),1)
+      }
+      
+      if (thing=="numberPatients"){
+        accCandidateList <- ddply(candidatesDf[genesSelection & functionalSelection,],.(GeneId,Symbol,Normal_transcript,Tumor_transcript), summarise, cumsum=sum(NumPatients))
+      } else if (thing=="percentagePatients"){
+        accCandidateList <- ddply(candidatesDf[genesSelection & functionalSelection,],.(GeneId,Symbol,Normal_transcript,Tumor_transcript), summarise, cumsum=sum(Percentage))
+      }
+      
+      accCandidateList <- accCandidateList[order(-accCandidateList$cumsum),]
+      accCandidateList$Switch <- apply(subset(accCandidateList,select = c(Symbol,Normal_transcript,Tumor_transcript)),1, function(x){paste(x[1],x[2],x[3],sep=" ")})
+      
+      candsMatrix <- list()
+      for (s in accCandidateList$Switch[1:ngenes]){
+        candsMatrix[[s]] <- list()
+        candsMatrix[[s]][["switch"]] <- s
+        sp <- unlist(strsplit(s," "))
+        nTx <- sp[2]
+        tTx <- sp[3]
+        for (cancer in cancerTypes){
+          if (nTx %in% candidateList[[cancer]]$Normal_transcript & tTx %in% candidateList[[cancer]]$Tumor_transcript){
+            if (thing=="numberPatients"){
+              candsMatrix[[s]][[cancer]] <- as.numeric(candidateList[[cancer]]$NumPatients[candidateList[[cancer]]$Normal_transcript==nTx & candidateList[[cancer]]$Tumor_transcript==tTx])
+            } else if (thing=="percentagePatients"){
+              candsMatrix[[s]][[cancer]] <- as.numeric(candidateList[[cancer]]$Percentage[candidateList[[cancer]]$Normal_transcript==nTx & candidateList[[cancer]]$Tumor_transcript==tTx])
+            }
+          } else{
+            candsMatrix[[s]][[cancer]] <- 0
+          }
+        }
+        candsMatrix[[s]] <- do.call("cbind", candsMatrix[[s]])
+      }
+      candsMatrix2 <- do.call("rbind", candsMatrix)
+      rownames(candsMatrix2) <- candsMatrix2[,c("switch")]
+      
+      candsMatrix3 <- as.data.frame(matrix(as.numeric(as.character(candsMatrix2[,!(colnames(candsMatrix2) %in% c("switch"))])),nrow=ngenes,ncol=11))
+      rownames(candsMatrix3) <- rownames(candsMatrix2)
+      colnames(candsMatrix3) <- cancerTypes
+      candsMatrix3 <- candsMatrix3[order(-rowSums(candsMatrix3)),]
+      if (thing=="percentagePatients"){
+        candsMatrix3 <- candsMatrix3*100/11
+      }
+      candsMatrix3$Gene <- rownames(candsMatrix3)
+      
+      candsMatrix3.m <- melt(candsMatrix3)
+      colnames(candsMatrix3.m) <- c("Gene","Cancer","patients")
+      candsMatrix3.m$Gene <- factor(candsMatrix3.m$Gene,levels=as.factor(rownames(candsMatrix3)))
+      
+      p <- ggplot(candsMatrix3.m) + 
+        geom_bar(stat="identity",aes(x=Gene,y=patients,fill=Cancer)) + 
+        scale_fill_manual(values=colorPalette) + 
+        ylab(thing) + 
+        theme(text = element_text(size=20),axis.text.x=element_text(angle=90,hjust=1,vjust=0.5,colour="black"))
+      
+      ggsave(paste0("figures/",paste("switches",thing,annotation,effect,paste0("top",ngenes,"switches"),"allCancers.png",sep="_")),p,width = 12)
+      
     }
-    candsMatrix2 <- do.call("rbind", candsMatrix)
-    rownames(candsMatrix2) <- candsMatrix2[,c("symbol")]
-    
-    candsMatrix3 <- as.data.frame(matrix(as.numeric(as.character(candsMatrix2[,!(colnames(candsMatrix2) %in% c("symbol"))])),nrow=ngenes,ncol=11))
-    rownames(candsMatrix3) <- rownames(candsMatrix2)
-    colnames(candsMatrix3) <- cancerTypes
-    candsMatrix3 <- candsMatrix3[order(-rowSums(candsMatrix3)),]
-    candsMatrix3 <- candsMatrix3*100/11
-    candsMatrix3$Gene <- rownames(candsMatrix3)
-    
-    candsMatrix3.m <- melt(candsMatrix3)
-    colnames(candsMatrix3.m) <- c("Gene","Cancer","patients")
-    candsMatrix3.m$Gene <- factor(candsMatrix3.m$Gene,levels=as.factor(rownames(candsMatrix3)))
-    
-    p <- ggplot(candsMatrix3.m) + geom_bar(stat="identity",aes(x=Gene,y=patients,fill=Cancer))
-    p <- p + scale_fill_manual(values=colorPalette) + ylab("Number of patients")
-    p <- p + theme(text = element_text(size=20),axis.text.x=element_text(angle=90,hjust=1,vjust=0.5,colour="black"))
-    
-    ggsave(paste("figures/freqNumberOfPatients",annotation,effect,"allCancers.png",sep="_"),p,width = 12)
   }
 }
 
+rm(effect,annotation,cancer,functionalSelection,gene,
+   genesSelection,ngenes,symbol,p,candsMatrix,candsMatrix2,
+   candsMatrix3,candsMatrix3.m,accCandidateList)
 setwd(workingDir)
 
 # 1.4 - Study exon length ====
@@ -222,29 +247,26 @@ for (knsur in cancerTypes){
   cancer.exons = subset(exons,Cancer==knsur & (Origin=="CDS" | Origin=="CDS-UTR") )
   
   # cds relative size
-  p <- ggplot() + ggtitle(knsur) + theme_bw() + ylab("")
-  p <- p + stat_ecdf(data=subset(cancer.exons,Random=="Random"), aes(x=CDSRelativeSize,colour="green"),show_guide = FALSE)
-  p <- p + stat_ecdf(data=subset(cancer.exons,Random=="NonRandom"), aes(x=CDSRelativeSize,colour="red"),show_guide = FALSE)
-  
-  cdsRelativeSize[[knsur]] <- p
+  cdsRelativeSize[[knsur]] <- ggplot() + 
+    stat_ecdf(data=subset(cancer.exons,Random=="FullRandom"), aes(x=CDSRelativeSize,colour="green"),show_guide = FALSE) + 
+    stat_ecdf(data=subset(cancer.exons,Random=="NonRandom"), aes(x=CDSRelativeSize,colour="red"),show_guide = FALSE) +
+    ggtitle(knsur) + 
+    theme_bw() + 
+    ylab("")
   
   # cds position
-  p <- ggplot() + ggtitle(knsur) + theme_bw()
-  p <- p + stat_ecdf(data=subset(cancer.exons,Random=="NonRandom"), aes(x=Position,colour="red"),show_guide = FALSE)
-  p <- p + stat_ecdf(data=subset(cancer.exons,Random=="Random"), aes(x=Position,colour="green"),show_guide = FALSE)
-  
-  cdsPosition[[knsur]] <- p
+  cdsPosition[[knsur]] <- ggplot() + ggtitle(knsur) + theme_bw() + 
+    stat_ecdf(data=subset(cancer.exons,Random=="NonRandom"), aes(x=Position,colour="red"),show_guide = FALSE) + 
+    stat_ecdf(data=subset(cancer.exons,Random=="FullRandom"), aes(x=Position,colour="green"),show_guide = FALSE)
   
   # length
-  p <- ggplot() + ggtitle(knsur) + theme_bw()
-  p <- p + stat_ecdf(data=subset(cancer.exons,Random=="NonRandom"), aes(x=Length,colour="red"),show_guide = FALSE)
-  p <- p + stat_ecdf(data=subset(cancer.exons,Random=="Random"), aes(x=Length,colour="green"),show_guide = FALSE)
-  
-  exonLength[[knsur]] <- p
+  exonLength[[knsur]] <- ggplot() + ggtitle(knsur) + theme_bw() + 
+    stat_ecdf(data=subset(cancer.exons,Random=="NonRandom"), aes(x=Length,colour="red"),show_guide = FALSE) + 
+    stat_ecdf(data=subset(cancer.exons,Random=="FullRandom"), aes(x=Length,colour="green"),show_guide = FALSE)
   
   # orf
   switches <- table(cancer.exons$KeepOrf[cancer.exons$Random=="NonRandom"])
-  randomSwitches <- table(cancer.exons$KeepOrf[cancer.exons$Random=="Random"])
+  randomSwitches <- table(cancer.exons$KeepOrf[cancer.exons$Random=="FullRandom"])
   
   cTable <- rbind(switches,randomSwitches)
   f <- fisher.test(cTable)
@@ -253,7 +275,7 @@ for (knsur in cancerTypes){
   
   # type
   switches <- table(cancer.exons$Type[cancer.exons$Random=="NonRandom" ])
-  randomSwitches <- table(cancer.exons$Type[cancer.exons$Random=="Random" ])
+  randomSwitches <- table(cancer.exons$Type[cancer.exons$Random=="FullRandom" ])
   
   cTable <- rbind(switches,randomSwitches)
   f <- fisher.test(cTable)
@@ -278,6 +300,9 @@ graphics.off()
 write.table(orfChange,'tables/exonOrfChange_testVsRandom.txt',quote=F,row.names=F, sep="\t")
 write.table(exonOrigin,'tables/exonOrigin_NorT_testVsRandom.txt',quote=F,row.names=F, sep="\t")
 
+rm(cdsRelativeSize,cdsPosition,exonLength,knsur,cTable,exons,
+   this.Data,exonOrigin,f,switches,randomSwitches,orfChange,cancer.exons)
+
 # exons_new.tsv study
 exonsNew <- read.delim("exons_new.tsv")
 nrExonsNew <- exonsNew[exonsNew$Random=="NonRandom" ,]
@@ -288,6 +313,7 @@ sum(nrExonsNew$nExon[nrExonsNew$Tag=="ENDING"]%%3==nrExonsNew$tExon[nrExonsNew$T
 sum(nrExonsNew$nExon[nrExonsNew$Tag=="MIDDLE"]%%3==nrExonsNew$tExon[nrExonsNew$Tag=="MIDDLE"]%%3)/nrow(nrExonsNew[nrExonsNew$Tag=="MIDDLE",])
 sum(nrExonsNew$nExon[nrExonsNew$Tag=="COMMON"]%%3==nrExonsNew$tExon[nrExonsNew$Tag=="COMMON"]%%3)/nrow(nrExonsNew[nrExonsNew$Tag=="COMMON",])
 
+rm(exonsNew,nrExonsNew)
 setwd(workingDir)
 
 # 1.5 - Study exons per switch ====
@@ -320,33 +346,61 @@ setwd("switches")
 isoLengths <- read.delim("isoform_length.tsv", header=T)
 isoLengths$nIsoLength[isoLengths$nIsoLength==0] <- NA
 isoLengths$tIsoLength[isoLengths$tIsoLength==0] <- NA
-p <- c()
 
-for (cancer in cancerTypes){
-  this.isoLengths <- isoLengths[isoLengths$Cancer==cancer & isoLengths$Random=="NonRandom",]
-  t <- t.test(this.isoLengths$nIsoLength,this.isoLengths$tIsoLength,paired=TRUE)
-  p <- c(p,t$p.value)
+for (r in c("NonRandom","FullRandom")){
+  
+  this.isoLengths <- isoLengths[isoLengths$Random==r,]
+  
+  p <- c()
+  
+  for (cancer in cancerTypes){
+    cancer.isoLengths <- this.isoLengths[this.isoLengths$Cancer==cancer,]
+    t <- t.test(cancer.isoLengths$nIsoLength,cancer.isoLengths$tIsoLength,paired=TRUE,alternative="greater")
+    p <- c(p,t$p.value)
+  }
+  
+  isoLengthsSummary <- ddply(subset(this.isoLengths,!is.na(nIsoLength) & !is.na(tIsoLength)),
+                             .(Cancer), summarise, 
+                             mean_nIso=mean(nIsoLength),
+                             mean_tIso=mean(tIsoLength),
+                             mean_diff=mean(nIsoLength-tIsoLength))
+  isoLengthsSummary <- cbind(isoLengthsSummary,p)
+  
+  write.table(isoLengthsSummary,file=paste0("tables/isoform_length_",r,"_p.tsv"),sep="\t", row.names=F, col.names=F, quote=F)
+  
+  isoLengths.Melt <- data.frame(Cancer=c(as.character(this.isoLengths$Cancer),as.character(this.isoLengths$Cancer)),
+                                Length=c(this.isoLengths$nIsoLength,this.isoLengths$tIsoLength),
+                                IsoformOrigin=c(rep("Normal",nrow(this.isoLengths)),rep("Tumor",nrow(this.isoLengths))))
+  
+  # mean difference
+  mean(this.isoLengths$nIsoLength-this.isoLengths$tIsoLength,na.rm=T)
+  
+  ranges <- isoLengths.Melt
+  colnames(ranges) <- c("Cancer","y","Categories")
+  ranges <- ranges[!is.na(ranges$y),]
+  
+  sigElements <- getBoxplotAsterisks(isoLengthsSummary,ranges)
+  
+  # plot isoform length
+  p <- ggplot(isoLengths.Melt) + 
+    geom_boxplot(aes(factor(Cancer),Length,fill=IsoformOrigin),outlier.colour = NA) + 
+    smartas_theme() + 
+    scale_y_continuous(limits=c(0,1500)) + 
+    xlab("Cancer") + 
+    scale_fill_manual(values=c("#d95f02","#7570b3")) +
+    theme(legend.position="bottom")
+  
+  if (! empty(sigElements$asterisks) || ! empty(sigElements$arcs) ){
+    p <- p + geom_text(data=sigElements$asterisks ,aes(x=x_ast,y=y_ast,label='*'),size=15) + 
+      geom_line(data=sigElements$arcs, aes(x_arc,y_arc,group=Cancer))
+  }
+    
+  ggsave(paste0("figures/isoformLength_",r,".png"),p, width = 6.5, height = 5)
+  
 }
 
-isoLengthsSummary <- ddply(isoLengths[isoLengths$Random=="NonRandom",],.(Cancer,Random), summarise, nIso=mean(nIsoLength,na.rm=TRUE),tIso=mean(tIsoLength,na.rm=TRUE))
-isoLengthsSummary <- cbind(isoLengthsSummary,p)
-isoLengthsSummary$Diff <- isoLengthsSummary$nIso - isoLengthsSummary$tIso
-isoLengthsSummary <- isoLengthsSummary[,colnames(isoLengthsSummary)!="Random"]
-
-write.table(isoLengthsSummary,file="tables/isoform_length_p.tsv",sep="\t", row.names=F, col.names=F, quote=F)
-
-isoLengths.Melt <- data.frame(Cancer=c(as.character(isoLengths$Cancer),as.character(isoLengths$Cancer)),
-                              Length=c(isoLengths$nIsoLength,isoLengths$tIsoLength),
-                              IsoformOrigin=c(rep("Normal",nrow(isoLengths)),rep("Tumor",nrow(isoLengths))))
-
-# mean difference
-mean(isoLengths$nIsoLength-isoLengths$tIsoLength,na.rm=T)
-
-# plot isoform length
-p <- ggplot(isoLengths.Melt) + geom_boxplot(aes(factor(Cancer),Length,fill=IsoformOrigin),outlier.colour = NA)
-p <- p + smartas_theme() + scale_y_continuous(limits=c(0,1500)) + xlab("Cancer")
-ggsave("figures/isoformLength.png",p, width = 6.5, height = 5)
-
+rm(p,t,sigElements,ranges,isoLengths,isoLengths.Melt,r,
+   isoLengthsSummary,cancer.isoLengths,this.isoLengths)
 setwd(workingDir)
 
 # # 1.6.1 - Study normal isoform length ####
@@ -410,46 +464,148 @@ setwd("switches")
 # boxplot(Length~interaction(Relevance,Cancer),data=tiso_length,outline=F,col=c("gray40","gray90"),las=2)
 # graphics.off()
 
+setwd(workingDir)
+
 # 1.7 - Generate plot about relevance of the switches ====
 setwd("switches")
 
 candidatesDf_copy <- candidatesDf
-drivers <- as.logical(candidatesDf_copy$Driver)
+drivers <- candidatesDf_copy$DriverAnnotation=="Driver"
+candidatesDf_copy$Driver <- as.character(candidatesDf_copy$Driver)
 candidatesDf_copy$Driver[drivers] <- "Unlabeled driver"
 candidatesDf_copy$Driver[!drivers] <- "NonDriver"
 candidatesDf_copy$Driver[candidatesDf_copy$DriverType == "oncogene"] <- "Oncogene"
 candidatesDf_copy$Driver[candidatesDf_copy$DriverType == "suppressor"] <- "Suppressor"
 candidatesDf_copy$Driver <- factor(candidatesDf_copy$Driver,c("NonDriver","Unlabeled driver","Oncogene","Suppressor"))
 
-candsStats <- ddply(candidatesDf_copy,.(Origin,IsRelevant,Driver),summarise,Count=length(GeneId))
+candsStats <- ddply(candidatesDf_copy,.(Tumor,IsRelevant,Driver),summarise,Count=length(GeneId))
 colnames(candsStats) <- c("Cancer","Functional","Driver","Count")
 func <- as.logical(candsStats$Functional)
 candsStats$Functional[func] <- "Functional"
 candsStats$Functional[!func] <- "NonFunctional"
 candsStats$Functional <- factor(candsStats$Functional,c("Functional","NonFunctional"))
 
-p <- ggplot(candsStats) + geom_bar(stat="identity",aes(x=Cancer,y=Count,fill=Functional,alpha=Driver))
-p <- p + theme_minimal() + ylab("Number of switches") + scale_alpha_manual(values=c(1,0.2,0.5,0.8)) 
-p <- p + theme(text = element_text(size=20),axis.text.x=element_text(angle=90,hjust=1,vjust=0.5,colour="black"))
-p <- p + scale_fill_manual(values=c("#d95f02","#7570b3"))
+p <- ggplot(candsStats) + 
+  geom_bar(stat="identity",aes(x=Cancer,y=Count,fill=Functional,alpha=Driver)) + 
+  theme_minimal() + ylab("Number of switches") + scale_alpha_manual(values=c(1,0.2,0.5,0.8)) + 
+  theme(text = element_text(size=20),axis.text.x=element_text(angle=90,hjust=1,vjust=0.5,colour="black")) + 
+  scale_fill_manual(values=c("#d95f02","#7570b3"))
 
 ggsave(paste0("figures/switchNumber_funcional_drivers.png"),p, width = 8, height = 7)
 
+rm(p,candsStats,func,candidatesDf_copy,drivers,cancer)
 setwd(workingDir)
 
 # 1.8 - Plot number of transcripts vs number of patients affected by a switch ====
 setwd("switches")
 
-txsAndGenes <- read.delim(paste0(workingDir,"/Data/TCGA/geneAndTranscripts.txt"),header = F)
-colnames(txsAndGenes) <- c("symbol","GeneId","tx")
+txsAndGenes <- read.delim(paste0(workingDir,"/Data/TCGA/genesAndTranscripts_splitByGene.txt"))
 
 txCount <- ddply(txsAndGenes,.(GeneId),summarize,nTxs=length(tx))
 txCount_withInfo <- merge(candidatesDf_agg,txCount,all.x=T)
 txCount_withInfo <- ddply(txCount_withInfo,.(GeneId,nTxs),summarize,PatientNumber=sum(PatientNumber))
 
-p <- ggplot(txCount_withInfo,aes(PatientNumber,nTxs)) + geom_point() + smartas_theme()
+txCount_withInfo$nTxs_factor <- cut(txCount_withInfo$nTxs, c(1:10,11))
+txCount_withInfo$nTxs_factor <- factor(txCount_withInfo$nTxs_factor)
+
+p <- ggplot(txCount_withInfo,aes(nTxs_factor,PatientNumber)) + 
+  geom_boxplot() + 
+  smartas_theme() + 
+  xlab("Number of transcripts") + 
+  ylab("Patients with switch")
 ggsave(paste0("figures/gene_numberOfPatientsWithSwitch_vs_numberOfTranscripts.png"),p)
 
+rm(p,txsAndGenes,txCount,txCount_withInfo)
+setwd(workingDir)
+
+# 1.9 - Print proportion of switches in drivers and non-drivers ====
+setwd("switches")
+
+for (a in c("d0_enrichment","d0_relevant_enrichment","d1_enrichment","d1_relevant_enrichment")){
+
+  candsStats <- read.delim(paste0(a,".tsv"))
+  colnames(candsStats) <- c("Cancer","Analysis","SwitchedDriver","NonSwitchedDriver","SwitchedNonDrivers","NonSwitchedNonDrivers","p","OddsRatio")
+  candsStats_driver <- melt(candsStats[,c("Cancer","SwitchedDriver","NonSwitchedDriver")],value.name="Counts")
+  candsStats_driver$variable <- as.character(candsStats_driver$variable)
+  candsStats_driver$variable[grep("NonSwitched",candsStats_driver$variable)] <- "No switch"
+  candsStats_driver$variable[grep("Switched",candsStats_driver$variable)] <- "Switch"
+  candsStats_driver$Driver <- "Driver"
+  
+  candsStats_nonDriver <- melt(candsStats[,c("Cancer","SwitchedNonDrivers","NonSwitchedNonDrivers")],value.name="Counts")
+  candsStats_nonDriver$variable <- as.character(candsStats_nonDriver$variable)
+  candsStats_nonDriver$variable[grep("NonSwitched",candsStats_nonDriver$variable)] <- "No switch"
+  candsStats_nonDriver$variable[grep("Switched",candsStats_nonDriver$variable)] <- "Switch"
+  candsStats_nonDriver$Driver <- "NonDriver"
+  
+  geneInfo <- rbind(candsStats_driver,candsStats_nonDriver)
+  
+  totalGenes <- ddply(geneInfo,.(Cancer,Driver),summarise,Total=sum(Counts))
+  
+  geneInfo <- merge(geneInfo,totalGenes)
+  geneInfo$NormCounts <- geneInfo$Counts/geneInfo$Total
+  geneInfo$Switched <- factor(geneInfo$variable,c("Switch","No switch"))
+  geneInfo$Cancer2 <- paste(geneInfo$Cancer,geneInfo$Driver,sep="_")
+  geneInfo$Driver <- factor(geneInfo$Driver,c("Driver","NonDriver"))
+  
+  geneInfo <- geneInfo[order(geneInfo$Switched),]
+  geneInfo <- geneInfo[order(geneInfo$Driver),]
+  geneInfo$y <- geneInfo$NormCounts
+  geneInfo$variable <- geneInfo$Driver
+  
+  sigElements <- getBarplotAsterisks(candsStats,subset(geneInfo,Switched=="Switch"))
+  
+  p <- ggplot(subset(geneInfo,Switched=="Switch")) + 
+    geom_bar(stat="identity",aes(x=Cancer2,y=NormCounts,fill=Cancer,alpha=Driver)) + 
+    smartas_theme() + 
+    ylab("Proportion of total with a switch") + 
+    xlab("Tumor type") + 
+    theme(text = element_text(size=20),axis.text.x=element_text(angle=90,hjust=1,vjust=0.5,colour="black")) + 
+    scale_fill_manual(values=colorPalette) + 
+    scale_alpha_manual(values=c(1,0.7)) + 
+    scale_x_discrete(labels=c("Driver","NonDriver")) + 
+    theme(axis.text.x = element_blank()) + 
+    geom_text(data=sigElements$asterisks ,aes(x=x_ast,y=y_ast,label='*'),size=15) + 
+    geom_line(data=sigElements$arcs, aes(x_arc,y_arc,group=Cancer))
+
+  ggsave(paste0("figures/",a,".png"),p, width=8, height=7)
+  
+}
+
+candidatesDf_copy <- candidatesDf
+relevantSwitches <- as.logical(candidatesDf_copy$IsRelevant)
+candidatesDf_copy$IsRelevant[relevantSwitches] <- "Functional"
+candidatesDf_copy$IsRelevant[!relevantSwitches] <- "Non-functional"
+candidatesDf_copy$IsRelevant <- factor(candidatesDf_copy$IsRelevant,c("Functional","Non-functional"))
+
+p <- numeric()
+for (cancer in cancerTypes){
+  thisDf <- candidatesDf_copy[candidatesDf_copy$Tumor==cancer,]
+  selectRelevant <- thisDf$IsRelevant == "Functional"
+  k <- ks.test(thisDf$NumPatients[selectRelevant],thisDf$NumPatients[!selectRelevant],alternative="less")
+  p <- c(p,k$p.value)
+}
+
+signif <- data.frame(Cancer=cancerTypes,p=p)
+
+plotInfo <- candidatesDf_copy[,c("Tumor","NumPatients","IsRelevant")]
+colnames(plotInfo) <- c("Cancer","y","Categories")
+
+sigElements <- getBoxplotAsterisks(signif,plotInfo)
+
+# plot isoform length
+p <- ggplot(candidatesDf_copy) + 
+  geom_boxplot(aes(factor(Tumor),NumPatients,fill=IsRelevant),outlier.colour = NA) + 
+  scale_fill_manual(values=c("#d95f02","#7570b3")) + 
+  xlab("Cancer") + ylab("Patient number") + scale_y_continuous(limits=c(0,175)) +
+  smartas_theme() + theme(legend.position="bottom") +
+  geom_text(data=sigElements$asterisks ,aes(x=x_ast,y=y_ast,label='*'),size=15) +
+  geom_line(data=sigElements$arcs, aes(x_arc,y_arc,group=Cancer))
+
+ggsave("figures/length_comparison_functionalVsNonFunctional.png",p, width=8, height=7)
+
+rm(a,p,k,relevantSwitches,selectRelevant,cancer,sigElements,
+   totalGenes,thisDf,signif,plotInfo,geneInfo,candsStats,
+   candsStats_driver,candsStats_nonDriver,candidatesDf_copy)
 setwd(workingDir)
 
 # 2 - NEIGHBORHOODS ---------------------
@@ -472,13 +628,31 @@ for (gnset in c("relevant","all")){
     write.table(set_counts_df,paste0('tables/',file,'_counts.txt'),row.names=F, quote=F,sep="\t")
     
     # plot affected in more than 8
+    set_counts_df$Geneset <- splitTextInLines(set_counts_df$Geneset)
     set_counts_df$Geneset <- factor(set_counts_df$Geneset, levels=set_counts_df$Geneset)
-    p <- ggplot(subset(set_counts_df,Counts>8)) + geom_bar(stat="identity",aes(x=Geneset,y=Counts))
-    p <- p + smartas_theme()
+    p <- ggplot(subset(set_counts_df,Counts>8)) + 
+      geom_bar(stat="identity",aes(x=Geneset,y=Counts)) + 
+      smartas_theme() + 
+      theme(axis.text.x=element_text(size=5,angle=90,hjust=1,vjust=0.5,colour="black"))
     ggsave(paste0("figures/",type,"_",gnset,"_moreThan8TumorTypes.png"),p, width = 6.5, height = 5)
+    
+    set_counts_df$simpleGeneset <- set_counts_df$Geneset
+    set_counts_df$simpleGeneset <- gsub("\n"," ",set_counts_df$simpleGeneset)
+    set_counts_df$simpleGeneset <- gsub("REACTOME ","",set_counts_df$simpleGeneset)
+    set_counts_df$simpleGeneset <- gsub("BIOCARTA ","",set_counts_df$simpleGeneset)
+    set_counts_df$simpleGeneset <- gsub("KEGG ","",set_counts_df$simpleGeneset)
+    set_counts_df$simpleGeneset <- gsub("PID ","",set_counts_df$simpleGeneset)
+    set_counts_df$simpleGeneset <- gsub("HALLMARK ","",set_counts_df$simpleGeneset)
+    
+    pal <- brewer.pal(9, "BuGn")
+    png(paste0("figures/wordcloud_",type,"_",gnset,".png"), width=3000,height=2500)
+    wordcloud(set_counts_df$simpleGeneset,set_counts_df$Counts,colors=pal,scale=c(4,.2))
+    dev.off()
+    
   }
 }
 
+rm(p,genesetType,gnset,type,file,sets_raw,set_counts,set_counts_df)
 setwd(workingDir)
 
 # kk <- read.delim(paste0("hallmark_info/","HALLMARK_ADIPOGENESIS_onlyDrivers.tsv"))
@@ -519,20 +693,30 @@ for (a in analyses){
         
         analysis$ms[analysis$ms==0] <- 0.000001
         analysis$s[analysis$s==0] <- 0.000001
-        analysis_agg <- ddply(analysis,.(Gene,Symbol,Hallmark), summarise, MS=sum(ms),M=sum(m),S=sum(s),N=sum(n),H=-sum(((ms+s)/TotalPatients)/sum((ms+s)/TotalPatients)*log2(((ms+s)/TotalPatients)/sum((ms+s)/TotalPatients)))/log2(length(ms)))
+        analysis_agg <- ddply(analysis,.(Gene,Symbol,nTx,tTx,Hallmark), summarise, MS=sum(ms),M=sum(m),S=sum(s),N=sum(n),H=-sum(((ms+s)/TotalPatients)/sum((ms+s)/TotalPatients)*log2(((ms+s)/TotalPatients)/sum((ms+s)/TotalPatients)))/log2(length(ms)))
         
         analysis_agg$MS <- round(analysis_agg$MS)
         analysis_agg$S <- round(analysis_agg$S)
-        #analysis_agg$H[is.na(analysis_agg$H)] <- 0
         
-        analysis_agg$p_me <- apply(analysis_agg,1, function(x){ 
-          f <- fisher.test(x=matrix(as.numeric(x[4:7]),nrow=2,ncol=2),alternative="less")
-          f$p.value } )
+        
+        me <- apply(analysis_agg,1, function(x){ 
+          f <- fisher.test(x=matrix(as.numeric(x[6:9]),nrow=2,ncol=2),alternative="less")
+          data.frame(p=f$p.value,OR=f$estimate) } )
+        
+        me <- do.call("rbind",me)
+        analysis_agg$p_me <- me$p
+        analysis_agg$OR_me <- me$OR
         analysis_agg$p.adj_me <- p.adjust(analysis_agg$p_me)
-        analysis_agg$p_o <- apply(analysis_agg,1, function(x){ 
-          f <- fisher.test(x=matrix(as.numeric(x[4:7]),nrow=2,ncol=2),alternative="greater")
-          f$p.value } )
+
+        o <- apply(analysis_agg,1, function(x){ 
+          f <- fisher.test(x=matrix(as.numeric(x[6:9]),nrow=2,ncol=2),alternative="greater")
+          data.frame(p=f$p.value,OR=f$estimate) } )
+        
+        o <- do.call("rbind",o)
+        analysis_agg$p_o <- o$p
+        analysis_agg$OR_o <- o$OR
         analysis_agg$p.adj_o <- p.adjust(analysis_agg$p_o)
+        
         analysis_agg <- analysis_agg[order(analysis_agg$p_me),]
         
         if (a %in% c("gene","pannegative")){
@@ -555,7 +739,7 @@ setwd('mutations')
 gn_all <- read.delim(paste("tables/gene","all_mutations","functional_switches",'allCancers.txt',sep="_"), header=TRUE)
 gn_fun <- read.delim(paste("tables/gene","functional_mutations","functional_switches",'allCancers.txt',sep="_"), header=TRUE)
 
-gn_merged <- merge(gn_fun,gn_all,by=c("Gene","Symbol"))
+gn_merged <- merge(gn_fun,gn_all,by=c("Gene","Symbol","nTx","tTx"))
 gn_merged$Score <- -log10(gn_merged$p_me.x)+log10(gn_merged$p_o.y)
 
 gn_merged$Sign[gn_merged$Score > 0] <- "Mutual exclusion"
@@ -569,16 +753,14 @@ gn_merged$Symbol <- factor(gn_merged$Symbol,levels=as.factor(unique(gn_merged$Sy
 gn_merged$Order=1:nrow(gn_merged)
 
 #gn_merged <- gn_merged[abs(gn_merged$Score)>0,]
-write.table(gn_merged[,c("Gene","Symbol","Score","Sign" )],'tables/scoredMEGenes.txt',quote=F,col.names=T,sep="\t",row.names=FALSE)
+write.table(gn_merged[,c("Gene","Symbol","nTx","tTx","Score","Sign" )],'tables/scoredMEGenes.txt',quote=F,col.names=T,sep="\t",row.names=FALSE)
 
-plotThreshold <- 2
-gn_merged_plot <- gn_merged[!abs(gn_merged$NewScore)>plotThreshold,]
-
-p <- ggplot(gn_merged_plot, aes(x=Order,y=NewScore,fill = Sign)) + geom_area(alpha=0.75)
-p <- p + smartas_theme() + labs(title="Genes ranked by score", x="Genes", y="signed sqrt(Score)")
-p <- p + geom_hline(yintercept=0, size=0.4, color="black") + scale_y_continuous(breaks=seq(-plotThreshold,plotThreshold,by=1))
-p <- p + scale_fill_manual(values=c("Mutual exclusion"="red","Nothing"="black","Coincidence"="darkblue"))
-p <- p + theme(axis.text.x=element_blank())
+p <- ggplot(gn_merged, aes(x=Order,y=NewScore,fill = Sign)) + 
+  geom_area(alpha=0.75) + smartas_theme() + 
+  labs(title="Genes ranked by score", x="Genes", y="signed sqrt(Score)") + 
+  geom_hline(yintercept=0, size=0.4, color="black") + 
+  scale_fill_manual(values=c("Mutual exclusion"="red","Nothing"="black","Coincidence"="darkblue")) + 
+  theme(axis.text.x=element_blank())
 ggsave("figures/meScores.png",p)
 
 setwd(workingDir)
@@ -589,7 +771,7 @@ setwd('mutations')
 gnset_all <- read.delim(paste("tables/geneset","all_mutations","functional_switches",'onlyDrivers','allCancers.txt',sep="_"), header=TRUE)
 gnset_fun <- read.delim(paste("tables/geneset","functional_mutations","functional_switches",'onlyDrivers','allCancers.txt',sep="_"), header=TRUE)
 
-gnset_merged <- merge(gnset_fun,gnset_all,by=c("Gene","Symbol","Hallmark"))
+gnset_merged <- merge(gnset_fun,gnset_all,by=c("Gene","Symbol","nTx","tTx","Hallmark"))
 gnset_merged$Score <- -log10(gnset_merged$p_me.x)+log10(gnset_merged$p_o.y)
 
 gnset_merged$Sign[gnset_merged$Score > 0] <- "Mutual exclusion"
@@ -604,14 +786,12 @@ gnset_merged$Order=1:nrow(gnset_merged)
 
 write.table(gnset_merged[,c("Gene","Symbol","Hallmark","Score","Sign" )],'tables/scoredMEGenesets.txt',quote=F,col.names=T,sep="\t",row.names=FALSE)
 
-plotThreshold <- 6
-gnset_merged_plot <- gnset_merged[!abs(gnset_merged$NewScore)>plotThreshold,]
-
-p <- ggplot(gnset_merged_plot, aes(x=Order,y=NewScore,fill = Sign)) + geom_area(alpha=0.75)
-p <- p + smartas_theme() + labs(title="Genes ranked by score", x="Genes", y="signed sqrt(Score)")
-p <- p + geom_hline(yintercept=0, size=0.4, color="black") + scale_y_continuous(breaks=seq(-plotThreshold,plotThreshold,by=1))
-p <- p + scale_fill_manual(values=c("Mutual exclusion"="red","Nothing"="black","Coincidence"="darkblue"))
-p <- p + theme(axis.text.x=element_blank())
+p <- ggplot(gnset_merged, aes(x=Order,y=NewScore,fill = Sign)) + 
+  geom_area(alpha=0.75) + smartas_theme() + 
+  labs(title="Genes ranked by score", x="Genes", y="signed sqrt(Score)") + 
+  geom_hline(yintercept=0, size=0.4, color="black") + 
+  scale_fill_manual(values=c("Mutual exclusion"="red","Nothing"="black","Coincidence"="darkblue")) + 
+  theme(axis.text.x=element_blank())
 ggsave("figures/meGenesetScores.png",p)
 
 setwd(workingDir)
@@ -624,7 +804,7 @@ pvals <- apply(mut_feat_overlap[,c("MutationsInFeature","TotalMutations","Featur
   if (x[2]==0){
     p <- 1
   } else {
-    p <- binom.test(x[1],x[2],x[3]/100,"greater")
+    p <- binom.test(x[1],x[2],x[3],"greater")
     p <- p$p.value
   }
   p
@@ -638,14 +818,18 @@ mut_feat_overlap <- mut_feat_overlap[order(mut_feat_overlap$p),]
 write.table(mut_feat_overlap,'tables/mutation_switch_feature_overlap_withPVals.txt',quote=F,col.names=T,sep="\t",row.names=FALSE)
 
 # create the allCancers table
-mut_feat_overlap_agg <- ddply(mut_feat_overlap,.(Gene,Symbol,Normal_transcript,Tumor_transcript,What,FeatureType,Feature,Driver,FeatureSize), summarise, inMut=sum(MutationsInFeature), totalMut=sum(TotalMutations) )
+mut_feat_overlap_agg <- ddply(mut_feat_overlap,
+                              .(Gene,Symbol,Normal_transcript,Tumor_transcript,What,
+                                FeatureType,Feature,Driver,FeatureSize), 
+                              summarise, inMut=sum(MutationsInFeature), 
+                              totalMut=sum(TotalMutations) )
 mut_feat_overlap_agg$Ratio = 100 * mut_feat_overlap_agg$inMut/mut_feat_overlap_agg$totalMut
 
 pvals <- apply(mut_feat_overlap_agg[,c("inMut","totalMut","FeatureSize")],1, function(x){ 
   if (x[2]==0){
     p <- 1
   } else {
-    p <- binom.test(x[1],x[2],x[3]/100,"greater")
+    p <- binom.test(x[1],x[2],x[3],"greater")
     p <- p$p.value
   }
   p
@@ -657,6 +841,18 @@ mut_feat_overlap_agg$adjp_mutation_feature_overlap <- adjpvalues
 mut_feat_overlap_agg <- mut_feat_overlap_agg[order(mut_feat_overlap_agg$p_mutation_feature_overlap),]
 
 write.table(mut_feat_overlap_agg,'tables/mutation_switch_feature_overlap_allCancers_withPVals.txt',quote=F,col.names=T,sep="\t",row.names=FALSE)
+
+p <- ggplot() + 
+  geom_point(data=mut_feat_overlap_agg,
+             aes(FeatureSize*100,Ratio)) + 
+  geom_point(data=subset(mut_feat_overlap_agg,p_mutation_feature_overlap<0.05),
+             aes(FeatureSize*100,Ratio),size=3,color="#7570b3") + 
+  geom_point(data=subset(mut_feat_overlap_agg,adjp_mutation_feature_overlap<0.05),
+             aes(FeatureSize*100,Ratio),size=4.5,color="#d95f02") + 
+  smartas_theme() + 
+  xlab("Feature size (as % of the total length)") + 
+  ylab("#mutations (as % of the total in the gene)")
+ggsave("figures/affectedFeatures_mutations_vs_switches.png",p)
 
 setwd(workingDir)
 
@@ -670,25 +866,28 @@ mut_feat_overlap_agg <- merge(mut_feat_overlap_agg,gn_fun,by=c("Gene","Symbol"))
 mut_feat_overlap_agg$PlotId <- paste(mut_feat_overlap_agg$Symbol,mut_feat_overlap_agg$Feature,sep="-")
 
 # drivers
-p <- ggplot(subset(mut_feat_overlap_agg, Driver=="True"),aes(-log10(p_me),-log10(p_mutation_feature_overlap))) + geom_point()
-p <- p + geom_point(data=subset(mut_feat_overlap_agg,Driver=="True" & p_mutation_feature_overlap < 0.5 & p_me < 0.5),aes(-log10(p_me),-log10(p_mutation_feature_overlap),color=PlotId))
-p <- p + smartas_theme()
+p <- ggplot(subset(mut_feat_overlap_agg, Driver=="True"),aes(-log10(p_me),-log10(p_mutation_feature_overlap))) + 
+  geom_point() + 
+  geom_point(data=subset(mut_feat_overlap_agg,Driver=="True" & p_mutation_feature_overlap < 0.5 & p_me < 0.5),aes(-log10(p_me),-log10(p_mutation_feature_overlap),color=PlotId)) + 
+  smartas_theme()
 p <- direct.label(p)
 ggsave("figures/ME_vs_Overlap_onlyDrivers.png",p)
 
 # all
-p <- ggplot(mut_feat_overlap_agg,aes(-log10(p_me),-log10(p_mutation_feature_overlap))) + geom_point()
-p <- p + geom_point(data=subset(mut_feat_overlap_agg, p_mutation_feature_overlap < 0.2 & p_me < 0.2),aes(-log10(p_me),-log10(p_mutation_feature_overlap),color=PlotId))
-p <- p + smartas_theme()
+p <- ggplot(mut_feat_overlap_agg,aes(-log10(p_me),-log10(p_mutation_feature_overlap))) + 
+  geom_point() + 
+  geom_point(data=subset(mut_feat_overlap_agg, p_mutation_feature_overlap < 0.2 & p_me < 0.2),aes(-log10(p_me),-log10(p_mutation_feature_overlap),color=PlotId)) + 
+  smartas_theme()
 p <- direct.label(p)
 ggsave("figures/ME_vs_Overlap.png",p)
 
 # filter by positive MEScore
 mut_feat_overlap_agg_filt <- mut_feat_overlap_agg[mut_feat_overlap_agg$Gene %in% gn_merged$Gene[gn_merged$Sign == "Mutual exclusion"],]
 
-p <- ggplot(mut_feat_overlap_agg_filt,aes(-log10(p_me),-log10(p_mutation_feature_overlap))) + geom_point()
-p <- p + geom_point(data=subset(mut_feat_overlap_agg_filt, p_mutation_feature_overlap < 0.2 & p_me < 0.2),aes(-log10(p_me),-log10(p_mutation_feature_overlap),color=PlotId))
-p <- p + smartas_theme()
+p <- ggplot(mut_feat_overlap_agg_filt,aes(-log10(p_me),-log10(p_mutation_feature_overlap))) + 
+  geom_point() + 
+  geom_point(data=subset(mut_feat_overlap_agg_filt, p_mutation_feature_overlap < 0.2 & p_me < 0.2),aes(-log10(p_me),-log10(p_mutation_feature_overlap),color=PlotId)) + 
+  smartas_theme()
 p <- direct.label(p)
 ggsave("figures/ME_vs_Overlap_onlyPositiveMescore.png",p)
 
@@ -705,24 +904,32 @@ setwd(workingDir)
 # 3.6 - feature overlap ====
 setwd('mutations')
 
-dom_enrich <- read.delim('domain_enrichment.txt', header=TRUE)
-dom_enrich <- dom_enrich[dom_enrich$DomainFrequency != 0,]
-dom_enrich$MutTotal <- dom_enrich$MutIn + dom_enrich$MutOut
-dom_enrich$SwitchesTotal <- dom_enrich$SwitchesIn + dom_enrich$SwitchesOut
-dom_enrich$MutFreq <- dom_enrich$MutIn/dom_enrich$MutTotal
-dom_enrich$SwitchFreq <- dom_enrich$SwitchesIn/dom_enrich$SwitchesTotal
+feat_enrich <- read.delim('feature_enrichment.txt', header=TRUE)
+feat_enrich <- feat_enrich[feat_enrich$DomainFrequency != 0,]
+feat_enrich$MutTotal <- feat_enrich$MutIn + feat_enrich$MutOut
+feat_enrich$SwitchesTotal <- feat_enrich$SwitchesIn + feat_enrich$SwitchesOut
+feat_enrich$MutFreq <- feat_enrich$MutIn/feat_enrich$MutTotal
+feat_enrich$SwitchFreq <- feat_enrich$SwitchesIn/feat_enrich$SwitchesTotal
 
 for (cancer in cancerTypes){
   
-  cancer.dom_enrich <- dom_enrich[dom_enrich$Cancer==cancer,]
+  cancer.feat_enrich <- feat_enrich[feat_enrich$Cancer==cancer,]
   
   # plot normalized mutation frequency and switched frequency
-  minMut <- quantile(cancer.dom_enrich$MutFreq/cancer.dom_enrich$DomainFrequency,0.95)
-  minSwitch <- quantile(cancer.dom_enrich$SwitchFreq/cancer.dom_enrich$DomainFrequency,0.95)
+  minMut <- quantile(cancer.feat_enrich$MutFreq/cancer.feat_enrich$DomainFrequency,0.95)
+  minSwitch <- quantile(cancer.feat_enrich$SwitchFreq/cancer.feat_enrich$DomainFrequency,0.95)
   
-  p <- ggplot(cancer.dom_enrich,aes(log2(MutFreq/DomainFrequency),log2(SwitchFreq/DomainFrequency))) + geom_point()
-  p <- p + geom_point(data=subset(cancer.dom_enrich, MutFreq/DomainFrequency > minMut & SwitchFreq/DomainFrequency > minSwitch),aes(log2(MutFreq/DomainFrequency),log2(SwitchFreq/DomainFrequency),color=Domain))
-  p <- p + smartas_theme()
+
+  # calculate regression coefficient
+  r.df <- cancer.feat_enrich[cancer.feat_enrich$MutFreq > 0 & cancer.feat_enrich$SwitchFreq > 0,]
+  r <- cor(log2(r.df$MutFreq/r.df$DomainFrequency),log2(r.df$SwitchFreq/r.df$DomainFrequency))
+  
+  p <- ggplot(cancer.feat_enrich,aes(log2(MutFreq/DomainFrequency),log2(SwitchFreq/DomainFrequency))) + 
+    geom_point() + 
+    geom_point(data=subset(cancer.feat_enrich, MutFreq/DomainFrequency > minMut & SwitchFreq/DomainFrequency > minSwitch),aes(log2(MutFreq/DomainFrequency),log2(SwitchFreq/DomainFrequency),color=Domain)) + 
+    smartas_theme() + 
+    geom_smooth(data=subset(cancer.feat_enrich,MutFreq>0 & SwitchFreq>0),method=lm) + 
+    geom_text(x=4,y=5,label=paste0("R = ",round(r,2)))
   p <- direct.label(p)
   
   ggsave(paste0("figures/",cancer,".domain_enrichment.png"),p)
@@ -730,96 +937,61 @@ for (cancer in cancerTypes){
 }
 
 # aggregate cancers
-dom_enrich_agg <- ddply(dom_enrich,.(Domain), summarise, 
+feat_enrich_agg <- ddply(feat_enrich,.(Domain), summarise, 
                         MutIn=sum(MutIn), MutTotal=sum(MutTotal),
                         SwitchesIn=sum(SwitchesIn), SwitchesTotal=sum(SwitchesTotal),
                         MeanDomainFrequency=mean(DomainFrequency))
-dom_enrich_agg$MutFreq <- dom_enrich_agg$MutIn/dom_enrich_agg$MutTotal
-dom_enrich_agg$SwitchFreq <- dom_enrich_agg$SwitchesIn/dom_enrich_agg$SwitchesTotal
+feat_enrich_agg$MutFreq <- feat_enrich_agg$MutIn/feat_enrich_agg$MutTotal
+feat_enrich_agg$SwitchFreq <- feat_enrich_agg$SwitchesIn/feat_enrich_agg$SwitchesTotal
 
-minMut <- quantile(dom_enrich_agg$MutFreq/dom_enrich_agg$MeanDomainFrequency,0.95)
-minSwitch <- quantile(dom_enrich_agg$SwitchFreq/dom_enrich_agg$MeanDomainFrequency,0.95)
+minMut <- quantile(feat_enrich_agg$MutFreq/feat_enrich_agg$MeanDomainFrequency,0.95)
+minSwitch <- quantile(feat_enrich_agg$SwitchFreq/feat_enrich_agg$MeanDomainFrequency,0.95)
 
-p <- ggplot(dom_enrich_agg,aes(log(MutFreq/MeanDomainFrequency),SwitchFreq/MeanDomainFrequency)) + geom_point()
-p <- p + geom_point(data=subset(dom_enrich_agg,MutFreq/MeanDomainFrequency > minMut & SwitchFreq/MeanDomainFrequency > minSwitch),aes(log(MutFreq/MeanDomainFrequency),SwitchFreq/MeanDomainFrequency,color=Domain))
-p <- p + smartas_theme()
+# calculate regression coefficient
+r.df <- feat_enrich_agg[feat_enrich_agg$MutFreq > 0 & feat_enrich_agg$SwitchFreq > 0,]
+r <- cor(log2(r.df$MutFreq/r.df$MeanDomainFrequency),log2(r.df$SwitchFreq/r.df$MeanDomainFrequency))
+
+p <- ggplot(data=feat_enrich_agg,
+            aes(log2(MutFreq/MeanDomainFrequency),log2(SwitchFreq/MeanDomainFrequency))) + 
+  geom_point() + 
+  geom_point(data=subset(feat_enrich_agg,
+                         MutFreq/MeanDomainFrequency > minMut & 
+                         SwitchFreq/MeanDomainFrequency > minSwitch),
+             aes(log2(MutFreq/MeanDomainFrequency),
+                 log2(SwitchFreq/MeanDomainFrequency),
+                 color=Domain)) + 
+  smartas_theme() + 
+  geom_smooth(data=subset(feat_enrich_agg,MutFreq>0 & SwitchFreq>0),method=lm) + 
+  geom_text(x=4,y=5,label=paste0("R = ",round(r,2)))
 p <- direct.label(p)
 
 ggsave("figures/domain_enrichment_allCancers.png",p)
 
 setwd(workingDir)
 
-# 3.7 - Search for something, anything at all really, that makes the meScore+ special :)  ====
+# 3.7 - Search for something that makes the meScore+ special :)  ====
 setwd('mutations')
 
-meTable <- merge(gn_merged,candidatesDf_agg)
-# remove the non changing genes
-meTable <- meTable[meTable$Sign!="Nothing",]
+x <- gn_merged[gn_merged$NewScore > 1,c("Gene","nTx","tTx")]
+colnames(x) <- c("GeneId","Normal_transcript","Tumor_transcript")
+y <- gn_merged[gn_merged$NewScore < -1,c("Gene","nTx","tTx")]
+colnames(y) <- c("GeneId","Normal_transcript","Tumor_transcript")
 
-# add driver type information
-driverTypesFile <- paste0(workingDir,"/Data/Databases/cancer_networks_SuppTables_v7_S7.csv")
-driverTypes <- read.delim(driverTypesFile,header=F)
-colnames(driverTypes) <- c("Symbol","DriverType")
+studyGroups(x,y,candidatesDf_agg)
 
-meTable <- merge(meTable,driverTypes,all.x=TRUE)
-meTable$DriverType <- as.character(meTable$DriverType)
-meTable$DriverType[is.na(meTable$DriverType)] <- "No"
+feat_enrich <- read.delim('feature_enrichment.txt', header=TRUE)
+feat_enrich <- feat_enrich[feat_enrich$DomainFrequency != 0,]
+feat_enrich$MutTotal <- feat_enrich$MutIn + feat_enrich$MutOut
+feat_enrich$SwitchesTotal <- feat_enrich$SwitchesIn + feat_enrich$SwitchesOut
+feat_enrich$MutFreq <- feat_enrich$MutIn/feat_enrich$MutTotal
+feat_enrich$SwitchFreq <- feat_enrich$SwitchesIn/feat_enrich$SwitchesTotal
 
-# relevance
-cTable <- table(meTable[,c("IsRelevant","Sign")])
-f <- fisher.test(cTable)
-print(cTable)
-cat(paste("Relevant enrichment by me score: p = ",f$p.value,"; odds ratio =",f$estimate,sep=" "))
+structural_features <- read.delim(paste0(workingDir,"/structural_analysis/structural_features.onlyModels.tsv"))
+structural_features <- structural_features[structural_features$Random=="NonRandom",]
+structural_features$Feature2 <- gsub(" ","_",structural_features$Feature)
 
-# CDS_change
-cTable <- table(meTable[,c("CDS_change","Sign")])
-f <- fisher.test(cTable)
-print(cTable)
-cat(paste("CDS_change enrichment by me score: p = ",f$p.value,"; odds ratio =",f$estimate,sep=" "))
-
-# UTR_change
-cTable <- table(meTable[,c("UTR_change","Sign")])
-f <- fisher.test(cTable)
-print(cTable)
-cat(paste("UTR_change enrichment by me score: p = ",f$p.value,"; odds ratio =",f$estimate,sep=" "))
-
-# number of patients
-t <- t.test(meTable$PatientNumber[meTable$Sign=="Mutual exclusion"],meTable$PatientNumber[meTable$Sign=="Coincidence"])
-cat(paste("More patients by me score",t$p.value,",means (ME anc O, respectively) of",paste(t$estimate,collapse=" vs. "),sep=" "))
-
-### enrichment using all switches
-# driver
-cTable <- table(meTable[,c("Driver","Sign")])
-f <- fisher.test(cTable)
-print(cTable)
-cat(paste("Driver enrichment by me score: p = ",f$p.value,"; odds ratio =",f$estimate,sep=" "))
-
-# enrichment in driver types
-cTable <- table(meTable[,c("DriverType","Sign")])
-
-for (i in 2:5){
-  thisCTable <- cTable[c(1,i),]
-  print(thisCTable)
-  f <- fisher.test(thisCTable)
-  cat(paste(rownames(cTable)[i],"enrichment by me score: p = ",f$p.value,"; odds ratio =",f$estimate,sep=" "))
-}
-
-### enrichment using functional switches
-# driver
-cTable <- table(meTable[as.logical(meTable$IsRelevant),c("Driver","Sign")])
-f <- fisher.test(cTable)
-print(cTable)
-cat(paste("Driver enrichment by me score: p = ",f$p.value,"; odds ratio =",f$estimate,sep=" "))
-
-# enrichment in driver types
-cTable <- table(meTable[as.logical(meTable$IsRelevant),c("DriverType","Sign")])
-
-for (i in 2:5){
-  thisCTable <- cTable[c(1,i),]
-  print(thisCTable)
-  f <- fisher.test(thisCTable)
-  cat(paste(rownames(cTable)[i],"enrichment by me score: p = ",f$p.value,"; odds ratio =",f$estimate,sep=" "))
-}
+kk <- merge(structural_features,feat_enrich,by.x=c("Cancer","Feature2"),by.y=c("Cancer","Domain"))
+zz <- merge(kk,gn_merged)
 
 setwd(workingDir)
 
@@ -884,18 +1056,6 @@ setwd(workingDir)
 # 4.2 - domain enrichment in drivers,oncogenes,suppressors ====
 setwd("structural_analysis")
 
-getAnnotationGroup <- function(x){ 
-  if (length(intersect(x,topGroups)) > 0){ 
-    for (y in topGroups){
-      if ( y %in% x){
-        return(y)
-      }
-    }
-  } else { 
-    return("Other")
-  }
-}
-
 structural_features <- read.delim("structural_features.onlyModels.tsv")
 nrStructural_features <- structural_features[structural_features$Random == "NonRandom",]
 
@@ -936,7 +1096,6 @@ for (featureType in c('Pfam','prosite')){
         
         affectedFeats[[feat]] <- data.frame(Feature=feat, WhatsHappenning=action,
                                             FG=FG,FNG=FNG,NFG=NFG,NFNG=NFNG)
-        
       }
       
       affectedFeatsDf <- do.call('rbind',affectedFeats)
@@ -947,115 +1106,50 @@ for (featureType in c('Pfam','prosite')){
       affectedFeatsDf$p.adj <- p.adjust(affectedFeatsDf$p)
       affectedFeatsDf <- affectedFeatsDf[order(affectedFeatsDf$p),]
       kk <- merge(affectedFeatsDf,annotation,all.x=T)
-      kk$
       
       write.table(affectedFeatsDf,file=paste("tables",paste(featureType,actionTag,paste0(geneset,".tsv"),sep="_"),sep="/"),sep="\t", row.names=F, quote=F)
       
       # plot the significant groups
       affectedFeatsDf_s <- affectedFeatsDf[affectedFeatsDf$p.adj < 0.05,]
-      affectedFeatsDf_s$id <- unlist(strsplit(as.character(affectedFeatsDf_s$Feature),"|",fixed=T))[c(T,F)]
       
-      annotatedFeats <- merge(affectedFeatsDf_s,annotation,all.x=T)
-      annotationCount <- sort(table(as.character(annotatedFeats$GO)),decreasing=T)
+      if (nrow(affectedFeatsDf_s)==0){
+        next
+      }
+      
+      affectedFeatsDf_s$id <- unlist(strsplit(as.character(affectedFeatsDf_s$Feature),"|",fixed=T))[c(T,F)]
+      affectedFeatsDf_s <- merge(affectedFeatsDf_s,annotation,all.x=T)
+      
+      annotationCount <- sort(table(as.character(affectedFeatsDf_s$GO)),decreasing=T)
       topGroups <- names(head(annotationCount[annotationCount > 1],4))
       
-      plotAnnotatedFeats <- annotatedFeats[annotatedFeats$GO %in% topGroups,]
-      plotAnnotatedFeats$Annotation <- plotAnnotatedFeats$GO
-      plotAnnotatedFeats$Annotation[is.na(plotAnnotatedFeats$Annotation)] <- "Other"
-      #plotAnnotatedFeats <- ddply(annotatedFeats,.(Feature,p.adj),summarise,Annotation=getAnnotationGroup(GO) )
-      plotAnnotatedFeats <- plotAnnotatedFeats[plotAnnotatedFeats$p.adj < 0.05,]
+      plotAnnotatedFeats <- ddply(affectedFeatsDf_s,.(id,Feature,p.adj),function(y){ 
+        x <- intersect(y$GO,topGroups)
+        if (length(x) > 0){names(sort(-annotationCount[x])[1])} else {"Other"}})
+      plotAnnotatedFeats$Annotation <- plotAnnotatedFeats$V1
       plotAnnotatedFeats$log_p <- -log10(plotAnnotatedFeats$p.adj)
       
       plotAnnotatedFeats <- plotAnnotatedFeats[order(-plotAnnotatedFeats$log_p,plotAnnotatedFeats$Feature),]
       plotAnnotatedFeats$Feature <- gsub("_"," ",unlist(strsplit(as.character(plotAnnotatedFeats$Feature),"|",fixed=T))[c(F,T)])
       
-      splittedFeatures <- strsplit(as.character(plotAnnotatedFeats$Feature)," ")
-      formattedFeatures <- character()
-      for (i in splittedFeatures){
-        feat <- i[1]
-        for (j in 2:length(i)){
-          if (j%%5 == 0){
-            feat <- paste(feat,i[j],sep="\n")
-          } else {
-            feat <- paste(feat,i[j],sep=" ")  
-          }
-        }
-        formattedFeatures <- c(formattedFeatures,feat)
-      }
-      plotAnnotatedFeats$Feature <- formattedFeatures
-      
+      plotAnnotatedFeats$Feature <- splitTextInLines(plotAnnotatedFeats$Feature)
       plotAnnotatedFeats$Feature <- factor(plotAnnotatedFeats$Feature,levels=as.factor(plotAnnotatedFeats$Feature))
       plotAnnotatedFeats$Annotation <- factor(plotAnnotatedFeats$Annotation,levels=as.factor(c(topGroups,"Other")))
       
       annotationPalette <- c("#d7191c","#fdae61","#ffffbf","#abdda4","#2b83ba")
       names(annotationPalette) <- c(topGroups,"Other")
       
-      p <- ggplot(plotAnnotatedFeats,aes(x=Feature,y=log_p,fill=Annotation))
-      p <- p + geom_bar(stat="identity",position="dodge")
-      p <- p + smartas_theme() + scale_fill_manual(values=annotationPalette)
-      p <- p + xlab(paste0(featureType," features")) + ylab("-log10(adjusted p)")
-      p <- p + facet_wrap(~Annotation,drop=TRUE,scale="free_x")
-      p <- p + theme(text = element_text(size=20),axis.text.x=element_text(angle=90,hjust=1,vjust=0.5,colour="black"))
+      p <- ggplot(plotAnnotatedFeats,aes(x=Feature,y=log_p,fill=Annotation)) + 
+        geom_bar(stat="identity",position="dodge") + 
+        smartas_theme() + 
+        scale_fill_manual(values=annotationPalette) + 
+        xlab(paste0(featureType," features")) + ylab("-log10(adjusted p)") + 
+        facet_wrap(~Annotation,drop=TRUE,scale="free_x") + 
+        theme(axis.text.x=element_text(size=7,angle=90,hjust=1,vjust=0.5,colour="black"))
       ggsave(paste0("figures/",paste(featureType,actionTag,paste0(geneset,".png"),sep="_")),p)
     }
   }
 }
   
-    
-
-#     driverTest <- list()
-#     oncogeneTest <- list()
-#     suppressorTest <- list()
-#     for (feat in uniqStuff){
-#       
-#       usedFeature <- nrStructural_features[nrStructural_features$WhatsHappenning==action & nrStructural_features$Feature==feat,]
-#       nonUsedFeature <- nrStructural_features[nrStructural_features$WhatsHappenning==action | nrStructural_features$Feature!=feat,]
-#       
-#       driverTest[[feat]] <- data.frame(Feature=feat, WhatsHappenning=action,
-#                                        FDriver=sum(usedFeature$Driver==1),
-#                                        FNonDriver=sum(usedFeature$Driver==0),
-#                                        NFDriver=sum(nonUsedFeature$Driver==1),
-#                                        NFNonDriver=sum(nonUsedFeature$Driver==0)
-#       )
-#       oncogeneTest[[feat]] <- data.frame(Feature=feat, WhatsHappenning=action,
-#                                          FOncogene=sum(usedFeature$DriverType=='oncogene'),
-#                                          FNonOncogene=sum(usedFeature$DriverType!='oncogene'),
-#                                          NFOncogene=sum(nonUsedFeature$DriverType=='oncogene'),
-#                                          NFNonOncogene=sum(nonUsedFeature$DriverType!='oncogene')  )
-#       
-#       suppressorTest[[feat]] <- data.frame(Feature=feat, WhatsHappenning=action,
-#                                            FSuppressor=sum(usedFeature$DriverType=='suppressor'),
-#                                            FNonSuppressor=sum(usedFeature$DriverType!='suppressor'),
-#                                            NFSuppressor=sum(nonUsedFeature$DriverType=='suppressor'),
-#                                            NFNonSuppressor=sum(nonUsedFeature$DriverType!='suppressor')  )
-#       
-#     }
-#     
-#     driverTestDf <- do.call('rbind',driverTest)
-#     oncogeneTestDf <- do.call('rbind',oncogeneTest)
-#     suppressorTestDf <- do.call('rbind',suppressorTest)
-#     
-#     driverTestDf$p <- apply(driverTestDf,1, function(x){ 
-#       k <- fisher.test(x=matrix(as.numeric(x[3:6]),nrow=2,ncol=2),alternative="greater")
-#       k$p.value } )
-#     driverTestDf$p.adj <- p.adjust(driverTestDf$p)
-#     driverTestDf <- driverTestDf[order(driverTestDf$p),]
-#     write.table(driverTestDf,file=paste("tables",paste(featureType,actionTag,"driverEnriched.tsv",sep="_"),sep="/"),sep="\t", row.names=F, quote=F)
-#     
-#     oncogeneTestDf$p <- apply(oncogeneTestDf,1, function(x){ 
-#       k <- fisher.test(x=matrix(as.numeric(x[3:6]),nrow=2,ncol=2),alternative="greater")
-#       k$p.value } )
-#     oncogeneTestDf$p.adj <- p.adjust(oncogeneTestDf$p)
-#     oncogeneTestDf <- oncogeneTestDf[order(oncogeneTestDf$p),]
-#     write.table(oncogeneTestDf,file=paste("tables",paste(featureType,actionTag,"oncogeneEnriched.tsv",sep="_"),sep="/"),sep="\t", row.names=F, quote=F)
-#     
-#     suppressorTestDf$p <- apply(suppressorTestDf,1, function(x){ 
-#       k <- fisher.test(x=matrix(as.numeric(x[3:6]),nrow=2,ncol=2),alternative="greater")
-#       k$p.value } )
-#     suppressorTestDf$p.adj <- p.adjust(suppressorTestDf$p)
-#     suppressorTestDf <- driverTestDf[order(suppressorTestDf$p),]
-#     write.table(suppressorTestDf,file=paste("tables",paste(featureType,actionTag,"suppressorEnriched.tsv",sep="_"),sep="/"),sep="\t", row.names=F, quote=F)
-
 setwd(workingDir)
 
 # 4.3 - Study the enrichment in a particular set of features being gained or lost ====
@@ -1068,7 +1162,7 @@ for (cancer in cancerTypes){
     features <- read.delim(paste0(cancer,".",tag,"_analysis.tsv"),header=T)
     random_data <- read.delim(paste0(cancer,".",tag,"_analysis_random.tsv"),header=T)
     
-    if ( tag %in% c("anchor","iupred","prosite") ){
+    if ( tag %in% c("anchor","iupred") ){
       features <- features[as.logical(features$Significant),]
       random_data <- random_data[as.logical(random_data$Significant),]
     }    
@@ -1087,6 +1181,14 @@ for (cancer in cancerTypes){
 
 write.table(analysisEnrichment,file="tables/analysis_enrichment.tsv",sep="\t", row.names=F, quote=F)
 
+p <- ggplot(analysisEnrichment,aes(oddsratio,-log10(p),shape=What)) + 
+  geom_point(color="gray",size=4) + 
+  geom_point(data=subset(analysisEnrichment,p<0.05),aes(oddsratio,-log10(p),shape=What,color=Analysis),size=4) + 
+  smartas_theme() + xlab("Odds ratio") + 
+  scale_x_continuous(limits=c(0,2)) + 
+  theme(legend.position="bottom")
+ggsave("figures/featuresGainedAndLostVsRandom.png",p)
+
 setwd(workingDir)
 
 # 4.4 - Analyze Eduard Porta's interaction results ====
@@ -1100,7 +1202,7 @@ for (cancer in cancerTypes){
   intxCols <- paste0("Interaction",1:(no_col-6))
   colnames(interactions) <- c("GeneId","Symbol","Normal_transcript","Tumor_transcript","nIso","tIso",intxCols)
   
-  thisCancerCands <- candidatesDf[candidatesDf$Origin==cancer,]
+  thisCancerCands <- candidatesDf[candidatesDf$Tumor==cancer,]
   thisI3d <- i3d[i3d$Cancer==cancer,]
   
   interactions <- merge(interactions,thisCancerCands)
