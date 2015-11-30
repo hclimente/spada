@@ -82,9 +82,9 @@ def outCandidateList(gn_network,tx_network):
 	logging.info("Writing candidateList.")
 	with open(options.Options().qout + "candidateList_smartas.tsv", "w") as cList:
 		cList.write("GeneId\tSymbol\tNormal_transcript\tTumor_transcript\t")
-		cList.write("Normal_protein\tTumor_protein\tAnnotation\tDriverAnnotation\tNotNoise\t")
-		cList.write("IsModel\tIsRelevant\tDriver\tDruggable\tCDS\t")
-		cList.write("CDS_change\tUTR_change\tPatients_affected\n")
+		cList.write("Normal_protein\tTumor_protein\tAnnotation\tDriverAnnotation\t")
+		cList.write("NotNoise\tIsModel\tIsRelevant\tDriver\tDruggable\t")
+		cList.write("CDS\tCDS_change\tUTR_change\tPatients_affected\n")
 
 		hallmarksDict = utils.readGeneset("h.all.v5.0.entrez.gmt")
 		bpDict = utils.readGeneset("c5.bp.v4.0.entrez.gmt")

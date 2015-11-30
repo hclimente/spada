@@ -157,3 +157,21 @@ class Transcript:
 
 			self._ptms.setdefault(prositeId,[])
 			self._ptms[prositeId].append((int(line[-3].replace(" -","")),int(line[-2])))
+
+
+	def readIupred(self):
+
+		featFile = "{0}Data/{1}/ProSite/{2}.out".format(options.Options().wd,options.Options().inputType,self.name)
+
+		if not os.path.exists(featFile) or os.stat(featFile).st_size == 0:
+			return
+		elif self._ptms:
+			# already read
+			return
+
+		for line in utils.readTable(featFile,header=False):
+
+			prositeId = line[-1].replace(" ","_")
+
+			self._ptms.setdefault(prositeId,[])
+			self._ptms[prositeId].append((int(line[-3].replace(" -","")),int(line[-2])))
