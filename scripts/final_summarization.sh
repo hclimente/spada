@@ -15,7 +15,7 @@ function getVersion {
         last=0
         version=1
     else
-        last=`ls /projects_rg/TCGA/users/hector/SmartAS/$analysis_type | sed 's/v//' | sort | uniq | tail -n1`
+        last=`ls /projects_rg/TCGA/users/hector/SmartAS/$analysis_type | sed 's/v//' | sort -n | uniq | tail -n1`
         version=$(($last + 1))
     fi
 
@@ -80,7 +80,7 @@ getVersion switches
 # candidateList
 for knsur in $cancerTypes
 do
-    cp ~/testResults/TCGA/$knsur/candidateList_v6.tsv ~/temp/$knsur.candidateList.tsv
+    cp ~/testResults/TCGA/$knsur/candidateList_smartas.tsv ~/temp/$knsur.candidateList.tsv
     checkFile switches $knsur.candidateList.tsv
 done
 
@@ -93,7 +93,8 @@ do
     checkFile switches $a.tsv
 done
 
-analyses='Driver_D0_enrichment Driver_D0_patients Driver_D0_patients_relevant Driver_D1_enrichment Driver_D1_patients Driver_D1_patients_relevant Driver_relevance_enrichment Driver_d1_relevance_enrichment'
+#analyses='Driver_D0_enrichment Driver_D0_patients Driver_D0_patients_relevant Driver_D1_enrichment Driver_D1_patients Driver_D1_patients_relevant Driver_relevance_enrichment Driver_d1_relevance_enrichment'
+analyses="d0_enrichment d0_relevant_enrichment d1_enrichment d1_relevant_enrichment"
 for a in $analyses
 do
     grep $a ~/testResults/TCGA/????/result_summary/switches_onlyModels.tsv | cut -d':' -f2 >~/temp/$a.tsv
@@ -131,7 +132,7 @@ if [[ "$copyFlag" != "" ]]
         copyFile switches $a.tsv
     done
 
-    analyses='Driver_D0_enrichment Driver_D0_patients Driver_D0_patients_relevant Driver_D1_enrichment Driver_D1_patients Driver_D1_patients_relevant Driver_relevance_enrichment Driver_d1_relevance_enrichment'
+    analyses="d0_enrichment d0_relevant_enrichment d1_enrichment d1_relevant_enrichment"
     for a in $analyses
     do
         copyFile switches $a.tsv
@@ -270,21 +271,28 @@ do
     done
 done
 
-echo -e "Gene\tSymbol\tCancer\tNormal_transcript\tTumor_transcript\tWhat\tFeatureType\tFeature\tRatio\tDriver\tMutationsInFeature\tTotalMutations\tFeatureSize\n" >~/temp/mutation_switch_feature_overlap.txt
-cat ~/testResults/TCGA/????/mutations/mutation_switch_feature_overlap.txt >>~/temp/mutation_switch_feature_overlap.txt
+# mutation feature overlap
+echo -e "Gene\tSymbol\tCancer\tNormal_transcript\tTumor_transcript\tWhat\tFeatureType\tFeature\tDomainNumber\tRatio\tDriver\tMutationsInFeature\tTotalMutations\tFeatureSize" >~/temp/mutation_switch_feature_overlap.txt
+grep -v ^Gene testResults/TCGA/????/mutations/mutation_switch_feature_overlap.txt | cut -d':' -f2- >>~/temp/mutation_switch_feature_overlap.txt
 checkFile mutations mutation_switch_feature_overlap.txt
 
-# domain_enrichment
-echo -e "Cancer\tDomain\tMutRatio\tSwitchRatio\tMutIn\tMutOut\tSwitchesIn\tSwitchesOut\tDomainFrequency" >~/temp/domain_enrichment.txt
-for knsur in $cancerTypes
-do
-    grep -v ^Cancer ~/testResults/TCGA/$knsur/domain_enrichment.txt >>~/temp/domain_enrichment.txt
-done
+# mutations_enrichment
+echo -e "Cancer\tGene\tSymbol\tTranscript\tAnalysis\tFeature\tn\tTPM\tFrame_Shift_Del\tFrame_Shift_Ins\tIn_Frame_Del\tIn_Frame_Ins\tMissense_Mutation\tNonsense_Mutation\tNonstop_Mutation\tFrame_Shift_Del_out\tFrame_Shift_Ins_out\tNonsense_Mutation_out" >~/temp/mutations_enrichment.txt
+grep -v ^Cancer testResults/TCGA/????/mutations/mutations_enrichment.txt | cut -d':' -f2- >>~/temp/mutations_enrichment.txt
+checkFile mutations mutations_enrichment.txt
 
-checkFile mutations domain_enrichment.txt
+# features_information
+echo -e "Cancer\tGene\tSymbol\tTranscript\tTPM\tAnalysis\tFeature\tn\tFeatureLength\tStart\tEnd\tProteinLength" >~/temp/features_information.txt
+grep -v ^Cancer testResults/TCGA/????/mutations/features_information.txt | cut -d':' -f2- >>~/temp/features_information.txt
+checkFile mutations features_information.txt
 
+# old feature enrichment
+echo -e "Cancer\tDomain\tMutRatio\tSwitchRatio\tMutIn\tAllMuts\tSwitchesIn\tAllSwitches\tDomainCount\tAllDomains\tDomainSize\tTotalProteomeSize" >~/temp/feature_enrichment.txt
+grep -v ^Cancer testResults/TCGA/????/mutations/feature_enrichment.txt | cut -d':' -f2- >>~/temp/feature_enrichment.txt
+checkFile mutations feature_enrichment.txt
 
 if [[ "$copyFlag" != "" ]]
+
     then
     for a in $analyses
     do
@@ -300,10 +308,15 @@ if [[ "$copyFlag" != "" ]]
         done
     done
     copyFile mutations mutation_switch_feature_overlap.txt
-    copyFile mutations domain_enrichment.txt
+    copyFile mutations mutations_enrichment.txt
+    copyFile mutations features_information.txt
+    copyFile mutations feature_enrichment.txt
+
+    dest=/projects_rg/TCGA/users/hector/SmartAS/mutations/v$version
+    ln -s /projects_rg/TCGA/users/hector/SmartAS/comet/ $dest
 
 fi
 
 rm -r ~/temp
 
-#Pipeline/scripts/PLOT_analyzeResults.R
+Pipeline/scripts/PLOT_analyzeResults.R
