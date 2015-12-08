@@ -29,15 +29,16 @@ class MutationComparison(method.Method):
 		self.patients = mutationPatients & switchPatients
 
 		hallmarks = utils.readGeneset("h.all.v5.0.entrez.gmt")
-		pathways = utils.readGeneset("c2.cp.v4.0.entrez.gmt")
+		# pathways = utils.readGeneset("c2.cp.v4.0.entrez.gmt")
 
 		self.hallmarks = hallmarks.copy()
-		self.hallmarks.update(pathways)
+		# self.hallmarks.update(pathways)
 
 	def clean(self):
-		utils.cmd("rm","-r","{0}mutations".format(options.Options().qout))
-		utils.cmd("mkdir","{0}mutations".format(options.Options().qout))
-		utils.cmd("mkdir","{0}mutations/hallmark_info".format(options.Options().qout))
+		# utils.cmd("rm","-r","{0}mutations".format(options.Options().qout))
+		# utils.cmd("mkdir","{0}mutations".format(options.Options().qout))
+		# utils.cmd("mkdir","{0}mutations/hallmark_info".format(options.Options().qout))
+		pass
 
 	def run(self):
 
