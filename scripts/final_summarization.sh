@@ -148,7 +148,7 @@ fi
 
 ########### STRUCTURAL ANALYSIS ###########
 
-analyses='anchor_analysis iupred_analysis interpro_analysis prosite_analysis'
+analyses='anchor_analysis iupred_analysis interpro_analysis prosite_analysis structural_summary'
 getVersion structural_analysis 
 
 for knsur in $cancerTypes
@@ -169,6 +169,14 @@ checkFile structural_analysis i3d_broken.tsv
 echo -e "Cancer\tGene\tSymbol\tnTx\ttTx\tRandom\tAnalysis\tWhatsHappenning\tFeature\tDriver\tASDriver\tDriverType" >~/temp/structural_features.onlyModels.tsv
 grep -v ^Cancer ~/testResults/TCGA/????/result_summary/structural_features_onlyModels.tsv | cut -d':' -f2- >>~/temp/structural_features.onlyModels.tsv
 checkFile structural_analysis structural_features.onlyModels.tsv
+
+echo -e "Gene\tSymbol\tNormalTranscript\tTumorTranscript\tWhat\tFeature\tnormalReps\ttumorReps\tnMacroScore\tnMicroScore\tnJaccard\ttMacroScore\ttMicroScore\ttJaccard" >~/temp/interpro_analysis.tsv
+grep -v ^Gene ~/testResults/TCGA/????/structural_analysis/interpro_analysis.tsv | cut -d':' -f2- | sort | uniq >>~/temp/interpro_analysis.tsv
+checkFile structural_analysis interpro_analysis.tsv
+
+echo -e "Gene\tSymbol\tNormalTranscript\tTumorTranscript\tWhat\tFeature\tnormalReps\ttumorReps\tnMacroScore\tnMicroScore\tnJaccard\ttMacroScore\ttMicroScore\ttJaccard" >~/temp/prosite_analysis.tsv
+grep -v ^Gene ~/testResults/TCGA/????/structural_analysis/prosite_analysis.tsv | cut -d':' -f2- | sort | uniq >>~/temp/prosite_analysis.tsv
+checkFile structural_analysis prosite_analysis.tsv
 
 if [[ "$copyFlag" != "" ]]
     then
@@ -192,6 +200,8 @@ if [[ "$copyFlag" != "" ]]
     done
     copyFile structural_analysis i3d_broken.tsv
     copyFile structural_analysis structural_features.onlyModels.tsv
+    copyFile structural_analysis interpro_analysis.tsv
+    copyFile structural_analysis prosite_analysis.tsv
 fi
 
 ########### NEIGHBORHOOD ANALYSIS ###########
@@ -240,77 +250,83 @@ if [[ "$copyFlag" != "" ]]
 fi
 
 ########### MUTATIONS ###########
-analyses='canonical_pathways hallmarks go_biological_process oncogenic_signatures'
 subsetTypes='all functional'
 
 getVersion mutations
 
-for a in $analyses
+for s in $subsetTypes
 do
-    for s in $subsetTypes
+    for t in $subsetTypes
     do
-        for t in $subsetTypes
-        do
-            echo -e "Cancer\tGene\tSymbol\tnTx\ttTx\tms\tm\ts\tn\tp_me\tpadj_me\tp_o\tpadj_o\tJaccard" >~/temp/gene_"$s"_mutations_"$t"_switches.txt
-            cat ~/testResults/TCGA/????/mutations/gene_"$s"_mutations_"$t"_switches.txt >>~/temp/gene_"$s"_mutations_"$t"_switches.txt
-            checkFile mutations gene_"$s"_mutations_"$t"_switches.txt
+        echo -e "Cancer\tGene\tSymbol\tnTx\ttTx\tms\tm\ts\tn\tp_me\tpadj_me\tp_o\tpadj_o\tJaccard" >~/temp/gene_"$s"_mutations_"$t"_switches.txt
+        cat ~/testResults/TCGA/????/mutations/gene_"$s"_mutations_"$t"_switches.txt >>~/temp/gene_"$s"_mutations_"$t"_switches.txt
+        checkFile mutations gene_"$s"_mutations_"$t"_switches.txt
 
-            echo -e "Cancer\tGene\tSymbol\tnTx\ttTx\tHallmark\tms\tm\ts\tn\tp\tpadj\tGeneset_genes" >~/temp/geneset_"$s"_mutations_"$t"_switches.txt
-            cat ~/testResults/TCGA/????/mutations/geneset_"$s"_mutations_"$t"_switches.txt >>~/temp/geneset_"$s"_mutations_"$t"_switches.txt
-            checkFile mutations geneset_"$s"_mutations_"$t"_switches.txt
+        echo -e "Cancer\tGene\tSymbol\tnTx\ttTx\tHallmark\tms\tm\ts\tn\tp\tpadj\tGeneset_genes" >~/temp/geneset_"$s"_mutations_"$t"_switches.txt
+        cat ~/testResults/TCGA/????/mutations/geneset_"$s"_mutations_"$t"_switches.txt >>~/temp/geneset_"$s"_mutations_"$t"_switches.txt
+        checkFile mutations geneset_"$s"_mutations_"$t"_switches.txt
 
-            echo -e "Cancer\tGene\tSymbol\tnTx\ttTx\tHallmark\tms\tm\ts\tn\tp\tpadj\tGeneset_genes" >~/temp/geneset_"$s"_mutations_"$t"_switches_onlyDrivers.txt
-            cat ~/testResults/TCGA/????/mutations/geneset_"$s"_mutations_"$t"_switches_onlyDrivers.txt >>~/temp/geneset_"$s"_mutations_"$t"_switches_onlyDrivers.txt
-            checkFile mutations geneset_"$s"_mutations_"$t"_switches_onlyDrivers.txt
+        echo -e "Cancer\tGene\tSymbol\tnTx\ttTx\tHallmark\tms\tm\ts\tn\tp\tpadj\tGeneset_genes" >~/temp/geneset_"$s"_mutations_"$t"_switches_onlyDrivers.txt
+        cat ~/testResults/TCGA/????/mutations/geneset_"$s"_mutations_"$t"_switches_onlyDrivers.txt >>~/temp/geneset_"$s"_mutations_"$t"_switches_onlyDrivers.txt
+        checkFile mutations geneset_"$s"_mutations_"$t"_switches_onlyDrivers.txt
 
-            echo -e "Gene\tSymbol\tCancer\tp\tpadj\tms\tm\ts\tn" >~/temp/pannegative_"$s"_mutations_"$t"_switches.txt
-            cat ~/testResults/TCGA/????/mutations/pannegative_"$s"_mutations_"$t"_switches.txt >>~/temp/pannegative_"$s"_mutations_"$t"_switches.txt
-            checkFile mutations pannegative_"$s"_mutations_"$t"_switches.txt
+        echo -e "Cancer\tGene\tSymbol\tnTx\ttTx\tms\tm\ts\tn\tp\tpadj" >~/temp/pannegative_"$s"_mutations_"$t"_switches.txt
+        cat ~/testResults/TCGA/????/mutations/pannegative_"$s"_mutations_"$t"_switches.txt >>~/temp/pannegative_"$s"_mutations_"$t"_switches.txt
+        checkFile mutations pannegative_"$s"_mutations_"$t"_switches.txt
 
-        done
     done
 done
 
-# mutation feature overlap
-echo -e "Gene\tSymbol\tCancer\tNormal_transcript\tTumor_transcript\tWhat\tFeatureType\tFeature\tDomainNumber\tRatio\tDriver\tMutationsInFeature\tTotalMutations\tFeatureSize" >~/temp/mutation_switch_feature_overlap.txt
-grep -v ^Gene testResults/TCGA/????/mutations/mutation_switch_feature_overlap.txt | cut -d':' -f2- >>~/temp/mutation_switch_feature_overlap.txt
-checkFile mutations mutation_switch_feature_overlap.txt
+# proteome features
+echo -e "Cancer\tGene\tSymbol\tTranscript\tAnalysis\tFeature\tn\tFeatureLength\tStart\tEnd" >~/temp/proteome_features.txt
+grep -v ^Cancer testResults/TCGA/????/mutations/proteome_features.txt | cut -d':' -f2- >>~/temp/proteome_features.txt
+checkFile mutations proteome_features.txt
 
-# mutations_enrichment
-echo -e "Cancer\tGene\tSymbol\tTranscript\tAnalysis\tFeature\tn\tTPM\tFrame_Shift_Del\tFrame_Shift_Ins\tIn_Frame_Del\tIn_Frame_Ins\tMissense_Mutation\tNonsense_Mutation\tNonstop_Mutation\tFrame_Shift_Del_out\tFrame_Shift_Ins_out\tNonsense_Mutation_out" >~/temp/mutations_enrichment.txt
-grep -v ^Cancer testResults/TCGA/????/mutations/mutations_enrichment.txt | cut -d':' -f2- >>~/temp/mutations_enrichment.txt
-checkFile mutations mutations_enrichment.txt
+# proteome mutations
+echo -e "Cancer\tGene\tSymbol\tTranscript\tAnalysis\tFeature\tn\tType\tPatient" >~/temp/proteome_mutations.txt
+grep -v ^Cancer testResults/TCGA/????/mutations/proteome_mutations.txt | cut -d':' -f2- >>~/temp/proteome_mutations.txt
+checkFile mutations proteome_mutations.txt
 
-# features_information
-echo -e "Cancer\tGene\tSymbol\tTranscript\tTPM\tAnalysis\tFeature\tn\tFeatureLength\tStart\tEnd\tProteinLength" >~/temp/features_information.txt
-grep -v ^Cancer testResults/TCGA/????/mutations/features_information.txt | cut -d':' -f2- >>~/temp/features_information.txt
-checkFile mutations features_information.txt
+# proteome information
+echo -e "Cancer\tGene\tSymbol\tTranscript\tTPM\tProteinLength" >~/temp/proteome_information.txt
+grep -v ^Cancer testResults/TCGA/????/mutations/proteome_information.txt | cut -d':' -f2- >>~/temp/proteome_information.txt
+checkFile mutations proteome_information.txt
 
-# old feature enrichment
-echo -e "Cancer\tDomain\tMutRatio\tSwitchRatio\tMutIn\tAllMuts\tSwitchesIn\tAllSwitches\tDomainCount\tAllDomains\tDomainSize\tTotalProteomeSize" >~/temp/feature_enrichment.txt
-grep -v ^Cancer testResults/TCGA/????/mutations/feature_enrichment.txt | cut -d':' -f2- >>~/temp/feature_enrichment.txt
-checkFile mutations feature_enrichment.txt
+# switches features
+echo -e "Cancer\tGene\tSymbol\tTranscript\tAnalysis\tFeature\tn\tFeatureLength\tStart\tEnd" >~/temp/switch_features.txt
+grep -v ^Cancer testResults/TCGA/????/mutations/switch_features.txt | cut -d':' -f2- >>~/temp/switch_features.txt
+checkFile mutations switch_features.txt
+
+# switches mutations
+echo -e "Cancer\tGene\tSymbol\tTranscript\tAnalysis\tFeature\tn\tType\tPatient" >~/temp/switch_mutations.txt
+grep -v ^Cancer testResults/TCGA/????/mutations/switch_mutations.txt | cut -d':' -f2- >>~/temp/switch_mutations.txt
+checkFile mutations switch_mutations.txt
+
+# switches information
+echo -e "Cancer\tGene\tSymbol\tTranscript\tTPM\tProteinLength" >~/temp/switch_information.txt
+grep -v ^Cancer testResults/TCGA/????/mutations/switch_information.txt | cut -d':' -f2- >>~/temp/switch_information.txt
+checkFile mutations switch_information.txt
 
 if [[ "$copyFlag" != "" ]]
 
     then
-    for a in $analyses
+    for s in $subsetTypes
     do
-        for s in $subsetTypes
+        for t in $subsetTypes
         do
-            for t in $subsetTypes
-            do
-                copyFile mutations gene_"$s"_mutations_"$t"_switches.txt
-                copyFile mutations geneset_"$s"_mutations_"$t"_switches.txt
-                copyFile mutations geneset_"$s"_mutations_"$t"_switches_onlyDrivers.txt
-                copyFile mutations pannegative_"$s"_mutations_"$t"_switches.txt
-            done
+            copyFile mutations gene_"$s"_mutations_"$t"_switches.txt
+            copyFile mutations geneset_"$s"_mutations_"$t"_switches.txt
+            copyFile mutations geneset_"$s"_mutations_"$t"_switches_onlyDrivers.txt
+            copyFile mutations pannegative_"$s"_mutations_"$t"_switches.txt
         done
     done
-    copyFile mutations mutation_switch_feature_overlap.txt
-    copyFile mutations mutations_enrichment.txt
-    copyFile mutations features_information.txt
-    copyFile mutations feature_enrichment.txt
+    
+    copyFile mutations proteome_features.txt
+    copyFile mutations proteome_mutations.txt
+    copyFile mutations proteome_information.txt
+    copyFile mutations switch_features.txt
+    copyFile mutations switch_mutations.txt
+    copyFile mutations switch_information.txt
 
     dest=/projects_rg/TCGA/users/hector/SmartAS/mutations/v$version
     ln -s /projects_rg/TCGA/users/hector/SmartAS/comet/ $dest
@@ -319,4 +335,4 @@ fi
 
 rm -r ~/temp
 
-Pipeline/scripts/PLOT_analyzeResults.R
+#Pipeline/scripts/PLOT_analyzeResults.R

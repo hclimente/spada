@@ -39,9 +39,8 @@ setwd("switches")
 
 # calculate aggregated table (sum patients, etc.) and calculate unbalance as the minimun p of enrichment in a fisher test
 candidatesDf_agg <- ddply(candidatesDf,.(GeneId,Symbol,Normal_transcript,Tumor_transcript,
-                                         Normal_protein,Tumor_protein,Annotation,DriverAnnotation,
-                                         IsRelevant,Driver,DriverType,Druggable,CDS,CDS_change,
-                                         UTR_change),
+                                         Normal_protein,Tumor_protein,Annotation,DriverAnnotation,IsRelevant,
+                                         Driver,DriverType,Druggable,CDS,CDS_change,UTR_change),
                           summarise, CancerAffected=paste(Tumor,collapse = ","),
                           Patients=paste(Patients_affected,collapse = ","), 
                           PatientNumber=sum(NumPatients), 
@@ -77,28 +76,32 @@ setwd(workingDir)
 # 1.3 - calculate most frequent genes altered ====
 setwd("switches")
 
+df <- candidatesDf
+df$Symbol <- as.character(df$Symbol)
+df$Symbol[ df$DriverAnnotation=="Driver" ] <- paste0("*",df$Symbol[ df$DriverAnnotation=="Driver" ],"*")
+
 #most frequent genes
-for (thing in c("numberPatients","percentagePatients")){
+for (thing in c("# patients","% patients")){
   for (effect in c("allGenes","functionalGenes")){
     for (annotation in c("allGenes","Driver","d1")){
       ngenes <- 50
       
       if (annotation=="allGenes"){
-        genesSelection <- matrix(T,nrow(candidatesDf),1)
+        genesSelection <- matrix(T,nrow(df),1)
       } else {
-        genesSelection <- candidatesDf$DriverAnnotation==annotation
+        genesSelection <- df$DriverAnnotation==annotation
       }
       
       if (effect=="functionalGenes") { 
-        functionalSelection <- as.logical(candidatesDf$IsRelevant)
+        functionalSelection <- as.logical(df$IsRelevant)
       } else {
-        functionalSelection <- matrix(T,nrow(candidatesDf),1)
+        functionalSelection <- matrix(T,nrow(df),1)
       }
 
-      if (thing=="numberPatients"){
-        accCandidateList <- ddply(candidatesDf[genesSelection & functionalSelection,],.(GeneId,Symbol), summarise, cumsum=sum(NumPatients))
-      } else if (thing=="percentagePatients"){
-        accCandidateList <- ddply(candidatesDf[genesSelection & functionalSelection,],.(GeneId,Symbol), summarise, cumsum=sum(Percentage))
+      if (thing=="# patients"){
+        accCandidateList <- ddply(df[genesSelection & functionalSelection,],.(GeneId,Symbol), summarise, cumsum=sum(NumPatients))
+      } else if (thing=="% patients"){
+        accCandidateList <- ddply(df[genesSelection & functionalSelection,],.(GeneId,Symbol), summarise, cumsum=sum(Percentage))
       }
       
       accCandidateList <- accCandidateList[order(-accCandidateList$cumsum),]
@@ -110,9 +113,9 @@ for (thing in c("numberPatients","percentagePatients")){
         candsMatrix[[symbol]][["symbol"]] <- as.character(symbol)
         for (cancer in cancerTypes){
           if (gene %in% candidateList[[cancer]]$GeneId){
-            if (thing=="numberPatients"){
+            if (thing=="# patients"){
               candsMatrix[[symbol]][[cancer]] <- as.numeric(candidateList[[cancer]]$NumPatients[candidateList[[cancer]]$GeneId==gene])
-            } else if (thing=="percentagePatients"){
+            } else if (thing=="% patients"){
               candsMatrix[[symbol]][[cancer]] <- as.numeric(candidateList[[cancer]]$Percentage[candidateList[[cancer]]$GeneId==gene])
             }
           } else{
@@ -128,51 +131,53 @@ for (thing in c("numberPatients","percentagePatients")){
       rownames(candsMatrix3) <- rownames(candsMatrix2)
       colnames(candsMatrix3) <- cancerTypes
       candsMatrix3 <- candsMatrix3[order(-rowSums(candsMatrix3)),]
-      if (thing=="percentagePatients"){
+      if (thing=="% patients"){
         candsMatrix3 <- candsMatrix3*100/11
       }
       candsMatrix3$Gene <- rownames(candsMatrix3)
       
       candsMatrix3.m <- melt(candsMatrix3)
       colnames(candsMatrix3.m) <- c("Gene","Cancer","patients")
-      selectVector <- candsMatrix3.m$Gene %in% candidatesDf$Symbol[as.logical(candidatesDf$Driver)]
-      candsMatrix3.m$Gene[selectVector] <- paste0("*",candsMatrix3.m$Gene[selectVector])
+      
       candsMatrix3.m$Gene <- factor(candsMatrix3.m$Gene,levels=as.factor(unique(candsMatrix3.m$Gene)))
       
       p <- ggplot(candsMatrix3.m) + 
         geom_bar(stat="identity",aes(x=Gene,y=patients,fill=Cancer)) + 
         scale_fill_manual(values=colorPalette) + 
-        ylab(thing) + 
+        labs(x="Genes",y=thing) + 
         theme(text = element_text(size=20),axis.text.x=element_text(angle=90,hjust=1,vjust=0.5,colour="black"))
-      
-      ggsave(paste0("figures/",paste("genes",thing,annotation,effect,paste0("top",ngenes,"genes"),"allCancers.png",sep="_")),p,width = 12)
-      
+
+      if (thing=="# patients"){
+        ggsave(paste0("figures/",paste("genes","numPatients",annotation,effect,paste0("top",ngenes,"genes"),"allCancers.png",sep="_")),p,width = 12)
+      } else if (thing=="% patients"){
+        ggsave(paste0("figures/",paste("genes","percPatients",annotation,effect,paste0("top",ngenes,"genes"),"allCancers.png",sep="_")),p,width = 12)
+      }
     }
   }
 }
 
 #most frequent switches
-for (thing in c("numberPatients","percentagePatients")){
+for (thing in c("# patients","% patients")){
   for (effect in c("allGenes","functionalGenes")){
     for (annotation in c("allGenes","Driver","d1")){
       ngenes <- 50
       
       if (annotation=="allGenes"){
-        genesSelection <- matrix(T,nrow(candidatesDf),1)
+        genesSelection <- matrix(T,nrow(df),1)
       } else {
-        genesSelection <- candidatesDf$DriverAnnotation==annotation
+        genesSelection <- df$DriverAnnotation==annotation
       }
       
       if (effect=="functionalGenes") { 
-        functionalSelection <- as.logical(candidatesDf$IsRelevant)
+        functionalSelection <- as.logical(df$IsRelevant)
       } else {
-        functionalSelection <- matrix(T,nrow(candidatesDf),1)
+        functionalSelection <- matrix(T,nrow(df),1)
       }
       
-      if (thing=="numberPatients"){
-        accCandidateList <- ddply(candidatesDf[genesSelection & functionalSelection,],.(GeneId,Symbol,Normal_transcript,Tumor_transcript), summarise, cumsum=sum(NumPatients))
-      } else if (thing=="percentagePatients"){
-        accCandidateList <- ddply(candidatesDf[genesSelection & functionalSelection,],.(GeneId,Symbol,Normal_transcript,Tumor_transcript), summarise, cumsum=sum(Percentage))
+      if (thing=="# patients"){
+        accCandidateList <- ddply(df[genesSelection & functionalSelection,],.(GeneId,Symbol,Normal_transcript,Tumor_transcript), summarise, cumsum=sum(NumPatients))
+      } else if (thing=="% patients"){
+        accCandidateList <- ddply(df[genesSelection & functionalSelection,],.(GeneId,Symbol,Normal_transcript,Tumor_transcript), summarise, cumsum=sum(Percentage))
       }
       
       accCandidateList <- accCandidateList[order(-accCandidateList$cumsum),]
@@ -187,9 +192,9 @@ for (thing in c("numberPatients","percentagePatients")){
         tTx <- sp[3]
         for (cancer in cancerTypes){
           if (nTx %in% candidateList[[cancer]]$Normal_transcript & tTx %in% candidateList[[cancer]]$Tumor_transcript){
-            if (thing=="numberPatients"){
+            if (thing=="# patients"){
               candsMatrix[[s]][[cancer]] <- as.numeric(candidateList[[cancer]]$NumPatients[candidateList[[cancer]]$Normal_transcript==nTx & candidateList[[cancer]]$Tumor_transcript==tTx])
-            } else if (thing=="percentagePatients"){
+            } else if (thing=="% patients"){
               candsMatrix[[s]][[cancer]] <- as.numeric(candidateList[[cancer]]$Percentage[candidateList[[cancer]]$Normal_transcript==nTx & candidateList[[cancer]]$Tumor_transcript==tTx])
             }
           } else{
@@ -205,7 +210,7 @@ for (thing in c("numberPatients","percentagePatients")){
       rownames(candsMatrix3) <- rownames(candsMatrix2)
       colnames(candsMatrix3) <- cancerTypes
       candsMatrix3 <- candsMatrix3[order(-rowSums(candsMatrix3)),]
-      if (thing=="percentagePatients"){
+      if (thing=="% patients"){
         candsMatrix3 <- candsMatrix3*100/11
       }
       candsMatrix3$Gene <- rownames(candsMatrix3)
@@ -217,10 +222,13 @@ for (thing in c("numberPatients","percentagePatients")){
       p <- ggplot(candsMatrix3.m) + 
         geom_bar(stat="identity",aes(x=Gene,y=patients,fill=Cancer)) + 
         scale_fill_manual(values=colorPalette) + 
-        ylab(thing) + 
+        labs(x="Switches",y=thing) + 
         theme(text = element_text(size=20),axis.text.x=element_text(angle=90,hjust=1,vjust=0.5,colour="black"))
-      
-      ggsave(paste0("figures/",paste("switches",thing,annotation,effect,paste0("top",ngenes,"switches"),"allCancers.png",sep="_")),p,width = 12)
+      if (thing=="# patients"){
+        ggsave(paste0("figures/",paste("switches","numPatients",annotation,effect,paste0("top",ngenes,"switches"),"allCancers.png",sep="_")),p,width = 12)
+      } else if (thing=="% patients"){
+        ggsave(paste0("figures/",paste("switches","percPatients",annotation,effect,paste0("top",ngenes,"switches"),"allCancers.png",sep="_")),p,width = 12)
+      }
       
     }
   }
@@ -698,14 +706,12 @@ for (a in analyses){
         analysis_agg$MS <- round(analysis_agg$MS)
         analysis_agg$S <- round(analysis_agg$S)
         
-        
         me <- apply(analysis_agg,1, function(x){ 
           f <- fisher.test(x=matrix(as.numeric(x[6:9]),nrow=2,ncol=2),alternative="less")
           data.frame(p=f$p.value,OR=f$estimate) } )
         
         me <- do.call("rbind",me)
         analysis_agg$p_me <- me$p
-        analysis_agg$OR_me <- me$OR
         analysis_agg$p.adj_me <- p.adjust(analysis_agg$p_me)
 
         o <- apply(analysis_agg,1, function(x){ 
@@ -714,8 +720,9 @@ for (a in analyses){
         
         o <- do.call("rbind",o)
         analysis_agg$p_o <- o$p
-        analysis_agg$OR_o <- o$OR
         analysis_agg$p.adj_o <- p.adjust(analysis_agg$p_o)
+        
+        analysis_agg$OR <- o$OR
         
         analysis_agg <- analysis_agg[order(analysis_agg$p_me),]
         
