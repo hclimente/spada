@@ -460,7 +460,7 @@ class GeneNetwork(network.Network):
 
 		if options.Options().parallelRange:
 			bottom = options.Options().parallelRange - 1
-			top = bottom + 20
+			top = bottom + options.Options().step
 			sortedNodes = sortedNodes[bottom:top]
 
 		for gene,info in sortedNodes:
