@@ -160,11 +160,11 @@ class IsoformSwitch:
 		"""Creates the isoform objects for the transcripts involved
 		in the switch if they have an UniProt identifier. If both do,
 		it calculates the shared and specific regions."""
-		if nInfo["Uniprot"]:
+		if nInfo["proteinSequence"]:
 			self._normal_protein = protein.Protein( self._normal_transcript_name, nInfo)
 			if not partialCreation:
 				self._normal_protein.checkInteractome3DStructures()
-		if tInfo["Uniprot"]:
+		if tInfo["proteinSequence"]:
 			self._tumor_protein  = protein.Protein( self._tumor_transcript_name, tInfo)
 			if not partialCreation:
 				self._tumor_protein.checkInteractome3DStructures()
