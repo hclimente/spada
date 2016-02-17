@@ -15,6 +15,7 @@ from methods import neighborhood_analysis
 from methods import network_analysis
 from methods import structural_analysis
 from methods import result_summary
+from methods import wgs_mutations
 
 from methods import testMethod
 
@@ -106,6 +107,11 @@ class SmartAS:
 		m.clean()
 		m.run()
 
+	def studyWGSMutations(self):
+		w = wgs_mutations.WGSMutations(True,True)
+		w.clean()
+		w.run()
+
 	def testing(self):
 
 		test = testMethod.Test(True,True)
@@ -163,6 +169,8 @@ if __name__ == '__main__':
 		S.compareSwitchesAndMutations()
 	elif options.Options().initialStep == "mutation-feature-overlap":
 		S.searchMutationFeatureOverlap()
+	elif options.Options().initialStep == "wgs-mutations":
+		S.studyWGSMutations()
 
 	# summarize results
 	elif options.Options().initialStep == "summary":
