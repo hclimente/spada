@@ -14,10 +14,10 @@ class GetSwitches(method.Method):
 	def run(self):
 
 		if not options.Options().externalSwitchesFile:
-			candidatesFile = self.calculateSwitches()
+			switchesFile = self.calculateSwitches()
 			externalSwitches = False
 		else:
-			candidatesFile = options.Options().externalSwitchesFile
+			switchesFile = options.Options().externalSwitchesFile
 			externalSwitches = True
 
 			# copy random structural_analysis, as it is computationally expensive
@@ -30,86 +30,25 @@ class GetSwitches(method.Method):
 					  "{0}testResults/{1}/{2}/randomGeneNetwork.pkl".format(options.Options().wd,options.Options().inputType,options.Options().parentTag),
 					  options.Options().qout)
 
-		self.createGeneNetwork(candidatesFile,externalSwitches=externalSwitches)
+		self.createGeneNetwork(switchesFile,externalSwitches=externalSwitches)
 		self.createTranscriptNetwork(externalSwitches=externalSwitches)
 
 		out_network.outputGTF(self._gene_network,self._transcript_network)
 		out_network.outCandidateList(self._gene_network,self._transcript_network)
-		export_to_MSAnalysis.Export2MSAnalysis().generateFile(self._gene_network,self._transcript_network)
 
 		options.Options().printToFile(initialStep="get-relevant-switches")
 
 	def calculateSwitches(self):
 
-		import drmaa
+		switchesFile = "{}candidateList.tsv".format(options.Options().qout)
 
-		s = drmaa.Session()
-		s.initialize()
+		self.logger.info("Calculating switches.")
+		utils.cmd('/soft/R/R-3.0.0/bin/Rscript', 'pipeline/methods/calculate_switches.r', 
+			switchesFile,options.Options().tag)
 
-		natSpec = ""
-		natSpec += "-q normal -l 'qname=normal|long' "
-		natSpec += "-cwd "
-		natSpec += "-V "
+		return switchesFile
 
-		self.logger.info("Reading and summarizing input files: computing PSI values and intereplicate agreement.")
-		jt = s.createJobTemplate()
-		jt.remoteCommand = '/soft/R/R-3.0.0/bin/Rscript'
-		jt.args = ['Pipeline/methods/explore_data.r', options.Options().qout,
-				   "Data/Input/{0}/{1}/".format(options.Options().inputType,options.Options().tag)]
-		jt.joinFiles=True
-		jt.nativeSpecification = natSpec
-		jt.nativeSpecification += "-N explore "
-		jt.nativeSpecification += "-e {0}/esmartas_explore_{1}.txt ".format(options.Options().qout,options.Options().tag)
-		jt.nativeSpecification += "-o {0}/osmartas_explore_{1}.txt".format(options.Options().qout,options.Options().tag)
-		jobid = s.runJob(jt)
-
-		retval = s.wait(jobid, drmaa.Session.TIMEOUT_WAIT_FOREVER)
-
-		s.deleteJobTemplate(jt)
-
-		self.logger.info("Extracting transcripts with high variance and high expression.")
-		allPatients = options.Options().replicates.union(options.Options().unpairedReplicates)
-		patientCandidates = []
-
-		for patient in allPatients:
-			jt = s.createJobTemplate()
-			jt.remoteCommand = '/soft/R/R-3.0.0/bin/Rscript'
-			jt.args = ['Pipeline/methods/get_candidates_for_patient.r',
-					   options.Options().qout,patient]
-			jt.joinFiles=True
-			jt.nativeSpecification = natSpec
-			jt.nativeSpecification += "-N p{0} ".format(patient)
-			jt.nativeSpecification += "-e {0}/esmartas_{1}.txt ".format(options.Options().qout,patient)
-			jt.nativeSpecification += "-o {0}/osmartas_{1}.txt".format(options.Options().qout,patient)
-
-			jobid = s.runJob(jt)
-			patientCandidates.append(jobid)
-			s.deleteJobTemplate(jt)
-
-		for jobid in patientCandidates:
-			retval = s.wait(jobid, drmaa.Session.TIMEOUT_WAIT_FOREVER)
-
-		self.logger.info("Filtering switches with clustering measures.")
-		
-		jt = s.createJobTemplate()
-		jt.remoteCommand = '/soft/R/R-3.0.0/bin/Rscript'
-		jt.args = ["Pipeline/methods/switch_validation.r",
-				   options.Options().qout]
-		jt.joinFiles=True
-		jt.nativeSpecification = natSpec
-		jt.nativeSpecification += "-N val{0} ".format(options.Options().tag)
-		jt.nativeSpecification += "-e {0}/esmartas_validate_{1}.txt ".format(options.Options().qout,options.Options().tag)
-		jt.nativeSpecification += "-o {0}/osmartas_validate_{1}.txt".format(options.Options().qout,options.Options().tag)
-		jobid = s.runJob(jt)
-
-		retval = s.wait(jobid, drmaa.Session.TIMEOUT_WAIT_FOREVER)
-
-		s.deleteJobTemplate(jt)
-		s.exit()
-
-		return "{0}candidateList_v2.tsv".format(options.Options().qout)
-
-	def createGeneNetwork(self,candidatesFile,externalSwitches):
+	def createGeneNetwork(self,switchesFile,externalSwitches):
 
 		self.logger.info("Creating gene network.")
 
@@ -126,17 +65,16 @@ class GetSwitches(method.Method):
 		
 			self.logger.debug("Reading gene info.")
 			self._gene_network.readGeneInfo()
-			self._gene_network.importDiffExpression()
 			if options.Options().specificDrivers:
 				self._gene_network.importSpecificDrivers()
 			
 			self._gene_network.importKnownInteractions()
 
 		if not externalSwitches:
-			self._gene_network.importCandidates(candidatesFile)
+			self._gene_network.importCandidates(switchesFile)
 			self._gene_network.calculateCompatibilityTable()
 		else:
-			self._gene_network.importExternalCandidates(candidatesFile)
+			self._gene_network.importExternalCandidates(switchesFile)
 
 		self._gene_network.saveNetwork("geneNetwork.pkl")
 
