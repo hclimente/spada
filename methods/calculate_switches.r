@@ -20,16 +20,12 @@ getEmpiricalDistribution <- function(x,minV){
     diffMatrix <- abs(outer(v,v,"-"))
     subtraction <- diffMatrix[lower.tri(diffMatrix, diag = FALSE)]
     
-    if (all(subtraction==0)){
+    if (all(subtraction[!is.na(subtraction)]==0)){
       return(function(x){
-        if(x==0){
-          return(0)
-        } else if (x>0) {
-          return(1)
-        } else {
-          return(NA)
-        }
-      })
+        p <- rep(NA,length(x))
+        p[x==0] <- 0
+        p[x>0] <- 1
+        return(p)})
     } else {
       return(ecdf(subtraction))
     }
@@ -61,14 +57,10 @@ pats.t <- grep("^.{4}T$",colnames(psi), value=TRUE)
 pats.t.nt <- gsub("N$","T",pats.n)
 pats.t.t <- setdiff(pats.t,pats.t.nt)
 
-## change psi colnames
-colnames(psi) <- paste0(colnames(psi),".psi")
-
 ## read gene xpr
 xpr.gene.nt <- read.table("/projects_rg/TCGA/pipeline/run11/luad_gene_tpm_paired-filtered.txt", check.names=FALSE)
 xpr.gene.t <- read.table("/projects_rg/TCGA/pipeline/run11/luad_gene_tpm_tumor-filtered.txt", check.names=FALSE)
 xpr.gene <- cbind(xpr.gene.nt,xpr.gene.t)
-colnames(xpr.gene) <- paste0(colnames(xpr.gene),".xpr")
 
 rm(xpr.gene.nt,xpr.gene.t)
 
@@ -76,11 +68,11 @@ rm(xpr.gene.nt,xpr.gene.t)
 ## Gene expression
 xpr.gene.diff <- data.frame(matrix(nrow=nrow(xpr.gene),ncol=length(pats.t)))
 colnames(xpr.gene.diff) <- pats.t
-xpr.gene.diff[,pats.t.nt] <- abs(xpr.gene[,paste0(pats.t.nt,".xpr")] - xpr.gene[,paste0(pats.n,".xpr")])
-xpr.gene.diff[,pats.t.t] <- abs(xpr.gene[,paste0(pats.t.t,".xpr")] - apply(xpr.gene[,paste0(pats.n,".xpr")],1,median))
+xpr.gene.diff[,pats.t.nt] <- abs(xpr.gene[,pats.t.nt] - xpr.gene[,pats.n])
+xpr.gene.diff[,pats.t.t] <- abs(xpr.gene[,pats.t.t] - apply(xpr.gene[,pats.n],1,median))
 
 ### get p
-xpr.gene.ecdf <- apply(xpr.gene[,paste0(pats.n,".xpr")],1,getEmpiricalDistribution,0.1)
+xpr.gene.ecdf <- apply(xpr.gene[,pats.n],1,getEmpiricalDistribution,0.1)
 xpr.gene.diff.p <- mapply(do.call, xpr.gene.ecdf, apply(xpr.gene.diff,1,list))
 xpr.gene.diff.p <- lapply(xpr.gene.diff.p, function(x) 1 - x)
 xpr.gene.diff.padj <- lapply(xpr.gene.diff.p,p.adjust)
@@ -88,7 +80,7 @@ xpr.gene.diff.padj <- do.call("rbind",xpr.gene.diff.padj)
 
 ### prepare df
 xpr.gene.diff.padj <- as.data.frame(xpr.gene.diff.padj)
-colnames(xpr.gene.diff.padj) <- paste0(pats.t,".xpr.diff")
+colnames(xpr.gene.diff.padj) <- pats.t
 xpr.gene.diff.padj$Gene <- rownames(xpr.gene.diff.padj)
 
 rm(xpr.gene.diff,xpr.gene.ecdf,xpr.gene.diff.p)
@@ -97,11 +89,11 @@ rm(xpr.gene.diff,xpr.gene.ecdf,xpr.gene.diff.p)
 ### calculate differences
 psi.diff <- data.frame(matrix(nrow=nrow(psi),ncol=length(pats.t)))
 colnames(psi.diff) <- pats.t
-psi.diff[,pats.t.nt] <- abs(psi[,paste0(pats.t.nt,".psi")] - psi[,paste0(pats.n,".psi")])
-psi.diff[,pats.t.t] <- abs(psi[,paste0(pats.t.t,".psi")] - apply(psi[,paste0(pats.n,".psi")],1,median))
+psi.diff[,pats.t.nt] <- abs(psi[,pats.t.nt] - psi[,pats.n])
+psi.diff[,pats.t.t] <- abs(psi[,pats.t.t] - apply(psi[,pats.n],1,median))
 
 ### get p
-psi.ecdf <- apply(psi[,paste0(pats.n,".psi")],1,getEmpiricalDistribution,0)
+psi.ecdf <- apply(psi[,pats.n],1,getEmpiricalDistribution,0)
 psi.diff.p <- mapply(do.call, psi.ecdf, apply(psi.diff,1,list))
 psi.diff.p <- lapply(psi.diff.p, function(x) 1 - x)
 psi.diff.padj <- lapply(psi.diff.p,p.adjust)
@@ -109,7 +101,7 @@ psi.diff.padj <- do.call("rbind",psi.diff.padj)
 
 ### prepare df
 psi.diff.padj <- as.data.frame(psi.diff.padj)
-colnames(psi.diff.padj) <- paste0(pats.t,".psi.diff")
+colnames(psi.diff.padj) <- pats.t
 psi.diff.padj$Gene <- genes
 psi.diff.padj$Transcript <- transcripts
 
@@ -117,28 +109,29 @@ rm(psi.diff,psi.ecdf,psi.diff.p)
 
 ## Sign
 psi.sign <- data.frame(matrix(nrow=nrow(psi),ncol=length(pats.t)))
-colnames(psi.sign) <- paste0(pats.t,".sign")
-psi.sign[,paste0(pats.t.nt,".sign")][psi[,paste0(pats.t.nt,".psi")] > psi[,paste0(pats.n,".psi")]] <- "Tumor"
-psi.sign[,paste0(pats.t.t,".sign")][psi[,paste0(pats.t.t,".psi")] > apply(psi[,paste0(pats.n,".psi")],1,median)] <- "Tumor"
-psi.sign[,paste0(pats.t.nt,".sign")][psi[,paste0(pats.t.nt,".psi")] < psi[,paste0(pats.n,".psi")]] <- "Normal"
-psi.sign[,paste0(pats.t.t,".sign")][psi[,paste0(pats.t.t,".psi")] < apply(psi[,paste0(pats.n,".psi")],1,median)] <- "Normal"
+colnames(psi.sign) <- pats.t
+psi.sign[,pats.t.nt][psi[,pats.t.nt] > psi[,pats.n]] <- "Tumor"
+psi.sign[,pats.t.t][psi[,pats.t.t] > apply(psi[,pats.n],1,median)] <- "Tumor"
+psi.sign[,pats.t.nt][psi[,pats.t.nt] < psi[,pats.n]] <- "Normal"
+psi.sign[,pats.t.t][psi[,pats.t.t] < apply(psi[,pats.n],1,median)] <- "Normal"
 
 ## Order
 ### Normal
-psi.order.n <- data.frame(medianPsi=apply(psi[,paste0(pats.n,".psi")],1,median))
+psi.order.n <- data.frame(medianPsi=apply(psi[,pats.n],1,median))
 psi.order.n$Gene <- unlist(strsplit(rownames(psi),","))[c(T,F)]
 psi.order.n <- ddply(psi.order.n,.(Gene), summarise, orderNormal=order(-medianPsi))
 rownames(psi.order.n) <- rownames(psi)
 
 ### Tumor
-x <- by(psi[,paste0(pats.t,".psi")], psi$Gene, function(y){
+x <- by(psi[,pats.t], psi$Gene, function(y){
   apply(y[,colnames(y)!="Gene"],2,function(z){
     v <- rep(F,length(z))
     v[which.max(z)] <- T
     v
-    })})
+  })
+})
 psi.order.t <- do.call("rbind",x)
-colnames(psi.order.t) <- paste0(pats.t,".orderTumor")
+colnames(psi.order.t) <- pats.t
 
 # Define switches
 ## Conditions
@@ -146,17 +139,17 @@ colnames(psi.order.t) <- paste0(pats.t,".orderTumor")
 topTumor <- psi.sign=="Tumor" & psi.order.t
 topNormal <- psi.sign=="Normal" & psi.order.n$orderNormal==1
 ### significant deltaPSI
-bigChange <- psi.diff.padj[,paste0(pats.t,".psi.diff")] < 0.05
+bigChange <- psi.diff.padj[,pats.t] < 0.05
 ### non-significant change in gene expression
 #### CHECK ORDER DOESNT CHANGE
-x <- merge(psi.diff.padj,xpr.gene.diff.padj,by="Gene")
+x <- merge(psi.diff.padj,xpr.gene.diff.padj,by="Gene",suffix=c(".psi.diff",".xpr.diff"))
 noExpressionChange <- x[,paste0(pats.t,".xpr.diff")] > 0.05
 ### transcripts are expressed
 xpr.gene$Gene <- rownames(xpr.gene)
-x <- merge(psi.diff.padj,xpr.gene,by="Gene")
+x <- merge(psi.diff.padj,xpr.gene,by="Gene",suffix=c(".psi.diff",".xpr"))
 expressedTumor <- x[,paste0(pats.t,".xpr")] > 0.1
-y <- apply(x[,paste0(pats.n,".xpr")],1,median)
-expressedNormal <- cbind(x[,paste0(pats.n,".xpr")], replicate(length(pats.t.t),y)) > 0.1
+y <- apply(x[,pats.n],1,median)
+expressedNormal <- cbind(x[,pats.n], replicate(length(pats.t.t),y)) > 0.1
 
 ## Filter transcripts
 elegibleTxs <- psi.sign
@@ -179,11 +172,13 @@ switches <- by(elegibleTxs,elegibleTxs$Gene, function(x){
   })
   
   z <- data.frame(do.call("rbind",z))
-  z$Patient <- gsub(".sign","",rownames(z))
+  z$Patient <- rownames(z)
   validCases <- rowSums(is.na(z[,c("Normal","Tumor")])) < 2
   z <- z[validCases,]
   if (nrow(z)){
     z$Gene <- unique(x$Gene)
+    z$Normal <- as.character(z$Normal)
+    z$Tumor <- as.character(z$Tumor)
     z 
   } else
     NA
@@ -191,9 +186,7 @@ switches <- by(elegibleTxs,elegibleTxs$Gene, function(x){
 
 switches.formatted <- list()
 for (g in names(switches)){
-  if (is.na(switches[[g]]))
-    next
-  else{
+  if (class(switches[[g]])=="data.frame"){
     switches[[g]]$Gene=g
     switches.formatted[[g]] <- switches[[g]]
   }
