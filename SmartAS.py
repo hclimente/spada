@@ -4,8 +4,6 @@ from interface import standarize_input
 from interface import out_network
 from libs import options
 from libs import utils
-from methods import analyze_interactions
-from methods import calculate_interactions
 from methods import get_i3d_broken_interactions
 from methods import get_random_switches
 from methods import get_switches
@@ -30,12 +28,6 @@ class SmartAS:
 		self.logger.info("SmartAS - Finding significant AS events")
 		self.logger.info("Hector Climente - GRIB 2014-2015")
 
-	def importData(self):
-
-		self.logger.info("Importing data to a compatible format.")
-		standarize_input.standarizeInput()
-		self.logger.info("Done. Relaunch please.")
-
 	def getSwitches(self):
 
 		g = get_switches.GetSwitches(None,None,None)
@@ -48,17 +40,6 @@ class SmartAS:
 		
 		geneSubnetwork = n.getGeneSubnetwork(1)
 		geneSubnetwork.saveNetwork("geneSubnetwork.pkl")
-
-	def launchiLoops(self):
-
-		self.logger.info("Selecting isoforms suitable for {0}.".format( options.Options().iLoopsVersion) )
-		c = calculate_interactions.CalculateInteractions(True,True)
-		c.run()
-
-	def analyzeInteractions(self):
-
-		a = analyze_interactions.AnalyzeInteractions(True,True)
-		a.run()
 
 	def structuralAnalysis(self):
 
@@ -139,9 +120,6 @@ if __name__ == '__main__':
 	S = SmartAS()
 	utils.setEnvironment()
 
-	if options.Options().initialStep == "import-data":
-		S.importData()
-	
 	# Get and characterize switches
 	elif options.Options().initialStep == "get-switches":
 	 	S.getSwitches()
@@ -153,10 +131,6 @@ if __name__ == '__main__':
 		S.createRandomSwitches()
 	
 	# analyze model switches
-	elif options.Options().initialStep == "launch-iloops":
-		S.launchiLoops()
-	elif options.Options().initialStep == "get-interaction-changes":
-		S.analyzeInteractions()
 	elif options.Options().initialStep == "experimental-network-analysis":
 		S.networkAnalysis(False)
 	elif options.Options().initialStep == "predicted-network-analysis":
