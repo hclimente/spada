@@ -15,44 +15,22 @@ class GeneNetwork(network.Network):
 	GeneNetwork contains a network of genes.
 
 	Node information:
-		Id(str) 						Gene Id
+		id(str) 						Gene Id
 		symbol(str) 					Gene Symbol
 		isoformSwitches(list,[]) 		List of detected isoform switches [[isoN, isoT], [isoN, isoT]]
-		score(float,0.01)				Score of the gene for GUILD analysis.
-		scoreG(float,None)				Final GUILD score.
-		Driver(bool,False) 				Gene described as a driver.
-		ASDriver(bool,False) 			Gene described as driver through alternative splicing.
-		Druggable(bool,False) 			Gene described as druggable.
+		driver(bool,False) 				Gene described as a driver.
+		asDriver(bool,False) 			Gene described as driver through alternative splicing.
+		druggable(bool,False) 			Gene described as druggable.
 		specificDriver(bool,False) 		Gene described as driver in this cancer type.
-		DriverType(str,"") 				Role that plays the gene in tumorigenesis.
-		RBP(bool,False) 				Gene described as a RBP.
-		EpiFactor(bool,False) 			Gene described as epigenetic factor.
-		ExpressedTranscripts(set,()) 	Set with transcripts with a significant expression.
-		diffExpression_logFC(float,None)Log FC of differential expression.
-		diffExpression_p(float,None)	Adjusted p-value of differential expression.
+		driverType(str,"") 				Role that plays the gene in tumorigenesis.
+		expressedTranscripts(set,()) 	Set with transcripts with a significant expression.
 		neighborhoods(dictionary,{})	Adjusted p-value of differential expression.
 
 	Edge information:
-		Id1(str) 						Gene id of interactor 1.
-		Id2(str) 						Gene id of interactor 2.
-		score(float,0.01) 				Weight of the interaction.
-		deltaRC(float,None)				deltaRC of that interaction.
-		iLoops_prediction(bool,None) 	Interaction predicted by iLoops.
+		id1(str) 						Gene id of interactor 1.
+		id2(str) 						Gene id of interactor 2.
 		experimental(bool,None) 		Interaction found through experiments.
 
-	Scores:
-
-		Nodes:
-			Base: 		0.01
-			Maximum: 	1
-			Patients:	0.2 - 0.5
-			Driver: 	1
-		Edges:
-			Base: 		0.01
-			Maximum: 	1
-			iLoops:		Not introduced yet.
-			KnownPPI:	1 (Lumier, Y2H) - 0.2 (others)
-		
 	"""
 
 	__metaclass__ = abc.ABCMeta
@@ -83,18 +61,12 @@ class GeneNetwork(network.Network):
 			self._net.add_node( geneID, 
 								symbol 					= geneSymbol,
 								isoformSwitches 		= [],
-								score 					= 0.01, 
-								scoreG 					= None,
 								specificDriver 			= False,
-								Driver 					= False, 
-								DriverType 				= None,
-								ASDriver 				= False,
-								Druggable 				= False, 
-								RBP 					= False, 
-								EpiFactor				= False, 
-								ExpressedTranscripts 	= set(),
-								diffExpression_logFC	= None,
-								diffExpression_p		= None,
+								driver 					= False, 
+								driverType 				= None,
+								asDriver 				= False,
+								druggable 				= False, 
+								expressedTranscripts 	= set(),
 								neighborhoods			= {} )
 
 			return True
@@ -135,14 +107,9 @@ class GeneNetwork(network.Network):
 			self.logger.warning("Node {0} does not exist.".format(node_id2))
 			return False
 
-		return self._add_edge( 
-								node_id1, 
+		return self._add_edge(	node_id1, 
 								node_id2, 
-								score 				= 0.01, 
-								deltaRC 			= None,
-								iLoops_prediction 	= None,
-								experimental 		= None
-							 )
+								experimental = None)
 
 	def update_edge(self, key, value, full_name1 = "", gene_id1 = "", full_name2 = "", gene_id2 = ""):
 		"""Changes the value of an edge attribute, specified by the key argument. 
@@ -155,31 +122,18 @@ class GeneNetwork(network.Network):
 
 	def readGeneInfo(self):
 		"""Read tsv files containing characteristics of the genes. Updates the nodes.:
-			- compilationTable.tsv: gene annotation of Drivers, epigenetic factors and RBPs.
+			- compilationTable.tsv: gene annotation of drivers, epigenetic factors and RBPs.
 			- expressedGenes.lst: R-generated file containing the transcripts above
 			a threshold of expression.
 		"""
 		
-		# rbp and epigenetic factor info
-		for line in utils.readTable("Data/Databases/compilationTable.tsv"):
-			self.add_node(full_name=line[0])
-			geneID = self.nameFilter(full_name=line[0])[0]
-
-			apoptosis = [line[10]]
-			embryo = [line[9]]
-			
-			if "yes" in [line[3], line[4], line[5], line[11]]:
-				self.update_node( "RBP", True, gene_id = geneID )
-			if "yes" in [line[6]]:
-				self.update_node( "EpiFactor", True, gene_id = geneID )
-
 		# druggability info
 		for line in utils.readTable("Data/Databases/dgidb_export_all_drivers_bygene_results.tsv"):
 			geneSymbol = line[0]
 				
 			for gene,info in self.nodes(data=True):
 				if info["symbol"] == geneSymbol:
-					self.update_node("Druggable",True,gene_id=gene )
+					self.update_node("druggable",True,gene_id=gene )
 					break
 		
 		# expression info
@@ -187,42 +141,31 @@ class GeneNetwork(network.Network):
 			geneID = self.nameFilter(full_name=line[1])[0]
 						
 			if geneID is not None:				
-				self.update_node( "ExpressedTranscripts", line[0], gene_id=geneID )
+				self.update_node( "expressedTranscripts", line[0], gene_id=geneID )
 
 		# driver info
-		# incompatible with notations other than ucsc
+		## is driver: only for ucsc
 		for line in utils.readTable("Data/TCGA/drivers_ucsc_notation.txt",sep="|"):
 			geneid = line[1]
 
-			self.update_node("Driver",True,gene_id=geneid)
+			self.update_node("driver",True,gene_id=geneid)
 
+		## which kind of driver
 		for line in utils.readTable("Data/Databases/cancer_networks_SuppTables_v7_S7.csv"):
 			geneSymbol = line[0]
 			role = line[1]
 			
 			for gene,info in self.nodes(data=True):
 				if info["symbol"] == geneSymbol:
-					if info["Driver"]:
-						self.update_node("DriverType",role,gene_id=gene )
+					if info["driver"]:
+						self.update_node("driverType",role,gene_id=gene )
 					break
 
-		# asdriver info
-		# incompatible with notations other than ucsc
+		## AS driver: only for ucsc
 		for line in utils.readTable("Data/TCGA/asdrivers_ucsc_notation.txt",sep="|"):
 			geneid = line[1]
 
-			self.update_node("ASDriver",True,gene_id=geneid)
-
-		'''
-		for line in utils.readTable("Data/Databases/cancer_networks_SuppTables_v7_S6.csv"):
-			geneSymbol = line[0]
-			
-			for gene,info in self.nodes(data=True):
-				if info["symbol"] == geneSymbol:
-					if info["Driver"]:
-						self.update_node("ASDriver",True,gene_id=gene )
-					break
-		'''
+			self.update_node("asDriver",True,gene_id=geneid)
 
 	def importExternalCandidates(self,candidatesFile):
 		
@@ -307,17 +250,8 @@ class GeneNetwork(network.Network):
 			self.logger.debug("Adding {0} as specific driver.".format(geneID))
 
 			self.update_node("specificDriver", True, gene_id = geneID)
-			self.update_node("Driver", True, gene_id = geneID)
+			self.update_node("driver", True, gene_id = geneID)
 			self.update_node("score", 1, gene_id = geneID)
-
-	def importDiffExpression(self):
-		self.logger.debug("Importing differential expression information.")
-
-		for line in utils.readTable("Data/TCGA/Rawdata/{0}_gene_diffexp_paired-filtered.txt".format(options.Options().tag)):
-			geneID = self.nameFilter(full_name=line[1])[0]
-
-			self.update_node("diffExpression_logFC", float(line[11]), gene_id=geneID)
-			self.update_node("diffExpression_p", float(line[12]), gene_id=geneID)
 
 	def importKnownInteractions(self):
 
@@ -447,11 +381,6 @@ class GeneNetwork(network.Network):
 				self.add_edge(gene_id1=geneId_1, gene_id2=geneId_2)
 				self.update_edge("experimental", True, gene_id1=geneId_1, gene_id2=geneId_2)
 
-				if [ x for x in method_ids if x in set([18, 696]) ]:
-					self.update_edge("score", 1.0, gene_id1=geneId_1, gene_id2=geneId_2)
-				elif [ x for x in method_ids if x not in affinity_methods ]:
-					self.update_edge("score", 0.2, gene_id1=geneId_1, gene_id2=geneId_2)
-
 	def iterate_genes_ScoreWise(self):
 		'''
 		Iterate genes that have alternative splicing and more than one transcript expressed.
@@ -464,7 +393,7 @@ class GeneNetwork(network.Network):
 			sortedNodes = sortedNodes[bottom:top]
 
 		for gene,info in sortedNodes:
-			if len(info["ExpressedTranscripts"]) < 2:
+			if len(info["expressedTranscripts"]) < 2:
 				continue
 			self.logger.debug("Iterating gene {0}.".format(gene))
 			yield gene,info
@@ -608,9 +537,9 @@ class GeneNetwork(network.Network):
 		annotation = "Nothing"
 		driverAnnotation = "Nothing"
 
-		if self._net.node[gene]["Driver"]:
-			driverAnnotation = "Driver"
-		elif [ x for x in self._net.neighbors(gene) if self._net.node[x]["Driver"] ]:
+		if self._net.node[gene]["driver"]:
+			driverAnnotation = "driver"
+		elif [ x for x in self._net.neighbors(gene) if self._net.node[x]["driver"] ]:
 			driverAnnotation = "d1"
 		
 		if [ x for x in hallmarksDict if gene in hallmarksDict[x] ]:

@@ -11,13 +11,14 @@ class IsoformNetwork(network.Network):
 	IsoformNetwork contains a network of isoforms.
 
 	Node information:
-		Id(str) 					Transcript Id
+		id(str) 					Transcript Id
 		gene_id(str) 				Gene Id of the parent gene.
 		exonStructure(list,None)	List of lists, each of them containing the limits of an exon.
 		txCoords(list,None) 		List with the starting and the ending genome positions
 									of the trancript.
 		cdsCoords(list,None) 		List with the starting and the ending genome positions of the CDS.
 		strand(str,None)			Strand.
+		chr(str,None)				Chromosome.
 		median_TPM_N(float,None) 	Median TPM of the isoform in the normal patients.
 		median_PSI_N(float,None) 	Median PSI of the isoform in the normal patients.
 		median_TPM_T(float,None) 	Median TPM of the isoform in the tumor patients.
@@ -29,10 +30,6 @@ class IsoformNetwork(network.Network):
 	Edge information:
 		Id1(str) 						Transcript id of interactor 1.
 		Id2(str) 						Transcript id of interactor 2.
-		iLoops_prediction(bool,None) 	iLoops predicted interaction.
-		RC(float,None) 					iLoops max RC with a prediction.
-		experiment(bool,None) 			Interaction from an experiment.
-		experimentDescription(str,"") 	Description of the experiments.
 	"""
 
 	__metaclass__ = abc.ABCMeta
@@ -56,33 +53,26 @@ class IsoformNetwork(network.Network):
 			self.logger.debug("No gene could be extracted for transcript {0}, gene {1}.".format(tx, gene_full_name))
 			return False
 		
-		return self._net.add_node( 
-									tx, 
+		return self._net.add_node( 	tx, 
 									gene_id			= geneID,
 									exonStructure	= None,
 									txCoords		= None,
 									cdsCoords		= None,
 									strand 			= None,
+									chr 			= None,
 									median_TPM_N	= None, 
 									median_PSI_N	= None, 
 									median_TPM_T	= None, 
 									median_PSI_T	= None, 
 									iLoopsFamily 	= None, 
 									proteinSequence	= None,
-									Uniprot 		= None
-								 )
+									Uniprot 		= None)
 
 	def update_node(self, tx, key, value):
 		return self._update_node(tx, key, value)
 
 	def add_edge(self, tx1, tx2):
-		self._net.add_edge( 
-							tx1,
-							tx2,
-							iLoops_prediction 	= None,
-							RC					= None,
-							experiment 			= None 
-						  )
+		self._net.add_edge(tx1,tx2)
 
 	def update_edge(self, tx1, tx2, key, value):
 		return self._update_edge(tx1, tx2, key, value)
@@ -147,6 +137,7 @@ class IsoformNetwork(network.Network):
 			self.update_node(tx, "txCoords", [txStart, txEnd])
 			self.update_node(tx, "cdsCoords", [cdsStart, cdsEnd])
 			self.update_node(tx, "strand", strand)
+			self.update_node(tx, "chr", chrom)
 
 		self.logger.debug("Reading transcript info: protein sequence, Uniprot and iLoops family.")
 		with open("{0}Data/{1}/UnifiedFasta_{2}.fa".format(options.Options().wd, options.Options().inputType, options.Options().iLoopsVersion)) as FASTA:
@@ -172,3 +163,19 @@ class IsoformNetwork(network.Network):
 
 				else:
 					sequence += line.strip()
+
+
+	def iterate_transcripts(self):
+		'''
+		Iterate transcripts.
+		'''
+
+		txsByGene = {}
+
+		for tx,info in self.nodes(data=True):
+			txsByGene.setdefault(info["gene_id"],[])
+
+			txsByGene[info["gene_id"]].append(tx)
+
+		for gene in txsByGene:
+			yield gene,txsByGene[gene]
