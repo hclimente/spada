@@ -29,10 +29,10 @@ class IsoformSwitch:
 		self._ptm_change 			= None
 
 		#Relevance measure
-		self._deep_domain_change 	= {"Gained_in_tumor":[], "Lost_in_tumor":[], "Nothing":[] }
-		self._deep_disorder_change 	= {"Gained_in_tumor":[], "Lost_in_tumor":[], "Nothing":[] }
-		self._deep_anchor_change 	= {"Gained_in_tumor":[], "Lost_in_tumor":[], "Nothing":[] }
-		self._deep_ptm_change 		= {"Gained_in_tumor":[], "Lost_in_tumor":[], "Nothing":[] }
+		self._deep_domain_change 	= { }
+		self._deep_disorder_change 	= { }
+		self._deep_anchor_change 	= { }
+		self._deep_ptm_change 		= { }
 
 		#Network analysis
 		self._guild_top1 			= None
@@ -243,42 +243,46 @@ class IsoformSwitch:
 		if self.domainChange and not skipDomain:
 			for line in utils.readTable("{}structural_analysis/interpro_analysis{}.tsv".format(options.Options().qout,filetag)):
 				if line[2] == self.nTx and line[3] == self.tTx:
+					self._deep_domain_change.setdefault(line[5].replace(" ","_"),[])
 					if "Gained" in line[4]:
-						self._deep_domain_change["Gained_in_tumor"].append(line[5].replace(" ","_"))
+						self._deep_domain_change[line[5].replace(" ","_")].append("Gained_in_tumor")
 					elif "Lost" in line[4]:
-						self._deep_domain_change["Lost_in_tumor"].append(line[5].replace(" ","_"))
+						self._deep_domain_change[line[5].replace(" ","_")].append("Lost_in_tumor")
 					elif "Nothing" in line[4]:
-						self._deep_domain_change["Nothing"].append(line[5].replace(" ","_"))
+						self._deep_domain_change[line[5].replace(" ","_")].append("Nothing")
 
 		if self.disorderChange and not skipIupred:
 			for line in utils.readTable("{}structural_analysis/iupred_analysis{}.tsv".format(options.Options().qout,filetag)):
 				if line[2] == self.nTx and line[3] == self.tTx and float(line[-1]):
+					self._deep_disorder_change.setdefault(line[5],[])
 					if "Gained" in line[4]:
-						self._deep_disorder_change["Gained_in_tumor"].append(line[5])
+						self._deep_disorder_change[line[5]].append("Gained_in_tumor")
 					elif "Lost" in line[4]:
-						self._deep_disorder_change["Lost_in_tumor"].append(line[5])
+						self._deep_disorder_change[line[5]].append("Lost_in_tumor")
 					elif "Nothing" in line[4]:
-						self._deep_disorder_change["Nothing"].append(line[5])
+						self._deep_disorder_change[line[5]].append("Nothing")
 		
 		if self.anchorChange and not skipAnchor:
 			for line in utils.readTable("{}structural_analysis/anchor_analysis{}.tsv".format(options.Options().qout,filetag)):
 				if line[2] == self.nTx and line[3] == self.tTx and float(line[-1]):
+					self._deep_anchor_change.setdefault(line[5],[])
 					if "Gained" in line[4]:
-						self._deep_anchor_change["Gained_in_tumor"].append(line[5])
+						self._deep_anchor_change[line[5]].append("Gained_in_tumor")
 					elif "Lost" in line[4]:
-						self._deep_anchor_change["Lost_in_tumor"].append(line[5])
+						self._deep_anchor_change[line[5]].append("Lost_in_tumor")
 					elif "Nothing" in line[4]:
-						self._deep_anchor_change["Nothing"].append(line[5])
+						self._deep_anchor_change[line[5]].append("Nothing")
 			
 		if self.ptmChange and not skipPtm:
 			for line in utils.readTable("{}structural_analysis/prosite_analysis{}.tsv".format(options.Options().qout,filetag)):
 				if line[2] == self.nTx and line[3] == self.tTx:
+					self._deep_ptm_change.setdefault(line[5],[])
 					if "Gained" in line[4]:
-						self._deep_ptm_change["Gained_in_tumor"].append(line[5])
+						self._deep_ptm_change[line[5]].append("Gained_in_tumor")
 					elif "Lost" in line[4]:
-						self._deep_ptm_change["Lost_in_tumor"].append(line[5])
+						self._deep_ptm_change[line[5]].append("Lost_in_tumor")
 					elif "Nothing" in line[4]:
-						self._deep_ptm_change["Nothing"].append(line[5])
+						self._deep_ptm_change[line[5]].append("Nothing")
 
 	def analyzeSplicing(self):
 
