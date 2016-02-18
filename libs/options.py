@@ -26,7 +26,7 @@ class Options(object):
                                             self._wd,self._inputType,self._tag)
         self._out           = "{0}/{1}/".format(self._inputType,self._tag)
 
-        self._quickOut              = self._wd + "testResults/" + self._out
+        self._quickOut              = self._wd + "results/" + self._out
 
         self._parallelRange         = options.parallelRange
         self._externalSwitchesFile  = options.externalSwitchesFile

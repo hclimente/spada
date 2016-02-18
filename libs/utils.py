@@ -61,7 +61,7 @@ def setEnvironment():
 		cmd("rm -r .testOld2/" + o.out )
 		cmd("mv", ".testOld/" + o.out, ".testOld2/" + o.out )
 		cmd("mv", o.qout, ".testOld/" + o.out )
-		cmd("mkdir -p", "testResults/" + o.out + "RWorkspaces")
+		cmd("mkdir -p", "results/" + o.out + "RWorkspaces")
 		cmd("mkdir", o.qout + "DataExploration")
 		cmd("mkdir -p", o.qout + "iLoops/" + o.iLoopsVersion)
 		cmd("mkdir", o.qout + "GUILD_experimental")
