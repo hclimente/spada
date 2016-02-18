@@ -29,6 +29,15 @@ candidatesDf <- merge(candidatesDf,driverTypes,all.x=TRUE)
 candidatesDf$DriverType <- as.character(candidatesDf$DriverType)
 candidatesDf$DriverType[is.na(candidatesDf$DriverType)] <- "No"
 
+x <- ddply(candidatesDf,.(Tumor),summarise,
+           median=median(NumPatients),
+           mad=mad(NumPatients,na.rm=T))
+
+y <- merge(x,candidatesDf)
+y$z.numPatients <- (y$NumPatients - y$median)/(1.486*y$mad)
+
+candidatesDf <- merge(candidatesDf,y[,c("GeneId","Normal_transcript","Tumor_transcript","z.numPatients")])
+
 write.table(candidatesDf,'tables/candidateList_splitByTumor_models_notNoise.txt',quote=F,row.names=F, sep="\t")
 rm(driverTypes,driverTypesFile)
 
@@ -39,8 +48,9 @@ setwd("switches")
 
 # calculate aggregated table (sum patients, etc.) and calculate unbalance as the minimun p of enrichment in a fisher test
 candidatesDf_agg <- ddply(candidatesDf,.(GeneId,Symbol,Normal_transcript,Tumor_transcript,
-                                         Normal_protein,Tumor_protein,Annotation,DriverAnnotation,IsRelevant,
-                                         Driver,DriverType,Druggable,CDS,CDS_change,UTR_change),
+                                         Normal_protein,Tumor_protein,Annotation,
+                                         DriverAnnotation,IsRelevant,Driver,DriverType,
+                                         Druggable,CDS_Normal,CDS_Tumor,CDS_change,UTR_change),
                           summarise, CancerAffected=paste(Tumor,collapse = ","),
                           Patients=paste(Patients_affected,collapse = ","), 
                           PatientNumber=sum(NumPatients), 
@@ -63,10 +73,11 @@ candidatesDf_agg <- ddply(candidatesDf,.(GeneId,Symbol,Normal_transcript,Tumor_t
                           )
 
 candidatesDf_agg <- candidatesDf_agg[order(-candidatesDf_agg$Percentage),]
-candidatesDf_agg <- candidatesDf_agg[,c("GeneId","Symbol","Normal_transcript","Tumor_transcript",
-                                        "Normal_protein","Tumor_protein","Annotation",
-                                        "DriverAnnotation","IsRelevant","Driver","DriverType",
-                                        "Druggable","CDS","CDS_change","UTR_change",
+candidatesDf_agg <- candidatesDf_agg[,c("GeneId","Symbol","Normal_transcript",
+                                        "Tumor_transcript","Normal_protein",
+                                        "Tumor_protein","Annotation","DriverAnnotation",
+                                        "IsRelevant","Driver","DriverType","Druggable",
+                                        "CDS_Normal","CDS_Tumor","CDS_change","UTR_change",
                                         "CancerAffected","PatientNumber","Percentage",
                                         "p.unbalance","Patients","Entropy")]
 write.table(candidatesDf_agg,'tables/candidateList_allCancers_models_notNoise.txt',quote=F,row.names=F, sep="\t")

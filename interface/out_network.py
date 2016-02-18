@@ -84,7 +84,7 @@ def outCandidateList(gn_network,tx_network):
 		cList.write("GeneId\tSymbol\tNormal_transcript\tTumor_transcript\t")
 		cList.write("Normal_protein\tTumor_protein\tAnnotation\tDriverAnnotation\t")
 		cList.write("NotNoise\tIsModel\tIsRelevant\tDriver\tDruggable\t")
-		cList.write("CDS\tCDS_change\tUTR_change\tPatients_affected\n")
+		cList.write("CDS_Normal\tCDS_Tumor\tCDS_change\tUTR_change\tPatients_affected\n")
 
 		hallmarksDict = utils.readGeneset("h.all.v5.0.entrez.gmt")
 		bpDict = utils.readGeneset("c5.bp.v4.0.entrez.gmt")
@@ -95,11 +95,9 @@ def outCandidateList(gn_network,tx_network):
 
 			nUniprot 	= tx_network._net.node[switch.nTx]["Uniprot"]
 			tUniprot 	= tx_network._net.node[switch.tTx]["Uniprot"]
-			cds 		= False
 			cdsChange 	= False
 			utrChange 	= False
 
-			if nIso.cds or tIso.cds: 	cds 		= True
 			if switch.cds_diff: 	 	cdsChange 	= True
 			if switch.utr_diff: 		utrChange 	= True
 
@@ -116,9 +114,9 @@ def outCandidateList(gn_network,tx_network):
 			cList.write("{0}\t{1}\t".format( annotation,driverAnnotation ))
 			cList.write("{0}\t{1}\t".format( int(not switchDict["noise"]), int(switchDict["model"]) ))
 			cList.write("{0}\t{1}\t".format( relevance, int(info["Driver"]) ))
-			cList.write("{0}\t{1}\t".format( int(info["Druggable"]), int(cds) ))
-			cList.write("{0}\t{1}\t".format( int(cdsChange),int(utrChange) ))
-			cList.write("{0}\n".format( ",".join(switch.patients) ))
+			cList.write("{0}\t{1}\t".format( int(info["Druggable"]), int(bool(nIso.cds)) ))
+			cList.write("{0}\t{1}\t".format( int(bool(tIso.cds)), int(cdsChange), ))
+			cList.write("{0}\t{1}\n".format( int(utrChange), ",".join(switch.patients) ))
 
 def outTSV(network,path):
 	with open(path + "_nodes.tsv", "w") as NODES:
