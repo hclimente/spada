@@ -57,7 +57,14 @@ pats.t <- grep("^.{4}T$",colnames(psi), value=TRUE)
 pats.t.nt <- gsub("N$","T",pats.n)
 pats.t.t <- setdiff(pats.t,pats.t.nt)
 
-## read gene xpr
+## read isoform expression
+xpr.nt <- read.table("/projects_rg/TCGA/pipeline/run11/luad_iso_tpm_paired-filtered.txt", check.names=FALSE)
+xpr.t <- read.table("/projects_rg/TCGA/pipeline/run11/luad_iso_tpm_tumor-filtered.txt", check.names=FALSE)
+xpr <- cbind(xpr.nt,xpr.t)
+
+rm(xpr.nt,xpr.t)
+
+## read gene expression
 xpr.gene.nt <- read.table("/projects_rg/TCGA/pipeline/run11/luad_gene_tpm_paired-filtered.txt", check.names=FALSE)
 xpr.gene.t <- read.table("/projects_rg/TCGA/pipeline/run11/luad_gene_tpm_tumor-filtered.txt", check.names=FALSE)
 xpr.gene <- cbind(xpr.gene.nt,xpr.gene.t)
@@ -141,15 +148,12 @@ topNormal <- psi.sign=="Normal" & psi.order.n$orderNormal==1
 ### significant deltaPSI
 bigChange <- psi.diff.padj[,pats.t] < 0.05
 ### non-significant change in gene expression
-#### CHECK ORDER DOESNT CHANGE
 x <- merge(psi.diff.padj,xpr.gene.diff.padj,by="Gene",suffix=c(".psi.diff",".xpr.diff"))
 noExpressionChange <- x[,paste0(pats.t,".xpr.diff")] > 0.05
 ### transcripts are expressed
-xpr.gene$Gene <- rownames(xpr.gene)
-x <- merge(psi.diff.padj,xpr.gene,by="Gene",suffix=c(".psi.diff",".xpr"))
-expressedTumor <- x[,paste0(pats.t,".xpr")] > 0.1
-y <- apply(x[,pats.n],1,median)
-expressedNormal <- cbind(x[,pats.n], replicate(length(pats.t.t),y)) > 0.1
+expressedTumor <- xpr[,pats.t] > 0.1
+medianN <- apply(xpr[,pats.n],1,median)
+expressedNormal <- cbind(xpr[,pats.n], replicate(length(pats.t.t),medianN)) > 0.1
 
 ## Filter transcripts
 elegibleTxs <- psi.sign
@@ -197,4 +201,4 @@ switches.formatted <- switches.formatted[,c("Gene","Normal","Tumor","Patient")]
 
 write.table(switches.formatted, file=outfile, sep="\t", row.names=F, col.names=F, quote=F)
 
-# stromal.correlation <- read.table(paste0("/projects_rg/TCGA/pipeline/run11/",tumor,"_gene_gsea_full.txt"), check.names=FALSE, header=TRUE)
+stromal.correlation <- read.table(paste0("/projects_rg/TCGA/pipeline/run11/",tumor,"_gene_gsea_full.txt"), check.names=FALSE, header=TRUE)
