@@ -23,7 +23,10 @@ class GeneNetwork(network.Network):
 		druggable(bool,False) 			Gene described as druggable.
 		specificDriver(bool,False) 		Gene described as driver in this cancer type.
 		driverType(str,"") 				Role that plays the gene in tumorigenesis.
-		expressedTranscripts(set,()) 	Set with transcripts with a significant expression.
+		expressedTxsNormal(set,()) 		Set with transcripts with a median expression > 0.1 
+										in normal samples.
+		expressedTxsTumor(set,()) 		Set with transcripts with a median expression > 0.1 
+										in tumor samples.
 		neighborhoods(dictionary,{})	Adjusted p-value of differential expression.
 
 	Edge information:
@@ -120,6 +123,18 @@ class GeneNetwork(network.Network):
 
 		return self._update_edge(node_id1, node_id2, key, value)
 
+	def readGTF(self):
+		for line in utils.readTable("data/{}/annotation.gtf".format(options.Options().annotation)):
+			seqname = line[0]
+			source = line[1]
+			feature = line[2]
+			start = line[3]
+			end = line[4]
+			score = line[5]
+			strand = line[6]
+			frame = line[7]
+			attribute = line[8].split(";")
+
 	def readGeneInfo(self):
 		"""Read tsv files containing characteristics of the genes. Updates the nodes.:
 			- compilationTable.tsv: gene annotation of drivers, epigenetic factors and RBPs.
@@ -128,7 +143,7 @@ class GeneNetwork(network.Network):
 		"""
 		
 		# druggability info
-		for line in utils.readTable("Data/Databases/dgidb_export_all_drivers_bygene_results.tsv"):
+		for line in utils.readTable("data/Databases/dgidb_export_all_drivers_bygene_results.tsv"):
 			geneSymbol = line[0]
 				
 			for gene,info in self.nodes(data=True):
@@ -137,21 +152,30 @@ class GeneNetwork(network.Network):
 					break
 		
 		# expression info
-		for line in utils.readTable(options.Options().qout + "expressedGenes.lst", header=False):
-			geneID = self.nameFilter(full_name=line[1])[0]
-						
-			if geneID is not None:				
-				self.update_node( "expressedTranscripts", line[0], gene_id=geneID )
+		for line in utils.readTable(options.Options().qout + "transcript_expression.tsv"):
+			gene = line[0]
+			tx = line[1]
+			expressedNormal = float(line[2]) > 0.1
+			expressedTumor = float(line[3]) > 0.1
+
+			genes = self.nameFilter(full_name=line[0])
+
+			if genes is not None:
+				for g in genes:
+					if expressedNormal:
+						self.update_node( "expressedTxsNormal", tx, gene_id=g )
+					if expressedTumor:
+						self.update_node( "expressedTxsTumor", tx, gene_id=g )
 
 		# driver info
 		## is driver: only for ucsc
-		for line in utils.readTable("Data/TCGA/drivers_ucsc_notation.txt",sep="|"):
+		for line in utils.readTable("data/ucsc/drivers_ucsc_notation.txt",sep="|"):
 			geneid = line[1]
 
 			self.update_node("driver",True,gene_id=geneid)
 
 		## which kind of driver
-		for line in utils.readTable("Data/Databases/cancer_networks_SuppTables_v7_S7.csv"):
+		for line in utils.readTable("data/Databases/cancer_networks_SuppTables_v7_S7.csv"):
 			geneSymbol = line[0]
 			role = line[1]
 			
@@ -162,7 +186,7 @@ class GeneNetwork(network.Network):
 					break
 
 		## AS driver: only for ucsc
-		for line in utils.readTable("Data/TCGA/asdrivers_ucsc_notation.txt",sep="|"):
+		for line in utils.readTable("data/ucsc/asdrivers_ucsc_notation.txt",sep="|"):
 			geneid = line[1]
 
 			self.update_node("asDriver",True,gene_id=geneid)
@@ -315,7 +339,7 @@ class GeneNetwork(network.Network):
 
 		bianaInputType = "geneid"
 
-		if options.Options().inputType == "ensembl": bianaInputType = "ensembl"
+		if options.Options().annotation == "ensembl": bianaInputType = "ensembl"
 
 		session = biana.create_new_session(
 										sessionID="SmartAS", 

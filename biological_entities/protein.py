@@ -319,7 +319,7 @@ class Protein:
 		return segments
 
 	def readAnchor(self):
-		outfile = "{0}Data/{1}/ANCHOR/{2}.txt".format(options.Options().wd,options.Options().inputType,self.tx)
+		outfile = "{0}Data/{1}/ANCHOR/{2}.txt".format(options.Options().wd,options.Options().annotation,self.tx)
 
 		if not os.path.isfile(outfile):
 			out = []
@@ -361,7 +361,7 @@ class Protein:
 
 	def readIupred(self,mode):
 
-		outfile = "{0}Data/{1}/IUPred/{2}.{3}.txt".format(options.Options().wd,options.Options().inputType,self.tx,mode)
+		outfile = "{0}Data/{1}/IUPred/{2}.{3}.txt".format(options.Options().wd,options.Options().annotation,self.tx,mode)
 
 		if not os.path.isfile(outfile):
 			out = []
@@ -403,7 +403,7 @@ class Protein:
 
 	def readInterpro(self):
 
-		outfile = "{0}Data/{1}/InterPro/{2}.tsv".format(options.Options().wd,options.Options().inputType,self.tx)
+		outfile = "{0}Data/{1}/InterPro/{2}.tsv".format(options.Options().wd,options.Options().annotation,self.tx)
 		acceptedAnalysis = ["Pfam"]
 
 		if not os.path.isfile(outfile):
@@ -465,7 +465,7 @@ class Protein:
 
 	def readProsite(self):
 
-		featFile = "{0}Data/{1}/ProSite/{2}.out".format(options.Options().wd,options.Options().inputType,self.tx)
+		featFile = "{0}Data/{1}/ProSite/{2}.out".format(options.Options().wd,options.Options().annotation,self.tx)
 
 		if not os.path.exists(featFile) or os.stat(featFile).st_size == 0:
 			return

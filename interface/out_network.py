@@ -5,69 +5,11 @@ import math
 import networkx
 import logging
 
-def interactorsInfo(gn_net,tx_net,gene,nIso,tIso):
-	symbol = gn_net._net.node[gene]["symbol"]
-	logging.info("Writing InteraX file for gene {0}({1}), isoforms {2} and {3}.".format(gene,symbol,nIso,tIso))
-	with open("{0}iLoops/{1}/InteraX_{2}_{3}_{4}.tsv".format(options.Options().qout, options.Options().iLoopsVersion, symbol, nIso, tIso), "w" ) as INTERAX:
-		nTPM_N = None
-		if tx_net._net.node[nIso]["median_TPM_N"] is not None:
-			nTPM_N = math.log10 ( tx_net._net.node[nIso]["median_TPM_N"] + 0.0001 )
-
-		tTPM_T = None
-		if tx_net._net.node[nIso]["median_TPM_N"] is not None:
-			tTPM_T = math.log10 ( tx_net._net.node[tIso]["median_TPM_T"] + 0.0001 )
-
-		INTERAX.write("#\t")
-		INTERAX.write("{0}\t{1}\t".format( nIso, tx_net._net.node[nIso]["median_PSI_N"] ))
-		INTERAX.write("{0}\t{1}\t".format( tIso, tx_net._net.node[tIso]["median_PSI_T"] ))
-		INTERAX.write("{0}\t{1}\t".format( gene, symbol ))
-		INTERAX.write("{0}\t{1}\n".format( nTPM_N, tTPM_T ))
-
-		INTERAX.write("Partner\tGene\tSymbol\tRC_n\tRC_t\tdeltaRC\t")
-		INTERAX.write("Annotation\tTPM_n\tPSI_n\tTPM_t\tPSI_t\n")
-
-		for partnerIso in set( tx_net._net.neighbors(nIso) ) | set( tx_net._net.neighbors(tIso) ):
-			partnerGene = tx_net._net.node[partnerIso]["gene_id"]
-			annotation = "Driver" if gn_net._net.node[partnerGene]["Driver"] else ""
-			RCN = None if partnerIso not in tx_net._net.neighbors(nIso) else tx_net._net.edge[nIso][partnerIso]["RC"]
-			RCT = None if partnerIso not in tx_net._net.neighbors(tIso) else tx_net._net.edge[tIso][partnerIso]["RC"]
-			dRC = int(RCN - RCT) if RCN and RCT else None
-
-			nTPM = None
-			if tx_net._net.node[partnerIso]["median_TPM_N"] is not None:
-				nTPM = math.log10 ( tx_net._net.node[partnerIso]["median_TPM_N"] + 0.0001 )
-			tTPM = None
-			if tx_net._net.node[partnerIso]["median_TPM_T"] is not None:
-				tTPM = math.log10 ( tx_net._net.node[partnerIso]["median_TPM_T"] + 0.0001 )
-
-			INTERAX.write("{0}\t{1}\t".format(partnerIso,partnerGene))
-			INTERAX.write("{0}\t{1}\t".format(gn_net._net.node[partnerGene]["symbol"],RCN))
-			INTERAX.write("{0}\t{1}\t{2}\t".format(RCT,dRC,annotation))
-			INTERAX.write("{0}\t{1}\t".format(nTPM,tx_net._net.node[partnerIso]["median_PSI_N"]))
-			INTERAX.write("{0}\t{1}\n".format(tTPM,tx_net._net.node[partnerIso]["median_PSI_T"]))
-
-def getGUILDInput(gn_net, onlyExperimental=False):
-	logging.info("Writing GUILD input files.")
-	outFolder = "{0}GUILD_enriched/".format(options.Options().qout)
-	if onlyExperimental: outFolder = "{0}GUILD_experimental/".format(options.Options().qout)
-
-	with open("{0}guild_nodes.tsv".format(outFolder), "w" ) as GUILD_NODES:
-		for node,info in gn_net.nodes(data=True):
-			GUILD_NODES.write("{0} {1}\n".format(node, info["score"]))
-
-	with open("{0}guild_edges.tsv".format(outFolder), "w" ) as GUILD_EDGES:
-		for node1,node2,info in gn_net.edges(data=True):
-			if onlyExperimental:
-				if info["experimental"]:
-					GUILD_EDGES.write("{0} {1} {2}\n".format(node1, info["score"], node2))
-			else:
-				GUILD_EDGES.write("{0} {1} {2}\n".format(node1, info["score"], node2))
-
 def outputGTF(gn_network,tx_network):
 	logging.info("Writing GTF files.")
 	with open(options.Options().qout + "/candidates_normal.gtf", 'w') as nGTF, \
 		 open(options.Options().qout + "/candidates_tumor.gtf", 'w') as tGTF, \
-		 open("Data/" + options.Options().inputType + "/annotation.gtf", "r") as ALLTRANSCRIPTS:
+		 open("Data/" + options.Options().annotation + "/annotation.gtf", "r") as ALLTRANSCRIPTS:
 	
 		switchesInfo = [ [(z.nTx,z.tTx),z.score] for w,x,y,z in gn_network.iterate_switches_ScoreWise(tx_network) ]
 

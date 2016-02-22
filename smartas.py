@@ -1,4 +1,4 @@
-#!/soft/devel/python-2.7/bin/python
+#!/soft/devel/python-3.4.3/bin/python
 
 from interface import standarize_input
 from interface import out_network
@@ -103,12 +103,9 @@ if __name__ == '__main__':
 	logging.basicConfig(level=logging.DEBUG,
 						format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
 						datefmt='%m-%d %H:%M',
-					   	filename='{0}logs/{1}_smartAS_{2}{3}.log'.format(
-					   					options.Options().qout,
-					   					options.Options().tag,
-					   					options.Options().initialStep,
-					   					options.Options().filetag),
-					   	filemode='w')
+					   	filename='{}logs/{}_{}{}.log'.format(options.Options().qout,
+					   		options.Options().tag, options.Options().initialStep,
+					   		options.Options().filetag), filemode='w')
 
 	console = logging.StreamHandler()
 	console.setLevel(logging.INFO)
@@ -118,10 +115,9 @@ if __name__ == '__main__':
 	logging.getLogger().addHandler(console)
 
 	S = SmartAS()
-	utils.setEnvironment()
 
 	# Get and characterize switches
-	elif options.Options().initialStep == "get-switches":
+	if options.Options().initialStep == "get-switches":
 	 	S.getSwitches()
 
 	# analyze switches

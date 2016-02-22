@@ -16,18 +16,14 @@ class Options(object):
         self._initial_step          = options.initial_step
         self._wd                    = options.wd if options.wd[-1]== "/" else options.wd + "/"
         self._minExpression         = options.minExpression
-        self._inputType             = options.inputType
+        self._annotation            = options.annotation
         self._replicates            = set(options.replicates.split(",")) if options.replicates else set()
-        self._iLoopsVersion         = options.iLoopsVersion
         self._unpairedReplicates    = set(options.unpairedReplicates.split(",")) if options.unpairedReplicates else set()
         self._tag                   = options.tag 
         self._only_models           = options.onlyModels
-        self._specificDrivers = "{0}Data/{1}/specificDrivers/{2}Drivers.txt".format(
-                                            self._wd,self._inputType,self._tag)
-        self._out           = "{0}/{1}/".format(self._inputType,self._tag)
-
-        self._quickOut              = self._wd + "results/" + self._out
-
+        self._specificDrivers       = "{}data/{}/specificDrivers/{}Drivers.txt".format(
+                                        self._wd,self._annotation,self._tag)
+        self._quickOut              = "{}results/{}/".format(self._wd,self._tag)
         self._parallelRange         = options.parallelRange
         self._externalSwitchesFile  = options.externalSwitchesFile
         self._parentTag             = options.parentTag
@@ -44,22 +40,18 @@ class Options(object):
     @property
     def minExpression(self):        return self._minExpression
     @property
-    def inputType(self):            return self._inputType
+    def annotation(self):            return self._annotation
     @property
     def replicates(self):           return self._replicates
     def setReplicates(self,replicates): 
         self._replicates = replicates
-        print self._replicates
-    @property
-    def iLoopsVersion(self):        return self._iLoopsVersion
+        print(self._replicates)
     @property
     def unpairedReplicates(self):   return self._unpairedReplicates
     @property
     def tag(self):                  return self._tag
     @property
     def onlyModels(self):           return self._only_models
-    @property
-    def out(self):                  return self._out
     @property
     def qout(self):                 return self._quickOut
     @property
@@ -95,20 +87,16 @@ class Options(object):
                             help='Root file of SmartAS folder in the current machine.')
         parser.add_argument('-m', '--minimum-expression', dest='minExpression', action='store', default='-1',
                             type=float, help='Minimum expression to consider a transcript not residual.')
-        parser.add_argument('-i', '--input-type', dest='inputType', action='store', default='TCGA',
+        parser.add_argument('-i', '--annotation', dest='annotation', action='store', default='TCGA',
                             help='Origin of the data.')
         parser.add_argument('-a', '--all-switches', dest='onlyModels', action='store_false',
                             help='Only use the model switches.')
         parser.add_argument('-r', '--replicates', dest='replicates', action='store',
                             help='Number of patients or biological replicates.')
-        parser.add_argument('-v', '--iloops-version', dest='iLoopsVersion', action='store', 
-                            default='iLoops13', help='Version of iLoops to run.')
         parser.add_argument('-u', '--unpaired-replicates', dest='unpairedReplicates', action='store', 
                             help='Number of unpaired samples.')
         parser.add_argument('-t', '--tag', dest='tag', action='store', default='20',
                             help='Tag of the files.')
-        parser.add_argument('-o', '--output', dest='out', action='store', default='',
-                            help='Path of output data, under the testResults/ directory.')
         parser.add_argument('-d', '--specific-drivers', dest='specificDrivers', action='store', default='',
                             help='Path of the specific drivers for the cancer type.')
         parser.add_argument('-p', '--parallel-range', dest='parallelRange', action='store', default='0',
@@ -123,7 +111,7 @@ class Options(object):
         options     = parser.parse_args(["@" + config_opt.config_file])
         return options
 
-    def printToFile(self,filename="",initialStep=None, wd=None, gwd=None, minExpression=None, inputType=None, replicates=None, iLoopsVersion=None, unpairedReplicates=None, tag=None, specificDrivers=None,parallelRange=None,onlyModels=None):
+    def printToFile(self,filename="",initialStep=None, wd=None, gwd=None, minExpression=None, annotation=None, replicates=None, unpairedReplicates=None, tag=None, specificDrivers=None,parallelRange=None,onlyModels=None):
         """Print the config to a new file, only those values that are different 
         than the default ones. Overwrite those that are passed as arguments."""
         if not filename:
@@ -147,20 +135,15 @@ class Options(object):
             elif self._minExpression != -1.0:         
                 CONFIG.write("minimum-expression=" + str(self._minExpression) + "\n")
             
-            if inputType:
-                CONFIG.write("input-type=" + inputType + "\n")
-            elif self._inputType != "TCGA":
-                CONFIG.write("input-type=" + self._inputType + "\n")
+            if annotation:
+                CONFIG.write("annotation=" + annotation + "\n")
+            elif self._annotation != "ucsc":
+                CONFIG.write("annotation=" + self._annotation + "\n")
             
             if replicates:
                 CONFIG.write("replicates=" + ",".join(replicates) + "\n")
             elif self._replicates:
                 CONFIG.write("replicates=" + ",".join(self._replicates) + "\n")
-            
-            if iLoopsVersion:
-                CONFIG.write("iloops-version=" + iLoopsVersion + "\n")
-            elif self._iLoopsVersion != "iLoops13":
-                CONFIG.write("iloops-version=" + self._iLoopsVersion + "\n")
             
             if unpairedReplicates:
                 CONFIG.write("unpaired-replicates=" + ",".join(unpairedReplicates) + "\n")
@@ -182,7 +165,6 @@ class Options(object):
                 CONFIG.write("specific-drivers=" + specificDrivers + "\n")
             elif self._specificDrivers:
                 CONFIG.write("specific-drivers=" + self._specificDrivers + "\n")
-            #if self._out:                   CONFIG.write("out=" + self._out + "\n")
 
         return cfgFilename
 
@@ -198,8 +180,8 @@ if __name__ == '__main__':
     s1=Options()
     s2=Options()
     if(id(s1)==id(s2)):
-        print "Same"
+        print("Same")
     else:
-        print "Different"
+        print("Different")
 
     s1.printToFile()

@@ -7,5 +7,5 @@ class Test(method.Method):
 		method.Method.__init__(self, __name__, gn_network, tx_network, gn_subnetwork)
 
 	def run(self):
-		for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network,partialCreation=False,removeNoise=True,only_models=True):
-			thisSwitch.analyzeSplicing()
+		from interface import out_network
+		out_network.outCandidateList(self._gene_network, self._transcript_network)

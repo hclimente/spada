@@ -15,7 +15,7 @@ class ConfigParser():
 						  help='Root file of SmartAS folder in Gaudi.')
 		self._parser.add_argument('-m', '--minimum-expression', dest='minExpression', action='store', default='0',
 						  type=float, help='Minimum expression to consider a transcript not residual.')
-		self._parser.add_argument('-i', '--input-type', dest='inputType', action='store', default='TCGA',
+		self._parser.add_argument('-i', '--annotation', dest='annotation', action='store', default='TCGA',
 						  help='Origin of the data.')
 		self._parser.add_argument('-r', '--replicates', dest='replicates', action='store', default='0',
 						  type=int, help='Number of patients or biological replicates.')

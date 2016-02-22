@@ -28,7 +28,7 @@ class InterproAnalysis:
             self._server.soapproxy.http_proxy = http_proxy_conf
 
     def launchAnalysis(self,tx,seq):
-        out = "{0}Data/{1}/InterPro/{2}.tsv".format(options.Options().wd, options.Options().inputType, tx)
+        out = "{0}Data/{1}/InterPro/{2}.tsv".format(options.Options().wd, options.Options().annotation, tx)
 
         # asume that if the file is not present, 
         # its because no feature could be mapped

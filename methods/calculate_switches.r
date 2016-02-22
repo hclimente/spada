@@ -1,5 +1,3 @@
-#!/soft/R/R-3.0.0/bin/Rscript
-
 # get the empirical distribution of the differences between a vector
 #   x numerical vector
 #   minV minimum value to consider that measure
@@ -35,13 +33,18 @@ getEmpiricalDistribution <- function(x,minV){
 library(plyr)
 
 args <- commandArgs(trailingOnly = TRUE)
-outfile <- args[1]
-tumor <- args[2]
+tpm.nt <- args[1]
+tpm.t <- args[2]
+tpm.g.nt <- args[3]
+tpm.g.t <- args[4]
+psi.nt <- args[5]
+psi.t <- args[6]
+outfile <- args[7]
 
 # Prepare the data
 ## read psi
-psi.nt <- read.table(paste0("/projects_rg/TCGA/pipeline/run11/",tumor,"_iso_psi_paired-filtered.txt"), check.names=FALSE)
-psi.t <- read.table(paste0("/projects_rg/TCGA/pipeline/run11/",tumor,"_iso_psi_tumor-filtered.txt"), check.names=FALSE)
+psi.nt <- read.table(psi.nt, check.names=FALSE)
+psi.t <- read.table(psi.t, check.names=FALSE)
 psi <- cbind(psi.nt,psi.t)
 
 rm(psi.nt,psi.t)
@@ -58,15 +61,15 @@ tumor.paired <- gsub("N$","T",normal)
 tumor.unpaired <- setdiff(tumor,tumor.paired)
 
 ## read isoform expression
-xpr.nt <- read.table("/projects_rg/TCGA/pipeline/run11/luad_iso_tpm_paired-filtered.txt", check.names=FALSE)
-xpr.t <- read.table("/projects_rg/TCGA/pipeline/run11/luad_iso_tpm_tumor-filtered.txt", check.names=FALSE)
+xpr.nt <- read.table(tpm.nt, check.names=FALSE)
+xpr.t <- read.table(tpm.t, check.names=FALSE)
 xpr <- cbind(xpr.nt,xpr.t)
 
 rm(xpr.nt,xpr.t)
 
 ## read gene expression
-xpr.gene.nt <- read.table("/projects_rg/TCGA/pipeline/run11/luad_gene_tpm_paired-filtered.txt", check.names=FALSE)
-xpr.gene.t <- read.table("/projects_rg/TCGA/pipeline/run11/luad_gene_tpm_tumor-filtered.txt", check.names=FALSE)
+xpr.gene.nt <- read.table(tpm.g.nt, check.names=FALSE)
+xpr.gene.t <- read.table(tpm.g.t, check.names=FALSE)
 xpr.gene <- cbind(xpr.gene.nt,xpr.gene.t)
 
 ### transform to log
@@ -211,7 +214,8 @@ switches.df <- switches.df[,c("Gene","Normal","Tumor","Sample")]
 # likely to be caused by a lack of representativeness of the median
 # when calculating the deltaPSI
 switches.df.byPat <- ddply(switches.df,.(Gene,Normal,Tumor),summarise,
-                                  Paired=sum(Sample %in% tumor.paired), Unpaired=sum(Sample %in% tumor.unpaired) )
+                           Paired=sum(Sample %in% tumor.paired), 
+                           Unpaired=sum(Sample %in% tumor.unpaired) )
 
 p <- apply(switches.df.byPat[,c("Paired","Unpaired")],1,
       function(x,p){
@@ -219,9 +223,10 @@ p <- apply(switches.df.byPat[,c("Paired","Unpaired")],1,
         b$p.value
       },length(tumor.paired)/length(tumor.unpaired))
 
-# remove those with an uncorrected p < 0.25
-switches.df.byPat.filt <- subset(switches.df.byPat, p >= 0.25, select=c("Gene","Normal","Tumor"))
-
+# remove those genes significantly unbalance towards unpaired patients
+# also those that have 0 paired patients, as those are the switches 
+# where the method applies
+switches.df.byPat.filt <- subset(switches.df.byPat, p >= 0.05 & Paired>0, select=c("Gene","Normal","Tumor"))
 switches.df.filt <- merge(switches.df.byPat.filt,switches.df)
 
 write.table(switches.df.filt, file=outfile, sep="\t", row.names=F, col.names=F, quote=F)

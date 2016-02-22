@@ -6,8 +6,8 @@ from methods import method
 
 import fisher
 import pandas as pd
-from rpy2.robjects.packages import importr
-from rpy2.robjects.vectors import FloatVector
+#from rpy2.robjects.packages import importr
+#from rpy2.robjects.vectors import FloatVector
 
 class MutationComparison(method.Method):
 	def __init__(self,gn_network,tx_network):
@@ -54,9 +54,9 @@ class MutationComparison(method.Method):
 	def readMutations(self,mutationType):
 
 		if mutationType == 'all_mutations':
-			mutFile = "{0}Data/{1}/Rawdata/{2}_gene_mutation-count_full.txt".format(options.Options().wd,options.Options().inputType,options.Options().tag)
+			mutFile = "{0}Data/{1}/Rawdata/{2}_gene_mutation-count_full.txt".format(options.Options().wd,options.Options().annotation,options.Options().tag)
 		elif mutationType == 'functional_mutations':
-			mutFile = "{0}Data/{1}/Rawdata/{2}_gene_mutation-functional-count_full.txt".format(options.Options().wd,options.Options().inputType,options.Options().tag)
+			mutFile = "{0}Data/{1}/Rawdata/{2}_gene_mutation-functional-count_full.txt".format(options.Options().wd,options.Options().annotation,options.Options().tag)
 
 		mutations = {}
 
@@ -100,7 +100,7 @@ class MutationComparison(method.Method):
 
 		# search single gene bias
 
-		stats = importr('stats')
+		#stats = importr('stats')
 
 		table = []
 		mutations = self.mutations[mutationSet]
@@ -132,8 +132,8 @@ class MutationComparison(method.Method):
 						  "fisher_mutual_exclusion":p.left_tail,"jaccard":j,
 						  "nTx":thisSwitch.nTx,"tTx":thisSwitch.tTx })
 
-		p_adj_me = stats.p_adjust(FloatVector([ x["fisher_mutual_exclusion"] for x in table ]), method='BH')
-		p_adj_overlap = stats.p_adjust(FloatVector([ x["fisher_overlap"] for x in table ]), method='BH')
+		#p_adj_me = stats.p_adjust(FloatVector([ x["fisher_mutual_exclusion"] for x in table ]), method='BH')
+		#p_adj_overlap = stats.p_adjust(FloatVector([ x["fisher_overlap"] for x in table ]), method='BH')
 
 		with open("{0}mutations/gene_{1}_{2}.txt".format(options.Options().qout,mutationSet,switchSet),"w") as OUT:
 			for i in range(len(table)):

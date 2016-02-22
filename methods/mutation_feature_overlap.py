@@ -88,7 +88,7 @@ class MutationFeatureOverlap(method.Method):
 
 	def readMutations(self):
 
-		mutFile = "{0}Data/{1}/Rawdata/{2}_gene_mutation-functional-count_full.txt".format(options.Options().wd,options.Options().inputType,options.Options().tag)
+		mutFile = "{0}Data/{1}/Rawdata/{2}_gene_mutation-functional-count_full.txt".format(options.Options().wd,options.Options().annotation,options.Options().tag)
 
 		mutations = {}
 

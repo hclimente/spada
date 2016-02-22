@@ -131,12 +131,12 @@ class NetworkAnalysis(method.Method):
 				break
 			counter +=1
 
-		if options.Options().inputType == "TCGA": 
+		if options.Options().annotation == "ucsc": 
 			self._gene_subnetworks[x] = ucsc_gene_network.UCSCGeneNetwork()
 			self._gene_subnetworks[x]._net = networkx.subgraph(self._gene_network._net, topGenes)
 			
 		else:
-			self.logger.error("Unrecognized input type {0}.".format(options.Options().inputType))
+			self.logger.error("Unrecognized input type {0}.".format(options.Options().annotation))
 			exit()
 
 		out_network.outTSV(self._gene_subnetworks[x],"{0}guildTop{1}".format(self.guildOut, x))

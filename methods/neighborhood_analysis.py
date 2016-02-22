@@ -3,8 +3,8 @@ from libs import utils
 from methods import method
 
 from collections import Counter
-from rpy2.robjects.packages import importr
-from rpy2.robjects.vectors import FloatVector
+#from rpy2.robjects.packages import importr
+#from rpy2.robjects.vectors import FloatVector
 import pandas as pd
 from scipy.stats import fisher_exact
 
@@ -82,8 +82,8 @@ class NeighborhoodAnalysis(method.Method):
 				geneSets[g][s]["pval"] = pval
 				geneSets[g][s]["oddsRatio"] = OR
 		
-			stats = importr('stats')
-			p_adjust = stats.p_adjust(FloatVector([geneSets[x][s]["pval"] for x in geneSets]),method='BH')
+			#stats = importr('stats')
+			#p_adjust = stats.p_adjust(FloatVector([geneSets[x][s]["pval"] for x in geneSets]),method='BH')
 
 			with open("{0}neighborhood_analysis/{1}_{2}{3}.txt".format(options.Options().qout,sGenesetTag,s,options.Options().filetag),"w") as OUT:
 				OUT.write("GeneSet\tCancer\tpval\tqval\tNormalizedAverageAffection\t")

@@ -113,6 +113,11 @@ echo -e "Cancer\tRandom\tGene\tSymbol\tnTranscript\ttTranscript\tTag\tOrfChange\
 grep -v ^Cancer ~/testResults/TCGA/????/result_summary/exons_new_onlyModels.tsv | cut -d':' -f2 >>~/temp/exons_new.tsv
 checkFile switches exons_new.tsv
 
+# isoform ranking
+echo -e "Cancer\tRandom\tGene\tSymbol\tnTranscript\ttTranscript\tnRank\ttRank\tExpressedTxs\tAllTxs" >~/temp/txRank.tsv
+grep -v ^Cancer ~/testResults/TCGA/????/result_summary/txRank_onlyModels.tsv | cut -d':' -f2 >>~/temp/txRank.tsv
+checkFile switches txRank.tsv
+
 # isoform length
 echo -e "Cancer\tRandom\tnIsoLength\ttIsoLength\tnIsoSpecificLength\ttIsoSpecificLength" >~/temp/isoform_length.tsv
 ls ~/testResults/TCGA/????/result_summary/isoform_length_onlyModels.tsv | xargs -n 1 tail -n +2 >>~/temp/isoform_length.tsv
@@ -142,6 +147,8 @@ if [[ "$copyFlag" != "" ]]
     copyFile switches exons.tsv
     copyFile switches exonsPerSwitch.tsv
     copyFile switches exons_new.tsv
+    # ranking
+    copyFile switches txRank.tsv
     # isoform length
     copyFile switches isoform_length.tsv
 fi
@@ -307,6 +314,11 @@ echo -e "Cancer\tGene\tSymbol\tTranscript\tTPM\tProteinLength" >~/temp/switch_in
 grep -v ^Cancer testResults/TCGA/????/mutations/switch_information.txt | cut -d':' -f2- >>~/temp/switch_information.txt
 checkFile mutations switch_information.txt
 
+# wgs mutations
+echo -e "Tumor\tGene\tSymbol\tPatient\tPosition\tReference\tVariant" >~/temp/wgs_mutations.txt
+grep -v ^Tumor testResults/TCGA/????/mutations/wgs_mutations.txt | cut -d':' -f2- >>~/temp/wgs_mutations.txt
+checkFile mutations wgs_mutations.txt
+
 if [[ "$copyFlag" != "" ]]
 
     then
@@ -327,6 +339,7 @@ if [[ "$copyFlag" != "" ]]
     copyFile mutations switch_features.txt
     copyFile mutations switch_mutations.txt
     copyFile mutations switch_information.txt
+    copyFile mutations wgs_mutations.txt
 
     dest=/projects_rg/TCGA/users/hector/SmartAS/mutations/v$version
     ln -s /projects_rg/TCGA/users/hector/SmartAS/comet/ $dest
@@ -335,4 +348,4 @@ fi
 
 rm -r ~/temp
 
-#Pipeline/scripts/PLOT_analyzeResults.R
+Pipeline/scripts/PLOT_analyzeResults.R

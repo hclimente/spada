@@ -41,20 +41,24 @@ class IsoformNetwork(network.Network):
 	def genenameFilter(self, **kwds):
 		raise NotImplementedError()
 
-	def add_node(self, tx, gene_full_name):
+	def add_node(self,tx,genesFullName):
 		
 		if tx in self.nodes():
 			self.logger.debug("Transcript {0}, gene {1} already in the network.".format(tx, gene_full_name))
 			return True
 
-		geneID = self.genenameFilter( full_name=gene_full_name )[0]
+		genes = set()
+		for g in genesFullName:
+			gene = self.genenameFilter(full_name=g)[0]
+			if gene != None:
+				genes.add(gene)
 
-		if geneID is None:
+		if not genes:
 			self.logger.debug("No gene could be extracted for transcript {0}, gene {1}.".format(tx, gene_full_name))
 			return False
 		
 		return self._net.add_node( 	tx, 
-									gene_id			= geneID,
+									gene_id			= genes,
 									exonStructure	= None,
 									txCoords		= None,
 									cdsCoords		= None,
@@ -99,48 +103,43 @@ class IsoformNetwork(network.Network):
 			if median_PSI is not None: self.update_node( tx, "median_PSI_T", median_PSI )
 			if median_TPM is not None: self.update_node( tx, "median_TPM_T", median_TPM )
 
-		# currentLoopFamily 	= ""
-		# for line in utils.readTable("Data/TCGA/UnifiedFasta_" + options.Options().iLoopsVersion + "_loopFamilies.txt", header=False):
-		# 	txName = ""
-		# 	if ">" in line[0]:
-		# 		currentLoopFamily = line[0][1:]
-		# 		txName = line[1]
-		# 	else:
-		# 		txName = line.pop()
-			
-		# 	if txName in self.nodes(): 
-		# 		self.update_node(txName, "iLoopsFamily", currentLoopFamily)
+	def importTranscriptome(self):
+		for line in utils.readTable("data/{}/genesAndTranscripts.txt".format(options.Options().annotation)):
+			gene = line[0].split(":")
+			tx = line[1]
 
-	def readTranscriptInfo(self):
-		self.logger.debug("Reading transcript info: exon, CDS and UTR structure.")
-		for line in utils.readTable("{0}Data/{1}/knownGene.txt".format(options.Options().wd, options.Options().inputType), header=False):
-			if line[0] not in self.nodes(): continue
+			self.add_node(tx,gene)
 
-			tx			= line[0]
-			chrom		= line[1] 
-			strand		= line[2] 
-			txStart		= int(line[3])
-			txEnd		= int(line[4])
-			cdsStart	= int(line[5])
-			cdsEnd		= int(line[6])
-			exonCount	= int(line[7])
-			exonStarts	= map(int, filter(None, line[8].split(",") ) )
-			exonEnds	= map(int, filter(None, line[9].split(",") ) )
-			proteinID	= line[10]
-			alignID		= line[11]
+		for line in utils.readTable("data/{}/annotation.gtf".format(options.Options().annotation)):
+			seqname 	= line[0]
+			source 		= line[1]
+			feature 	= line[2]
+			start 		= int(line[3])
+			end 		= int(line[4])
+			score 		= line[5]
+			strand 		= line[6]
+			frame 		= line[7]
+			attribute 	= line[8].split(";")
 
-			self.update_node(tx, "exonStructure", [])
-			for i in range(0, len(exonStarts)):
-				exon = [ exonStarts[i], exonEnds[i] ]
-				self.update_node(tx, "exonStructure", exon)
+			tx = [ x.split(" ")[1].strip("\"") for x in attribute if "transcript_id" in x ]
+
+			if tx not in self.nodes():
+				continue
+
+			if feature=="exon":
+				exon = [ start, end ]
+				self.update_node(tx,"exonStructure",exon)
+
+			elif feature=="CDS":
+				self.update_node(tx, "cdsCoords", [start,end])
+
+			self.update_node(tx, "strand", strand)
+			self.update_node(tx, "chr", seqname)
 
 			self.update_node(tx, "txCoords", [txStart, txEnd])
-			self.update_node(tx, "cdsCoords", [cdsStart, cdsEnd])
-			self.update_node(tx, "strand", strand)
-			self.update_node(tx, "chr", chrom)
 
 		self.logger.debug("Reading transcript info: protein sequence, Uniprot and iLoops family.")
-		with open("{0}Data/{1}/UnifiedFasta_{2}.fa".format(options.Options().wd, options.Options().inputType, options.Options().iLoopsVersion)) as FASTA:
+		with open("{}data/{}/sequences.uniprot.loops.fa".format(options.Options().wd, options.Options().annotation)) as FASTA:
 			txName 			= ""
 			geneFullName 	= ""
 			sequence 		= ""
@@ -163,7 +162,6 @@ class IsoformNetwork(network.Network):
 
 				else:
 					sequence += line.strip()
-
 
 	def iterate_transcripts(self):
 		'''

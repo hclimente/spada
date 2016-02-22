@@ -55,13 +55,16 @@ class StructuralAnalysis(method.Method):
 		# get loops families
 
 		isoInfo = {}
-		for line in open(options.Options().wd+"Data/TCGA/UnifiedFasta_iLoops13.fa"):
+		for line in open("{}data/{}/sequences.uniprot.loops.fa".format(
+			options.Options().wd,options.Options().annotation)):
 			if ">" in line:
 				elements = line.strip().split("#")
 				isoInfo[elements[0][1:]] = {}
 				isoInfo[elements[0][1:]]["UniProt"] = elements[2]
 				isoInfo[elements[0][1:]]["iLoopsFamily"] = elements[3]
 
+		import pdb
+		pdb.set_trace()
 		for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network,partialCreation=True,removeNoise=True):
 			
 			if not thisSwitch.nIsoform or not thisSwitch.tIsoform: 

@@ -22,12 +22,12 @@ class GetSwitches(method.Method):
 
 			# copy random structural_analysis, as it is computationally expensive
 			utils.cmd("cp",
-					  "{0}testResults/{1}/{2}/structural_analysis/*random*".format(options.Options().wd,options.Options().inputType,options.Options().parentTag),
+					  "{0}testResults/{1}/{2}/structural_analysis/*random*".format(options.Options().wd,options.Options().annotation,options.Options().parentTag),
 					  "{0}structural_analysis".format(options.Options().qout))
 
 			# copy random switches
 			utils.cmd("cp",
-					  "{0}testResults/{1}/{2}/randomGeneNetwork.pkl".format(options.Options().wd,options.Options().inputType,options.Options().parentTag),
+					  "{0}testResults/{1}/{2}/randomGeneNetwork.pkl".format(options.Options().wd,options.Options().annotation,options.Options().parentTag),
 					  options.Options().qout)
 
 		self.createGeneNetwork(switchesFile,externalSwitches=externalSwitches)
@@ -43,8 +43,15 @@ class GetSwitches(method.Method):
 		switchesFile = "{}candidateList.tsv".format(options.Options().qout)
 
 		self.logger.info("Calculating switches.")
-		utils.cmd('/soft/R/R-3.0.0/bin/Rscript', 'pipeline/methods/calculate_switches.r', 
-			switchesFile,options.Options().tag)
+		utils.cmd('/soft/R/R-3.2.3/bin/Rscript', 
+			'pipeline/methods/calculate_switches.r', 
+			"{}data/{}/rawdata/{}_iso_tpm_paired-filtered.txt".format(options.Options().wd,options.Options().annotation,options.Options().tag),
+			"{}data/{}/rawdata/{}_iso_tpm_tumor-filtered.txt".format(options.Options().wd,options.Options().annotation,options.Options().tag),
+			"{}data/{}/rawdata/{}_gene_tpm_paired-filtered.txt".format(options.Options().wd,options.Options().annotation,options.Options().tag),
+			"{}data/{}/rawdata/{}_gene_tpm_tumor-filtered.txt".format(options.Options().wd,options.Options().annotation,options.Options().tag),
+			"{}data/{}/rawdata/{}_iso_psi_paired-filtered.txt".format(options.Options().wd,options.Options().annotation,options.Options().tag),
+			"{}data/{}/rawdata/{}_iso_psi_tumor-filtered.txt".format(options.Options().wd,options.Options().annotation,options.Options().tag),
+			switchesFile)
 
 		return switchesFile
 
@@ -53,17 +60,24 @@ class GetSwitches(method.Method):
 		self.logger.info("Creating gene network.")
 
 		if externalSwitches and options.Options().parentTag:
-			self._gene_network = cPickle.load(open("{0}testResults/{1}/{2}/geneNetwork.pkl".format(options.Options().wd,options.Options().inputType,options.Options().parentTag),"r"))
+			self._gene_network = cPickle.load(open("{}results/{}/geneNetwork.pkl".format(options.Options().wd,options.Options().parentTag),"r"))
 			self._gene_network.createLogger()
 			self._gene_network.cleanNetwork()
 		else:
-			if options.Options().inputType == "TCGA": 
+			if options.Options().annotation == "TCGA": 
 				self._gene_network = ucsc_gene_network.UCSCGeneNetwork()
 			else:
-				self.logger.error("Unrecognized input type {0}.".format(options.Options().inputType))
+				self.logger.error("Unrecognized input type {0}.".format(options.Options().annotation))
 				exit()
 		
 			self.logger.debug("Reading gene info.")
+
+			utils.cmd('/soft/R/R-3.2.3/bin/Rscript', 
+				'pipeline/methods/get_expression.r', 
+				"{}data/{}/rawdata/{}_iso_tpm_paired-filtered.txt".format(options.Options().wd,options.Options().annotation,options.Options().tag),
+				"{}data/{}/rawdata/{}_iso_tpm_tumor-filtered.txt".format(options.Options().wd,options.Options().annotation,options.Options().tag),
+				"{}transcript_expression.tsv".format(options.Options().qout))
+
 			self._gene_network.readGeneInfo()
 			if options.Options().specificDrivers:
 				self._gene_network.importSpecificDrivers()
@@ -80,13 +94,13 @@ class GetSwitches(method.Method):
 
 	def createTranscriptNetwork(self,externalSwitches,recover=False):
 		if externalSwitches and options.Options().parentTag:
-			self._transcript_network = cPickle.load(open("{0}testResults/{1}/{2}/txNetwork.pkl".format(options.Options().wd,options.Options().inputType,options.Options().parentTag),"r"))
+			self._transcript_network = cPickle.load(open("{0}testResults/{1}/{2}/txNetwork.pkl".format(options.Options().wd,options.Options().annotation,options.Options().parentTag),"r"))
 			self._transcript_network.createLogger()
 		else:
-			if options.Options().inputType == "TCGA":
+			if options.Options().annotation == "TCGA":
 				self._transcript_network = ucsc_isoform_network.UCSCIsoformNetwork()
 			else:
-				self.logger.error("Unrecognized input type {0}.".format(options.Options().inputType))
+				self.logger.error("Unrecognized input type {0}.".format(options.Options().annotation))
 				exit()
 
 			self.logger.info("Creating transcript network.")
