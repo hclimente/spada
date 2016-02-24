@@ -3,7 +3,7 @@
 from libs import options
 
 import networkx as nx
-import cPickle
+import cPickle as pickle
 import abc
 import logging
 
@@ -86,7 +86,7 @@ class Network:
 		#Unattach logger to save without thread problems
 		self.removeLogger()
 		with open(options.Options().qout + filename, "wb") as NET_DUMP:
-			cPickle.dump(self, NET_DUMP, -1)
+			pickle.dump(self, NET_DUMP, -1)
 
 		self.createLogger()
 

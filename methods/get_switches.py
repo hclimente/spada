@@ -5,7 +5,7 @@ from libs import utils
 from methods import method
 from network import ucsc_gene_network, ucsc_isoform_network
 
-import cPickle
+import cPickle as pickle
 
 class GetSwitches(method.Method):
 	def __init__(self, gn_network, tx_network, gn_subnetwork):
@@ -13,7 +13,7 @@ class GetSwitches(method.Method):
 
 	def run(self):
 
-		#self.createGeneNetwork()
+		self.createGeneNetwork()
 		self.createTranscriptNetwork()
 
 		if not options.Options().externalSwitchesFile:
@@ -38,8 +38,6 @@ class GetSwitches(method.Method):
 		out_network.outputGTF(self._gene_network,self._transcript_network)
 		out_network.outCandidateList(self._gene_network,self._transcript_network)
 
-		options.Options().printToFile(initialStep="get-functional-switches")
-
 	def calculateSwitches(self):
 
 		switchesFile = "{}candidateList.tsv".format(options.Options().qout)
@@ -62,7 +60,7 @@ class GetSwitches(method.Method):
 		self.logger.info("Creating gene network.")
 
 		if options.Options().externalSwitchesFile and options.Options().parentTag:
-			self._gene_network = cPickle.load(open("{}results/{}/geneNetwork.pkl".format(options.Options().wd,options.Options().parentTag),"r"))
+			self._gene_network = pickle.load(open("{}results/{}/geneNetwork.pkl".format(options.Options().wd,options.Options().parentTag),"r"))
 			self._gene_network.createLogger()
 			self._gene_network.cleanNetwork()
 		else:
@@ -92,7 +90,7 @@ class GetSwitches(method.Method):
 
 	def createTranscriptNetwork(self,recover=False):
 		if options.Options().externalSwitchesFile and options.Options().parentTag:
-			self._transcript_network = cPickle.load(open("{}results/{}/txNetwork.pkl".format(options.Options().wd,options.Options().parentTag),"r"))
+			self._transcript_network = pickle.load(open("{}results/{}/txNetwork.pkl".format(options.Options().wd,options.Options().parentTag),"r"))
 			self._transcript_network.createLogger()
 		else:
 			if options.Options().annotation == "ucsc":

@@ -5,7 +5,7 @@ from methods import method
 from methods import structural_analysis
 
 import copy
-import cPickle
+import cPickle as pickle
 import itertools
 import operator
 import random
@@ -46,7 +46,7 @@ class GetRandomSwitches(method.Method):
 		else:
 			# calculate functional switches
 			self.logger.info("Calculating features for random switches.")
-			gcopy = cPickle.load(open("{}randomGeneNetwork.pkl".format(options.Options().qout)))
+			gcopy = pickle.load(open("{}randomGeneNetwork.pkl".format(options.Options().qout)))
 			S = structural_analysis.StructuralAnalysis(gcopy,self._transcript_network,isRand=True)
 			S.run()	
 

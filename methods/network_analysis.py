@@ -6,8 +6,9 @@ from libs import utils
 from methods import method
 from network import ucsc_gene_network
 
-from libs.guild.src import combine_scores
-from libs.guild.src import create_random_networks_for_netzcore
+# Python 3
+#from libs.guild.src import combine_scores
+#from libs.guild.src import create_random_networks_for_netzcore
 
 import pandas as pd
 import networkx as nx
@@ -122,7 +123,7 @@ class NetworkAnalysis(method.Method):
 		topThreshold = round(len(self._gene_network.nodes()) * topX)
 		topGenes = []
 
-		sortedNodes = sorted(self._gene_network.nodes(data=True), key=lambda (a, dct): dct['scoreG'], reverse=True)
+		sortedNodes = sorted(self._gene_network.nodes(data=True), key=lambda a, dct: dct['scoreG'], reverse=True)
 		counter = 1
 		for gene in [ y[0] for y in sortedNodes ]:
 			if counter <= topThreshold: 

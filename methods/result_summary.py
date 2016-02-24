@@ -4,7 +4,7 @@ from libs import options
 from libs import utils
 from methods import method
 
-import cPickle
+import cPickle as pickle
 import fisher
 from itertools import groupby
 import numpy as np
@@ -17,7 +17,7 @@ class ResultSummary(method.Method):
 	def __init__(self,gn_network,tx_network):
 		method.Method.__init__(self, __name__,gn_network,tx_network)
 
-		self._random_gene_network = cPickle.load(open("{0}randomGeneNetwork.pkl".format(options.Options().qout)))
+		self._random_gene_network = pickle.load(open("{0}randomGeneNetwork.pkl".format(options.Options().qout)))
 		self._random_gene_network.createLogger()
 
 		self.proteinStats = { "Random": [], "NonRandom": []}
@@ -99,8 +99,7 @@ class ResultSummary(method.Method):
 		for gene,info,switchDict,thisSwitch in self._random_gene_network.sampleSwitches(self._transcript_network,numIterations=testedSwitches):
 			self.switchAndExonOverview(True,gene,info,switchDict,thisSwitch)
 			self.proteinOverview(True,switchDict,txDict,thisSwitch)
-
-		 	self.changedStructuralFeatures(True,gene,info,switchDict,thisSwitch)
+			self.changedStructuralFeatures(True,gene,info,switchDict,thisSwitch)
 
 		# tests at gene level
 		for gene,info in self._gene_network.iterate_genes_ScoreWise():
@@ -225,7 +224,7 @@ class ResultSummary(method.Method):
 		for specificCds,specificUtr,cds,origin in zip([nSpecificCds,tSpecificCds],[nSpecificUtr,tSpecificUtr],[nTx.cds,tTx.cds],["nIso","tIso"]):
 		
 			specificRegions = sorted(list(specificUtr | specificCds))
-			exons = [ set(map(itemgetter(1),g)) for k,g in groupby(enumerate(specificRegions), lambda (i,x): i-x) ]
+			exons = [ set(map(itemgetter(1),g)) for k,g in groupby(enumerate(specificRegions), lambda i,x: i-x) ]
 			
 			for exon in exons:
 
