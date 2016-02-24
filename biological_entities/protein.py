@@ -16,14 +16,14 @@ import os
 class Protein:
 	def __init__(self, tx, txInfo):
 
-		self._tx 				= tx
-		self._gene 				= txInfo["gene_id"]
-		self._uniprot 			= txInfo["Uniprot"]
-		self._sequence 			= txInfo["proteinSequence"]
+		self._tx				= tx
+		self._gene				= txInfo["gene_id"]
+		self._uniprot			= txInfo["Uniprot"]
+		self._sequence			= txInfo["proteinSequence"]
 		self._structure			= []
 		self._residueCorresp	= {}
 		self._has_pdbs			= False
-		self._pfam 				= []
+		self._pfam				= []
 		self._prosite			= {}
 		self._pdbs				= {}
 
@@ -48,7 +48,6 @@ class Protein:
 			for res in sorted(self._structure,key=lambda x: x.num):
 				yield res
 
-
 	def mapSubsequence(self, querySequence, strict=True):
 
 		#Get alignment
@@ -66,7 +65,7 @@ class Protein:
 			if subSeq[lPos] != "-" and posOri < len(self._sequence): 
 				thisRes = querySequence[posSub]
 
-				if not strict: 							
+				if not strict:							
 					correspondence.append(posOri)
 				elif self._sequence[posOri] == thisRes: 
 					correspondence.append(posOri)
@@ -93,9 +92,9 @@ class Protein:
 		except AttributeError:
 			return False
 		
-		interacting_surface 	= []
+		interacting_surface		= []
 		non_interacting_surface = []
-		buried 					= []
+		buried					= []
 
 		#Get interface
 		ppComplex = Complex(pdb, PNI=False, PHI=False)
@@ -116,7 +115,7 @@ class Protein:
 		for x in range(0, len(a)):
 			thisRes = chainObj.aminoacids[x]
 
- 			if thisRes.identifier in buried:
+			if thisRes.identifier in buried:
 				self._structure[a[x]].setTag("B")
 				self._structure[a[x]]._pdbMapping[interactionPdb] = ( chainObj.chain, thisRes.identifier, "B" )
 				logging.debug("{0}: residue {1}-{2} ({3} in sequence) detected as buried.".format(
@@ -143,7 +142,7 @@ class Protein:
 		#Generate a list with the genomic position of all codons of the CDS.
 		if strand == "+": 
 			cdsStart = cds[0]
-			cdsEnd 	 = cds[1]
+			cdsEnd	 = cds[1]
 			
 			for exonStart,exonEnd in exons:
 				if exonEnd < cdsStart or exonStart > cdsEnd: continue
@@ -159,7 +158,7 @@ class Protein:
 
 		elif strand == "-": 
 			cdsStart = cds[1]
-			cdsEnd 	 = cds[0]
+			cdsEnd	 = cds[0]
 
 			for exonEnd,exonStart in [ (x-1,y-1) for x,y in reversed(exons) ]:
 				if exonEnd > cdsStart or exonStart < cdsEnd: continue
@@ -224,8 +223,8 @@ class Protein:
 		return True
 
 	def report(self,pdb=""):
-		seq 	= ""
-		isoSp 	= ""
+		seq	= ""
+		isoSp	= ""
 		for aResidue in self._structure:
 			if pdb:
 				if pdb not in aResidue._pdbMapping:
@@ -238,13 +237,13 @@ class Protein:
 					elif aResidue._pdbMapping[pdb][2] == "B":
 						seq += "B"
 			else:
-				if aResidue.tag is None: 	seq += "*"
+				if aResidue.tag is None:	seq += "*"
 				elif aResidue.tag == "NIS":	seq += "S"
-				elif aResidue.tag == "IS": 	seq += "I"
-				elif aResidue.tag == "B": 	seq += "B"
+				elif aResidue.tag == "IS":	seq += "I"
+				elif aResidue.tag == "B":	seq += "B"
 
-			if aResidue.isoformSpecific: 	isoSp += "X"
-			else: 							isoSp += "-"
+			if aResidue.isoformSpecific:	isoSp += "X"
+			else:							isoSp += "-"
 
 		return (seq,isoSp)
 
@@ -336,7 +335,7 @@ class Protein:
 				for line in out:
 					resNum  = int(line[0])
 					residue	= line[1]
-					score 	= float(line[2].strip())
+					score	= float(line[2].strip())
 					ANCHORout.write("{0}\t{1}\t{2}\n".format(resNum,residue,score))
 					thisRes = self._structure[resNum-1]
 
@@ -350,7 +349,7 @@ class Protein:
 			for line in utils.readTable(outfile,header=False):
 				resNum  = int(line[0])
 				residue	= line[1]
-				score 	= float(line[2].strip())
+				score	= float(line[2].strip())
 				thisRes = self._structure[resNum-1]
 
 				if residue != thisRes.res:
@@ -378,7 +377,7 @@ class Protein:
 				for line in out:
 					resNum  = int(line[0])
 					residue	= line[1]
-					score 	= float(line[-1])
+					score	= float(line[-1])
 					IUout.write("{0}\t{1}\t{2}\n".format(resNum,residue,score))
 
 					thisRes = self._structure[resNum-1]
@@ -392,7 +391,7 @@ class Protein:
 			for line in utils.readTable(outfile,header=False):
 				resNum  = int(line[0])
 				residue	= line[1]
-				score 	= float(line[-1])
+				score	= float(line[-1])
 				thisRes = self._structure[resNum-1]
 
 				if residue != thisRes.res:
@@ -459,7 +458,7 @@ class Protein:
 				featInfo["accession"]	= signature_accession
 				featInfo["description"]	= signature_descript
 				featInfo["analysis"]	= analysis
-				featInfo["go"]	  		= go_annotation
+				featInfo["go"]	 		= go_annotation
 				self._pfam.append(featInfo)
 
 
