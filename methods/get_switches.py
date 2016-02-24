@@ -84,7 +84,7 @@ class GetSwitches(method.Method):
 			if options.Options().specificDrivers:
 				self._gene_network.importSpecificDrivers()
 			
-			#self._gene_network.importKnownInteractions()
+			self._gene_network.importKnownInteractions()
 
 		self._gene_network.saveNetwork("geneNetwork.pkl")
 

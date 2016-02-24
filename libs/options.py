@@ -76,7 +76,7 @@ class Options(object):
         parser.add_argument('-s', '--initial-step', dest='initial_step', action='store', 
                             type=str, help='Where should SmartAS start.')
         parser.add_argument('-wd', '--working-directory', dest='wd', action='store', 
-                            default='/home/hector/SmartAS/', 
+                            default='/home/hector/smartas/', 
                             help='Root file of SmartAS folder in the current machine.')
         parser.add_argument('-m', '--minimum-expression', dest='minExpression', action='store', 
                             default='-1', type=float, 
@@ -120,7 +120,7 @@ class Options(object):
             
             if wd:
                 CONFIG.write("working-directory=" + wd + "\n")
-            elif self._wd != '/home/hector/SmartAS/':
+            elif self._wd != '/home/hector/smartas/':
                 CONFIG.write("working-directory=" + self._wd + "\n")
             
             if minExpression:
@@ -164,7 +164,7 @@ class Options(object):
         
         if wd:
             cfg.extend(["--working-directory",wd])
-        elif self._wd != '/home/hector/SmartAS/':
+        elif self._wd != '/home/hector/smartas/':
             cfg.extend(["--working-directory",self._wd])
         
         if minExpression:
