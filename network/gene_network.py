@@ -1,10 +1,9 @@
-import network
+from biological_entities import switch
 from libs import utils
 from libs import options
-from biological_entities import switch
+import network
 
 import abc
-import biana
 import numpy as np
 import pandas as pd
 import random
@@ -238,131 +237,37 @@ class GeneNetwork(network.Network):
 
 	def importKnownInteractions(self):
 
-		self.logger.debug("Importing interactions from BIANA.")
+		for line in utils.readTable("{}data/{}/BIOGRID-MV-Physical-3.4.133.tab2.txt".format(options.Options().wd,options.Options().annotation)):
+			bioGRIDInteractionID		= line[0]
+			entrezGeneInteractorA		= line[1]
+			entrezGeneInteractorB		= line[2]
+			bioGRIDIDInteractorA		= line[3]
+			bioGRIDIDInteractorB		= line[4]
+			systematicNameInteractorA	= line[5]
+			systematicNameInteractorB	= line[6]
+			officialSymbolInteractorA	= line[7]
+			officialSymbolInteractorB	= line[8]
+			synonymsInteractorA			= line[9]
+			synonymsInteractorB			= line[10]
+			experimentalSystem			= line[11]
+			experimentalSystemType		= line[12]
+			author						= line[13]
+			pubmedID					= line[14]
+			organismInteractorA			= line[15]
+			organismInteractorB			= line[16]
+			throughput					= line[17]
+			score						= line[18]
+			modification				= line[19]
+			phenotypes					= line[20]
+			qualifications				= line[21]
+			tags						= line[22]
+			sourceDatabase				= line[23]
 
-		affinity_methods = { 
-							'492':'in vivo', '493':'in vitro', '0':'molecular interaction', 
-							'4':'affinity chromatography technology', '6':'anti bait coimmunoprecipitation', 
-							'7':'anti tag coimmunoprecipitation', '8':'array technology', 
-							'9':'bacterial display', '19':'coimmunoprecipitation', 
-							'28':'cosedimentation in solution', '29':'cosedimentation through density gradient', 
-							'30':'cross-linking', '34':'display technology', '47':'far western blotting', 
-							'48':'filamentous phage display', '49':'filter binding', '66':'lambda phage display', 
-							'71':'molecular sieving', '73':'mrna display', '81':'peptide array', 
-							'84':'phage display', '89':'protein array', '92':'protein in situ array', 
-							'95':'proteinchip(r) on a surface-enhanced laser desorption/ionization', 
-							'96':'pull down', '98':'ribosome display', '108':'t7 phage display', 
-							'115':'yeast display', '225':'chromatin immunoprecipitation array', 
-							'400':'affinity technology', '402':'chromatin immunoprecipitation assay', 
-							'405':'competition binding', '411':'enzyme linked immunosorbent assay', 
-							'412':'electrophoretic mobility supershift assay', 
-							'413':'electrophoretic mobility shift assay', '440':'saturation binding', 
-							'657':'systematic evolution of ligands by exponential enrichment', 
-							'676':'tandem affinity purification', '678':'antibody array', 
-							'695':'sandwich immunoassay', '729':'luminescence based mammalian interactome mapping', 
-							'813':'proximity enzyme linked immunosorbent assay', 
-							'858':'immunodepleted coimmunoprecipitation', '892':'solid phase assay', 
-							'899':'p3 filamentous phage display', '900':'p8 filamentous phage display', 
-							'921':'surface plasmon resonance array', '946':'ping', '947':'bead aggregation assay', 
-							'963':'interactome parallel affinity capture', '1017':'rna immunoprecipitation', 
-							'1028':'modified chromatin immunoprecipitation', 
-							'1029':'proteomics of isolated chromatin segments', '1031':'protein folding/unfolding', 
-							'1087':'monoclonal antibody blockade'
-						}
-
-		complementation_methods={
-    			'492':'in vivo', '493':'in vitro', '0':'molecular interaction',
-    			'10':	'beta galactosidase complementation', '11':	'beta lactamase complementation', 
-    			'14':	'adenylate cyclase complementation', '18':	'two hybrid', 
-    			'90':	'protein complementation assay', '97':	'reverse ras recruitment system',
-    			'111':	'dihydrofolate reductase reconstruction', '112':	'ubiquitin reconstruction', 
-    			'228':	'cytoplasmic complementation assay', 
-    			'229':	'green fluorescence protein complementation assay', 
-    			'230':	'membrane bound complementation assay', 
-    			'231':	'mammalian protein protein interaction trap',
-    			'232':	'transcriptional complementation assay', '369':	'lex-a dimerization assay', 
-    			'370':	'tox-r dimerization assay', '397':	'two hybrid array', 
-    			'398':	'two hybrid pooling approach', '399':	'two hybrid fragment pooling approach',
-    			'432':	'one hybrid', '437':	'protein tri hybrid', '438':	'rna tri hybrid',
-    			'588':	'3 hybrid method', '655':	'lambda repressor two hybrid', 
-    			'726':	'reverse two hybrid', '727':	'lexa b52 complementation', 
-    			'728':	'gal4 vp16 complementation', '809':	'bimolecular fluorescence complementation',
-    			'895':	'protein kinase A complementation', '916':	'lexa vp16 complementation', 
-    			'1037':	'Split renilla luciferase complementation',
-    		}
-		
-		methods  = [("Method_id",18),("Method_id",696)]
-		methods.extend([ ("Method_id", x) for x in complementation_methods if x not in affinity_methods ])
-
-		seeds = [ x for x,props in self.nodes(data=True) if props["isoformSwitches"] or props["specificDriver"] ]
-
-		bianaInputType = "geneid"
-
-		if options.Options().annotation == "ensembl": bianaInputType = "ensembl"
-
-		session = biana.create_new_session(
-										sessionID="SmartAS", 
-										dbname="BIANA_MARCH_2013", 
-										dbhost="ben-yehuda",
-										dbuser="biana_user", 
-										dbpassword="biana_password",
-										unification_protocol="uniprot_geneID_seqtax"
-									)
-
-		proteome = session.create_new_user_entity_set(
-												identifier_description_list = seeds,
-												attribute_restriction_list 	= [("taxid", "9606")],
-												id_type 					= bianaInputType,
-												new_user_entity_set_id		= "proteome",
-													  )
-		session.create_network( 
-								user_entity_set_id 					= "proteome", 
-								level 								= 5, 
-								relation_type_list 					= ["interaction"],
-								relation_attribute_restriction_list = methods,
-								include_relations_last_level 		= False, #Seguro?
-								use_self_relations 					= False
-							  )
-
-		#Iterate through all the interactions
-		c = 1
-		for (userEntity_id1, userEntity_id2) in proteome.getRelations():
-			self.logger.debug( "Interaction {0}/{1}".format(c, len(proteome.getRelations())) )
-			c += 1
-			eErIDs_list 		= proteome.get_external_entity_relation_ids(
-																userEntity_id1, userEntity_id2)
-			method_names 		= set()
-			method_ids 			= set()
-			use_method_ids 		= set()
-			relationObj_dict 	= session.dbAccess.get_external_entities_dict(
-												externalEntityIdsList 		= eErIDs_list, 
-												attribute_list 				= [],
-												relation_attribute_list 	= ["method_id","psimi_name"], 
-												participant_attribute_list 	= []
-																			  )
-			
-			if session.get_defined_node_attributes("proteome", userEntity_id1, bianaInputType, True):
-				geneId_1 = session.get_defined_node_attributes("proteome", userEntity_id1, bianaInputType, True).pop()
-			else:
-				self.logger.warning("No {0} id for user entity {1}.".format(bianaInputType, userEntity_id1))
-				continue
-			
-			if session.get_defined_node_attributes("proteome", userEntity_id2, bianaInputType, True):
-				geneId_2 = session.get_defined_node_attributes("proteome", userEntity_id2, bianaInputType, True).pop()
-			else:
-				self.logger.warning("No {0} id for user entity {1}.".format(bianaInputType, userEntity_id2))
-				continue
-			
-			for current_eErID in eErIDs_list:
-				relationObj = relationObj_dict[current_eErID]
-		
-				if "psimi_name" in relationObj.get_attributes_dict():
-					method_names.update([ str(x.value) for x in relationObj.get_attributes_dict()["psimi_name"] ])
-				if "method_id" in relationObj.get_attributes_dict():
-					method_ids.update([ x.value for x in relationObj.get_attributes_dict()["method_id"]])
-				
-				self.add_edge(gene_id1=geneId_1, gene_id2=geneId_2)
-				self.update_edge("experimental", True, gene_id1=geneId_1, gene_id2=geneId_2)
+			# discard non-human interactions
+			if organismInteractorA=="9606" & organismInteractorB=="9606":
+				self.add_edge(gene_id1=entrezGeneInteractorA, gene_id2=entrezGeneInteractorB)
+				self.update_edge("experimental", True, 
+					gene_id1=entrezGeneInteractorA, gene_id2=entrezGeneInteractorB)
 
 	def iterate_genes_ScoreWise(self):
 		'''
@@ -473,7 +378,7 @@ class GeneNetwork(network.Network):
 			consensus = { 'N': [ x for x in d if max(scores) == (d[x]["N"]-d[x]["T"]) ], 
 						  'T': [ x for x in d if min(scores) == (d[x]["N"]-d[x]["T"]) ] }
 
-			sortedSwitches = sorted(info["isoformSwitches"],key=lambda (a):len(a['patients']),reverse=True)
+			sortedSwitches = sorted(info["isoformSwitches"],key=lambda a:len(a['patients']),reverse=True)
 			for x in sortedSwitches:
 				if x["nIso"] in consensus["N"] and x["tIso"] in consensus["T"]:
 					bestpatible[gene] = [x["nIso"],x["tIso"],len(x["patients"])]
