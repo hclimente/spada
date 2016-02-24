@@ -2,8 +2,8 @@
 
 from libs import options
 from libs import utils
-
 import gene_network
+
 import abc
 
 class UCSCGeneNetwork(gene_network.GeneNetwork):

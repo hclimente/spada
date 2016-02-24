@@ -1,6 +1,5 @@
-#!/soft/devel/python-3.4.3/bin/python
+#!/soft/devel/python-2.7/bin/python
 
-from interface import standarize_input
 from interface import out_network
 from libs import options
 from libs import utils
@@ -44,15 +43,22 @@ class SmartAS:
 	def structuralAnalysis(self):
 
 		s = structural_analysis.StructuralAnalysis(True,True)
+
 		if not options.Options().parallelRange:
+			# non-parallelized operation
+			
 			import glob
-			files=glob.glob("{0}structural_analysis/interpro_analysis_[0-9]*.tsv".format(options.Options().qout))
+			files=glob.glob("{}structural_analysis/interpro_analysis_[0-9]*.tsv".format(options.Options().qout))
+			
 			if files:
+				# all analyses ran already
 				s.joinFiles()
 				out_network.outCandidateList(s._gene_network,s._transcript_network)
 			else:
+				# launch analyses
 				utils.launchJobs(s._gene_network,'structural_analysis')
 		else:
+			# analyze a chunk of the switches
 			s.run()
 
 	def I3DBrokenInteractions(self):
@@ -121,7 +127,7 @@ if __name__ == '__main__':
 	 	S.getSwitches()
 
 	# analyze switches
-	elif options.Options().initialStep == "get-relevant-switches":
+	elif options.Options().initialStep == "get-functional-switches":
 		S.structuralAnalysis()
 	elif options.Options().initialStep == "random-switches":
 		S.createRandomSwitches()
