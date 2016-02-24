@@ -1,7 +1,7 @@
 from libs import options
 from libs import utils
-import protein
-import transcript
+from biological_entities import protein
+from biological_entities import transcript
 
 import os
 import operator
@@ -103,8 +103,8 @@ class IsoformSwitch:
 	def neighborhoodChange(self): return self._neighborhood_change
 
 	@property
-	def is_relevant(self):
-		"""We define as relevant a switch that:
+	def is_functional(self):
+		"""We define as functional a switch that:
 			* Is considered significant in the statistical analysis.
 			* There is an overlap in the CDS regions, so the switch
 		 	  can be attributed to splicing.
@@ -237,7 +237,7 @@ class IsoformSwitch:
 				elif elements[8] == "False": self._ptm_change = False
 
 	def readDeepRelevanceAnalysis(self,skipDomain=False,skipIupred=False,skipAnchor=False,skipPtm=False,filetag=""):
-		if not self.is_relevant:
+		if not self.is_functional:
 			return
 
 		if self.domainChange and not skipDomain:
