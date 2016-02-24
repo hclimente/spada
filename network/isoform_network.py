@@ -44,7 +44,7 @@ class IsoformNetwork(network.Network):
 	def add_node(self,tx,genesFullName):
 		
 		if tx in self.nodes():
-			self.logger.debug("Transcript {0}, gene {1} already in the network.".format(tx, gene_full_name))
+			self.logger.debug("Transcript {0}, gene {1} already in the network.".format(tx, genesFullName))
 			return True
 
 		genes = set()
@@ -54,23 +54,25 @@ class IsoformNetwork(network.Network):
 				genes.add(gene)
 
 		if not genes:
-			self.logger.debug("No gene could be extracted for transcript {0}, gene {1}.".format(tx, gene_full_name))
+			self.logger.debug("No gene could be extracted for transcript {0}, gene {1}.".format(tx, genesFullName))
 			return False
 		
-		return self._net.add_node( 	tx, 
-									gene_id			= genes,
-									exonStructure	= None,
-									txCoords		= None,
-									cdsCoords		= None,
-									strand 			= None,
-									chr 			= None,
-									median_TPM_N	= None, 
-									median_PSI_N	= None, 
-									median_TPM_T	= None, 
-									median_PSI_T	= None, 
-									iLoopsFamily 	= None, 
-									proteinSequence	= None,
-									Uniprot 		= None)
+		self._net.add_node( tx, 
+							gene_id			= genes,
+							exonStructure	= None,
+							txCoords		= None,
+							cdsCoords		= None,
+							strand 			= None,
+							chr 			= None,
+							median_TPM_N	= None, 
+							median_PSI_N	= None, 
+							median_TPM_T	= None, 
+							median_PSI_T	= None, 
+							iLoopsFamily 	= None, 
+							proteinSequence	= None,
+							Uniprot 		= None)
+
+		return True
 
 	def update_node(self, tx, key, value):
 		return self._update_node(tx, key, value)
@@ -82,35 +84,25 @@ class IsoformNetwork(network.Network):
 		return self._update_edge(tx1, tx2, key, value)
 
 	def importTranscriptome(self):
-
-		for line in utils.readTable(options.Options().qout + "expression_normal.tsv"):
-			gene 		= line[0]
-			tx 			= line[1]
-			median_PSI 	= float(line[2]) if(line[2] != "NA") else None
-			median_TPM 	= float(line[5]) if(line[5] != "NA") else None
-			
-			if not self.add_node(tx, gene): continue
-			if median_PSI is not None: self.update_node( tx, "median_PSI_N", median_PSI )
-			if median_TPM is not None: self.update_node( tx, "median_TPM_N", median_TPM )
-
-		for line in utils.readTable(options.Options().qout + "expression_tumor.tsv"):
-			gene 		= line[0]
-			tx 			= line[1]
-			median_PSI 	= float(line[2]) if(line[2] != "NA") else None
-			median_TPM 	= float(line[5]) if(line[5] != "NA") else None
-
-			if not self.add_node(tx, gene): continue
-			if median_PSI is not None: self.update_node( tx, "median_PSI_T", median_PSI )
-			if median_TPM is not None: self.update_node( tx, "median_TPM_T", median_TPM )
-
-	def importTranscriptome(self):
-		for line in utils.readTable("data/{}/genesAndTranscripts.txt".format(options.Options().annotation)):
-			gene = line[0].split(":")
+		# create transcripts from expression info
+		for line in utils.readTable(options.Options().qout + "transcript_expression.tsv",header=False):
+			gene = line[0]
 			tx = line[1]
+			median_TPM_n = float(line[2]) if(line[2] != "NA") else None
+			median_TPM_t = float(line[3]) if(line[3] != "NA") else None
+			median_PSI_n = float(line[4]) if(line[4] != "NA") else None
+			median_PSI_t = float(line[5]) if(line[5] != "NA") else None
 
-			self.add_node(tx,gene)
+			if not self.add_node(tx, gene): 
+				continue
 
-		for line in utils.readTable("data/{}/annotation.gtf".format(options.Options().annotation)):
+			if median_TPM_n is not None: self.update_node( tx, "median_TPM_N", median_TPM_n )
+			if median_TPM_t is not None: self.update_node( tx, "median_TPM_T", median_TPM_t )
+			if median_PSI_n is not None: self.update_node( tx, "median_PSI_N", median_PSI_n )
+			if median_PSI_t is not None: self.update_node( tx, "median_PSI_T", median_PSI_t )
+
+		# exon and CDS info
+		for line in utils.readTable("{}data/{}/annotation.gtf".format(options.Options().wd,options.Options().annotation),header=False):
 			seqname 	= line[0]
 			source 		= line[1]
 			feature 	= line[2]
@@ -121,7 +113,7 @@ class IsoformNetwork(network.Network):
 			frame 		= line[7]
 			attribute 	= line[8].split(";")
 
-			tx = [ x.split(" ")[1].strip("\"") for x in attribute if "transcript_id" in x ]
+			tx = [ x.split(" ")[2].strip("\"") for x in attribute if "transcript_id" in x ][0]
 
 			if tx not in self.nodes():
 				continue
@@ -136,6 +128,10 @@ class IsoformNetwork(network.Network):
 			self.update_node(tx, "strand", strand)
 			self.update_node(tx, "chr", seqname)
 
+		# get transcript start and end from exon information
+		for tx in self.nodes():
+			txStart = min([ x[0] for x in self._net.node[tx]["exonStructure"]])
+			txEnd = max([ x[1] for x in self._net.node[tx]["exonStructure"]])
 			self.update_node(tx, "txCoords", [txStart, txEnd])
 
 		self.logger.debug("Reading transcript info: protein sequence, Uniprot and iLoops family.")
