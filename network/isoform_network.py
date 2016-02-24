@@ -28,8 +28,8 @@ class IsoformNetwork(network.Network):
 		Uniprot(str,None)			Associated UniprotId.
 
 	Edge information:
-		Id1(str) 						Transcript id of interactor 1.
-		Id2(str) 						Transcript id of interactor 2.
+		Id1(str) 					Transcript id of interactor 1.
+		Id2(str) 					Transcript id of interactor 2.
 	"""
 
 	__metaclass__ = abc.ABCMeta
@@ -59,7 +59,7 @@ class IsoformNetwork(network.Network):
 		
 		self._net.add_node( tx, 
 							gene_id			= genes,
-							exonStructure	= None,
+							exonStructure	= [],
 							txCoords		= None,
 							cdsCoords		= None,
 							strand 			= None,
