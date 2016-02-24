@@ -2,7 +2,7 @@
 
 from libs import options
 
-import networkx
+import networkx as nx
 import cPickle
 import abc
 import logging
@@ -14,7 +14,7 @@ class Network:
 	def __init__(self, name):
 		
 		self._name			= name
-		self._net 			= networkx.Graph()
+		self._net 			= nx.Graph()
 		self._rejectedNodes = set()
 		self.createLogger()
 	
@@ -42,8 +42,6 @@ class Network:
 				self._net.node[nodeId][key].setdefault(secondKey,set())
 			self._net.node[nodeId][key][secondKey].add(finalValue)
 		else: 
-			if key is "score":
-				finalValue = min(1.0, self._net.node[nodeId]["score"] + finalValue)
 			if self._net.node[nodeId] is not None and self._net.node[nodeId] != finalValue:
 				self.logger.debug("Node {0}, {1} had a value of {2}. Updated to {3}.".format(
 									nodeId, key, self._net.node[nodeId][key], finalValue) )
@@ -64,8 +62,6 @@ class Network:
 		elif isinstance( self._net.edge[node1][node2][key], set):
 			self._net.edge[node1][node2][key].add( finalValue )
 		else: 
-			if key is "score":
-				finalValue = min(1.0, self._net.edge[node1][node2]["score"] + finalValue)
 			if self._net.edge[node1][node2][key] is not None and self._net.edge[node1][node2][key] != finalValue:
 				self.logger.debug("Edge {0} - {1}, {2} had a value of {3}. Updated to {4} .".format(
 								node1, node2, key, self._net.edge[node1][node2][key], finalValue) )
