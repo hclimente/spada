@@ -264,7 +264,7 @@ class GeneNetwork(network.Network):
 			sourceDatabase				= line[23]
 
 			# discard non-human interactions
-			if organismInteractorA=="9606" & organismInteractorB=="9606":
+			if (organismInteractorA=="9606") & (organismInteractorB=="9606"):
 				self.add_edge(gene_id1=entrezGeneInteractorA, gene_id2=entrezGeneInteractorB)
 				self.update_edge("experimental", True, 
 					gene_id1=entrezGeneInteractorA, gene_id2=entrezGeneInteractorB)
