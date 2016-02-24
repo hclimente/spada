@@ -4,9 +4,8 @@ from libs import utils
 from methods import method
 from network import ucsc_gene_network
 
-# Python 3
-#from libs.guild.src import combine_scores
-#from libs.guild.src import create_random_networks_for_netzcore
+from libs.guild.src import combine_scores
+from libs.guild.src import create_random_networks_for_netzcore
 
 import pandas as pd
 import networkx as nx
