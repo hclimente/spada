@@ -1,6 +1,7 @@
 #!/soft/devel/python-2.7/bin/python
 
 import argparse
+import os.path
 
 class Options(object):
     _instance = None
@@ -17,11 +18,9 @@ class Options(object):
         self._wd                    = options.wd if options.wd[-1]== "/" else options.wd + "/"
         self._minExpression         = options.minExpression
         self._annotation            = options.annotation
-        self._replicates            = set(options.replicates.split(",")) if options.replicates else set()
-        self._unpairedReplicates    = set(options.unpairedReplicates.split(",")) if options.unpairedReplicates else set()
         self._tag                   = options.tag 
         self._only_models           = options.onlyModels
-        self._specificDrivers       = "{}data/{}/specificDrivers/{}Drivers.txt".format(
+        self._specificDrivers       = "{}data/{}/specific_drivers/{}Drivers.txt".format(
                                         self._wd,self._annotation,self._tag)
         self._quickOut              = "{}results/{}/".format(self._wd,self._tag)
         self._parallelRange         = options.parallelRange
@@ -41,13 +40,6 @@ class Options(object):
     def minExpression(self):        return self._minExpression
     @property
     def annotation(self):            return self._annotation
-    @property
-    def replicates(self):           return self._replicates
-    def setReplicates(self,replicates): 
-        self._replicates = replicates
-        print(self._replicates)
-    @property
-    def unpairedReplicates(self):   return self._unpairedReplicates
     @property
     def tag(self):                  return self._tag
     @property
@@ -77,41 +69,42 @@ class Options(object):
     def step(self): return self._step
 
     def parseOptions(self, *args, **kwds):
-        parser = Parser(prog="SmartAS.py", description = "Find significant alternative splicing switches. Analyze their functional impact.", epilog= "Hector Climente, 2014", fromfile_prefix_chars='@')
+        parser = Parser(prog="smartas.py", description = "Find significant alternative splicing switches. Analyze their functional impact.", epilog= "Hector Climente, 2016", fromfile_prefix_chars='@')
 
         parser.add_argument('-f','--config-file', dest='config_file', action = 'store', 
-                            default='Parameters.cfg', help = 'Input file with the parameters')
-        parser.add_argument('-s', '--initial-step', dest='initial_step', action='store', default='import_data',
+                            help = 'Input file with the parameters')
+        parser.add_argument('-s', '--initial-step', dest='initial_step', action='store', 
                             type=str, help='Where should SmartAS start.')
-        parser.add_argument('-wd', '--working-directory', dest='wd', action='store', default='/home/hector/SmartAS/',
+        parser.add_argument('-wd', '--working-directory', dest='wd', action='store', 
+                            default='/home/hector/SmartAS/', 
                             help='Root file of SmartAS folder in the current machine.')
-        parser.add_argument('-m', '--minimum-expression', dest='minExpression', action='store', default='-1',
-                            type=float, help='Minimum expression to consider a transcript not residual.')
-        parser.add_argument('-i', '--annotation', dest='annotation', action='store', default='TCGA',
-                            help='Origin of the data.')
+        parser.add_argument('-m', '--minimum-expression', dest='minExpression', action='store', 
+                            default='-1', type=float, 
+                            help='Minimum expression to consider a transcript not residual.')
+        parser.add_argument('-i', '--annotation', dest='annotation', action='store', default='ucsc',
+                            help='Used annotation.')
         parser.add_argument('-a', '--all-switches', dest='onlyModels', action='store_false',
                             help='Only use the model switches.')
-        parser.add_argument('-r', '--replicates', dest='replicates', action='store',
-                            help='Number of patients or biological replicates.')
-        parser.add_argument('-u', '--unpaired-replicates', dest='unpairedReplicates', action='store', 
-                            help='Number of unpaired samples.')
-        parser.add_argument('-t', '--tag', dest='tag', action='store', default='20',
-                            help='Tag of the files.')
-        parser.add_argument('-d', '--specific-drivers', dest='specificDrivers', action='store', default='',
-                            help='Path of the specific drivers for the cancer type.')
+        parser.add_argument('-t', '--tag', dest='tag' ,action='store',
+                            help='Identifier of the analysis.')
+        parser.add_argument('-d', '--specific-drivers', dest='specificDrivers', action='store', 
+                            default='',help='Path of the specific drivers for the cancer type.')
         parser.add_argument('-p', '--parallel-range', dest='parallelRange', action='store', default='0',
                             type=int,help='Range of nodes if parallel.')
-        parser.add_argument('-e', '--external-switches', dest='externalSwitchesFile', action='store', default=None,
-                            type=str, help='File containing switches calculated with other methods.')
+        parser.add_argument('-e', '--external-switches', dest='externalSwitchesFile', action='store', 
+                            default=None,type=str, 
+                            help='File containing switches calculated with other methods.')
         parser.add_argument('-x', '--parent-tag', dest='parentTag', action='store', default=None,
                             type=str, help='Tag of another experiment to partially use the information.')
 
         parser.set_defaults(onlyModels=True)
-        config_opt  = parser.parse_args()
-        options     = parser.parse_args(["@" + config_opt.config_file])
+        options = parser.parse_args()
+        if options.config_file!=None:
+            if os.path.isfile(options.config_file):
+                options = parser.parse_args(["@" + options.config_file])
         return options
 
-    def printToFile(self,filename="",initialStep=None, wd=None, gwd=None, minExpression=None, annotation=None, replicates=None, unpairedReplicates=None, tag=None, specificDrivers=None,parallelRange=None,onlyModels=None):
+    def printToFile(self,filename="",initialStep=None, wd=None, gwd=None, minExpression=None, annotation=None, tag=None, specificDrivers=None,parallelRange=None,onlyModels=None):
         """Print the config to a new file, only those values that are different 
         than the default ones. Overwrite those that are passed as arguments."""
         if not filename:
@@ -140,16 +133,6 @@ class Options(object):
             elif self._annotation != "ucsc":
                 CONFIG.write("annotation=" + self._annotation + "\n")
             
-            if replicates:
-                CONFIG.write("replicates=" + ",".join(replicates) + "\n")
-            elif self._replicates:
-                CONFIG.write("replicates=" + ",".join(self._replicates) + "\n")
-            
-            if unpairedReplicates:
-                CONFIG.write("unpaired-replicates=" + ",".join(unpairedReplicates) + "\n")
-            elif self._unpairedReplicates:
-                CONFIG.write("unpaired-replicates=" + ",".join(self._unpairedReplicates) + "\n")
-            
             if tag:
                 CONFIG.write("tag=" + tag + "\n")
             elif self._tag:
@@ -167,6 +150,50 @@ class Options(object):
                 CONFIG.write("specific-drivers=" + self._specificDrivers + "\n")
 
         return cfgFilename
+
+    def getCommandLineParameters(self,initialStep=None, wd=None, gwd=None, minExpression=None, annotation=None, tag=None, specificDrivers=None,parallelRange=None,onlyModels=None):
+        """Print the config to a new file, only those values that are different 
+        than the default ones. Overwrite those that are passed as arguments."""
+
+        cfg = []
+
+        if initialStep:
+            cfg.extend(["--initial-step",str(initialStep)])
+        elif self._initial_step != 0:
+            cfg.extend(["--initial-step",str(self._initial_step)])
+        
+        if wd:
+            cfg.extend(["--working-directory",wd])
+        elif self._wd != '/home/hector/SmartAS/':
+            cfg.extend(["--working-directory",self._wd])
+        
+        if minExpression:
+            cfg.extend(["--minimum-expression",str(minExpression)])
+        elif self._minExpression != -1.0:         
+            cfg.extend(["--minimum-expression",str(self._minExpression)])
+        
+        if annotation:
+            cfg.extend(["--annotation",annotation])
+        elif self._annotation != "ucsc":
+            cfg.extend(["--annotation",self._annotation])
+        
+        if tag:
+            cfg.extend(["--tag",tag])
+        elif self._tag:
+            cfg.extend(["--tag",self._tag])
+
+        if parallelRange:
+            cfg.extend(["--parallel-range",str(parallelRange)])
+
+        if onlyModels is not None and not onlyModels:
+            cfg.extend(["--all-switches"])
+        
+        if specificDrivers:
+            cfg.extend(["--specific-drivers",specificDrivers])
+        elif self._specificDrivers:
+            cfg.extend(["--specific-drivers",self._specificDrivers])
+
+        return cfg
 
 class Parser(argparse.ArgumentParser):
     def convert_arg_line_to_args(self, arg_line):
