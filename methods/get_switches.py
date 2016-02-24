@@ -13,30 +13,32 @@ class GetSwitches(method.Method):
 
 	def run(self):
 
+		#self.createGeneNetwork()
+		self.createTranscriptNetwork()
+
 		if not options.Options().externalSwitchesFile:
 			switchesFile = self.calculateSwitches()
-			externalSwitches = False
+
+			self._gene_network.importCandidates(switchesFile)
+			self._gene_network.calculateCompatibilityTable()
+		
 		else:
-			switchesFile = options.Options().externalSwitchesFile
-			externalSwitches = True
+			self._gene_network.importExternalCandidates()
 
 			# copy random structural_analysis, as it is computationally expensive
 			utils.cmd("cp",
-					  "{0}testResults/{1}/{2}/structural_analysis/*random*".format(options.Options().wd,options.Options().annotation,options.Options().parentTag),
-					  "{0}structural_analysis".format(options.Options().qout))
+					  "{}results/{}/structural_analysis/*random*".format(options.Options().wd,options.Options().parentTag),
+					  "{}structural_analysis".format(options.Options().qout))
 
 			# copy random switches
 			utils.cmd("cp",
-					  "{0}testResults/{1}/{2}/randomGeneNetwork.pkl".format(options.Options().wd,options.Options().annotation,options.Options().parentTag),
+					  "{}results/{}/randomGeneNetwork.pkl".format(options.Options().wd,options.Options().parentTag),
 					  options.Options().qout)
-
-		self.createGeneNetwork(switchesFile,externalSwitches=externalSwitches)
-		self.createTranscriptNetwork(externalSwitches=externalSwitches)
 
 		out_network.outputGTF(self._gene_network,self._transcript_network)
 		out_network.outCandidateList(self._gene_network,self._transcript_network)
 
-		options.Options().printToFile(initialStep="get-relevant-switches")
+		options.Options().printToFile(initialStep="get-functional-switches")
 
 	def calculateSwitches(self):
 
@@ -55,16 +57,16 @@ class GetSwitches(method.Method):
 
 		return switchesFile
 
-	def createGeneNetwork(self,switchesFile,externalSwitches):
+	def createGeneNetwork(self):
 
 		self.logger.info("Creating gene network.")
 
-		if externalSwitches and options.Options().parentTag:
+		if options.Options().externalSwitchesFile and options.Options().parentTag:
 			self._gene_network = cPickle.load(open("{}results/{}/geneNetwork.pkl".format(options.Options().wd,options.Options().parentTag),"r"))
 			self._gene_network.createLogger()
 			self._gene_network.cleanNetwork()
 		else:
-			if options.Options().annotation == "TCGA": 
+			if options.Options().annotation == "ucsc": 
 				self._gene_network = ucsc_gene_network.UCSCGeneNetwork()
 			else:
 				self.logger.error("Unrecognized input type {0}.".format(options.Options().annotation))
@@ -76,28 +78,24 @@ class GetSwitches(method.Method):
 				'pipeline/methods/get_expression.r', 
 				"{}data/{}/rawdata/{}_iso_tpm_paired-filtered.txt".format(options.Options().wd,options.Options().annotation,options.Options().tag),
 				"{}data/{}/rawdata/{}_iso_tpm_tumor-filtered.txt".format(options.Options().wd,options.Options().annotation,options.Options().tag),
+				"{}data/{}/rawdata/{}_iso_psi_paired-filtered.txt".format(options.Options().wd,options.Options().annotation,options.Options().tag),
+				"{}data/{}/rawdata/{}_iso_psi_tumor-filtered.txt".format(options.Options().wd,options.Options().annotation,options.Options().tag),
 				"{}transcript_expression.tsv".format(options.Options().qout))
 
 			self._gene_network.readGeneInfo()
 			if options.Options().specificDrivers:
 				self._gene_network.importSpecificDrivers()
 			
-			self._gene_network.importKnownInteractions()
-
-		if not externalSwitches:
-			self._gene_network.importCandidates(switchesFile)
-			self._gene_network.calculateCompatibilityTable()
-		else:
-			self._gene_network.importExternalCandidates(switchesFile)
+			#self._gene_network.importKnownInteractions()
 
 		self._gene_network.saveNetwork("geneNetwork.pkl")
 
-	def createTranscriptNetwork(self,externalSwitches,recover=False):
-		if externalSwitches and options.Options().parentTag:
-			self._transcript_network = cPickle.load(open("{0}testResults/{1}/{2}/txNetwork.pkl".format(options.Options().wd,options.Options().annotation,options.Options().parentTag),"r"))
+	def createTranscriptNetwork(self,recover=False):
+		if options.Options().externalSwitchesFile and options.Options().parentTag:
+			self._transcript_network = cPickle.load(open("{}results/{}/txNetwork.pkl".format(options.Options().wd,options.Options().parentTag),"r"))
 			self._transcript_network.createLogger()
 		else:
-			if options.Options().annotation == "TCGA":
+			if options.Options().annotation == "ucsc":
 				self._transcript_network = ucsc_isoform_network.UCSCIsoformNetwork()
 			else:
 				self.logger.error("Unrecognized input type {0}.".format(options.Options().annotation))
@@ -105,7 +103,6 @@ class GetSwitches(method.Method):
 
 			self.logger.info("Creating transcript network.")
 			self._transcript_network.importTranscriptome()
-			self._transcript_network.readTranscriptInfo()
 		
 		self._transcript_network.saveNetwork("txNetwork.pkl")
 
