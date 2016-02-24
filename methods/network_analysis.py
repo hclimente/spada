@@ -1,5 +1,3 @@
-#!/soft/devel/python-2.7/bin/python
-
 from interface import out_network
 from libs import options
 from libs import utils

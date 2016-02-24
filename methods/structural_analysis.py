@@ -1,5 +1,3 @@
-#!/soft/devel/python-2.7/bin/python
-
 from interface import interpro_analysis
 from libs import options
 from libs import utils

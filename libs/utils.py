@@ -1,7 +1,6 @@
 from libs import options
 
 import subprocess
-import os
 import logging
 
 logger = logging.getLogger("utils")

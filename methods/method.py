@@ -1,5 +1,3 @@
-#!/soft/devel/python-2.7/bin/python
-
 from libs import options
 
 import cPickle as pickle

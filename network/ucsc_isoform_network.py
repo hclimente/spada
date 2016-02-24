@@ -1,5 +1,3 @@
-#!/soft/devel/python-2.7/bin/python
-
 import isoform_network
 
 class UCSCIsoformNetwork(isoform_network.IsoformNetwork):
