@@ -18,46 +18,53 @@ class GetRandomSwitches(method.Method):
 		self.MAX_SWITCHES = 5
 
 	def run(self):
-		if not os.path.exists("{0}randomGeneNetwork.pkl".format(options.Options().qout)):
+		if not os.path.exists("{}randomGeneNetwork.pkl".format(options.Options().qout)):
 			self.logger.info("Generating random switches.")
 
-			# copy original gene network
+			# copy original gene network and remove real switches
 			self._gene_network.removeLogger()
-			gnNetCopy = copy.deepcopy(self._gene_network)
+			gcopy = copy.deepcopy(self._gene_network)
 			self._gene_network.createLogger()
-			gnNetCopy.createLogger()
+			gcopy.createLogger()
+			gcopy.cleanNetwork()
+			gcopy.removeLogger()
+			
+			# random: two random transcripts among those expressed in tumor or normal
+			gcopy_random = copy.deepcopy(gcopy)
+			gcopy_random.createLogger()
+			self.sampleTranscripts_random(gcopy_random)
+			gcopy_random.saveNetwork("randomGeneNetwork_random.pkl")			
 
-			# remove real switches and calculate new ones
-			self.sampleSwitches(gnNetCopy)
-			gnNetCopy.saveNetwork("randomGeneNetwork.pkl")
+			# random: most expressed isoform is normal
+			gcopy_fixNormal = copy.deepcopy(gcopy)
+			gcopy_fixNormal.createLogger()
+			self.sampleTranscripts_fixNormal(gcopy_fixNormal)
+			gcopy_fixNormal.saveNetwork("randomGeneNetwork_fixNormal.pkl")
 
 			utils.launchJobs(self._gene_network,"random")
 
 		else:
-			# calculate relevant switches
+			# calculate functional switches
 			self.logger.info("Calculating features for random switches.")
-			gnNetCopy = cPickle.load(open("{0}randomGeneNetwork.pkl".format(options.Options().qout)))
-			S = structural_analysis.StructuralAnalysis(gnNetCopy,self._transcript_network,isRand=True)
+			gcopy = cPickle.load(open("{}randomGeneNetwork.pkl".format(options.Options().qout)))
+			S = structural_analysis.StructuralAnalysis(gcopy,self._transcript_network,isRand=True)
 			S.run()	
 
-	def sampleSwitches(self,gnNetCopy):
-		# remove real switches
-		for gene,info in gnNetCopy.nodes(data=True):
-			info["isoformSwitches"] = []
-
-		# create new ones
-		for gene,info in [ (x,y) for x,y in gnNetCopy.nodes(data=True) if len(y["ExpressedTranscripts"])>1 ]:
+	def sampleTranscripts_fixNormal(self,gcopy):
+		for gene,info in [ (x,y) for x,y in gcopy.nodes(data=True) if len(set(y["expressedTxsNormal"]) & set(y["expressedTxsTumor"]))>1]:
 			# set normal isoform as the most expressed in normal, shuffle the rest for tumor
-			txExpression = [ (x,y['median_TPM_N']) for x,y in self._transcript_network.nodes(data=True) if y["gene_id"]==gene ]
+			txExpression = [ (x,self._transcript_network._net.node[x]["median_TPM_N"]) for x in info["expressedTxsNormal"] ]
 			nTx = max(txExpression, key=operator.itemgetter(1))[0]
 			nTxExpression = max(txExpression, key=operator.itemgetter(1))[1]
 
-			if nTx not in info["ExpressedTranscripts"]:
-				self.logger.warning("Median most expressed transcript from gene {} is not considered expressed. Probably due to the threshold applied. Will be skipped. ".format(gene))
+			if nTx not in info["expressedTxsNormal"]:
+				self.logger.warning("Median most expressed transcript from gene {} is not considered expressed. \
+					Probably due to the threshold applied. TPM={}. Will be skipped. ".format(gene,txExpression))
 				continue
 
-			txs = list(info["ExpressedTranscripts"])
-			txs.remove(nTx)
+			txs = list(info["expressedTxsTumor"])
+			if nTx in txs:
+				txs.remove(nTx)
 
 			numSwitches = self.MAX_SWITCHES
 			if len(txs) < self.MAX_SWITCHES:
@@ -70,66 +77,31 @@ class GetRandomSwitches(method.Method):
 				switchDict["nIso"] = nTx
 				switchDict["tIso"] = txs[i]
 
-				switchDict["score"] = 0.0
-				switchDict["patients"] = 0.0
-				switchDict["precision"] = 0.0
-				switchDict["sensitivity"] = 0.0
+				switchDict["patients"] = []
 				switchDict["noise"] = False
-				switchDict["model"] = True
+				switchDict["functional"] = None
 
 				info["isoformSwitches"].append(switchDict)
 
-			# for completely random switches
-			# allSwitches = [ x for x in itertools.combinations(info["ExpressedTranscripts"],2) ]
-			# random.shuffle(allSwitches)
-			# allSwitches = allSwitches[0:self.MAX_SWITCHES]
+	def sampleTranscripts_random(self, gcopy):
+		
+		for gene,info in [ (x,y) for x,y in gcopy.nodes(data=True) if len(set(y["expressedTxsNormal"]) & set(y["expressedTxsTumor"]))>1]:
+			allExpressedTxs = set(y["expressedTxsNormal"]) & set(y["expressedTxsTumor"])
 
-			# for oneSwitch in allSwitches:
-			# 	switchDict = {}
-			# 	switchDict["nIso"] = oneSwitch[0]
-			# 	switchDict["tIso"] = oneSwitch[1]
-
-			# 	switchDict["score"] = 0.0
-			# 	switchDict["patients"] = 0.0
-			# 	switchDict["precision"] = 0.0
-			# 	switchDict["sensitivity"] = 0.0
-			# 	switchDict["noise"] = False
-			# 	switchDict["model"] = True
-
-			# 	info["isoformSwitches"].append(switchDict)
-
-	def launchJobs(self):
-		import drmaa
-
-		s = drmaa.Session()
-		s.initialize()
-
-		natSpec = ""
-		natSpec += "-q short,normal -l 'qname=short|normal' "
-		natSpec += "-cwd "
-		natSpec += "-V "
-
-		randoms = []
-
-		for startingNode in range(1,len(self._gene_network.nodes()),options.Options().step):
-			cfg = options.Options().printToFile(filename="random_{0}_node{1}".format(options.Options().tag,startingNode),parallelRange=startingNode,onlyModels=False)
-			jt = s.createJobTemplate()
+			allSwitches = [ x for x in itertools.combinations(allExpressedTxs,2) ]
+			random.shuffle(allSwitches)
 			
-			jt.remoteCommand = 'Pipeline/SmartAS.py'
-			jt.args = ['-f',cfg]
-			jt.joinFiles=True
-			jt.nativeSpecification = natSpec
-			jt.nativeSpecification += "-N {0}_random_{1} ".format(options.Options().tag,startingNode)
-			jt.nativeSpecification += "-e {0}logs/random_{1}.txt ".format(options.Options().qout,startingNode)
-			jt.nativeSpecification += "-o {0}logs/random_{1}.txt".format(options.Options().qout,startingNode)
-
-			if not os.path.exists("{0}logs".format(options.Options().qout)):
-			    os.makedirs("{0}logs".format(options.Options().qout))
-
-			jobid = s.runJob(jt)
-			randoms.append(jobid)
-			s.deleteJobTemplate(jt)
-
+			allSwitches = allSwitches[0:self.MAX_SWITCHES]
+			
+			for oneSwitch in allSwitches:
+				switchDict = {}
+				switchDict["nIso"] = oneSwitch[0]
+				switchDict["tIso"] = oneSwitch[1]
+				switchDict["patients"] = []
+				switchDict["noise"] = False
+				switchDict["model"] = True
+				switchDict["functional"] = None
+				info["isoformSwitches"].append(switchDict)
 
 if __name__ == '__main__':
 	pass
