@@ -61,36 +61,32 @@ def geneclusterLaunch(tag,base,*args):
 
 	cmd("qsub","-N",tag,tag+".sh")
 
-def launchJobs(gnNetwork,task):
+def launchJobs(gnNetwork,task,q="short"):
 	import drmaa
 
 	s = drmaa.Session()
 	s.initialize()
 
 	natSpec = ""
-	#natSpec += "-q normal -l 'qname=normal' "
-	natSpec += "-q short-high -l 'qname=short-high' "
+	if q=="normal":
+		natSpec += "-q normal -l 'qname=normal' "
+	else:
+		natSpec += "-q short-high -l 'qname=short-high' "
 	natSpec += "-cwd "
 	natSpec += "-V "
+	natSpec += "-N {}.{}".format(options.Options().tag,options.Options().step,task)
 
-	randoms = []
+	cfg = options.Options().getCommandLineParameters(onlyModels=False)
+	cfg.extend(["--parallel-range","$SGE_TASK_ID"])
 
-	for startingNode in range(1,len(gnNetwork.nodes()),options.Options().step):
-		cfg = options.Options().printToFile(filename="{0}_{1}_node{2}".format(options.Options().tag,task,startingNode),parallelRange=startingNode,onlyModels=False)
-		jt = s.createJobTemplate()
+	jt = s.createJobTemplate()
 		
-		jt.remoteCommand = 'pipeline/smartas.py'
-		jt.args = ['-f',cfg]
-		jt.joinFiles=True
-		jt.nativeSpecification = natSpec
-		jt.nativeSpecification += "-N {0}_{1}_{2} ".format(options.Options().tag,task,startingNode)
-		jt.nativeSpecification += "-e {0}logs/{1}_{2}.out.txt ".format(options.Options().qout,task,startingNode)
-		jt.nativeSpecification += "-o {0}logs/{1}_{2}.err.txt".format(options.Options().qout,task,startingNode)
+	jt.remoteCommand = 'pipeline/smartas.py'
+	jt.args = cfg
+	jt.joinFiles=True
 
-		jobid = s.runJob(jt)
-		randoms.append(jobid)
-		s.deleteJobTemplate(jt)
-
+	s.runBulkJobs(jt,1,len(gnNetwork.nodes()),options.Options().step)
+	s.deleteJobTemplate(jt)
 
 def launchSingleJob(task,name=""):
 	
