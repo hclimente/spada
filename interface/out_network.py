@@ -1,8 +1,6 @@
 from libs import options
 from libs import utils
 
-import math
-import networkx
 import logging
 
 def outputGTF(gn_network,tx_network):
@@ -25,7 +23,7 @@ def outCandidateList(gn_network,tx_network):
 	with open(options.Options().qout + "candidateList_smartas.tsv", "w") as cList:
 		cList.write("GeneId\tSymbol\tNormal_transcript\tTumor_transcript\t")
 		cList.write("Normal_protein\tTumor_protein\tAnnotation\tDriverAnnotation\t")
-		cList.write("NotNoise\tIsModel\tIsRelevant\tDriver\tDruggable\t")
+		cList.write("NotNoise\tIsModel\tIsFunctional\tDriver\tDruggable\t")
 		cList.write("CDS_Normal\tCDS_Tumor\tCDS_change\tUTR_change\tPatients_affected\n")
 
 		hallmarksDict = utils.readGeneset("h.all.v5.0.entrez.gmt")
@@ -44,7 +42,7 @@ def outCandidateList(gn_network,tx_network):
 			if switch.utr_diff: 		utrChange 	= True
 
 			try:
-				relevance = int(switch.is_relevant)
+				relevance = int(switch.is_functional)
 			except Exception:
 				relevance = None
 

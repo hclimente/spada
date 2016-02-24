@@ -49,7 +49,7 @@ setwd("switches")
 # calculate aggregated table (sum patients, etc.) and calculate unbalance as the minimun p of enrichment in a fisher test
 candidatesDf_agg <- ddply(candidatesDf,.(GeneId,Symbol,Normal_transcript,Tumor_transcript,
                                          Normal_protein,Tumor_protein,Annotation,
-                                         DriverAnnotation,IsRelevant,Driver,DriverType,
+                                         DriverAnnotation,IsFunctional,Driver,DriverType,
                                          Druggable,CDS_Normal,CDS_Tumor,CDS_change,UTR_change),
                           summarise, CancerAffected=paste(Tumor,collapse = ","),
                           Patients=paste(Patients_affected,collapse = ","), 
@@ -76,7 +76,7 @@ candidatesDf_agg <- candidatesDf_agg[order(-candidatesDf_agg$Percentage),]
 candidatesDf_agg <- candidatesDf_agg[,c("GeneId","Symbol","Normal_transcript",
                                         "Tumor_transcript","Normal_protein",
                                         "Tumor_protein","Annotation","DriverAnnotation",
-                                        "IsRelevant","Driver","DriverType","Druggable",
+                                        "IsFunctional","Driver","DriverType","Druggable",
                                         "CDS_Normal","CDS_Tumor","CDS_change","UTR_change",
                                         "CancerAffected","PatientNumber","Percentage",
                                         "p.unbalance","Patients","Entropy")]
@@ -104,7 +104,7 @@ for (thing in c("# patients","% patients")){
       }
       
       if (effect=="functionalGenes") { 
-        functionalSelection <- as.logical(df$IsRelevant)
+        functionalSelection <- as.logical(df$IsFunctional)
       } else {
         functionalSelection <- matrix(T,nrow(df),1)
       }
@@ -180,7 +180,7 @@ for (thing in c("# patients","% patients")){
       }
       
       if (effect=="functionalGenes") { 
-        functionalSelection <- as.logical(df$IsRelevant)
+        functionalSelection <- as.logical(df$IsFunctional)
       } else {
         functionalSelection <- matrix(T,nrow(df),1)
       }
@@ -339,11 +339,11 @@ setwd(workingDir)
 # setwd("switches")
 # 
 # exonsPerSwitch_rel <- read.delim("exonsPerSwitch.tsv", header=FALSE)
-# exonsPerSwitch_rel <- cbind(exonsPerSwitch_rel,"Relevant")
+# exonsPerSwitch_rel <- cbind(exonsPerSwitch_rel,"Functional")
 # colnames(exonsPerSwitch_rel) <- c("Counts","Cancer","Switch","Relevance")
 # 
-# exonsPerSwitch_nrel <- read.delim("exonsPerSwitch_nonrelevant.tsv", header=FALSE)
-# exonsPerSwitch_nrel <- cbind(exonsPerSwitch_nrel,"NonRelevant")
+# exonsPerSwitch_nrel <- read.delim("exonsPerSwitch_nonfunctional.tsv", header=FALSE)
+# exonsPerSwitch_nrel <- cbind(exonsPerSwitch_nrel,"NonFunctional")
 # colnames(exonsPerSwitch_nrel) <- c("Counts","Cancer","Switch","Relevance")
 # 
 # exonsPerSwitch <- rbind(exonsPerSwitch_rel,exonsPerSwitch_nrel)
@@ -434,13 +434,13 @@ setwd("switches")
 #   #cancer_all <- read.delim(paste0(basePath,cancer,".tIso_length.tsv"), header=FALSE)
 #   #tiso_length_all <- rbind(tiso_length_all,cbind(cancer_all,cancer))
 #   
-#   cancer_rel <- read.delim(paste0(basePath,cancer,".nIso_length_relevant.tsv"), header=FALSE)
-#   cancer_rel <- cbind(cancer_rel,"Relevant",cancer)
+#   cancer_rel <- read.delim(paste0(basePath,cancer,".nIso_length_functional.tsv"), header=FALSE)
+#   cancer_rel <- cbind(cancer_rel,"Functional",cancer)
 #   colnames(cancer_rel) <- c("Length","Relevance","Cancer")
 #   niso_length_rel <- rbind(niso_length_rel,cancer_rel)
 #   
-#   cancer_nrel <- read.delim(paste0(basePath,cancer,".nIso_length_nonrelevant.tsv"), header=FALSE)
-#   cancer_nrel <- cbind(cancer_nrel,"NonRelevant",cancer)
+#   cancer_nrel <- read.delim(paste0(basePath,cancer,".nIso_length_nonfunctional.tsv"), header=FALSE)
+#   cancer_nrel <- cbind(cancer_nrel,"NonFunctional",cancer)
 #   colnames(cancer_nrel) <- c("Length","Relevance","Cancer")
 #   niso_length_nrel <- rbind(niso_length_nrel,cancer_nrel)
 # }
@@ -465,13 +465,13 @@ setwd("switches")
 #   #cancer_all <- read.delim(paste0(basePath,cancer,".tIso_length.tsv"), header=FALSE)
 #   #tiso_length_all <- rbind(tiso_length_all,cbind(cancer_all,cancer))
 #   
-#   cancer_rel <- read.delim(paste0(basePath,cancer,".tIso_length_relevant.tsv"), header=FALSE)
-#   cancer_rel <- cbind(cancer_rel,"Relevant",cancer)
+#   cancer_rel <- read.delim(paste0(basePath,cancer,".tIso_length_functional.tsv"), header=FALSE)
+#   cancer_rel <- cbind(cancer_rel,"Functional",cancer)
 #   colnames(cancer_rel) <- c("Length","Relevance","Cancer")
 #   tiso_length_rel <- rbind(tiso_length_rel,cancer_rel)
 #   
-#   cancer_nrel <- read.delim(paste0(basePath,cancer,".tIso_length_nonrelevant.tsv"), header=FALSE)
-#   cancer_nrel <- cbind(cancer_nrel,"NonRelevant",cancer)
+#   cancer_nrel <- read.delim(paste0(basePath,cancer,".tIso_length_nonfunctional.tsv"), header=FALSE)
+#   cancer_nrel <- cbind(cancer_nrel,"NonFunctional",cancer)
 #   colnames(cancer_nrel) <- c("Length","Relevance","Cancer")
 #   tiso_length_nrel <- rbind(tiso_length_nrel,cancer_nrel)
 # }
@@ -497,7 +497,7 @@ candidatesDf_copy$Driver[candidatesDf_copy$DriverType == "oncogene"] <- "Oncogen
 candidatesDf_copy$Driver[candidatesDf_copy$DriverType == "suppressor"] <- "Suppressor"
 candidatesDf_copy$Driver <- factor(candidatesDf_copy$Driver,c("NonDriver","Unlabeled driver","Oncogene","Suppressor"))
 
-candsStats <- ddply(candidatesDf_copy,.(Tumor,IsRelevant,Driver),summarise,Count=length(GeneId))
+candsStats <- ddply(candidatesDf_copy,.(Tumor,IsFunctional,Driver),summarise,Count=length(GeneId))
 colnames(candsStats) <- c("Cancer","Functional","Driver","Count")
 func <- as.logical(candsStats$Functional)
 candsStats$Functional[func] <- "Functional"
@@ -540,7 +540,7 @@ setwd(workingDir)
 # 1.9 - Print proportion of switches in drivers and non-drivers ====
 setwd("switches")
 
-for (a in c("d0_enrichment","d0_relevant_enrichment","d1_enrichment","d1_relevant_enrichment")){
+for (a in c("d0_enrichment","d0_functional_enrichment","d1_enrichment","d1_functional_enrichment")){
 
   candsStats <- read.delim(paste0(a,".tsv"))
   colnames(candsStats) <- c("Cancer","Analysis","SwitchedDriver","NonSwitchedDriver","SwitchedNonDrivers","NonSwitchedNonDrivers","p","OddsRatio")
@@ -591,29 +591,29 @@ for (a in c("d0_enrichment","d0_relevant_enrichment","d1_enrichment","d1_relevan
 }
 
 candidatesDf_copy <- candidatesDf
-relevantSwitches <- as.logical(candidatesDf_copy$IsRelevant)
-candidatesDf_copy$IsRelevant[relevantSwitches] <- "Functional"
-candidatesDf_copy$IsRelevant[!relevantSwitches] <- "Non-functional"
-candidatesDf_copy$IsRelevant <- factor(candidatesDf_copy$IsRelevant,c("Functional","Non-functional"))
+functionalSwitches <- as.logical(candidatesDf_copy$IsFunctional)
+candidatesDf_copy$IsFunctional[functionalSwitches] <- "Functional"
+candidatesDf_copy$IsFunctional[!functionalSwitches] <- "Non-functional"
+candidatesDf_copy$IsFunctional <- factor(candidatesDf_copy$IsFunctional,c("Functional","Non-functional"))
 
 p <- numeric()
 for (cancer in cancerTypes){
   thisDf <- candidatesDf_copy[candidatesDf_copy$Tumor==cancer,]
-  selectRelevant <- thisDf$IsRelevant == "Functional"
-  k <- ks.test(thisDf$NumPatients[selectRelevant],thisDf$NumPatients[!selectRelevant],alternative="less")
+  selectFunctional <- thisDf$IsFunctional == "Functional"
+  k <- ks.test(thisDf$NumPatients[selectFunctional],thisDf$NumPatients[!selectFunctional],alternative="less")
   p <- c(p,k$p.value)
 }
 
 signif <- data.frame(Cancer=cancerTypes,p=p)
 
-plotInfo <- candidatesDf_copy[,c("Tumor","NumPatients","IsRelevant")]
+plotInfo <- candidatesDf_copy[,c("Tumor","NumPatients","IsFunctional")]
 colnames(plotInfo) <- c("Cancer","y","Categories")
 
 sigElements <- getBoxplotAsterisks(signif,plotInfo)
 
 # plot isoform length
 p <- ggplot(candidatesDf_copy) + 
-  geom_boxplot(aes(factor(Tumor),NumPatients,fill=IsRelevant),outlier.colour = NA) + 
+  geom_boxplot(aes(factor(Tumor),NumPatients,fill=IsFunctional),outlier.colour = NA) + 
   scale_fill_manual(values=c("#d95f02","#7570b3")) + 
   xlab("Cancer") + ylab("Patient number") + scale_y_continuous(limits=c(0,175)) +
   smartas_theme() + theme(legend.position="bottom") +
@@ -622,7 +622,7 @@ p <- ggplot(candidatesDf_copy) +
 
 ggsave("figures/length_comparison_functionalVsNonFunctional.png",p, width=8, height=7)
 
-rm(a,p,k,relevantSwitches,selectRelevant,cancer,sigElements,
+rm(a,p,k,functionalSwitches,selectFunctional,cancer,sigElements,
    totalGenes,thisDf,signif,plotInfo,geneInfo,candsStats,
    candsStats_driver,candsStats_nonDriver,candidatesDf_copy)
 setwd(workingDir)
@@ -633,7 +633,7 @@ setwd(workingDir)
 setwd('neighborhood_analysis')
 genesetType <- c("canonical_pathways","hallmarks","go_biological_process","oncogenic_signatures")
 
-for (gnset in c("relevant","all")){
+for (gnset in c("functional","all")){
   for (type in genesetType){
     file <- paste(type,gnset,sep='_')
     sets_raw <- read.delim(paste0(file,'.txt'),header=TRUE)
@@ -1262,13 +1262,13 @@ setwd(workingDir)
 #   #cancer_all <- read.delim(paste0(basePath,cancer,".tIso_length.tsv"), header=FALSE)
 #   #tiso_length_all <- rbind(tiso_length_all,cbind(cancer_all,cancer))
 #   
-#   cancer_rel <- read.delim(paste0(basePath,cancer,".protein_centrality_relevant.tsv"), header=FALSE)
-#   cancer_rel <- cbind(cancer_rel,"Relevant",cancer)
+#   cancer_rel <- read.delim(paste0(basePath,cancer,".protein_centrality_functional.tsv"), header=FALSE)
+#   cancer_rel <- cbind(cancer_rel,"Functional",cancer)
 #   colnames(cancer_rel) <- c("Cancer","Degree","Relevance")
 #   centrality_rel <- rbind(centrality_rel,cancer_rel)
 #   
-#   cancer_nrel <- read.delim(paste0(basePath,cancer,".protein_centrality_nonrelevant.tsv"), header=FALSE)
-#   cancer_nrel <- cbind(cancer_nrel,"NonRelevant",cancer)
+#   cancer_nrel <- read.delim(paste0(basePath,cancer,".protein_centrality_nonfunctional.tsv"), header=FALSE)
+#   cancer_nrel <- cbind(cancer_nrel,"NonFunctional",cancer)
 #   colnames(cancer_nrel) <- c("Cancer","Degree","Relevance")
 #   centrality_nrel <- rbind(centrality_nrel,cancer_nrel)
 # }
@@ -1281,12 +1281,12 @@ setwd(workingDir)
 # graphics.off()
 # 
 # ################ FEATURES AFFECTED ################
-# Feats_affected_rel <- read.delim("structural_summary_relevant.tsv", header=FALSE)
-# Feats_affected_rel <- cbind(Feats_affected_rel,"Relevant")
+# Feats_affected_rel <- read.delim("structural_summary_functional.tsv", header=FALSE)
+# Feats_affected_rel <- cbind(Feats_affected_rel,"Functional")
 # colnames(Feats_affected_rel) <- c("Cancer","Switch","Pfam","PRINTS","ProSitePatterns","IUPREDLong","IUPREDShort","I3D","Driver","Relevance")
 # 
-# Feats_affected_nrel <- read.delim("structural_summary_nonrelevant.tsv", header=FALSE)
-# Feats_affected_nrel <- cbind(Feats_affected_nrel,"NonRelevant")
+# Feats_affected_nrel <- read.delim("structural_summary_nonfunctional.tsv", header=FALSE)
+# Feats_affected_nrel <- cbind(Feats_affected_nrel,"NonFunctional")
 # colnames(Feats_affected_nrel) <- c("Cancer","Switch","Pfam","PRINTS","ProSitePatterns","IUPREDLong","IUPREDShort","I3D","Driver","Relevance")
 # 
 # Feats_affected <- rbind(Feats_affected_rel,Feats_affected_nrel)
@@ -1294,32 +1294,32 @@ setwd(workingDir)
 # 
 # png("ProSitePatterns.png", width=1000, height=800)
 # par(mar=c(9,3,5,2))
-# boxplot(ProSitePatterns~interaction(Driver,Cancer),data=Feats_affected[Feats_affected$Relevance=="Relevant" & Feats_affected$ProSitePatterns!=0,],col=c("gray40","gray90"),las=3,outline=F)
+# boxplot(ProSitePatterns~interaction(Driver,Cancer),data=Feats_affected[Feats_affected$Relevance=="Functional" & Feats_affected$ProSitePatterns!=0,],col=c("gray40","gray90"),las=3,outline=F)
 # graphics.off()
 # 
 # png("Pfam.png", width=1000, height=800)
 # par(mar=c(9,3,5,2))
-# boxplot(Pfam~interaction(Driver,Cancer),data=Feats_affected[Feats_affected$Relevance=="Relevant" & Feats_affected$Pfam!=0,],col=c("gray40","gray90"),las=3,outline=F)
+# boxplot(Pfam~interaction(Driver,Cancer),data=Feats_affected[Feats_affected$Relevance=="Functional" & Feats_affected$Pfam!=0,],col=c("gray40","gray90"),las=3,outline=F)
 # graphics.off()
 # 
 # png("PRINTS.png", width=1000, height=800)
 # par(mar=c(9,3,5,2))
-# boxplot(PRINTS~interaction(Driver,Cancer),data=Feats_affected[Feats_affected$Relevance=="Relevant" & Feats_affected$PRINTS!=0,],col=c("gray40","gray90"),las=3,outline=F)
+# boxplot(PRINTS~interaction(Driver,Cancer),data=Feats_affected[Feats_affected$Relevance=="Functional" & Feats_affected$PRINTS!=0,],col=c("gray40","gray90"),las=3,outline=F)
 # graphics.off()
 # 
 # png("I3D.png", width=1000, height=800)
 # par(mar=c(9,3,5,2))
-# boxplot(I3D~interaction(Driver,Cancer),data=Feats_affected[Feats_affected$Relevance=="Relevant" & Feats_affected$I3D!=0,],col=c("gray40","gray90"),las=3,outline=F)
+# boxplot(I3D~interaction(Driver,Cancer),data=Feats_affected[Feats_affected$Relevance=="Functional" & Feats_affected$I3D!=0,],col=c("gray40","gray90"),las=3,outline=F)
 # graphics.off()
 # 
 # png("IUPREDShort.png", width=1000, height=800)
 # par(mar=c(9,3,5,2))
-# boxplot(IUPREDShort~interaction(Driver,Cancer),data=Feats_affected[Feats_affected$Relevance=="Relevant" & Feats_affected$IUPREDShort!=0,],col=c("gray40","gray90"),las=3,outline=F)
+# boxplot(IUPREDShort~interaction(Driver,Cancer),data=Feats_affected[Feats_affected$Relevance=="Functional" & Feats_affected$IUPREDShort!=0,],col=c("gray40","gray90"),las=3,outline=F)
 # graphics.off()
 # 
 # png("IUPREDLong.png", width=1000, height=800)
 # par(mar=c(9,3,5,2))
-# boxplot(IUPREDLong~interaction(Driver,Cancer),data=Feats_affected[Feats_affected$Relevance=="Relevant" & Feats_affected$IUPREDLong!=0,],col=c("gray40","gray90"),las=3,outline=F)
+# boxplot(IUPREDLong~interaction(Driver,Cancer),data=Feats_affected[Feats_affected$Relevance=="Functional" & Feats_affected$IUPREDLong!=0,],col=c("gray40","gray90"),las=3,outline=F)
 # graphics.off()
 # 
 # ################ STRUCTURAL FEATURES ################

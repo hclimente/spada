@@ -24,7 +24,7 @@ class NeighborhoodAnalysis(method.Method):
 		for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network,only_models=True,partialCreation=True,removeNoise=True):
 			self.genesWithAnySwitch.add(gene)
 
-			if [ x for x in self._gene_network._net.node[gene]["isoformSwitches"] if self._gene_network.createSwitch(x,self._transcript_network,True).is_relevant ]:
+			if [ x for x in self._gene_network._net.node[gene]["isoformSwitches"] if self._gene_network.createSwitch(x,self._transcript_network,True).is_functional ]:
 				self.genesWithFunSwitch.add(gene)	
 
 		for gene,info in [ (x,y) for x,y in self._gene_network.nodes(data=True) if y["ExpressedTranscripts"] ]:
@@ -54,7 +54,7 @@ class NeighborhoodAnalysis(method.Method):
 			geneSets[geneSet] = {}
 			geneSets[geneSet]["allGenes"] = genes
 
-		for s,switches in zip(["all","relevant"],[self.genesWithAnySwitch,self.genesWithFunSwitch]):
+		for s,switches in zip(["all","functional"],[self.genesWithAnySwitch,self.genesWithFunSwitch]):
 			for g in geneSets:
 				geneSets[g][s] = {}
 				genes = geneSets[g]["allGenes"]

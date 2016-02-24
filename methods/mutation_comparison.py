@@ -194,7 +194,7 @@ class MutationComparison(method.Method):
 
 				for switchDict in info["isoformSwitches"]:
 					if not switchDict["noise"] and switchDict["model"]:
-						if switchSet == "functional_switches" and self._gene_network.createSwitch(switchDict,self._transcript_network,True).is_relevant:
+						if switchSet == "functional_switches" and self._gene_network.createSwitch(switchDict,self._transcript_network,True).is_functional:
 							patientsWithSwitch.extend(switchDict["patients"])
 							nTx = switchDict["nIso"]
 							tTx = switchDict["tIso"]

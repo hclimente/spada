@@ -10,7 +10,7 @@ from libs.guild.src import combine_scores
 from libs.guild.src import create_random_networks_for_netzcore
 
 import pandas as pd
-import networkx
+import networkx as nx
 
 class NetworkAnalysis(method.Method):
 	def __init__(self, gn_network, tx_network, gn_subnetwork):
@@ -22,9 +22,9 @@ class NetworkAnalysis(method.Method):
 
 	def run(self, onlyExperimental):
 		self.guildAnalysis(onlyExperimental)
-		self.relevantNeighbors()
+		self.functionalNeighbors()
 
-	def relevantNeighbors(self):
+	def functionalNeighbors(self):
 		self.logger.info("Switches in driver neighborhoods.")
 		candidatesNet = []
 
@@ -133,7 +133,7 @@ class NetworkAnalysis(method.Method):
 
 		if options.Options().annotation == "ucsc": 
 			self._gene_subnetworks[x] = ucsc_gene_network.UCSCGeneNetwork()
-			self._gene_subnetworks[x]._net = networkx.subgraph(self._gene_network._net, topGenes)
+			self._gene_subnetworks[x]._net = nx.subgraph(self._gene_network._net, topGenes)
 			
 		else:
 			self.logger.error("Unrecognized input type {0}.".format(options.Options().annotation))
