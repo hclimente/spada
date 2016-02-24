@@ -14,15 +14,14 @@ class StructuralAnalysis(method.Method):
 		self.isRandom = isRand
 		if self.isRandom:
 			tag = "_random"
-			if options.Options().parallelRange:
-				tag += "_{}".format(options.Options().parallelRange)
+			
 		else:
 			tag = ""
 			if not options.Options().parallelRange:
 				self.joinFiles("_random")
-				
-			else:
-				tag = "_{}".format(options.Options().parallelRange)
+
+		if options.Options().parallelRange:
+			tag += "_{}".format(options.Options().parallelRange)
 
 		self.anchor_threshold = 0.5
 		self.iupred_threshold = 0.5
