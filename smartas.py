@@ -9,12 +9,11 @@ from methods import get_switches
 from methods import mutation_comparison
 from methods import mutation_feature_overlap
 from methods import neighborhood_analysis
-from methods import network_analysis
 from methods import structural_analysis
 from methods import result_summary
 from methods import wgs_mutations
 
-from methods import testMethod
+from methods import test
 
 import logging
 
@@ -32,14 +31,6 @@ class SmartAS:
 		g = get_switches.GetSwitches(None,None,None)
 		g.run()
 			
-	def networkAnalysis(self,onlyExperimental):
-		
-		n = network_analysis.NetworkAnalysis(True,True)
-		n.run(onlyExperimental=onlyExperimental)
-		
-		geneSubnetwork = n.getGeneSubnetwork(1)
-		geneSubnetwork.saveNetwork("geneSubnetwork.pkl")
-
 	def structuralAnalysis(self):
 
 		s = structural_analysis.StructuralAnalysis(True,True)
@@ -101,7 +92,7 @@ class SmartAS:
 
 	def testing(self):
 
-		test = testMethod.Test(True,True)
+		test = test.Test(True,True)
 		test.run()
 
 if __name__ == '__main__':
@@ -133,10 +124,6 @@ if __name__ == '__main__':
 		S.createRandomSwitches()
 	
 	# analyze model switches
-	elif options.Options().initialStep == "experimental-network-analysis":
-		S.networkAnalysis(False)
-	elif options.Options().initialStep == "predicted-network-analysis":
-		S.networkAnalysis(True)
 	elif options.Options().initialStep == "neighborhood-analysis":
 		S.neighborhoodAnalysis()
 	elif options.Options().initialStep == "get-i3d-broken-interactions":
