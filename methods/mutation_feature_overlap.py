@@ -1,5 +1,3 @@
-#!/soft/devel/python-2.7/bin/python
-
 from biological_entities import protein
 from biological_entities import transcript
 from libs import options

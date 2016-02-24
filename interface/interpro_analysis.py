@@ -1,7 +1,7 @@
 from libs import options
 from libs import utils
 
-import os, time
+import os
 
 class InterproAnalysis:
     def __init__(self):

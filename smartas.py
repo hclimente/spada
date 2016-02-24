@@ -1,4 +1,4 @@
-#!/soft/devel/python-2.7/bin/python
+#!/usr/bin/env python
 
 from interface import out_network
 from libs import options
