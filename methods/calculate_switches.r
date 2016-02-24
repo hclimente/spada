@@ -229,6 +229,9 @@ p <- apply(switches.df.byPat[,c("Paired","Unpaired")],1,
 switches.df.byPat.filt <- subset(switches.df.byPat, p >= 0.05 & Paired>0, select=c("Gene","Normal","Tumor"))
 switches.df.filt <- merge(switches.df.byPat.filt,switches.df)
 
+switches.df.filt.agg <- ddply(switches.df.filt,.(Gene,Normal,Tumor),summarise,
+                              Samples=paste(Sample,collapse=","))
+
 write.table(switches.df.filt, file=outfile, sep="\t", row.names=F, col.names=F, quote=F)
 
 #stromal.correlation <- read.table(paste0("/projects_rg/TCGA/pipeline/run11/",tumor,"_gene_gsea_full.txt"), check.names=FALSE, header=TRUE)
