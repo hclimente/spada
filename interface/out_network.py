@@ -9,7 +9,7 @@ def outputGTF(gn_network,tx_network):
 		 open(options.Options().qout + "/candidates_tumor.gtf", 'w') as tGTF, \
 		 open("{}data/{}/annotation.gtf".format(options.Options().wd,options.Options().annotation), "r") as ALLTRANSCRIPTS:
 	
-		switchesInfo = [ [(z.nTx,z.tTx),z.score] for w,x,y,z in gn_network.iterate_switches_ScoreWise(tx_network) ]
+		switchesInfo = [ [(z.nTx,z.tTx),z.score] for w,x,y,z in gn_network.iterate_switches_ScoreWise(tx_network,partialCreation=True) ]
 
 		for line in ALLTRANSCRIPTS:
 			for switch in switchesInfo:

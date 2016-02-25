@@ -179,8 +179,8 @@ class Protein:
 
 		noInteractions = True
 
-		for line in utils.readTable("Data/Databases/Interactome3D/2015_02/interactions.dat"):
-			pdbFile = "Data/Databases/Interactome3D/2015_02/interactions/" + line[21]
+		for line in utils.readTable("{}data/Databases/Interactome3D/2015_02/interactions.dat".format(options.Options().wd)):
+			pdbFile = "{}data/Databases/Interactome3D/2015_02/interactions/{}".format(options.Options().wd, line[21])
 
 			if self.uniprot == line[0]:
 				logging.debug("Relevant interaction for {0} at {1}.".format(self.tx, pdbFile))
