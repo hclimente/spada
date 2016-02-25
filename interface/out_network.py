@@ -53,7 +53,7 @@ def outCandidateList(gn_network,tx_network):
 			cList.write("{0}\t{1}\t".format( nUniprot, tUniprot ))
 			cList.write("{0}\t{1}\t".format( annotation,driverAnnotation ))
 			cList.write("{0}\t{1}\t".format( int(not switchDict["noise"]), int(switchDict["model"]) ))
-			cList.write("{0}\t{1}\t".format( relevance, int(info["Driver"]) ))
+			cList.write("{0}\t{1}\t".format( relevance, int(info["driver"]) ))
 			cList.write("{0}\t{1}\t".format( int(info["Druggable"]), int(bool(nIso.cds)) ))
 			cList.write("{0}\t{1}\t".format( int(bool(tIso.cds)), int(cdsChange), ))
 			cList.write("{0}\t{1}\n".format( int(utrChange), ",".join(switch.patients) ))
