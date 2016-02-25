@@ -7,13 +7,10 @@ import os
 import operator
 
 class IsoformSwitch:
-	def __init__(self, nTx, tTx, score, patients,precision,sensitivity):
+	def __init__(self, nTx, tTx, patients):
 		self._normal_transcript_name= nTx
 		self._tumor_transcript_name = tTx
-		self._percent 				= score
 		self._patients 				= patients
-		self._precision 			= precision
-		self._sensitivity 			= sensitivity
 
 		self._normal_transcript 	= None
 		self._tumor_transcript 		= None
@@ -47,13 +44,7 @@ class IsoformSwitch:
 	@property
 	def tTx(self): return self._tumor_transcript_name
 	@property
-	def score(self): return self._percent
-	@property
 	def patients(self): return self._patients
-	@property
-	def precision(self): return self._precision
-	@property
-	def sensitivity(self): return self._sensitivity
 	
 	@property 
 	def nIsoform(self): return self._normal_protein

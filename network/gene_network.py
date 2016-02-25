@@ -347,9 +347,7 @@ class GeneNetwork(network.Network):
 			partialCreation(bool): if False, the heavy protein 
 				objects are not created.
 		"""
-		thisSwitch = switch.IsoformSwitch(switchDict["nIso"],switchDict["tIso"],
-											  switchDict["score"],switchDict["patients"],
-											  switchDict["precision"],switchDict["sensitivity"])
+		thisSwitch = switch.IsoformSwitch(switchDict["nIso"],switchDict["tIso"],switchDict["patients"])
 		nInfo = tx_network._net.node[thisSwitch.nTx]
 		tInfo = tx_network._net.node[thisSwitch.tTx]
 		thisSwitch.addTxs(nInfo,tInfo)
