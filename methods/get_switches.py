@@ -1,4 +1,3 @@
-from interface import export_to_MSAnalysis
 from interface import out_network
 from libs import options
 from libs import utils
@@ -13,8 +12,8 @@ class GetSwitches(method.Method):
 
 	def run(self):
 
-		self.createGeneNetwork()
-		self.createTranscriptNetwork()
+		#self.createGeneNetwork()
+		#self.createTranscriptNetwork()
 
 		if not options.Options().externalSwitchesFile:
 			switchesFile = self.calculateSwitches()

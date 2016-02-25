@@ -130,6 +130,9 @@ class IsoformNetwork(network.Network):
 
 		# get transcript start and end from exon information
 		for tx in self.nodes():
+			if not self._net.node[tx]["exonStructure"]:
+				self.logger.warning("No exon structure found for transcript {}.".format(tx))
+				continue
 			txStart = min([ x[0] for x in self._net.node[tx]["exonStructure"]])
 			txEnd = max([ x[1] for x in self._net.node[tx]["exonStructure"]])
 			self.update_node(tx, "txCoords", [txStart, txEnd])

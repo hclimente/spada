@@ -7,7 +7,7 @@ def outputGTF(gn_network,tx_network):
 	logging.info("Writing GTF files.")
 	with open(options.Options().qout + "/candidates_normal.gtf", 'w') as nGTF, \
 		 open(options.Options().qout + "/candidates_tumor.gtf", 'w') as tGTF, \
-		 open("Data/" + options.Options().annotation + "/annotation.gtf", "r") as ALLTRANSCRIPTS:
+		 open("{}data/{}/annotation.gtf".format(options.Options().wd,options.Options().annotation), "r") as ALLTRANSCRIPTS:
 	
 		switchesInfo = [ [(z.nTx,z.tTx),z.score] for w,x,y,z in gn_network.iterate_switches_ScoreWise(tx_network) ]
 
