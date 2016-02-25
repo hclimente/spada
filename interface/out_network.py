@@ -9,14 +9,14 @@ def outputGTF(gn_network,tx_network):
 		 open(options.Options().qout + "/candidates_tumor.gtf", 'w') as tGTF, \
 		 open("{}data/{}/annotation.gtf".format(options.Options().wd,options.Options().annotation), "r") as ALLTRANSCRIPTS:
 	
-		switchesInfo = [ [(z.nTx,z.tTx),z.score] for w,x,y,z in gn_network.iterate_switches_ScoreWise(tx_network,partialCreation=True) ]
+		switchesInfo = [ (z.nTx,z.tTx) for w,x,y,z in gn_network.iterate_switches_ScoreWise(tx_network,partialCreation=True) ]
 
 		for line in ALLTRANSCRIPTS:
 			for switch in switchesInfo:
-				if switch[0][0] in line:
-					nGTF.write("{0};patients_affected={1}\n".format(line.strip(), switch[1] ))
-				elif switch[0][1] in line:
-					tGTF.write("{0};patients_affected={1}\n".format(line.strip(), switch[1] ))
+				if switch[0] in line:
+					nGTF.write(line)
+				elif switch[1] in line:
+					tGTF.write(line)
 
 def outCandidateList(gn_network,tx_network):
 	logging.info("Writing candidateList.")

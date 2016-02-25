@@ -34,7 +34,7 @@ class GetSwitches(method.Method):
 					  "{}results/{}/randomGeneNetwork.pkl".format(options.Options().wd,options.Options().parentTag),
 					  options.Options().qout)
 
-		out_network.outputGTF(self._gene_network,self._transcript_network)
+		#out_network.outputGTF(self._gene_network,self._transcript_network)
 		out_network.outCandidateList(self._gene_network,self._transcript_network)
 
 	def calculateSwitches(self):
