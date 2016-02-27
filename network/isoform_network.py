@@ -143,7 +143,7 @@ class IsoformNetwork(network.Network):
 			self.update_node(tx,"exonStructure",exons)
 			self.update_node(tx, "txCoords", [txStart, txEnd])
 
-			if featureInfo and "CDSstart" in featureInfo:
+			if featureInfo and "CDSstart" in featureInfo and "CDSstop" in featureInfo:
 
 				cds = [ x for x in featureInfo.split(";") if "CDSstart" in x  or "CDSstop" in x ]
 
