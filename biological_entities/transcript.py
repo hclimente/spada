@@ -23,8 +23,12 @@ class Transcript:
 		self._exon = {}
 		
 		if self._strand == "+": 
-			cdsStart = self._cds_coordinates[0]
-			cdsEnd 	 = self._cds_coordinates[1]
+			if self._cds_coordinates is None:
+				cdsStart = float("Inf")
+				cdsEnd 	 = float("-Inf")
+			else:
+				cdsStart = self._cds_coordinates[0]
+				cdsEnd 	 = self._cds_coordinates[1]
 			
 			exon = 1
 			for exonStart,exonEnd in self._exons:
@@ -42,8 +46,12 @@ class Transcript:
 				exon +=1
 
 		elif self._strand == "-": 
-			cdsStart = self._cds_coordinates[1]
-			cdsEnd 	 = self._cds_coordinates[0]
+			if self._cds_coordinates is None:
+				cdsStart = float("-Inf")
+				cdsEnd 	 = float("Inf")
+			else:
+				cdsStart = self._cds_coordinates[1]
+				cdsEnd 	 = self._cds_coordinates[0]
 
 			#In strand -, iterate in reverse genomic order, still 5'->3'.
 			#Subtract 1 from the exon coordinates to convert the UCSC format to the reverse direction.

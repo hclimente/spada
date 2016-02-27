@@ -30,7 +30,7 @@ class SmartAS:
 
 		#QUITAR
 		#g = get_switches.GetSwitches(None,None,None)
-		g = get_switches.GetSwitches(True,True,None)
+		g = get_switches.GetSwitches(True,False,None)
 		g.run()
 			
 	def structuralAnalysis(self):
@@ -94,8 +94,8 @@ class SmartAS:
 
 	def testing(self):
 
-		test = test.Test(True,True)
-		test.run()
+		t = test.Test(True,True)
+		t.run()
 
 if __name__ == '__main__':
 

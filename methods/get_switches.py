@@ -13,7 +13,7 @@ class GetSwitches(method.Method):
 	def run(self):
 
 		#self.createGeneNetwork()
-		#self.createTranscriptNetwork()
+		self.createTranscriptNetwork()
 
 		if not options.Options().externalSwitchesFile:
 			switchesFile = self.calculateSwitches()

@@ -6,9 +6,14 @@ from methods import method
 from collections import Counter
 import glob
 import operator
+import os
 
 class StructuralAnalysis(method.Method):
 	def __init__(self,gn_network,tx_network,isRand=False):
+
+		if not os.path.exists("{}structural_analysis".format(options.Options().qout)):
+			utils.cmd("mkdir","{}structural_analysis".format(options.Options().qout))
+
 		method.Method.__init__(self, __name__,gn_network,tx_network)
 
 		self.isRandom = isRand

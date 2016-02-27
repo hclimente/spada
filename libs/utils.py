@@ -59,31 +59,25 @@ def geneclusterLaunch(tag,base,*args):
 	cmd("qsub","-N",tag,tag+".sh")
 
 def launchJobs(gnNetwork,task,q="short"):
-	import drmaa
 
-	s = drmaa.Session()
-	s.initialize()
-
-	natSpec = ""
+	natSpec = []
 	if q=="normal":
-		natSpec += "-q normal -l 'qname=normal' "
+		natSpec.append("-q normal -l 'qname=normal'")
 	else:
-		natSpec += "-q short-high -l 'qname=short-high' "
-	natSpec += "-cwd "
-	natSpec += "-V "
-	natSpec += "-N {}.{}".format(options.Options().tag,options.Options().step,task)
-
+		natSpec.append("-q short-high -l 'qname=short-high'")
+	natSpec.append("-cwd")
+	natSpec.append("-V")
+	natSpec.append("-N {}.{}".format(options.Options().tag,task))
+	natSpec.append("-t 1-{}:{}".format(len(gnNetwork.nodes()),options.Options().step))
+	
 	cfg = options.Options().getCommandLineParameters(onlyModels=False)
 	cfg.extend(["--parallel-range","$SGE_TASK_ID"])
-
-	jt = s.createJobTemplate()
-		
-	jt.remoteCommand = 'pipeline/smartas.py'
-	jt.args = cfg
-	jt.joinFiles=True
-
-	s.runBulkJobs(jt,1,len(gnNetwork.nodes()),options.Options().step)
-	s.deleteJobTemplate(jt)
+	with open("{}{}.{}.sh".format(options.Options().wd,options.Options().tag,task),"w") as JOB:
+		JOB.write('{}pipeline/smartas.py {}'.format(options.Options().wd," ".join(cfg)))
+	
+	qsubArgs = " ".join(natSpec)
+	
+	cmd("qsub {} {}{}.{}.sh".format(qsubArgs, options.Options().wd,options.Options().tag,task))
 
 def launchSingleJob(task,name=""):
 	

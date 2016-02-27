@@ -18,7 +18,7 @@ class GetRandomSwitches(method.Method):
 		self.MAX_SWITCHES = 5
 
 	def run(self):
-		if not os.path.exists("{}randomGeneNetwork.pkl".format(options.Options().qout)):
+		if not os.path.exists("{}randomGeneNetwork_fixNormal.pkl".format(options.Options().qout)):
 			self.logger.info("Generating random switches.")
 
 			# copy original gene network and remove real switches
@@ -46,7 +46,7 @@ class GetRandomSwitches(method.Method):
 		else:
 			# calculate functional switches
 			self.logger.info("Calculating features for random switches.")
-			gcopy = pickle.load(open("{}randomGeneNetwork.pkl".format(options.Options().qout)))
+			gcopy = pickle.load(open("{}randomGeneNetwork_fixNormal.pkl".format(options.Options().qout)))
 			S = structural_analysis.StructuralAnalysis(gcopy,self._transcript_network,isRand=True)
 			S.run()	
 

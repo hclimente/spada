@@ -59,7 +59,7 @@ class IsoformNetwork(network.Network):
 		
 		self._net.add_node( tx, 
 							gene_id			= genes,
-							exonStructure	= [],
+							exonStructure	= None,
 							txCoords		= None,
 							cdsCoords		= None,
 							strand 			= None,
@@ -102,40 +102,54 @@ class IsoformNetwork(network.Network):
 			if median_PSI_t is not None: self.update_node( tx, "median_PSI_T", median_PSI_t )
 
 		# exon and CDS info
-		for line in utils.readTable("{}data/{}/annotation.gtf".format(options.Options().wd,options.Options().annotation),header=False):
-			seqname 	= line[0]
-			source 		= line[1]
-			feature 	= line[2]
-			start 		= int(line[3])
-			end 		= int(line[4])
-			score 		= line[5]
-			strand 		= line[6]
-			frame 		= line[7]
-			attribute 	= line[8].split(";")
-
-			tx = [ x.split(" ")[2].strip("\"") for x in attribute if "transcript_id" in x ][0]
-
-			if tx not in self.nodes():
+		for line in utils.readTable("{}data/{}/annotation.gaf".format(options.Options().wd,options.Options().annotation),header=False):
+			if line[2]!="transcript" or line[1] not in self.nodes() or line[7]!="GRCh37":
 				continue
 
-			if feature=="exon":
-				exon = [ start, end ]
-				self.update_node(tx,"exonStructure",exon)
+			entryNumber 		 = line[0]
+			featureID 			 = line[1]
+			featureType 		 = line[2]
+			featureDBSource 	 = line[3]
+			featureDBVersion 	 = line[4]
+			featureDBDate 		 = line[5]
+			featureSeqFileName 	 = line[6]
+			composite 			 = line[7]
+			compositeType 		 = line[8]
+			compositeDBSource 	 = line[9]
+			compositeDBVersion 	 = line[10]
+			compositeDBDate 	 = line[11]
+			alignmentType 		 = line[12]
+			featureCoordinates 	 = line[13]
+			compositeCoordinates = line[14]
+			gene 				 = None
+			geneLocus 			 = None
+			featureAliases	 	 = None
+			featureInfo  		 = None
+			if len(line) > 15:
+				gene 				 = line[15]
+				geneLocus 			 = line[16]
+				if len(line) > 17:
+					featureAliases	 = line[17]
+					if len(line) > 18:
+						featureInfo  = line[18]
 
-			elif feature=="CDS":
-				self.update_node(tx, "cdsCoords", [start,end])
+			chromosome,exons,strand=compositeCoordinates.split(":")
+			exons = [ [ int(y) for y in x.split("-") ] for x in exons.split(",")  ]
+			txStart = min([ x[0] for x in exons ])
+			txEnd = max([ x[1] for x in exons ])
 
 			self.update_node(tx, "strand", strand)
-			self.update_node(tx, "chr", seqname)
-
-		# get transcript start and end from exon information
-		for tx in self.nodes():
-			if not self._net.node[tx]["exonStructure"]:
-				self.logger.warning("No exon structure found for transcript {}.".format(tx))
-				continue
-			txStart = min([ x[0] for x in self._net.node[tx]["exonStructure"]])
-			txEnd = max([ x[1] for x in self._net.node[tx]["exonStructure"]])
+			self.update_node(tx, "chr", chromosome)
+			self.update_node(tx,"exonStructure",exons)
 			self.update_node(tx, "txCoords", [txStart, txEnd])
+
+			if featureInfo and "CDSstart" in featureInfo:
+
+				cds = [ x for x in featureInfo.split(";") if "CDSstart" in x  or "CDSstop" in x ]
+
+				cdsStart = int([ x.split("=")[1] for x in cds if "CDSstart" in x ][0]) - 1
+				cdsEnd = int([ x.split("=")[1] for x in cds if "CDSstop" in x ][0]) - 1
+				self.update_node(tx, "cdsCoords", [txStart+cdsStart, txStart+cdsEnd])
 
 		self.logger.debug("Reading transcript info: protein sequence, Uniprot and iLoops family.")
 		with open("{}data/{}/sequences.uniprot.loops.fa".format(options.Options().wd, options.Options().annotation)) as FASTA:

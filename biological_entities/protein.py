@@ -318,16 +318,15 @@ class Protein:
 		return segments
 
 	def readAnchor(self):
-		outfile = "{0}Data/{1}/ANCHOR/{2}.txt".format(options.Options().wd,options.Options().annotation,self.tx)
+		outfile = "{0}data/{1}/ANCHOR/{2}.txt".format(options.Options().wd,options.Options().annotation,self.tx)
 
 		if not os.path.isfile(outfile):
 			out = []
-			outfile = "{0}ANCHOR/{1}.txt".format(options.Options().wd,self.tx)
 			fFile = "{0}{1}{2}.fa".format(options.Options().qout,self.tx,options.Options().filetag)
 			with open(fFile,"w") as FASTA:
 				FASTA.write(">{0}\n{1}\n".format(self.tx,self.seq))
 
-			proc = utils.cmdOut(options.Options().wd+"Pipeline/libs/ANCHOR/anchor",fFile)
+			proc = utils.cmdOut(options.Options().wd+"pipeline/libs/ANCHOR/anchor",fFile)
 			out = [ x.strip().split() for x in proc.stdout if "#" not in x ]
 			os.remove(fFile)
 
@@ -360,16 +359,15 @@ class Protein:
 
 	def readIupred(self,mode):
 
-		outfile = "{0}Data/{1}/IUPred/{2}.{3}.txt".format(options.Options().wd,options.Options().annotation,self.tx,mode)
+		outfile = "{0}data/{1}/IUPred/{2}.{3}.txt".format(options.Options().wd,options.Options().annotation,self.tx,mode)
 
 		if not os.path.isfile(outfile):
 			out = []
-			outfile = "{0}IUPred/{1}.{2}.txt".format(options.Options().wd,self.tx,mode)
 			fFile = "{0}{1}{2}.fa".format(options.Options().qout,self.tx,options.Options().filetag)
 			with open(fFile,"w") as FASTA:
 				FASTA.write(">{0}\n{1}\n".format(self.tx,self.seq))
 
-			proc = utils.cmdOut(options.Options().wd+"Pipeline/libs/bin/iupred/iupred",fFile,mode)
+			proc = utils.cmdOut(options.Options().wd+"pipeline/libs/bin/iupred/iupred",fFile,mode)
 			out = [ x.strip().split(" ") for x in proc.stdout if "#" not in x ]
 			os.remove(fFile)
 
@@ -385,7 +383,6 @@ class Protein:
 						self.logger.error("Not matching residue in ANCHOR analysis, transcript {0}.".format(self.tx))
 						continue
 					thisRes.set_iuPredScore(score)
-					
 
 		else:
 			for line in utils.readTable(outfile,header=False):
@@ -402,7 +399,7 @@ class Protein:
 
 	def readInterpro(self):
 
-		outfile = "{0}Data/{1}/InterPro/{2}.tsv".format(options.Options().wd,options.Options().annotation,self.tx)
+		outfile = "{0}data/{1}/InterPro/{2}.tsv".format(options.Options().wd,options.Options().annotation,self.tx)
 		acceptedAnalysis = ["Pfam"]
 
 		if not os.path.isfile(outfile):
@@ -464,7 +461,7 @@ class Protein:
 
 	def readProsite(self):
 
-		featFile = "{0}Data/{1}/ProSite/{2}.out".format(options.Options().wd,options.Options().annotation,self.tx)
+		featFile = "{0}data/{1}/ProSite/{2}.out".format(options.Options().wd,options.Options().annotation,self.tx)
 
 		if not os.path.exists(featFile) or os.stat(featFile).st_size == 0:
 			return
