@@ -31,9 +31,6 @@ class IsoformSwitch:
 		self._deep_anchor_change 	= { }
 		self._deep_ptm_change 		= { }
 
-		#Network analysis
-		self._guild_top1 			= None
-		self._guild_top5 			= None
 		#Neighborhood analysis
 		self._neighborhood_change 	= None
 		#iLoops analysis
@@ -86,10 +83,6 @@ class IsoformSwitch:
 			self.readRelevanceAnalysis()
 		return self._ptm_change
 
-	@property
-	def guildTop1(self): return self._guild_top1
-	@property
-	def guildTop5(self): return self._guild_top5
 	@property
 	def neighborhoodChange(self): return self._neighborhood_change
 

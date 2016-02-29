@@ -322,13 +322,13 @@ class Protein:
 
 		if not os.path.isfile(outfile):
 			out = []
-			fFile = "{0}{1}{2}.fa".format(options.Options().qout,self.tx,options.Options().filetag)
-			with open(fFile,"w") as FASTA:
+			fasta = "{0}{1}{2}.fa".format(options.Options().qout,self.tx,options.Options().filetag)
+			with open(fasta,"w") as FASTA:
 				FASTA.write(">{0}\n{1}\n".format(self.tx,self.seq))
 
-			proc = utils.cmdOut(options.Options().wd+"pipeline/libs/ANCHOR/anchor",fFile)
+			proc = utils.cmdOut(options.Options().wd+"pipeline/libs/ANCHOR/anchor",fasta)
 			out = [ x.strip().split() for x in proc.stdout if "#" not in x ]
-			os.remove(fFile)
+			os.remove(fasta)
 
 			with open(outfile,"w") as ANCHORout:
 				for line in out:
@@ -359,17 +359,17 @@ class Protein:
 
 	def readIupred(self,mode):
 
-		outfile = "{0}data/{1}/IUPred/{2}.{3}.txt".format(options.Options().wd,options.Options().annotation,self.tx,mode)
+		outfile = "{}data/{}/IUPred/{}.{}.txt".format(options.Options().wd,options.Options().annotation,self.tx,mode)
 
 		if not os.path.isfile(outfile):
 			out = []
-			fFile = "{0}{1}{2}.fa".format(options.Options().qout,self.tx,options.Options().filetag)
-			with open(fFile,"w") as FASTA:
+			fasta = "{}{}{}.fa".format(options.Options().qout,self.tx,options.Options().filetag)
+			with open(fasta,"w") as FASTA:
 				FASTA.write(">{0}\n{1}\n".format(self.tx,self.seq))
 
-			proc = utils.cmdOut(options.Options().wd+"pipeline/libs/bin/iupred/iupred",fFile,mode)
+			proc = utils.cmdOut(options.Options().wd+"pipeline/libs/bin/iupred/iupred",fasta,mode)
 			out = [ x.strip().split(" ") for x in proc.stdout if "#" not in x ]
-			os.remove(fFile)
+			os.remove(fasta)
 
 			with open(outfile,"w") as IUout:
 				for line in out:

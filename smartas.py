@@ -28,9 +28,7 @@ class SmartAS:
 
 	def getSwitches(self):
 
-		#QUITAR
-		#g = get_switches.GetSwitches(None,None,None)
-		g = get_switches.GetSwitches(True,False,None)
+		g = get_switches.GetSwitches(None,None,None)
 		g.run()
 			
 	def structuralAnalysis(self):

@@ -12,7 +12,7 @@ class GetSwitches(method.Method):
 
 	def run(self):
 
-		#self.createGeneNetwork()
+		self.createGeneNetwork()
 		self.createTranscriptNetwork()
 
 		if not options.Options().externalSwitchesFile:
@@ -33,6 +33,8 @@ class GetSwitches(method.Method):
 			utils.cmd("cp",
 					  "{}results/{}/randomGeneNetwork.pkl".format(options.Options().wd,options.Options().parentTag),
 					  options.Options().qout)
+
+		self._gene_network.saveNetwork("geneNetwork.pkl")
 
 		#out_network.outputGTF(self._gene_network,self._transcript_network)
 		out_network.outCandidateList(self._gene_network,self._transcript_network)
