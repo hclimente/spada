@@ -16,7 +16,7 @@ from methods import wgs_mutations
 from methods import test
 
 import logging
-
+import os
 
 class SmartAS:
 	def __init__(self):
@@ -96,6 +96,9 @@ class SmartAS:
 		t.run()
 
 if __name__ == '__main__':
+
+	if not os.path.exists("{}".format(options.Options().qout)):
+		utils.cmd("mkdir","-p","{}logs".format(options.Options().qout))
 
 	logging.basicConfig(level=logging.DEBUG,
 						format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
