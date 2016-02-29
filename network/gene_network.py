@@ -5,6 +5,7 @@ import network
 
 import abc
 import numpy as np
+import operator
 import pandas as pd
 import random
 import subprocess
@@ -195,7 +196,7 @@ class GeneNetwork(network.Network):
 		self.logger.debug("Cleaning imported network.")
 
 		# removing isoform switches
-		for gene,info in self.iterate_genes_ScoreWise():
+		for gene,info in self.iterate_genes_byPatientNumber():
 			self._net.node[gene]["isoformSwitches"] = []
 
 	def importCandidates(self,candidatesFile):
@@ -269,25 +270,28 @@ class GeneNetwork(network.Network):
 				self.update_edge("experimental", True, 
 					gene_id1=entrezGeneInteractorA, gene_id2=entrezGeneInteractorB)
 
-	def iterate_genes_ScoreWise(self):
+	def iterate_genes_byPatientNumber(self):
 		'''
 		Iterate genes that have alternative splicing and more than one transcript expressed.
 		'''
-		genes = self.nodes(data=True)
+		
+		geneAndPatients = [ (x,sum([ len(z["patients"]) for z in y["isoformSwitches"] ])) for x,y in self.nodes(data=True) ]
+		genes = [ x for x,y in sorted(geneAndPatients.items(), key=operator.itemgetter(1)) ]
 
 		if options.Options().parallelRange:
 			bottom = options.Options().parallelRange - 1
 			top = bottom + options.Options().step
 			genes = genes[bottom:top]
 
-		for gene,info in genes:
+		for gene in genes:
+			info = self._gene_network._net.node[gene]
 			allExpressedTxs = set(info["expressedTxsNormal"]) | set(info["expressedTxsTumor"])
 			if len(allExpressedTxs) < 2:
 				continue
 			self.logger.debug("Iterating gene {0}.".format(gene))
 			yield gene,info
 
-	def iterate_switches_ScoreWise(self,tx_network,only_models=False,relevance=None,partialCreation=False,removeNoise=True):
+	def iterate_switches_byPatientNumber(self,tx_network,only_models=False,relevance=None,partialCreation=False,removeNoise=True):
 		"""Iterate through the isoform switches of a gene network, and
 			generate a list of (gene,geneInformation,isoformSwitch).
 			Only return those switches with an overlap between the CDS 
@@ -298,7 +302,7 @@ class GeneNetwork(network.Network):
 		"""
 
 		counter = 1
-		for gene,info in self.iterate_genes_ScoreWise():		
+		for gene,info in self.iterate_genes_byPatientNumber():		
 			if not info["isoformSwitches"]: continue
 
 			for switchDict in info["isoformSwitches"]:
@@ -317,7 +321,7 @@ class GeneNetwork(network.Network):
 					
 				yield gene,info,switchDict,thisSwitch
 
-	def iterate_functionalSwitches_ScoreWise(self,tx_network,only_models=False,partialCreation=False,removeNoise=True):
+	def iterate_functionalSwitches_byPatientNumber(self,tx_network,only_models=False,partialCreation=False,removeNoise=True):
 		"""Iterate through the isoform switches of a gene network, and
 			generate a list of (gene,geneInformation,isoformSwitch).
 			Only return those switches with an overlap between the CDS 
@@ -327,9 +331,9 @@ class GeneNetwork(network.Network):
 				common) will be returned for each gene.
 		"""
 
-		self.iterate_switches_ScoreWise(tx_network,only_models,True,partialCreation,removeNoise)
+		self.iterate_switches_byPatientNumber(tx_network,only_models,True,partialCreation,removeNoise)
 
-	def iterate_nonFunctionalSwitches_ScoreWise(self,tx_network,only_models=False,partialCreation=False,removeNoise=True):
+	def iterate_nonFunctionalSwitches_byPatientNumber(self,tx_network,only_models=False,partialCreation=False,removeNoise=True):
 		"""Iterate through the isoform switches of a gene network, and
 			generate a list of (gene,geneInformation,isoformSwitch).
 			Only return those switches with an overlap between the CDS 
@@ -339,7 +343,7 @@ class GeneNetwork(network.Network):
 				common) will be returned for each gene.
 		"""
 
-		self.iterate_switches_ScoreWise(tx_network,only_models,False,partialCreation,removeNoise)
+		self.iterate_switches_byPatientNumber(tx_network,only_models,False,partialCreation,removeNoise)
 
 	def createSwitch(self,switchDict,tx_network,partialCreation):
 		"""Create a switch object from the switch dictionary.
@@ -409,7 +413,7 @@ class GeneNetwork(network.Network):
 
 	def sampleSwitches(self,tx_network,partialCreation=True,numIterations=2000):
 
-		genesWithSwitches = [ gene for gene,info in self.iterate_genes_ScoreWise() if info["isoformSwitches"] ]
+		genesWithSwitches = [ gene for gene,info in self.iterate_genes_byPatientNumber() if info["isoformSwitches"] ]
 		genes = random.sample(genesWithSwitches,numIterations)
 
 		for gene in genes:

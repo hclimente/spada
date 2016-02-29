@@ -22,7 +22,7 @@ class GetI3DBrokenInteractions(method.Method):
 		self.OUT.write("Uniprot\tPartnerUniprot\tSequenceInformation\tIsoformSpecific\tPDB\tpymolCommands\n")
 
 		
-		for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network,partialCreation=False,removeNoise=True,only_models=True):
+		for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_byPatientNumber(self._transcript_network,partialCreation=False,removeNoise=True,only_models=True):
 			self.findBrokenSurfaces(thisSwitch,gene,info)
 
 		self.OUT.close()

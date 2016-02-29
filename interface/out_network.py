@@ -9,7 +9,7 @@ def outputGTF(gn_network,tx_network):
 		 open(options.Options().qout + "/candidates_tumor.gtf", 'w') as tGTF, \
 		 open("{}data/{}/annotation.gtf".format(options.Options().wd,options.Options().annotation), "r") as ALLTRANSCRIPTS:
 	
-		switchesInfo = [ (z.nTx,z.tTx) for w,x,y,z in gn_network.iterate_switches_ScoreWise(tx_network,partialCreation=True) ]
+		switchesInfo = [ (z.nTx,z.tTx) for w,x,y,z in gn_network.iterate_switches_byPatientNumber(tx_network,partialCreation=True) ]
 
 		for line in ALLTRANSCRIPTS:
 			for switch in switchesInfo:
@@ -29,7 +29,7 @@ def outCandidateList(gn_network,tx_network):
 		hallmarksDict = utils.readGeneset("h.all.v5.0.entrez.gmt")
 		bpDict = utils.readGeneset("c5.bp.v4.0.entrez.gmt")
 		
-		for gene,info,switchDict,switch in gn_network.iterate_switches_ScoreWise(tx_network,partialCreation=True,removeNoise=False):
+		for gene,info,switchDict,switch in gn_network.iterate_switches_byPatientNumber(tx_network,partialCreation=True,removeNoise=False):
 			nIso = switch.nTranscript
 			tIso = switch.tTranscript
 

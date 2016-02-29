@@ -15,13 +15,15 @@ class NeighborhoodAnalysis(method.Method):
 		method.Method.__init__(self,__name__,gn_network,tx_network)
 		self.logger.info("Preparing neighborhood analysis.")
 
+		utils.cmd("mkdir","{}neighborhood_analysis".format(options.Options().qout))
+
 		self.switchesPerPatient = self.getPatientSwitches()
 
 		self.genesWithAnySwitch = set()
 		self.genesWithFunSwitch = set()
 		self.allGenes = set()
 
-		for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network,only_models=True,partialCreation=True,removeNoise=True):
+		for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_byPatientNumber(self._transcript_network,only_models=True,partialCreation=True,removeNoise=True):
 			self.genesWithAnySwitch.add(gene)
 
 			if [ x for x in self._gene_network._net.node[gene]["isoformSwitches"] if self._gene_network.createSwitch(x,self._transcript_network,True).is_functional ]:
@@ -98,7 +100,7 @@ class NeighborhoodAnalysis(method.Method):
 	def getPatientSwitches(self):
 
 		patients = []
-		[ patients.extend(z["patients"]) for x,y in self._gene_network.iterate_genes_ScoreWise() for z in y["isoformSwitches"] ]
+		[ patients.extend(z["patients"]) for x,y in self._gene_network.iterate_genes_byPatientNumber() for z in y["isoformSwitches"] ]
 		patients = list(set(patients))
 
 		switchesPerPatient = dict([ [x,set()] for x in patients ])
@@ -125,7 +127,7 @@ class NeighborhoodAnalysis(method.Method):
 		for geneSet in geneSets:
 			affectedPathway[geneSet] = [0]*len(options.Options().replicates)
 
-			for gene,info,switchDict,switch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network):
+			for gene,info,switchDict,switch in self._gene_network.iterate_switches_byPatientNumber(self._transcript_network):
 				if gene not in geneSets[geneSet]: continue
 				
 				switchSpread = [ 1 if x in switch.patients else 0 for x in options.Options().replicates ]

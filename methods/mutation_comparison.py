@@ -12,7 +12,7 @@ class MutationComparison(method.Method):
 		method.Method.__init__(self,__name__,gn_network,tx_network)
 		
 		switchPatients = []
-		[ switchPatients.extend(z["patients"]) for x,y in self._gene_network.iterate_genes_ScoreWise() for z in y["isoformSwitches"] ]
+		[ switchPatients.extend(z["patients"]) for x,y in self._gene_network.iterate_genes_byPatientNumber() for z in y["isoformSwitches"] ]
 		switchPatients = set(switchPatients)
 
 		self.mutations = {}
@@ -108,7 +108,7 @@ class MutationComparison(method.Method):
 		elif switchSet == "all_switches":
 			bOnlyFunctional = None
 
-		for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network,only_models=True,relevance=bOnlyFunctional,partialCreation=True):
+		for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_byPatientNumber(self._transcript_network,only_models=True,relevance=bOnlyFunctional,partialCreation=True):
 		
 			patientsWithSwitch = set(switchDict["patients"]) & self.patients
 
@@ -270,7 +270,7 @@ class MutationComparison(method.Method):
 
 		table = []
 
-		for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network,only_models=True,relevance=bOnlyFunctional,partialCreation=True):
+		for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_byPatientNumber(self._transcript_network,only_models=True,relevance=bOnlyFunctional,partialCreation=True):
 		
 			patientsWithSwitch = set(switchDict["patients"]) & self.patients
 			patientsWithMutation = set(allPatientsWithAMutation) & self.patients

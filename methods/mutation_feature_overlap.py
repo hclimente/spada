@@ -41,7 +41,7 @@ class MutationFeatureOverlap(method.Method):
 
 	def run(self):
 
-		for gene,info in self._gene_network.iterate_genes_ScoreWise():
+		for gene,info in self._gene_network.iterate_genes_byPatientNumber():
 			if gene not in self.mutations:
 				continue
 
