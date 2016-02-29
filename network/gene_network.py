@@ -281,7 +281,7 @@ class GeneNetwork(network.Network):
 			genes = genes[bottom:top]
 
 		for gene,info in genes:
-			allExpressedTxs = set(info["expressedTxsNormal"]) & set(info["expressedTxsTumor"])
+			allExpressedTxs = set(info["expressedTxsNormal"]) | set(info["expressedTxsTumor"])
 			if len(allExpressedTxs) < 2:
 				continue
 			self.logger.debug("Iterating gene {0}.".format(gene))
@@ -388,7 +388,7 @@ class GeneNetwork(network.Network):
 
 			incompatible.append(max([max( d[x]["N"] for x in d if x == bestpatible[gene][1] ),max( d[x]["T"] for x in d if x == bestpatible[gene][0] )]))
 
-		threshold = np.percentile(incompatible,95)
+		threshold = np.percentile(incompatible,99)
 
 		for gene,info in self.nodes(data=True):
 			if not info["isoformSwitches"]: continue
