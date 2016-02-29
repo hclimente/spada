@@ -41,24 +41,20 @@ class IsoformNetwork(network.Network):
 	def genenameFilter(self, **kwds):
 		raise NotImplementedError()
 
-	def add_node(self,tx,genesFullName):
+	def add_node(self,tx,geneFullname):
 		
 		if tx in self.nodes():
-			self.logger.debug("Transcript {0}, gene {1} already in the network.".format(tx, genesFullName))
+			self.logger.debug("Transcript {0}, gene {1} already in the network.".format(tx, geneFullname))
 			return True
 
-		genes = set()
-		for g in genesFullName:
-			gene = self.genenameFilter(full_name=g)[0]
-			if gene != None:
-				genes.add(gene)
+		gene = self.genenameFilter(full_name=geneFullname)[0]
 
-		if not genes:
-			self.logger.debug("No gene could be extracted for transcript {0}, gene {1}.".format(tx, genesFullName))
+		if not gene:
+			self.logger.debug("No gene could be extracted for transcript {0}, gene {1}.".format(tx, geneFullname))
 			return False
 		
 		self._net.add_node( tx, 
-							gene_id			= genes,
+							gene_id			= gene,
 							exonStructure	= None,
 							txCoords		= None,
 							cdsCoords		= None,
@@ -102,6 +98,8 @@ class IsoformNetwork(network.Network):
 			if median_PSI_t is not None: self.update_node( tx, "median_PSI_T", median_PSI_t )
 
 		# exon and CDS info
+		import pdb
+		pdb.set_trace()
 		for line in utils.readTable("{}data/{}/annotation.gaf".format(options.Options().wd,options.Options().annotation),header=False):
 			if line[2]!="transcript" or line[1] not in self.nodes() or line[7]!="GRCh37":
 				continue
@@ -138,10 +136,10 @@ class IsoformNetwork(network.Network):
 			txStart = min([ x[0] for x in exons ])
 			txEnd = max([ x[1] for x in exons ])
 
-			self.update_node(tx, "strand", strand)
-			self.update_node(tx, "chr", chromosome)
-			self.update_node(tx,"exonStructure",exons)
-			self.update_node(tx, "txCoords", [txStart, txEnd])
+			self.update_node(featureID, "strand", strand)
+			self.update_node(featureID, "chr", chromosome)
+			self.update_node(featureID, "exonStructure", exons)
+			self.update_node(featureID, "txCoords", [txStart, txEnd])
 
 			if featureInfo and "CDSstart" in featureInfo and "CDSstop" in featureInfo:
 
@@ -149,12 +147,12 @@ class IsoformNetwork(network.Network):
 
 				cdsStart = int([ x.split("=")[1] for x in cds if "CDSstart" in x ][0]) - 1
 				cdsEnd = int([ x.split("=")[1] for x in cds if "CDSstop" in x ][0]) - 1
-				self.update_node(tx, "cdsCoords", [txStart+cdsStart, txStart+cdsEnd])
+				self.update_node(featureID, "cdsCoords", [txStart+cdsStart, txStart+cdsEnd])
 
 		self.logger.debug("Reading transcript info: protein sequence, Uniprot and iLoops family.")
 		with open("{}data/{}/sequences.uniprot.loops.fa".format(options.Options().wd, options.Options().annotation)) as FASTA:
 			txName 			= ""
-			geneFullName 	= ""
+			geneFullname 	= ""
 			sequence 		= ""
 			iLoopsFamily 	= ""
 			Uniprot 		= ""
@@ -168,7 +166,7 @@ class IsoformNetwork(network.Network):
 						
 					elements = line[1:].strip().split("#")
 					txName 			= elements[0]
-					geneFullName 	= elements[1]
+					geneFullname 	= elements[1]
 					Uniprot 		= elements[2]
 					iLoopsFamily 	= elements[3]
 					sequence 		= ""
