@@ -27,7 +27,7 @@ class NeighborhoodAnalysis(method.Method):
 			if [ x for x in self._gene_network._net.node[gene]["isoformSwitches"] if self._gene_network.createSwitch(x,self._transcript_network,True).is_functional ]:
 				self.genesWithFunSwitch.add(gene)	
 
-		for gene,info in [ (x,y) for x,y in self._gene_network.nodes(data=True) if y["ExpressedTranscripts"] ]:
+		for gene,info in [ (x,y) for x,y in self._gene_network.nodes(data=True) if y["expressedTxsNormal"] or y["expressedTxsTumor"] ]:
 			self.allGenes.add(gene)
 
 	def run(self):
@@ -46,7 +46,7 @@ class NeighborhoodAnalysis(method.Method):
 	def searchEnrichment(self,sGenesetTag,sSetFile,H1):
 
 		geneSets = {}
-		geneSetFile = "{0}Data/Databases/{1}".format(options.Options().wd,sSetFile)
+		geneSetFile = "{0}data/Databases/{1}".format(options.Options().wd,sSetFile)
 
 		for line in utils.readTable(geneSetFile,header=False):
 			geneSet = line[0]
@@ -114,7 +114,7 @@ class NeighborhoodAnalysis(method.Method):
 
 	def findAffectedPathways(self,sTag,sSetFile):
 		affectedPathway = {}
-		geneSetFile = "{0}Data/Databases/{1}".format(options.Options().wd,sSetFile)
+		geneSetFile = "{0}data/Databases/{1}".format(options.Options().wd,sSetFile)
 
 		for line in utils.readTable(geneSetFile,header=False):
 			geneSet = line[0]
