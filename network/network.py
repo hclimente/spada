@@ -80,7 +80,7 @@ class Network:
 
 	def saveNetwork(self,filename):
 		
-		self.logger.debug("Saving network at {0}{1}.".format(options.Options().qout,filename))
+		self.logger.debug("Saving network at {}{}.".format(options.Options().qout,filename))
 		#Unattach logger to save without thread problems
 		self.removeLogger()
 		with open(options.Options().qout + filename, "wb") as NET_DUMP:
