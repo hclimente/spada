@@ -64,7 +64,7 @@ class StructuralAnalysis(method.Method):
 				isoInfo[elements[0][1:]]["UniProt"] = elements[2]
 				isoInfo[elements[0][1:]]["iLoopsFamily"] = elements[3]
 
-		for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_ScoreWise(self._transcript_network,partialCreation=True,removeNoise=True):
+		for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_byPatientNumber(self._transcript_network,partialCreation=True,removeNoise=True):
 			
 			if not thisSwitch.nIsoform or not thisSwitch.tIsoform: 
 				continue
@@ -360,6 +360,22 @@ class StructuralAnalysis(method.Method):
 					with open(aFile) as IN:
 						IN.readline()
 						OUT.write(IN.read())
+
+		if tag=="":
+			g = self._gene_network
+			saveName = "geneNetwork.pkl"
+		elif tag=="random":
+			import cPickle as pickle
+			g = pickle.load(open("{}randomGeneNetwork_fixNormal.pkl".format(options.Options().qout)))
+			saveName = "randomGeneNetwork_fixNormal.pkl"
+
+		for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_byPatientNumber():
+			if thisSwitch.is_functional:
+				switchDict["functional"] == True
+			else:
+				switchDict["functional"] == False
+
+		g.saveNetwork(saveName)
 		
 if __name__ == '__main__':
 	pass
