@@ -98,8 +98,6 @@ class IsoformNetwork(network.Network):
 			if median_PSI_t is not None: self.update_node( tx, "median_PSI_T", median_PSI_t )
 
 		# exon and CDS info
-		import pdb
-		pdb.set_trace()
 		for line in utils.readTable("{}data/{}/annotation.gaf".format(options.Options().wd,options.Options().annotation),header=False):
 			if line[2]!="transcript" or line[1] not in self.nodes() or line[7]!="GRCh37":
 				continue
