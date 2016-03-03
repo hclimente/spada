@@ -33,18 +33,18 @@ getEmpiricalDistribution <- function(x,minV){
 library(plyr)
 
 args <- commandArgs(trailingOnly = TRUE)
-tpm.nt <- args[1]
-tpm.t <- args[2]
-tpm.g.nt <- args[3]
-tpm.g.t <- args[4]
-psi.nt <- args[5]
-psi.t <- args[6]
+tpm.nt.file <- args[1]
+tpm.t.file <- args[2]
+tpm.g.nt.file <- args[3]
+tpm.g.t.file <- args[4]
+psi.nt.file <- args[5]
+psi.t.file <- args[6]
 outfile <- args[7]
 
 # Prepare the data
 ## read psi
-psi.nt <- read.table(psi.nt, check.names=FALSE)
-psi.t <- read.table(psi.t, check.names=FALSE)
+psi.nt <- read.table(psi.nt.file, check.names=FALSE)
+psi.t <- read.table(psi.t.file, check.names=FALSE)
 psi <- cbind(psi.nt,psi.t)
 
 rm(psi.nt,psi.t)
@@ -61,15 +61,15 @@ tumor.paired <- gsub("N$","T",normal)
 tumor.unpaired <- setdiff(tumor,tumor.paired)
 
 ## read isoform expression
-xpr.nt <- read.table(tpm.nt, check.names=FALSE)
-xpr.t <- read.table(tpm.t, check.names=FALSE)
+xpr.nt <- read.table(tpm.nt.file, check.names=FALSE)
+xpr.t <- read.table(tpm.t.file, check.names=FALSE)
 xpr <- cbind(xpr.nt,xpr.t)
 
 rm(xpr.nt,xpr.t)
 
 ## read gene expression
-xpr.gene.nt <- read.table(tpm.g.nt, check.names=FALSE)
-xpr.gene.t <- read.table(tpm.g.t, check.names=FALSE)
+xpr.gene.nt <- read.table(tpm.g.nt.file, check.names=FALSE)
+xpr.gene.t <- read.table(tpm.g.t.file, check.names=FALSE)
 xpr.gene <- cbind(xpr.gene.nt,xpr.gene.t)
 
 ### transform to log

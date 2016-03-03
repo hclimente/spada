@@ -79,6 +79,7 @@ class GetRandomSwitches(method.Method):
 
 				switchDict["patients"] = []
 				switchDict["noise"] = False
+				switchDict["model"] = True
 				switchDict["functional"] = None
 
 				info["isoformSwitches"].append(switchDict)
