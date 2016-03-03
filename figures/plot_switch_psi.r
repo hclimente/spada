@@ -14,12 +14,12 @@ psi.nt.file <- args[5]
 psi.t.file <- args[6]
 
 # test
-switches.file <- "~/smartas/results/luad/candidateList.tsv"
-gene <- "B3GNT3|10331"  
-niso <- "uc002nhk.1"
-tiso <- "uc002nhl.1"
-psi.nt.file <- "/projects_rg/TCGA/pipeline/run11/luad_iso_psi_paired-filtered.txt"
-psi.t.file <- "/projects_rg/TCGA/pipeline/run11/luad_iso_psi_tumor-filtered.txt"
+switches.file <- "~/smartas/analyses/brca/candidateList.tsv"
+gene <- "GFRA1|2674"
+niso <- "uc001lci.2"
+tiso <- "uc009xyr.2"
+psi.nt.file <- "/projects_rg/TCGA/pipeline/run11/brca_iso_psi_paired-filtered.txt"
+psi.t.file <- "/projects_rg/TCGA/pipeline/run11/brca_iso_psi_tumor-filtered.txt"
 #####
 
 # read files
@@ -52,11 +52,14 @@ switch.psi$What <- "Normal"
 switch.psi$What[rownames(switch.psi) %in% tumor] <- "Tumor no switch"
 switch.psi$What[rownames(switch.psi) %in% unlist(switch.patients)] <- "Tumor switch"
 
+switch.psi$Type <- "Paired"
+switch.psi$Type[rownames(switch.psi) %in% tumor.unpaired] <- "Unpaired"
+
 colnames(switch.psi)[colnames(switch.psi) == paste(gene,niso,sep=",")] <- "Normal"
 colnames(switch.psi)[colnames(switch.psi) == paste(gene,tiso,sep=",")] <- "Tumor"
 
 # plot
-g <- ggplot(switch.psi,aes(x=Normal,y=Tumor,color=What)) + 
+g <- ggplot(switch.psi,aes(x=Normal,y=Tumor,color=What,shape=Type)) + 
   geom_point() +
   smartas_theme() +
   labs(x="", y="") +
@@ -76,13 +79,13 @@ t <- ggplot(switch.psi, aes(x=Tumor, fill=What)) +
   scale_fill_manual(values=c("Tumor no switch"="#7fc97f", "Normal"="#beaed4", "Tumor switch"="#fdc086"))
 
 x <- ggplotGrob(g + theme(legend.position="bottom") + 
-                labs(color="") +
-                guides(color=guide_legend(nrow=3,byrow=TRUE,override.aes = list(shape = 15, size = 8))))$grobs 
+                labs(color="",shape="") +
+                guides(color=guide_legend(nrow=3,byrow=TRUE,override.aes = list(shape = 15, size = 8)),
+                       shape=guide_legend(nrow=2,byrow=TRUE,override.aes = list(size = 8))))$grobs 
 
 legend <- x[[which(sapply(x, function(y) y$name) == "guide-box")]]
 
 p <- grid.arrange(t,g,legend,n,ncol=2,nrow=2, widths=c(1.5,5), heights=c(5,1.5),
                   top=textGrob(paste(gene,niso,tiso,sep=" "),gp=gpar(fontsize=20,font=3)))
 
-
-ggsave(paste(gene,niso,tiso,"png",sep="."),p,width = 12,height = 12)
+ggsave(paste("psi",gene,niso,tiso,"png",sep="."),p,width = 12,height = 12)
