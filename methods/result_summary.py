@@ -9,13 +9,11 @@ import numpy as np
 from operator import itemgetter
 from scipy import stats
 
-import pdb
-
 class ResultSummary(method.Method):
 	def __init__(self,gn_network,tx_network):
 		method.Method.__init__(self, __name__,gn_network,tx_network)
 
-		self._random_gene_network = pickle.load(open("{0}randomGeneNetwork.pkl".format(options.Options().qout)))
+		self._random_gene_network = pickle.load(open("{0}randomGeneNetwork_fixNormal.pkl".format(options.Options().qout)))
 		self._random_gene_network.createLogger()
 
 		self.proteinStats = { "Random": [], "NonRandom": []}
@@ -23,16 +21,16 @@ class ResultSummary(method.Method):
 		self.switchStats = {}
 		
 		# driver/driver+relevance tests
-		self.switchStats["driverD0Test"] = { "Driver": {"NoSwitch": 0.0, "Switch": 0.0}, 
-										   	 "NonDriver": {"NoSwitch": 0.0, "Switch": 0.0} }
-		self.switchStats["driverD0Patients"] = { "Driver": [], "NonDriver": [] }
-		self.switchStats["driverD0PatientsFunctional"] = { "Driver": [], "NonDriver": [] }
+		self.switchStats["driverD0Test"] = { "driver": {"NoSwitch": 0.0, "Switch": 0.0}, 
+										   	 "nonDriver": {"NoSwitch": 0.0, "Switch": 0.0} }
+		self.switchStats["driverD0Patients"] = { "driver": [], "nonDriver": [] }
+		self.switchStats["driverD0PatientsFunctional"] = { "driver": [], "nonDriver": [] }
 		self.switchStats["driverD1Test"] = { "D1Driver": {"NoSwitch": 0.0, "Switch": 0.0}, 
 										   	 "NonD1Driver": {"NoSwitch": 0.0, "Switch": 0.0} }
 		self.switchStats["driverD1Patients"] = { "D1Driver": [], "NonD1Driver": [] }
 		self.switchStats["driverD1PatientsFunctional"] = { "D1Driver": [], "NonD1Driver": [] }
-		self.switchStats["driverD0Relevance"] = { "Driver": {"NonFunctional": 0.0, "Functional": 0.0}, 
-										   	"NonDriver": {"NonFunctional": 0.0, "Functional": 0.0} }
+		self.switchStats["driverD0Relevance"] = { "driver": {"NonFunctional": 0.0, "Functional": 0.0}, 
+										   	"nonDriver": {"NonFunctional": 0.0, "Functional": 0.0} }
 		self.switchStats["driverD1Relevance"] = { "D1Driver": {"NonFunctional": 0.0, "Functional": 0.0}, 
 										   	"NonD1Driver": {"NonFunctional": 0.0, "Functional": 0.0} }
 
@@ -67,10 +65,10 @@ class ResultSummary(method.Method):
 	def clean(self):
 		o = options.Options()
 
-		utils.cmd("rm","-r",".testOld2/{0}/result_summary".format(o.out))
-		utils.cmd("mv",".testOld/{0}/result_summary".format(o.out),".testOld2/{0}/result_summary".format(o.out))
-		utils.cmd("mv","{0}/result_summary".format(o.qout),".testOld/{0}/result_summary".format(o.out))
-		utils.cmd("mkdir", "{0}/result_summary".format(o.qout))
+		#utils.cmd("rm","-r",".testOld2/{0}/result_summary".format(o.out))
+		#utils.cmd("mv",".testOld/{0}/result_summary".format(o.out),".testOld2/{0}/result_summary".format(o.out))
+		#utils.cmd("mv","{0}/result_summary".format(o.qout),".testOld/{0}/result_summary".format(o.out))
+		utils.cmd("mkdir", "{}result_summary".format(o.qout))
 	
 	def run(self):
 		self.logger.info("Summarizing results.")
@@ -104,12 +102,10 @@ class ResultSummary(method.Method):
 			dicts = [ x for x in info["isoformSwitches"] if x["model"] and not x["noise"] ]
 
 			modelDict = None
-			modelSwitch = None
 			if dicts:
 				modelDict = dicts[0]
-				modelSwitch = self._gene_network.createSwitch(modelDict,self._transcript_network,True)
 
-			self.driverTests(gene,info,modelDict,modelSwitch)
+			self.driverTests(gene,info,modelDict)
 
 		self.printSwitchInfo()
 		self.printStructutalInfo()
@@ -147,15 +143,15 @@ class ResultSummary(method.Method):
 
 		self.proteinStats[randomTag].append((nLength,tLength,nSpLength,tSpLength))
 
-	def driverTests(self,gene,info,switchDict,thisSwitch):
-		if info["Driver"]: 	driverTag = "Driver"
-		else:  				driverTag = "NonDriver"
+	def driverTests(self,gene,info,switchDict):
+		if info["driver"]: 	driverTag = "driver"
+		else:  				driverTag = "nonDriver"
 
 		if switchDict is None: 	
 			switchTag = "NoSwitch"
 		else:					
 			switchTag = "Switch"
-			if thisSwitch.is_functional:
+			if switchDict["functional"]:
 				relevanceTag = "Functional"
 			else:
 				relevanceTag = "NonFunctional"
@@ -163,8 +159,8 @@ class ResultSummary(method.Method):
 		# driver enrichment
 		self.switchStats["driverD0Test"][driverTag][switchTag] += 1
 
-		if not info["Driver"]:
-			d1 = [ x for x in self._gene_network._net.neighbors(gene) if self._gene_network._net.node[x]["Driver"] ]
+		if not info["driver"]:
+			d1 = [ x for x in self._gene_network._net.neighbors(gene) if self._gene_network._net.node[x]["driver"] ]
 			if d1: 	
 				d1DriverTag="D1Driver"
 			else: 	
@@ -176,16 +172,16 @@ class ResultSummary(method.Method):
 		# number of patients enrichment
 		if switchDict:
 			self.switchStats["driverD0Patients"][driverTag].append(len(switchDict["patients"]))
-			if thisSwitch.is_functional:
+			if switchDict["functional"]:
 				self.switchStats["driverD0PatientsFunctional"][driverTag].append(len(switchDict["patients"]))
 			
-			if not info["Driver"]:
+			if not info["driver"]:
 				self.switchStats["driverD1Patients"][d1DriverTag].append(len(switchDict["patients"]))
-				if thisSwitch.is_functional:
+				if switchDict["functional"]:
 					self.switchStats["driverD1PatientsFunctional"][d1DriverTag].append(len(switchDict["patients"]))
 		if switchDict is not None:
 			self.switchStats["driverD0Relevance"][driverTag][relevanceTag] += 1
-			if not info["Driver"]:
+			if not info["driver"]:
 				self.switchStats["driverD1Relevance"][d1DriverTag][relevanceTag] += 1
 
 	def switchAndExonOverview(self,random,gene,info,switchDict,thisSwitch):
@@ -222,7 +218,7 @@ class ResultSummary(method.Method):
 		for specificCds,specificUtr,cds,origin in zip([nSpecificCds,tSpecificCds],[nSpecificUtr,tSpecificUtr],[nTx.cds,tTx.cds],["nIso","tIso"]):
 		
 			specificRegions = sorted(list(specificUtr | specificCds))
-			exons = [ set(map(itemgetter(1),g)) for k,g in groupby(enumerate(specificRegions), lambda i,x: i-x) ]
+			exons = [ set(map(itemgetter(1),g)) for k,g in groupby(enumerate(specificRegions), lambda (i,x): i-x) ]
 			
 			for exon in exons:
 
@@ -348,16 +344,16 @@ class ResultSummary(method.Method):
 			F.write("Cancer\tAnalysis\tFeat-Switch\tFeat-NoSwitch\tNoFeat-Switch\tNoFeat-NoSwitch\tp\tOR\n")
 			# driver enrichment in switches
 			F.write("{0}\tDriver_D0_enrichment\t".format(options.Options().tag ))
-			F.write("{0}\t".format(self.switchStats["driverD0Test"]["Driver"]["Switch"]))
-			F.write("{0}\t".format(self.switchStats["driverD0Test"]["Driver"]["NoSwitch"]))
-			F.write("{0}\t".format(self.switchStats["driverD0Test"]["NonDriver"]["Switch"]))
-			F.write("{0}\t".format(self.switchStats["driverD0Test"]["NonDriver"]["NoSwitch"]))
+			F.write("{0}\t".format(self.switchStats["driverD0Test"]["driver"]["Switch"]))
+			F.write("{0}\t".format(self.switchStats["driverD0Test"]["driver"]["NoSwitch"]))
+			F.write("{0}\t".format(self.switchStats["driverD0Test"]["nonDriver"]["Switch"]))
+			F.write("{0}\t".format(self.switchStats["driverD0Test"]["nonDriver"]["NoSwitch"]))
 			
-			p = fisher.pvalue(self.switchStats["driverD0Test"]["Driver"]["Switch"],
-							self.switchStats["driverD0Test"]["Driver"]["NoSwitch"],
-							self.switchStats["driverD0Test"]["NonDriver"]["Switch"],
-							self.switchStats["driverD0Test"]["NonDriver"]["NoSwitch"])
-			oddsRatio = self.switchStats["driverD0Test"]["Driver"]["Switch"]*self.switchStats["driverD0Test"]["NonDriver"]["NoSwitch"]/(self.switchStats["driverD0Test"]["Driver"]["NoSwitch"]*self.switchStats["driverD0Test"]["NonDriver"]["Switch"])
+			p = fisher.pvalue(self.switchStats["driverD0Test"]["driver"]["Switch"],
+							self.switchStats["driverD0Test"]["driver"]["NoSwitch"],
+							self.switchStats["driverD0Test"]["nonDriver"]["Switch"],
+							self.switchStats["driverD0Test"]["nonDriver"]["NoSwitch"])
+			oddsRatio = self.switchStats["driverD0Test"]["driver"]["Switch"]*self.switchStats["driverD0Test"]["nonDriver"]["NoSwitch"]/(self.switchStats["driverD0Test"]["driver"]["NoSwitch"]*self.switchStats["driverD0Test"]["nonDriver"]["Switch"])
 
 			F.write("{0}\t{1}\n".format(p.two_tail,oddsRatio) )
 
@@ -377,17 +373,17 @@ class ResultSummary(method.Method):
 
 			# driver enrichment in functional
 			F.write("{0}\tDriver_relevance_enrichment\t".format(options.Options().tag ))
-			F.write("{0}\t".format(self.switchStats["driverD0Relevance"]["Driver"]["Functional"]) )
-			F.write("{0}\t".format(self.switchStats["driverD0Relevance"]["Driver"]["NonFunctional"]) )
-			F.write("{0}\t".format(self.switchStats["driverD0Relevance"]["NonDriver"]["Functional"]) )
-			F.write("{0}\t".format(self.switchStats["driverD0Relevance"]["NonDriver"]["NonFunctional"]) )
+			F.write("{0}\t".format(self.switchStats["driverD0Relevance"]["driver"]["Functional"]) )
+			F.write("{0}\t".format(self.switchStats["driverD0Relevance"]["driver"]["NonFunctional"]) )
+			F.write("{0}\t".format(self.switchStats["driverD0Relevance"]["nonDriver"]["Functional"]) )
+			F.write("{0}\t".format(self.switchStats["driverD0Relevance"]["nonDriver"]["NonFunctional"]) )
 			
-			p = fisher.pvalue(self.switchStats["driverD0Relevance"]["Driver"]["Functional"],
-							self.switchStats["driverD0Relevance"]["Driver"]["NonFunctional"],
-							self.switchStats["driverD0Relevance"]["NonDriver"]["Functional"],
-							self.switchStats["driverD0Relevance"]["NonDriver"]["NonFunctional"])
+			p = fisher.pvalue(self.switchStats["driverD0Relevance"]["driver"]["Functional"],
+							self.switchStats["driverD0Relevance"]["driver"]["NonFunctional"],
+							self.switchStats["driverD0Relevance"]["nonDriver"]["Functional"],
+							self.switchStats["driverD0Relevance"]["nonDriver"]["NonFunctional"])
 
-			oddsRatio = self.switchStats["driverD0Relevance"]["Driver"]["Functional"]*self.switchStats["driverD0Relevance"]["NonDriver"]["NonFunctional"]/(self.switchStats["driverD0Relevance"]["Driver"]["NonFunctional"]*self.switchStats["driverD0Relevance"]["NonDriver"]["Functional"])
+			oddsRatio = self.switchStats["driverD0Relevance"]["driver"]["Functional"]*self.switchStats["driverD0Relevance"]["nonDriver"]["NonFunctional"]/(self.switchStats["driverD0Relevance"]["driver"]["NonFunctional"]*self.switchStats["driverD0Relevance"]["nonDriver"]["Functional"])
 
 			F.write("{0}\t{1}\n".format(p.two_tail,oddsRatio) )
 
@@ -410,23 +406,23 @@ class ResultSummary(method.Method):
 			F.write("Cancer\tAnalysis\tMedian case\tMedian control\tp\n")
 
 			# patient difference in switches
-			m1 = np.median(np.array(self.switchStats["driverD0Patients"]["Driver"]))
-			m2 = np.median(np.array(self.switchStats["driverD0Patients"]["NonDriver"]))
+			m1 = np.median(np.array(self.switchStats["driverD0Patients"]["driver"]))
+			m2 = np.median(np.array(self.switchStats["driverD0Patients"]["nonDriver"]))
 			F.write("{0}\tDriver_D0_patients\t".format(options.Options().tag ))
 			F.write("{0}\t{1}\t".format(m1,m2))
 			
-			z,p = stats.ranksums(self.switchStats["driverD0Patients"]["Driver"],
-								  self.switchStats["driverD0Patients"]["NonDriver"])
+			z,p = stats.ranksums(self.switchStats["driverD0Patients"]["driver"],
+								  self.switchStats["driverD0Patients"]["nonDriver"])
 
 			F.write("{0}\n".format(p) )
 
-			m1 = np.median(np.array(self.switchStats["driverD0PatientsFunctional"]["Driver"]))
-			m2 = np.median(np.array(self.switchStats["driverD0PatientsFunctional"]["NonDriver"]))
+			m1 = np.median(np.array(self.switchStats["driverD0PatientsFunctional"]["driver"]))
+			m2 = np.median(np.array(self.switchStats["driverD0PatientsFunctional"]["nonDriver"]))
 			F.write("{0}\tDriver_D0_patients_functional\t".format(options.Options().tag ))
 			F.write("{0}\t{1}\t".format(m1,m2))
 			
-			z,p = stats.ranksums(self.switchStats["driverD0PatientsFunctional"]["Driver"],
-								  self.switchStats["driverD0PatientsFunctional"]["NonDriver"])
+			z,p = stats.ranksums(self.switchStats["driverD0PatientsFunctional"]["driver"],
+								  self.switchStats["driverD0PatientsFunctional"]["nonDriver"])
 
 			F.write("{0}\n".format(p) )
 
@@ -492,8 +488,8 @@ class ResultSummary(method.Method):
 		# 		F.write("{0}\t{1}\t".format(len(featureDict["Pfam"]),len(featureDict["IUPREDLong"])))
 		# 		F.write("{0}\t".format(len(featureDict["IUPREDShort"])))
 		# 		F.write("{0}\t{1}\t".format(featureDict["Functional"],featureDict["Model"]))
-		# 		F.write("{0}\t{1}\t".format(featureDict["Noise"],featureDict["Driver"]))
-		# 		F.write("{0}\t{1}\n".format(featureDict["ASDriver"],featureDict["DriverType"]))
+		# 		F.write("{0}\t{1}\t".format(featureDict["Noise"],featureDict["driver"]))
+		# 		F.write("{0}\t{1}\n".format(featureDict["asDriver"],featureDict["driverType"]))
 
 		with open("{0}result_summary/structural_features{1}.tsv".format(options.Options().qout,options.Options().filetag), "w" ) as F:
 			F.write("Cancer\tGene\tSymbol\tnTx\ttTx\tRandom\tAnalysis\tWhatsHappenning\t")
@@ -512,8 +508,8 @@ class ResultSummary(method.Method):
 						F.write("{0}\t{1}\t".format(symbol,nTx))
 						F.write("{0}\t{1}\t{2}\t".format(tTx,randomTag,analysis))
 						F.write("{0}\t{1}\t".format(data[1],data[0].replace(" ","_")))
-						F.write("{0}\t{1}\t".format(featureDict["Driver"],featureDict["ASDriver"]))
-						F.write("{0}\n".format(featureDict["DriverType"]))
+						F.write("{0}\t{1}\t".format(featureDict["driver"],featureDict["asDriver"]))
+						F.write("{0}\n".format(featureDict["driverType"]))
 
 		# with open("{0}result_summary/structural_loops{1}.tsv".format(options.Options().qout,options.Options().filetag), "w" ) as F:
 		# 	F.write("Cancer\tDifferent\t")
@@ -569,9 +565,9 @@ class ResultSummary(method.Method):
 		switchFeatures["anchor"] = anchor
 		switchFeatures["prosite"] = prosite
 		
-		switchFeatures["Driver"] = int(info["Driver"])
-		switchFeatures["ASDriver"] = int(info["ASDriver"])
-		switchFeatures["DriverType"] = info["DriverType"]
+		switchFeatures["driver"] = int(info["driver"])
+		switchFeatures["asDriver"] = int(info["asDriver"])
+		switchFeatures["driverType"] = info["driverType"]
 		switchFeatures["Functional"] = int(thisSwitch.is_functional)
 		switchFeatures["Model"] = int(switchDict["model"])
 		switchFeatures["Noise"] = int(switchDict["noise"])
