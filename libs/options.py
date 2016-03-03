@@ -22,7 +22,7 @@ class Options(object):
         self._only_models           = options.onlyModels
         self._specificDrivers       = "{}data/{}/specific_drivers/{}Drivers.txt".format(
                                         self._wd,self._annotation,self._tag)
-        self._quickOut              = "{}results/{}/".format(self._wd,self._tag)
+        self._quickOut              = "{}analyses/{}/".format(self._wd,self._tag)
         self._parallelRange         = options.parallelRange
         self._externalSwitchesFile  = options.externalSwitchesFile
         self._parentTag             = options.parentTag

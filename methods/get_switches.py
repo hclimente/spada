@@ -26,12 +26,12 @@ class GetSwitches(method.Method):
 
 			# copy random structural_analysis, as it is computationally expensive
 			utils.cmd("cp",
-					  "{}results/{}/structural_analysis/*random*".format(options.Options().wd,options.Options().parentTag),
+					  "{}analyses/{}/structural_analysis/*random*".format(options.Options().wd,options.Options().parentTag),
 					  "{}structural_analysis".format(options.Options().qout))
 
 			# copy random switches
 			utils.cmd("cp",
-					  "{}results/{}/randomGeneNetwork.pkl".format(options.Options().wd,options.Options().parentTag),
+					  "{}analyses/{}/randomGeneNetwork.pkl".format(options.Options().wd,options.Options().parentTag),
 					  options.Options().qout)
 
 		self._gene_network.saveNetwork("geneNetwork.pkl")
@@ -61,7 +61,7 @@ class GetSwitches(method.Method):
 		self.logger.info("Creating gene network.")
 
 		if options.Options().externalSwitchesFile and options.Options().parentTag:
-			self._gene_network = pickle.load(open("{}results/{}/geneNetwork.pkl".format(options.Options().wd,options.Options().parentTag),"r"))
+			self._gene_network = pickle.load(open("{}analyses/{}/geneNetwork.pkl".format(options.Options().wd,options.Options().parentTag),"r"))
 			self._gene_network.createLogger()
 			self._gene_network.cleanNetwork()
 		else:
@@ -91,7 +91,7 @@ class GetSwitches(method.Method):
 
 	def createTranscriptNetwork(self,recover=False):
 		if options.Options().externalSwitchesFile and options.Options().parentTag:
-			self._transcript_network = pickle.load(open("{}results/{}/txNetwork.pkl".format(options.Options().wd,options.Options().parentTag),"r"))
+			self._transcript_network = pickle.load(open("{}analyses/{}/txNetwork.pkl".format(options.Options().wd,options.Options().parentTag),"r"))
 			self._transcript_network.createLogger()
 		else:
 			if options.Options().annotation == "ucsc":
