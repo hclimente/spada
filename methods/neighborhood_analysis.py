@@ -3,8 +3,7 @@ from libs import utils
 from methods import method
 
 from collections import Counter
-#from rpy2.robjects.packages import importr
-#from rpy2.robjects.vectors import FloatVector
+from statsmodels.sandbox.stats.multicomp import multipletests
 import pandas as pd
 from scipy.stats import fisher_exact
 
@@ -84,18 +83,18 @@ class NeighborhoodAnalysis(method.Method):
 				geneSets[g][s]["pval"] = pval
 				geneSets[g][s]["oddsRatio"] = OR
 		
-			#stats = importr('stats')
-			#p_adjust = stats.p_adjust(FloatVector([geneSets[x][s]["pval"] for x in geneSets]),method='BH')
+			p_adjust = multipletests([geneSets[x][s]["pval"] for x in geneSets],alpha=0.05,method='fdr_bh')
+			p_adjust = p_adjust[1].tolist()
 
-			with open("{0}neighborhood_analysis/{1}_{2}{3}.txt".format(options.Options().qout,sGenesetTag,s,options.Options().filetag),"w") as OUT:
-				OUT.write("GeneSet\tCancer\tpval\tqval\tNormalizedAverageAffection\t")
+			with open("{}neighborhood_analysis/{}_{}{}.txt".format(options.Options().qout,sGenesetTag,s,options.Options().filetag),"w") as OUT:
+				OUT.write("GeneSet\tCancer\tpval\tfdr5\tNormalizedAverageAffection\t")
 				OUT.write("SwitchingGenes\tOR\tsg\tsng\tnsg\tnsng\n")
 				for g,adj_p in zip(geneSets,p_adjust):
 
-					OUT.write("{0}\t{1}\t{2}\t".format(g,options.Options().tag,geneSets[g][s]["pval"]))
-					OUT.write("{0}\t{1}\t{2}\t".format(adj_p,geneSets[g][s]["affection"], ",".join(geneSets[g][s]["switchGenes"]) ))
-					OUT.write("{0}\t{1}\t{2}\t".format(geneSets[g][s]["oddsRatio"],geneSets[g][s]["sg"],geneSets[g][s]["sng"]))
-					OUT.write("{0}\t{1}\n".format(geneSets[g][s]["nsg"],geneSets[g][s]["nsng"]))
+					OUT.write("{}\t{}\t{}\t".format(g,options.Options().tag,geneSets[g][s]["pval"]))
+					OUT.write("{}\t{}\t{}\t".format(adj_p,geneSets[g][s]["affection"], ",".join(geneSets[g][s]["switchGenes"]) ))
+					OUT.write("{}\t{}\t{}\t".format(geneSets[g][s]["oddsRatio"],geneSets[g][s]["sg"],geneSets[g][s]["sng"]))
+					OUT.write("{}\t{}\n".format(geneSets[g][s]["nsg"],geneSets[g][s]["nsng"]))
 
 	def getPatientSwitches(self):
 
