@@ -72,6 +72,7 @@ class SmartAS:
 	def summarizeResults(self):
 
 		s = result_summary.ResultSummary(True,True)
+		s.clean()
 		s.run()
 
 	def createRandomSwitches(self):
