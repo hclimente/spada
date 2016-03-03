@@ -1,7 +1,6 @@
 #!/soft/R/R-3.2.1/bin/Rscript
 
-tryCatch(source("~/SmartAS/Pipeline/scripts/variablesAndFunctions.r"),error=function(e){})
-tryCatch(source("~/Pipeline/scripts/variablesAndFunctions.r"),error=function(e){})
+tryCatch(source("~/smartas/pipeline/scripts/variablesAndFunctions.r"),error=function(e){})
 
 setwd(workingDir)
 
