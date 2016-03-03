@@ -144,11 +144,11 @@ class IsoformSwitch:
 		"""Creates the isoform objects for the transcripts involved
 		in the switch if they have an UniProt identifier. If both do,
 		it calculates the shared and specific regions."""
-		if nInfo["proteinSequence"]:
+		if nInfo["proteinSequence"] and nInfo["cdsCoords"]:
 			self._normal_protein = protein.Protein( self._normal_transcript_name, nInfo)
 			if not partialCreation:
 				self._normal_protein.checkInteractome3DStructures()
-		if tInfo["proteinSequence"]:
+		if tInfo["proteinSequence"] and tInfo["cdsCoords"]:
 			self._tumor_protein  = protein.Protein( self._tumor_transcript_name, tInfo)
 			if not partialCreation:
 				self._tumor_protein.checkInteractome3DStructures()
@@ -198,12 +198,14 @@ class IsoformSwitch:
 				res.setIsoformSpecific(True)
 
 	def readRelevanceAnalysis(self):
-		randomTag = "_random" if self.patients==0.0 else ""
-		if not os.path.exists("{0}structural_analysis/structural_summary{1}.tsv".format(options.Options().qout,randomTag)):
+
+		randomTag = "_random" if self.patients==[] else ""
+		
+		if not os.path.exists("{}structural_analysis/structural_summary{}.tsv".format(options.Options().qout,randomTag)):
 			raise Exception("Relevance information not generated.")
 			return False
 
-		for elements in utils.readTable("{0}structural_analysis/structural_summary{1}.tsv".format(options.Options().qout,randomTag)):
+		for elements in utils.readTable("{}structural_analysis/structural_summary{}.tsv".format(options.Options().qout,randomTag)):
 			if elements[2] == self.nTx and elements[3] == self.tTx:
 				if elements[4] == "True": self._iloops_change = True
 				elif elements[4] == "False": self._iloops_change = False
@@ -219,6 +221,8 @@ class IsoformSwitch:
 
 				if elements[8] == "True": self._ptm_change = True
 				elif elements[8] == "False": self._ptm_change = False
+
+				break
 
 	def readDeepRelevanceAnalysis(self,skipDomain=False,skipIupred=False,skipAnchor=False,skipPtm=False,filetag=""):
 		if not self.is_functional:
