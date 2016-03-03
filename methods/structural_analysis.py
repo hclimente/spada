@@ -64,15 +64,20 @@ class StructuralAnalysis(method.Method):
 				isoInfo[elements[0][1:]]["UniProt"] = elements[2]
 				isoInfo[elements[0][1:]]["iLoopsFamily"] = elements[3]
 
-		for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_byPatientNumber(self._transcript_network,partialCreation=True,removeNoise=True):
+		for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_byPatientNumber(self._transcript_network,partialCreation=True,removeNoise=False):
 			
-			if not thisSwitch.nIsoform or not thisSwitch.tIsoform: 
-				continue
+			if thisSwitch.nIsoform and thisSwitch.tIsoform: 
+				thisSwitch._iloops_change 	  							= self.archDBAnalysis(thisSwitch,gene,info,isoInfo)
+				(thisSwitch._functional_change,thisSwitch._ptm_change) 	= self.knownFeaturesAnalysis(thisSwitch,gene,info)
+				thisSwitch._disorder_change   							= self.disorderAnalysis(thisSwitch,gene,info)
+				thisSwitch._anchor_change    							= self.anchorAnalysis(thisSwitch,gene,info)
 
-			thisSwitch._iloops_change 	  							= self.archDBAnalysis(thisSwitch,gene,info,isoInfo)
-			(thisSwitch._functional_change,thisSwitch._ptm_change) 	= self.knownFeaturesAnalysis(thisSwitch,gene,info)
-			thisSwitch._disorder_change   							= self.disorderAnalysis(thisSwitch,gene,info)
-			thisSwitch._anchor_change    							= self.anchorAnalysis(thisSwitch,gene,info)
+			else:
+				thisSwitch._iloops_change		= False
+				thisSwitch._functional_change	= False
+				thisSwitch._disorder_change		= False
+				thisSwitch._anchor_change		= False
+				thisSwitch._ptm_change			= False
 
 			self.REL.write("{0}\t{1}\t".format(gene,info["symbol"]))
 			self.REL.write("{0}\t{1}\t".format(thisSwitch.nTx,thisSwitch.tTx))
@@ -362,18 +367,24 @@ class StructuralAnalysis(method.Method):
 						OUT.write(IN.read())
 
 		if tag=="":
-			g = self._gene_network
 			saveName = "geneNetwork.pkl"
-		elif tag=="random":
-			import cPickle as pickle
-			g = pickle.load(open("{}randomGeneNetwork_fixNormal.pkl".format(options.Options().qout)))
+			g = self._gene_network
+		elif tag=="_random":
 			saveName = "randomGeneNetwork_fixNormal.pkl"
+			import cPickle as pickle
+			g = pickle.load(open("{}{}".format(options.Options().qout,saveName)))
+			g.createLogger()
 
-		for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_byPatientNumber():
-			if thisSwitch.is_functional:
-				switchDict["functional"] == True
-			else:
-				switchDict["functional"] == False
+		for elements in utils.readTable("{}structural_analysis/structural_summary{}.tsv".format(options.Options().qout,tag)):
+			gene = elements[0]
+			nTx = elements[2]
+			tTx = elements[3]
+
+			functional = "True" in [elements[4],elements[5],elements[6],elements[7],elements[8]]
+
+			for switchDict in g._net.node[gene]["isoformSwitches"]:
+				if switchDict["nIso"]==nTx and switchDict["tIso"]==tTx:
+					switchDict["functional"]=functional
 
 		g.saveNetwork(saveName)
 		
