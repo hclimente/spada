@@ -274,19 +274,19 @@ class GeneNetwork(network.Network):
 		'''
 		Iterate genes that have alternative splicing and more than one transcript expressed.
 		'''
-		
-		geneAndPatients = [ (x,sum([ len(z["patients"]) for z in y["isoformSwitches"] ])) for x,y in self.nodes(data=True) ]
-		genes = [ x for x,y in sorted(geneAndPatients.items(), key=operator.itemgetter(1)) ]
-
+		consideredGenes = self.nodes()
 		if options.Options().parallelRange:
 			bottom = options.Options().parallelRange - 1
 			top = bottom + options.Options().step
-			genes = genes[bottom:top]
+			consideredGenes = consideredGenes[bottom:top]
+
+		geneAndPatients = [ (x,sum([ len(z["patients"]) for z in self._net.node[x]["isoformSwitches"] ])) for x in consideredGenes ]
+		genes = [ x for x,y in sorted(geneAndPatients, key=operator.itemgetter(1), reverse=True) ]
 
 		for gene in genes:
-			info = self._gene_network._net.node[gene]
+			info = self._net.node[gene]
 			allExpressedTxs = set(info["expressedTxsNormal"]) | set(info["expressedTxsTumor"])
-			if len(allExpressedTxs) < 2:
+			if len(allExpressedTxs) < 2 and not info["isoformSwitches"]:
 				continue
 			self.logger.debug("Iterating gene {0}.".format(gene))
 			yield gene,info
@@ -383,14 +383,14 @@ class GeneNetwork(network.Network):
 			sortedSwitches = sorted(info["isoformSwitches"],key=lambda a:len(a['patients']),reverse=True)
 			for x in sortedSwitches:
 				if x["nIso"] in consensus["N"] and x["tIso"] in consensus["T"]:
-					bestpatible[gene] = [x["nIso"],x["tIso"],len(x["patients"])]
+					bestpatible[gene] = {"N":x["nIso"], "T":x["tIso"], "n":len(x["patients"])}
 					break
 
 			# no good switch could be found
 			if not gene in bestpatible:
 				continue
 
-			incompatible.append(max([max( d[x]["N"] for x in d if x == bestpatible[gene][1] ),max( d[x]["T"] for x in d if x == bestpatible[gene][0] )]))
+			incompatible.append(max([max( d[x]["N"] for x in d if x == bestpatible[gene]["T"] ),max( d[x]["T"] for x in d if x == bestpatible[gene]["N"] )]))
 
 		threshold = np.percentile(incompatible,99)
 
@@ -404,7 +404,7 @@ class GeneNetwork(network.Network):
 					s["noise"] = False
 
 				if gene in bestpatible:
-					if s["nIso"] == bestpatible[gene][0] and s["tIso"] == bestpatible[gene][1]:
+					if s["nIso"] == bestpatible[gene]["N"] and s["tIso"] == bestpatible[gene]["T"]:
 						s["model"] = True
 					else:
 						s["model"] = False
