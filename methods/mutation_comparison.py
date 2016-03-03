@@ -4,8 +4,7 @@ from methods import method
 
 import fisher
 import pandas as pd
-#from rpy2.robjects.packages import importr
-#from rpy2.robjects.vectors import FloatVector
+from statsmodels.sandbox.stats.multicomp import multipletests
 
 class MutationComparison(method.Method):
 	def __init__(self,gn_network,tx_network):
@@ -35,8 +34,7 @@ class MutationComparison(method.Method):
 	def clean(self):
 		# utils.cmd("rm","-r","{0}mutations".format(options.Options().qout))
 		# utils.cmd("mkdir","{0}mutations".format(options.Options().qout))
-		# utils.cmd("mkdir","{0}mutations/hallmark_info".format(options.Options().qout))
-		pass
+		utils.cmd("mkdir","-p","{}mutations/hallmark_info".format(options.Options().qout))
 
 	def run(self):
 
@@ -52,9 +50,9 @@ class MutationComparison(method.Method):
 	def readMutations(self,mutationType):
 
 		if mutationType == 'all_mutations':
-			mutFile = "{0}Data/{1}/Rawdata/{2}_gene_mutation-count_full.txt".format(options.Options().wd,options.Options().annotation,options.Options().tag)
+			mutFile = "{}data/{}/rawdata/{}_gene_mutation-count_full.txt".format(options.Options().wd,options.Options().annotation,options.Options().tag)
 		elif mutationType == 'functional_mutations':
-			mutFile = "{0}Data/{1}/Rawdata/{2}_gene_mutation-functional-count_full.txt".format(options.Options().wd,options.Options().annotation,options.Options().tag)
+			mutFile = "{}data/{}/rawdata/{}_gene_mutation-functional-count_full.txt".format(options.Options().wd,options.Options().annotation,options.Options().tag)
 
 		mutations = {}
 
@@ -97,9 +95,6 @@ class MutationComparison(method.Method):
 	def calculateMEForGene(self,mutationSet,switchSet):
 
 		# search single gene bias
-
-		#stats = importr('stats')
-
 		table = []
 		mutations = self.mutations[mutationSet]
 
@@ -130,8 +125,10 @@ class MutationComparison(method.Method):
 						  "fisher_mutual_exclusion":p.left_tail,"jaccard":j,
 						  "nTx":thisSwitch.nTx,"tTx":thisSwitch.tTx })
 
-		#p_adj_me = stats.p_adjust(FloatVector([ x["fisher_mutual_exclusion"] for x in table ]), method='BH')
-		#p_adj_overlap = stats.p_adjust(FloatVector([ x["fisher_overlap"] for x in table ]), method='BH')
+		p_adj_me = multipletests([ x["fisher_mutual_exclusion"] for x in table ],alpha=0.05,method='fdr_bh')
+		p_adj_me = p_adj_me[1].tolist()
+		p_adj_overlap = multipletests([ x["fisher_overlap"] for x in table ],alpha=0.05,method='fdr_bh')
+		p_adj_overlap = p_adj_overlap[1].tolist()
 
 		with open("{0}mutations/gene_{1}_{2}.txt".format(options.Options().qout,mutationSet,switchSet),"w") as OUT:
 			for i in range(len(table)):
@@ -163,7 +160,7 @@ class MutationComparison(method.Method):
 
 			if onlyDrivers:
 				tag = "_onlyDrivers"
-				iteratedGenes = [ x for x in self.hallmarks[hallmark] if x in self._gene_network.nodes() and self._gene_network._net.node[x]["Driver"] ]
+				iteratedGenes = [ x for x in self.hallmarks[hallmark] if x in self._gene_network.nodes() and self._gene_network._net.node[x]["driver"] ]
 			else:
 				tag = ""
 				iteratedGenes = [ x for x in self.hallmarks[hallmark] if x in self._gene_network.nodes() ]
@@ -221,7 +218,7 @@ class MutationComparison(method.Method):
 			  				  "nTx":nTx, "tTx":tTx, 
 			  				  "genes": ",".join([ self._gene_network._net.node[x]["symbol"] for x in iteratedGenes]) })
 
-			with open("{0}mutations/hallmark_info/{1}_{2}_{3}{4}.tsv".format(options.Options().qout,hallmark,mutationSet,switchSet,tag),"w") as HALLMARK_HEATMAP:
+			with open("{}mutations/hallmark_info/{}_{}_{}{}.tsv".format(options.Options().qout,hallmark,mutationSet,switchSet,tag),"w") as HALLMARK_HEATMAP:
 				HALLMARK_HEATMAP.write("patient\tgene\talteration\n")
 				for p in heatmapDict:
 					for g in heatmapDict[p]:
@@ -230,8 +227,8 @@ class MutationComparison(method.Method):
 						if heatmapDict[p][g] in [-1]:
 							HALLMARK_HEATMAP.write("{0}\t{1}\tSWITCH\n".format(p,g))
 
-		stats = importr('stats')
-		p_adj_me = stats.p_adjust(FloatVector([ x["p_me"] for x in table ]), method='BH')
+		p_adj_me = multipletests([ x["p_me"] for x in table ],alpha=0.05,method='fdr_bh')
+		p_adj_me = p_adj_me[1].tolist()
 
 		with open("{0}mutations/geneset_{1}_{2}{3}.txt".format(options.Options().qout,mutationSet,switchSet,tag),"w") as OUT:
 			for i in range(len(table)):
@@ -256,10 +253,8 @@ class MutationComparison(method.Method):
 
 	def calculateMEForPanNegative(self,mutationSet,switchSet):
 
-		stats = importr('stats')
-
 		mutations = self.mutations[mutationSet]
-		drivers = [ x for x,y in self._gene_network.nodes(data=True) if y["Driver"] ]
+		drivers = [ x for x,y in self._gene_network.nodes(data=True) if y["driver"] ]
 		allPatientsWithAMutation = []
 		[ allPatientsWithAMutation.extend(mutations[x]) for x in drivers if x in mutations ]
 
@@ -282,7 +277,8 @@ class MutationComparison(method.Method):
 						  "n":n,"fisher_mutual_exclusion":p.left_tail,
 						  "nTx":thisSwitch.nTx,"tTx":thisSwitch.tTx })
 
-		p_adj_me = stats.p_adjust(FloatVector([ x["fisher_mutual_exclusion"] for x in table ]), method='BH')
+		p_adj_me = multipletests([ x["fisher_mutual_exclusion"] for x in table ],alpha=0.05,method='fdr_bh')
+		p_adj_me = p_adj_me[1].tolist()
 
 		with open("{0}mutations/pannegative_{1}_{2}.txt".format(options.Options().qout,mutationSet,switchSet),"w") as OUT:
 			for i in range(len(table)):
