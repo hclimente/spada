@@ -7,9 +7,13 @@ class Test(method.Method):
 		method.Method.__init__(self, __name__, gn_network, tx_network, gn_subnetwork)
 
 	def run(self):
-		from network import ucsc_isoform_network
-		self._transcript_network = ucsc_isoform_network.UCSCIsoformNetwork()
-		self.logger.info("Creating transcript network.")
-		self._transcript_network.importTranscriptome()
+		from biological_entities import switch
 
-		self._transcript_network.saveNetwork("txNetwork.pkl")
+		s= switch.IsoformSwitch( 'uc002pwd.2',  'uc002pwf.2', self._gene_network._net.node["147645"]["isoformSwitches"][0]["patients"])
+		nInfo = tx._net.node[s.nTx]
+		tInfo = tx._net.node[s.tTx]
+		s.addTxs(nInfo,tInfo)
+		s.addIsos(nInfo,tInfo,True)
+
+		import pdb
+		pdb.set_trace()
