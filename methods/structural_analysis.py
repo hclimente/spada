@@ -31,23 +31,23 @@ class StructuralAnalysis(method.Method):
 		self.anchor_threshold = 0.5
 		self.iupred_threshold = 0.5
 
-		self._interpro_file = "{0}structural_analysis/interpro_analysis{1}.tsv".format(options.Options().qout,tag)
+		self._interpro_file = "{}structural_analysis/interpro_analysis{}.tsv".format(options.Options().qout,tag)
 		self.IP = open(self._interpro_file,"w")
 		self.writeKnownFeatureHeader(self.IP)
 				
-		self._iupred_file = "{0}structural_analysis/iupred_analysis{1}.tsv".format(options.Options().qout,tag)
+		self._iupred_file = "{}structural_analysis/iupred_analysis{}.tsv".format(options.Options().qout,tag)
 		self.IU = open(self._iupred_file,"w")
 		self.writeDisorderedRegionHeader(self.IU)
 								
-		self._anchor_file = "{0}structural_analysis/anchor_analysis{1}.tsv".format(options.Options().qout,tag)
+		self._anchor_file = "{}structural_analysis/anchor_analysis{}.tsv".format(options.Options().qout,tag)
 		self.ANCHOR = open(self._anchor_file,"w")
 		self.writeDisorderedRegionHeader(self.ANCHOR)
 				
-		self._prosite_file = "{0}structural_analysis/prosite_analysis{1}.tsv".format(options.Options().qout,tag)
+		self._prosite_file = "{}structural_analysis/prosite_analysis{}.tsv".format(options.Options().qout,tag)
 		self.PROSITE = open(self._prosite_file,"w")
 		self.writeKnownFeatureHeader(self.PROSITE)
 						
-		self._relevance_info = "{0}structural_analysis/structural_summary{1}.tsv".format(options.Options().qout,tag)
+		self._relevance_info = "{}structural_analysis/structural_summary{}.tsv".format(options.Options().qout,tag)
 		self.REL = open(self._relevance_info,"w")
 		self.writeSummaryHeader(self.REL)
 				
@@ -70,11 +70,11 @@ class StructuralAnalysis(method.Method):
 			thisSwitch._disorder_change   							= self.disorderAnalysis(thisSwitch,gene,info)
 			thisSwitch._anchor_change    							= self.anchorAnalysis(thisSwitch,gene,info)
 
-			self.REL.write("{0}\t{1}\t".format(gene,info["symbol"]))
-			self.REL.write("{0}\t{1}\t".format(thisSwitch.nTx,thisSwitch.tTx))
-			self.REL.write("{0}\t{1}\t".format(thisSwitch._iloops_change,thisSwitch._functional_change))
-			self.REL.write("{0}\t{1}\t".format(thisSwitch._disorder_change,thisSwitch._anchor_change))
-			self.REL.write("{0}\n".format(thisSwitch._ptm_change))
+			self.REL.write("{}\t{}\t".format(gene,info["symbol"]))
+			self.REL.write("{}\t{}\t".format(thisSwitch.nTx,thisSwitch.tTx))
+			self.REL.write("{}\t{}\t".format(thisSwitch._iloops_change,thisSwitch._functional_change))
+			self.REL.write("{}\t{}\t".format(thisSwitch._disorder_change,thisSwitch._anchor_change))
+			self.REL.write("{}\n".format(thisSwitch._ptm_change))
 
 		self.IP.close()
 		self.IU.close()
@@ -84,23 +84,31 @@ class StructuralAnalysis(method.Method):
 
 	def archDBAnalysis(self,thisSwitch,gene,info,isoInfo):
 
-		self.logger.debug("iLoops: looking for loop changes for gene {0}.".format(gene) )
+		self.logger.debug("iLoops: looking for loop changes for gene {}.".format(gene) )
 		
 		if thisSwitch.nTx in isoInfo and thisSwitch.tTx in isoInfo:
 			nLoops = isoInfo[thisSwitch.nTx]["iLoopsFamily"]
 			tLoops = isoInfo[thisSwitch.tTx]["iLoopsFamily"]
 
 			if nLoops != tLoops:
-				self.logger.debug("iLoops: information found for gene {0}.".format(gene) )
+				self.logger.debug("iLoops: information found for gene {}.".format(gene) )
 				return True
 			else:
 				return False
+
+		else if thisSwitch.nTx in isoInfo and thisSwitch.tIsoform is None:
+			if isoInfo[thisSwitch.nTx]["iLoopsFamily"]:
+				return True
+
+		else if thisSwitch.tTx in isoInfo and thisSwitch.nIsoform is None:
+			if isoInfo[thisSwitch.tTx]["iLoopsFamily"]:
+				return True
 
 		return False
 
 	def disorderAnalysis(self,thisSwitch,gene,info):
 
-		self.logger.debug("IUPRED: Searching disorder for gene {0}.".format(gene))
+		self.logger.debug("IUPRED: Searching disorder for gene {}.".format(gene))
 		
 		anyIUpredSeq = False
 
@@ -122,7 +130,7 @@ class StructuralAnalysis(method.Method):
 					overlappingIsoSpecific = []
 					[ overlappingIsoSpecific.extend(x) for x in isoform if set(x) & disorderedRegionSet]
 					
-					if not overlappingIsoSpecific:
+					if not overlappingIsoSpecific and None not in [thisSwitch.nIsoform,thisSwitch.tIsoform]:
 						jaccard = "NA"
 						macroScore = "NA"
 						microScore = "NA"
@@ -151,12 +159,12 @@ class StructuralAnalysis(method.Method):
 						if thisRes.num < start:
 							start = thisRes.num
 
-					self.IU.write("{0}\t{1}\t".format(gene,info["symbol"]))
-					self.IU.write("{0}\t{1}\t".format(thisSwitch.nTx,thisSwitch.tTx))
-					self.IU.write("{0}\t{1}\t".format(whatsHappening,motifSequence))
-					self.IU.write("{0}\t{1}\t".format(start,end))
-					self.IU.write("{0}\t{1}\t".format(jaccard,microScore))
-					self.IU.write("{0}\t{1}\n".format(macroScore,significant))
+					self.IU.write("{}\t{}\t".format(gene,info["symbol"]))
+					self.IU.write("{}\t{}\t".format(thisSwitch.nTx,thisSwitch.tTx))
+					self.IU.write("{}\t{}\t".format(whatsHappening,motifSequence))
+					self.IU.write("{}\t{}\t".format(start,end))
+					self.IU.write("{}\t{}\t".format(jaccard,microScore))
+					self.IU.write("{}\t{}\n".format(macroScore,significant))
 
 					if significant:
 						anyIUpredSeq = True
@@ -165,7 +173,7 @@ class StructuralAnalysis(method.Method):
 
 	def anchorAnalysis(self,thisSwitch,gene,info):
 
-		self.logger.debug("ANCHOR: Searching anchoring regions for gene {0}.".format(gene))
+		self.logger.debug("ANCHOR: Searching anchoring regions for gene {}.".format(gene))
 		
 		anyAnchorSeq = False
 
@@ -185,7 +193,7 @@ class StructuralAnalysis(method.Method):
 				overlappingIsoSpecific = []
 				[ overlappingIsoSpecific.extend(x) for x in isoform if set(x) & anchorRegionSet]
 				
-				if not overlappingIsoSpecific:
+				if not overlappingIsoSpecific and None not in [thisSwitch.nIsoform,thisSwitch.tIsoform]:
 					jaccard = "NA"
 					macroScore = "NA"
 					microScore = "NA"
@@ -214,12 +222,12 @@ class StructuralAnalysis(method.Method):
 					if thisRes.num < start:
 						start = thisRes.num
 
-				self.ANCHOR.write("{0}\t{1}\t".format(gene,info["symbol"]))
-				self.ANCHOR.write("{0}\t{1}\t".format(thisSwitch.nTx,thisSwitch.tTx))
-				self.ANCHOR.write("{0}\t{1}\t".format(whatsHappening,motifSequence))
-				self.ANCHOR.write("{0}\t{1}\t".format(start,end))
-				self.ANCHOR.write("{0}\t{1}\t".format(jaccard,microScore))
-				self.ANCHOR.write("{0}\t{1}\n".format(macroScore,significant))
+				self.ANCHOR.write("{}\t{}\t".format(gene,info["symbol"]))
+				self.ANCHOR.write("{}\t{}\t".format(thisSwitch.nTx,thisSwitch.tTx))
+				self.ANCHOR.write("{}\t{}\t".format(whatsHappening,motifSequence))
+				self.ANCHOR.write("{}\t{}\t".format(start,end))
+				self.ANCHOR.write("{}\t{}\t".format(jaccard,microScore))
+				self.ANCHOR.write("{}\t{}\n".format(macroScore,significant))
 
 				if significant:
 					anyAnchorSeq = True
@@ -227,8 +235,8 @@ class StructuralAnalysis(method.Method):
 		return anyAnchorSeq
 
 	def knownFeaturesAnalysis(self,thisSwitch,gene,info):
-		anyFeature = {"Prosite":False,"InterPro":False}
-		features = {"Prosite":set(),"InterPro":set()}
+		anyFeature = {"prosite":False,"pfam":False}
+		features = {"prosite":set(),"pfam":set()}
 		prosites = set()
 		interpros = set()
 
@@ -237,10 +245,10 @@ class StructuralAnalysis(method.Method):
 				continue
 			isoform.readProsite()
 			isoform.readInterpro()
-			[ features["Prosite"].add(x) for x in isoform._prosite ]
-			[ features["InterPro"].add("{0}|{1}".format(x['accession'],x['description'])) for x in isoform._pfam ]
+			[ features["prosite"].add(x) for x in isoform._prosite ]
+			[ features["pfam"].add("{}|{}".format(x['accession'],x['description'])) for x in isoform._pfam ]
 
-		for OUT,featType in zip([self.IP,self.PROSITE],["InterPro","Prosite"]):
+		for OUT,featType in zip([self.IP,self.PROSITE],["pfam","prosite"]):
 			for feature in features[featType]:
 				featInfo = { thisSwitch.nTx: [], thisSwitch.tTx: []}
 				for isoform in [thisSwitch.nIsoform,thisSwitch.tIsoform]:
@@ -265,8 +273,7 @@ class StructuralAnalysis(method.Method):
 						microScore =  float("-inf") if isoSpLength==0 else intersection/isoSpLength
 						jaccard = intersection/len(set(region) | set(thisIsosp))
 
-						featInfo[isoform.tx].append({"macro": macroScore, 
-										   "micro": microScore, "jaccard": jaccard})
+						featInfo[isoform.tx].append({"macro": macroScore,"micro": microScore, "jaccard": jaccard})
 
 					featInfo[isoform.tx] = sorted(featInfo[isoform.tx], key=operator.itemgetter("macro"))
 
@@ -297,22 +304,22 @@ class StructuralAnalysis(method.Method):
 						tJaccard = "NA" if tDict["jaccard"] < 0 else tDict["jaccard"]
 
 					if nDict and tDict is None:
-						if nMacroScore != "NA" and nMacroScore > 0:
+						if (nMacroScore != "NA" and nMacroScore > 0) or thisSwitch.tIsoform is None:
 							whatsHappening = "Lost_in_tumor"
 							anyFeature[featType] = True
 					elif tDict and nDict is None:
-						if tMacroScore != "NA" and tMacroScore > 0:
+						if (tMacroScore != "NA" and tMacroScore > 0) or thisSwitch.nIsoform is None:
 							whatsHappening = "Gained_in_tumor"
 							anyFeature[featType] = True
 
-					OUT.write("{0}\t{1}\t{2}\t".format(gene,info["symbol"],thisSwitch.nTx))
-					OUT.write("{0}\t{1}\t{2}\t".format(thisSwitch.tTx,whatsHappening,feature))
-					OUT.write("{0}/{1}\t".format(i+1,len(featInfo[thisSwitch.nTx])))
-					OUT.write("{0}/{1}\t".format(i+1,len(featInfo[thisSwitch.tTx])))
-					OUT.write("{0}\t{1}\t{2}\t".format(nMacroScore,nMicroScore,nJaccard))
-					OUT.write("{0}\t{1}\t{2}\n".format(tMacroScore,tMicroScore,tJaccard))
+					OUT.write("{}\t{}\t{}\t".format(gene,info["symbol"],thisSwitch.nTx))
+					OUT.write("{}\t{}\t{}\t".format(thisSwitch.tTx,whatsHappening,feature))
+					OUT.write("{}/{}\t".format(i+1,len(featInfo[thisSwitch.nTx])))
+					OUT.write("{}/{}\t".format(i+1,len(featInfo[thisSwitch.tTx])))
+					OUT.write("{}\t{}\t{}\t".format(nMacroScore,nMicroScore,nJaccard))
+					OUT.write("{}\t{}\t{}\n".format(tMacroScore,tMicroScore,tJaccard))
 
-		return anyFeature["InterPro"],anyFeature["Prosite"]
+		return anyFeature["pfam"],anyFeature["prosite"]
 
 	def writeKnownFeatureHeader(self,OUT):
 		OUT.write("Gene\tSymbol\tNormalTranscript\tTumorTranscript\t")
@@ -333,8 +340,8 @@ class StructuralAnalysis(method.Method):
 		roots = ['interpro_analysis','iupred_analysis','anchor_analysis','prosite_analysis','structural_summary']
 		
 		for root in roots:
-			outFile = "{0}structural_analysis/{1}{2}.tsv".format(options.Options().qout,root,tag)
-			files = glob.glob("{0}structural_analysis/{1}{2}_[0-9]*.tsv".format(options.Options().qout,root,tag))
+			outFile = "{}structural_analysis/{}{2}.tsv".format(options.Options().qout,root,tag)
+			files = glob.glob("{}structural_analysis/{}{2}_[0-9]*.tsv".format(options.Options().qout,root,tag))
 
 			# close writing files in case they are opened
 			if (hasattr(self,'IP') and hasattr(self,'IU') and hasattr(self,'ANCHOR') and hasattr(self,'PROSITE') and hasattr(self,'REL')):
