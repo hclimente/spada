@@ -128,9 +128,12 @@ class StructuralAnalysis(method.Method):
 					disorderedRegionSet = set(disorderedRegion)
 
 					overlappingIsoSpecific = []
-					[ overlappingIsoSpecific.extend(x) for x in isoform if set(x) & disorderedRegionSet]
+					if None not in [thisSwitch.nIsoform,thisSwitch.tIsoform]:
+						[ overlappingIsoSpecific.extend(x) for x in isoform if set(x) & disorderedRegionSet]
+					else:
+						overlappingIsoSpecific = disorderedRegionSet
 					
-					if not overlappingIsoSpecific and None not in [thisSwitch.nIsoform,thisSwitch.tIsoform]:
+					if not overlappingIsoSpecific:
 						jaccard = "NA"
 						macroScore = "NA"
 						microScore = "NA"
@@ -191,9 +194,12 @@ class StructuralAnalysis(method.Method):
 				anchorRegionSet = set(anchorRegion)
 
 				overlappingIsoSpecific = []
-				[ overlappingIsoSpecific.extend(x) for x in isoform if set(x) & anchorRegionSet]
+				if None not in [thisSwitch.nIsoform,thisSwitch.tIsoform]:
+					[ overlappingIsoSpecific.extend(x) for x in isoform if set(x) & anchorRegionSet]
+				else:
+					overlappingIsoSpecific = anchorRegionSet
 				
-				if not overlappingIsoSpecific and None not in [thisSwitch.nIsoform,thisSwitch.tIsoform]:
+				if not overlappingIsoSpecific:
 					jaccard = "NA"
 					macroScore = "NA"
 					microScore = "NA"
@@ -265,7 +271,10 @@ class StructuralAnalysis(method.Method):
 						jaccard = float("-inf")
 
 						thisIsosp = []
-						[ thisIsosp.extend(x) for x in isospRegions if set(x) & set(region) ]
+						if None not in [thisSwitch.nIsoform,thisSwitch.tIsoform]:
+							[ thisIsosp.extend(x) for x in isospRegions if set(x) & set(region) ]
+						else:
+							thisIsosp = set(region)
 						intersection = float(len(set(region) & set(thisIsosp)))
 						featLength = float(len(set(region)))
 						isoSpLength = float(len(set(thisIsosp)))
@@ -304,11 +313,11 @@ class StructuralAnalysis(method.Method):
 						tJaccard = "NA" if tDict["jaccard"] < 0 else tDict["jaccard"]
 
 					if nDict and tDict is None:
-						if (nMacroScore != "NA" and nMacroScore > 0) or thisSwitch.tIsoform is None:
+						if (nMacroScore != "NA" and nMacroScore > 0):
 							whatsHappening = "Lost_in_tumor"
 							anyFeature[featType] = True
 					elif tDict and nDict is None:
-						if (tMacroScore != "NA" and tMacroScore > 0) or thisSwitch.nIsoform is None:
+						if (tMacroScore != "NA" and tMacroScore > 0):
 							whatsHappening = "Gained_in_tumor"
 							anyFeature[featType] = True
 
