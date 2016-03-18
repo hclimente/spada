@@ -101,10 +101,13 @@ class IsoformSwitch:
 		"""
 		# cds_diff is required if there is any feature
 		# utr_diff only is impossible if a feature change is required
-		if self.cds_overlap and (self.disorderChange or self.iloopsChange or self.anchorChange or self.domainChange or self.ptmChange):
-			return True
-		else:
-			return False
+		if self.disorderChange or self.iloopsChange or self.anchorChange or self.domainChange or self.ptmChange:
+			if self.cds_overlap:
+				return True
+			elif None in [self.nIsoform,self.tIsoform]:
+				return True
+
+		return False
 
 	@property 
 	def cds_overlap(self):
