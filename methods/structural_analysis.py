@@ -65,19 +65,10 @@ class StructuralAnalysis(method.Method):
 				isoInfo[elements[0][1:]]["iLoopsFamily"] = elements[3]
 
 		for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_byPatientNumber(self._transcript_network,partialCreation=True,removeNoise=False):
-			
-			if thisSwitch.nIsoform and thisSwitch.tIsoform: 
-				thisSwitch._iloops_change 	  							= self.archDBAnalysis(thisSwitch,gene,info,isoInfo)
-				(thisSwitch._functional_change,thisSwitch._ptm_change) 	= self.knownFeaturesAnalysis(thisSwitch,gene,info)
-				thisSwitch._disorder_change   							= self.disorderAnalysis(thisSwitch,gene,info)
-				thisSwitch._anchor_change    							= self.anchorAnalysis(thisSwitch,gene,info)
-
-			else:
-				thisSwitch._iloops_change		= False
-				thisSwitch._functional_change	= False
-				thisSwitch._disorder_change		= False
-				thisSwitch._anchor_change		= False
-				thisSwitch._ptm_change			= False
+			thisSwitch._iloops_change 	  							= self.archDBAnalysis(thisSwitch,gene,info,isoInfo)
+			(thisSwitch._functional_change,thisSwitch._ptm_change) 	= self.knownFeaturesAnalysis(thisSwitch,gene,info)
+			thisSwitch._disorder_change   							= self.disorderAnalysis(thisSwitch,gene,info)
+			thisSwitch._anchor_change    							= self.anchorAnalysis(thisSwitch,gene,info)
 
 			self.REL.write("{0}\t{1}\t".format(gene,info["symbol"]))
 			self.REL.write("{0}\t{1}\t".format(thisSwitch.nTx,thisSwitch.tTx))
@@ -112,12 +103,11 @@ class StructuralAnalysis(method.Method):
 		self.logger.debug("IUPRED: Searching disorder for gene {0}.".format(gene))
 		
 		anyIUpredSeq = False
-		normalProtein = thisSwitch.nIsoform
-		tumorProtein = thisSwitch.tIsoform
 
-		if not normalProtein or not tumorProtein: return False
+		for protein,whatShouldBeHappening in zip([thisSwitch.nIsoform,thisSwitch.tIsoform],["Lost_in_tumor","Gained_in_tumor"]):
+			if not protein:
+				continue
 
-		for protein,whatShouldBeHappening in zip([normalProtein,tumorProtein],["Lost_in_tumor","Gained_in_tumor"]):
 			for mode in ["short","long"]:
 				protein.readIupred(mode)
 
@@ -162,7 +152,7 @@ class StructuralAnalysis(method.Method):
 							start = thisRes.num
 
 					self.IU.write("{0}\t{1}\t".format(gene,info["symbol"]))
-					self.IU.write("{0}\t{1}\t".format(normalProtein.tx,tumorProtein.tx))
+					self.IU.write("{0}\t{1}\t".format(thisSwitch.nTx,thisSwitch.tTx))
 					self.IU.write("{0}\t{1}\t".format(whatsHappening,motifSequence))
 					self.IU.write("{0}\t{1}\t".format(start,end))
 					self.IU.write("{0}\t{1}\t".format(jaccard,microScore))
@@ -178,13 +168,10 @@ class StructuralAnalysis(method.Method):
 		self.logger.debug("ANCHOR: Searching anchoring regions for gene {0}.".format(gene))
 		
 		anyAnchorSeq = False
-		normalProtein = thisSwitch.nIsoform
-		tumorProtein = thisSwitch.tIsoform
 
-		if not normalProtein or not tumorProtein: return False
-
-		for protein,whatShouldBeHappening in zip([normalProtein,tumorProtein],["Lost_in_tumor","Gained_in_tumor"]):
-			
+		for protein,whatShouldBeHappening in zip([thisSwitch.nIsoform,thisSwitch.tIsoform],["Lost_in_tumor","Gained_in_tumor"]):
+			if not protein:
+				continue
 			#Parse anchor output
 			protein.readAnchor()
 			
@@ -228,7 +215,7 @@ class StructuralAnalysis(method.Method):
 						start = thisRes.num
 
 				self.ANCHOR.write("{0}\t{1}\t".format(gene,info["symbol"]))
-				self.ANCHOR.write("{0}\t{1}\t".format(normalProtein.tx,tumorProtein.tx))
+				self.ANCHOR.write("{0}\t{1}\t".format(thisSwitch.nTx,thisSwitch.tTx))
 				self.ANCHOR.write("{0}\t{1}\t".format(whatsHappening,motifSequence))
 				self.ANCHOR.write("{0}\t{1}\t".format(start,end))
 				self.ANCHOR.write("{0}\t{1}\t".format(jaccard,microScore))
@@ -246,17 +233,20 @@ class StructuralAnalysis(method.Method):
 		interpros = set()
 
 		for isoform in [thisSwitch.nIsoform,thisSwitch.tIsoform]:
+			if not isoform:
+				continue
 			isoform.readProsite()
 			isoform.readInterpro()
-
-		[ features["Prosite"].add(x) for i in [thisSwitch.nIsoform,thisSwitch.tIsoform] for x in i._prosite ]
-		[ features["InterPro"].add("{0}|{1}".format(x['accession'],x['description'])) for i in [thisSwitch.nIsoform,thisSwitch.tIsoform] for x in i._pfam ]
+			[ features["Prosite"].add(x) for x in isoform._prosite ]
+			[ features["InterPro"].add("{0}|{1}".format(x['accession'],x['description'])) for x in isoform._pfam ]
 
 		for OUT,featType in zip([self.IP,self.PROSITE],["InterPro","Prosite"]):
 			for feature in features[featType]:
-				featInfo = {}
+				featInfo = { thisSwitch.nTx: [], thisSwitch.tTx: []}
 				for isoform in [thisSwitch.nIsoform,thisSwitch.tIsoform]:
-					featInfo[isoform.tx] = []
+					if not isoform:
+						continue
+
 					featRegions = isoform.getSegments(feature,minLength=1,gap=0)
 					isospRegions = isoform.getSegments("isoform-specific")
 
@@ -280,7 +270,7 @@ class StructuralAnalysis(method.Method):
 
 					featInfo[isoform.tx] = sorted(featInfo[isoform.tx], key=operator.itemgetter("macro"))
 
-				featInfoZipped = map(None, featInfo[thisSwitch.nIsoform.tx], featInfo[thisSwitch.tIsoform.tx])
+				featInfoZipped = map(None, featInfo[thisSwitch.nTx], featInfo[thisSwitch.tTx])
 
 				for i in range(len(featInfoZipped)):
 
@@ -317,8 +307,8 @@ class StructuralAnalysis(method.Method):
 
 					OUT.write("{0}\t{1}\t{2}\t".format(gene,info["symbol"],thisSwitch.nTx))
 					OUT.write("{0}\t{1}\t{2}\t".format(thisSwitch.tTx,whatsHappening,feature))
-					OUT.write("{0}/{1}\t".format(i+1,len(featInfo[thisSwitch.nIsoform.tx])))
-					OUT.write("{0}/{1}\t".format(i+1,len(featInfo[thisSwitch.tIsoform.tx])))
+					OUT.write("{0}/{1}\t".format(i+1,len(featInfo[thisSwitch.nTx])))
+					OUT.write("{0}/{1}\t".format(i+1,len(featInfo[thisSwitch.tTx])))
 					OUT.write("{0}\t{1}\t{2}\t".format(nMacroScore,nMicroScore,nJaccard))
 					OUT.write("{0}\t{1}\t{2}\n".format(tMacroScore,tMicroScore,tJaccard))
 
@@ -380,7 +370,7 @@ class StructuralAnalysis(method.Method):
 			nTx = elements[2]
 			tTx = elements[3]
 
-			functional = "True" in [elements[4],elements[5],elements[6],elements[7],elements[8]]
+			functional = ("True" in [elements[4],elements[5],elements[6],elements[7],elements[8]]) | (bool(self._transcript_network._net.node[nTx]["proteinSequence"])!=bool(self._transcript_network._net.node[tTx]["proteinSequence"]))
 
 			for switchDict in g._net.node[gene]["isoformSwitches"]:
 				if switchDict["nIso"]==nTx and switchDict["tIso"]==tTx:
