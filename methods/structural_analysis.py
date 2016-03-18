@@ -96,11 +96,11 @@ class StructuralAnalysis(method.Method):
 			else:
 				return False
 
-		else if thisSwitch.nTx in isoInfo and thisSwitch.tIsoform is None:
+		elif thisSwitch.nTx in isoInfo and thisSwitch.tIsoform is None:
 			if isoInfo[thisSwitch.nTx]["iLoopsFamily"]:
 				return True
 
-		else if thisSwitch.tTx in isoInfo and thisSwitch.nIsoform is None:
+		elif thisSwitch.tTx in isoInfo and thisSwitch.nIsoform is None:
 			if isoInfo[thisSwitch.tTx]["iLoopsFamily"]:
 				return True
 
@@ -340,8 +340,8 @@ class StructuralAnalysis(method.Method):
 		roots = ['interpro_analysis','iupred_analysis','anchor_analysis','prosite_analysis','structural_summary']
 		
 		for root in roots:
-			outFile = "{}structural_analysis/{}{2}.tsv".format(options.Options().qout,root,tag)
-			files = glob.glob("{}structural_analysis/{}{2}_[0-9]*.tsv".format(options.Options().qout,root,tag))
+			outFile = "{}structural_analysis/{}{}.tsv".format(options.Options().qout,root,tag)
+			files = glob.glob("{}structural_analysis/{}{}_[0-9]*.tsv".format(options.Options().qout,root,tag))
 
 			# close writing files in case they are opened
 			if (hasattr(self,'IP') and hasattr(self,'IU') and hasattr(self,'ANCHOR') and hasattr(self,'PROSITE') and hasattr(self,'REL')):
