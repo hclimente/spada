@@ -10,34 +10,34 @@ class MutationFeatureOverlap(method.Method):
 
 		self.mutations = self.readMutations()
 
-		self.TXS_ALL = open("{0}mutations/proteome_information.txt".format(options.Options().qout),"w")
+		utils.cmd("mkdir","{}mutations".format(options.Options().qout))
+
+		self.TXS_ALL = open("{}mutations/proteome_information.txt".format(options.Options().qout),"w")
 		self.TXS_ALL.write("Cancer\tGene\tSymbol\tTranscript\tTPM\tProteinLength\n")
 
-		self.TXS_SWT = open("{0}mutations/switch_information.txt".format(options.Options().qout),"w")
+		self.TXS_SWT = open("{}mutations/switch_information.txt".format(options.Options().qout),"w")
 		self.TXS_SWT.write("Cancer\tGene\tSymbol\tTranscript\tTPM\tProteinLength\n")
 
-		self.MUT_ALL = open("{0}mutations/proteome_mutations.txt".format(options.Options().qout),"w")
+		self.MUT_ALL = open("{}mutations/proteome_mutations.txt".format(options.Options().qout),"w")
 		self.MUT_ALL.write("Cancer\tGene\tSymbol\tTranscript\tAnalysis\t")
 		self.MUT_ALL.write("Feature\tn\tType\tPatient\n")
 
-		self.FT_ALL = open("{0}mutations/proteome_features.txt".format(options.Options().qout),"w")
+		self.FT_ALL = open("{}mutations/proteome_features.txt".format(options.Options().qout),"w")
 		self.FT_ALL.write("Cancer\tGene\tSymbol\tTranscript\tAnalysis\t")
 		self.FT_ALL.write("Feature\tn\tFeatureLength\tStart\tEnd\n")
 
-		self.MUT_SWT = open("{0}mutations/switch_mutations.txt".format(options.Options().qout),"w")
+		self.MUT_SWT = open("{}mutations/switch_mutations.txt".format(options.Options().qout),"w")
 		self.MUT_SWT.write("Cancer\tGene\tSymbol\tTranscript\tAnalysis\t")
 		self.MUT_SWT.write("Feature\tn\tType\tPatient\n")
 
-		self.FT_SWT = open("{0}mutations/switch_features.txt".format(options.Options().qout),"w")
+		self.FT_SWT = open("{}mutations/switch_features.txt".format(options.Options().qout),"w")
 		self.FT_SWT.write("Cancer\tGene\tSymbol\tTranscript\tAnalysis\t")
 		self.FT_SWT.write("Feature\tn\tFeatureLength\tStart\tEnd\n")
 
 	def clean(self):
-		# utils.cmd("mkdir","{0}mutations".format(options.Options().qout))
+		pass
 		# utils.cmd("rm","{0}mutations/mutation_switch_feature_overlap.txt".format(options.Options().qout))
 		# utils.cmd("rm","{0}mutations/debug_mutations.txt".format(options.Options().qout))
-
-		pass
 
 	def run(self):
 
@@ -86,7 +86,7 @@ class MutationFeatureOverlap(method.Method):
 
 	def readMutations(self):
 
-		mutFile = "{0}Data/{1}/Rawdata/{2}_gene_mutation-functional-count_full.txt".format(options.Options().wd,options.Options().annotation,options.Options().tag)
+		mutFile = "{}data/{}/rawdata/{}_gene_mutation-functional-count_full.txt".format(options.Options().wd,options.Options().annotation,options.Options().tag)
 
 		mutations = {}
 
