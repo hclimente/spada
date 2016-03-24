@@ -6,7 +6,7 @@ import fisher
 import pandas as pd
 from statsmodels.sandbox.stats.multicomp import multipletests
 
-class WESMutations(method.Method):
+class MEAnalysis(method.Method):
 	def __init__(self,gn_network,tx_network):
 		method.Method.__init__(self,__name__,gn_network,tx_network)
 		

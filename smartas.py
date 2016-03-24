@@ -6,12 +6,11 @@ from libs import utils
 from methods import get_i3d_broken_interactions
 from methods import get_random_switches
 from methods import get_switches
-from methods import mutation_comparison
-from methods import mutation_feature_overlap
 from methods import neighborhood_analysis
 from methods import structural_analysis
 from methods import result_summary
-from methods import wgs_mutations
+from methods import me_analysis
+from methods import wes_mutations_feature_overlap
 
 from methods import test
 
@@ -52,6 +51,13 @@ class SmartAS:
 			# analyze a chunk of the switches
 			s.run()
 
+	def recurrenceAnalysis(self):
+
+		utils.cmd('/soft/R/R-3.2.3/bin/Rscript', 
+			'pipeline/methods/recurrence_analysis.R', 
+			"{}candidateList_info.tsv".format(options.Options().qout),
+			"{}candidateList_recurrence.tsv".format(options.Options().qout))
+
 	def I3DBrokenInteractions(self):
 
 		i = get_i3d_broken_interactions.GetI3DBrokenInteractions(True,True)
@@ -63,9 +69,9 @@ class SmartAS:
 		n = neighborhood_analysis.NeighborhoodAnalysis(True,True)
 		n.run()
 
-	def compareSwitchesAndMutations(self):
+	def studyMutualExclusion(self):
 
-		m = mutation_comparison.MutationComparison(True,True)
+		m = me_analysis.MEAnalysis(True,True)
 		m.clean()
 		m.run()
 
@@ -80,16 +86,11 @@ class SmartAS:
 		r = get_random_switches.GetRandomSwitches(True,True)
 		r.run()
 
-	def searchMutationFeatureOverlap(self):
+	def studyWESMutationsFeatureOverlap(self):
 		
-		m = mutation_feature_overlap.MutationFeatureOverlap(True,True)
-		m.clean()
+		m = wes_mutations_feature_overlap.WESMutationsFeatureOverlap(True,True)
+		#m.clean()
 		m.run()
-
-	def studyWGSMutations(self):
-		w = wgs_mutations.WGSMutations(True,True)
-		w.clean()
-		w.run()
 
 	def testing(self):
 
@@ -126,16 +127,18 @@ if __name__ == '__main__':
 		S.structuralAnalysis()
 	elif options.Options().initialStep == "random-switches":
 		S.createRandomSwitches()
-	
+
+	# get candidates
+	elif options.Options().initialStep == "recurrence-analysis":
+		S.recurrenceAnalysis()
+	elif options.Options().initialStep == "wes-mutations-feature-overlap":
+		S.studyWESMutationsFeatureOverlap()
+	elif options.Options().initialStep == "me-analysis":
+		S.studyMutualExclusion()
+		
 	# analyze model switches
 	elif options.Options().initialStep == "neighborhood-analysis":
 		S.neighborhoodAnalysis()
-	elif options.Options().initialStep == "get-i3d-broken-interactions":
-		S.I3DBrokenInteractions()
-	elif options.Options().initialStep == "mutation-comparison":
-		S.compareSwitchesAndMutations()
-	elif options.Options().initialStep == "mutation-feature-overlap":
-		S.searchMutationFeatureOverlap()
 	elif options.Options().initialStep == "wgs-mutations":
 		S.studyWGSMutations()
 
@@ -146,5 +149,9 @@ if __name__ == '__main__':
 	# test commands
 	elif options.Options().initialStep == "test":
 		S.testing()
+
+	# deprecated
+	elif options.Options().initialStep == "get-i3d-broken-interactions":
+		S.I3DBrokenInteractions()
 	
 	S.logger.info("SmartAS will close.")
