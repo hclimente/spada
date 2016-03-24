@@ -48,8 +48,8 @@ class GetSwitches(method.Method):
 			'pipeline/methods/calculate_switches.r', 
 			"{}data/{}/rawdata/{}_iso_tpm_paired-filtered.txt".format(options.Options().wd,options.Options().annotation,options.Options().tag),
 			"{}data/{}/rawdata/{}_iso_tpm_tumor-filtered.txt".format(options.Options().wd,options.Options().annotation,options.Options().tag),
-			"{}data/{}/rawdata/{}_gene_tpm_paired-filtered.txt".format(options.Options().wd,options.Options().annotation,options.Options().tag),
-			"{}data/{}/rawdata/{}_gene_tpm_tumor-filtered.txt".format(options.Options().wd,options.Options().annotation,options.Options().tag),
+			"{}data/{}/rawdata/{}_gene_read_paired-filtered.txt".format(options.Options().wd,options.Options().annotation,options.Options().tag),
+			"{}data/{}/rawdata/{}_gene_read_tumor-filtered.txt".format(options.Options().wd,options.Options().annotation,options.Options().tag),
 			"{}data/{}/rawdata/{}_iso_psi_paired-filtered.txt".format(options.Options().wd,options.Options().annotation,options.Options().tag),
 			"{}data/{}/rawdata/{}_iso_psi_tumor-filtered.txt".format(options.Options().wd,options.Options().annotation,options.Options().tag),
 			switchesFile)
