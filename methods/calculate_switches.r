@@ -31,12 +31,13 @@ getEmpiricalDistribution <- function(x,minV){
 }
 
 library(plyr)
+library(edgeR)
 
 args <- commandArgs(trailingOnly = TRUE)
 tpm.nt.file <- args[1]
 tpm.t.file <- args[2]
-tpm.g.nt.file <- args[3]
-tpm.g.t.file <- args[4]
+counts.g.nt.file <- args[3]
+counts.g.t.file <- args[4]
 psi.nt.file <- args[5]
 psi.t.file <- args[6]
 outfile <- args[7]
@@ -68,18 +69,26 @@ xpr <- cbind(xpr.nt,xpr.t)
 rm(xpr.nt,xpr.t)
 
 ## read gene expression
-xpr.gene.nt <- read.table(tpm.g.nt.file, check.names=FALSE)
-xpr.gene.t <- read.table(tpm.g.t.file, check.names=FALSE)
+xpr.gene.nt <- read.table(counts.g.nt.file, check.names=FALSE)
+xpr.gene.t <- read.table(counts.g.t.file, check.names=FALSE)
 xpr.gene <- cbind(xpr.gene.nt,xpr.gene.t)
+
+### tmm normalization
+#origin <- factor(substring(colnames(xpr.gene),5,5))
+y <- DGEList(counts=xpr.gene)
+y <- calcNormFactors(y)
+xpr.gene.norm <- cpm(y, normalized.lib.sizes=TRUE)
+#xpr.gene.norm <- as.data.frame(y$counts/y$samples$norm.factors)
 
 ### transform to log
 ### Some cases with very high variability between normal samples AND orders of
 ### magnitude above tumor samples where passing this test using raw difference.
 ### Logarithm differences should alleviate this problem
 ### Example: ADAMTS8|11095, Normal:uc001qgg.3, Tumor:uc001qgf.2, Sample: A46PT
-logxpr.gene <- log2(xpr.gene)
+logxpr.gene <- log2(xpr.gene.norm)
+logxpr.gene[logxpr.gene==-Inf] <- NA
 
-rm(xpr.gene,xpr.gene.nt,xpr.gene.t)
+rm(xpr.gene,xpr.gene.nt,xpr.gene.t,xpr.gene.norm)
 
 # Calculate switches
 ## Gene expression
@@ -158,7 +167,7 @@ topNormal <- psi.sign=="Normal" & psi.order.n$orderNormal==1
 ### significant deltaPSI
 bigChange <- psi.diff.padj[,tumor] < 0.05
 ### non-significant change in gene expression
-x <- merge(psi.diff.padj,logxpr.gene.diff.padj,by="Gene",suffix=c(".psi.diff",".xpr.diff"))
+x <- merge(psi.diff.padj,logxpr.gene.diff.padj,by="Gene",suffix=c(".psi.diff",".xpr.diff"),all.x=T)
 noExpressionChange <- x[,paste0(tumor,".xpr.diff")] > 0.05
 ### transcripts are expressed
 expressedTumor <- xpr[,tumor] > 0.1
@@ -233,5 +242,3 @@ switches.df.filt.agg <- ddply(switches.df.filt,.(Gene,Normal,Tumor),summarise,
                               Samples=paste(Sample,collapse=","))
 
 write.table(switches.df.filt.agg, file=outfile, sep="\t", row.names=F, col.names=F, quote=F)
-
-#stromal.correlation <- read.table(paste0("/projects_rg/TCGA/pipeline/run11/",tumor,"_gene_gsea_full.txt"), check.names=FALSE, header=TRUE)
