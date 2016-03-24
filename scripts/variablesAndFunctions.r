@@ -9,7 +9,7 @@ library(gridExtra)
 library(wordcloud)
 
 cancerTypes <- c("brca","coad","hnsc","kich","kirc","kirp","lihc","luad","lusc","prad","thca")
-workingDir <- "/genomics/users/hector/TCGA_analysis"
+workingDir <- "/genomics/users/hector/smartas/results"
 project <- "/projects_rg/TCGA/users/hector/SmartAS/"
 
 colorPalette <- c("#CC79A7","#636363","#F0E442","#006D2C","#31A354","#74C476","#FC8D59","#08519C","#3182BD","#D55E00","#5E3C99","#000000","#969696","#EDF8FB","#B3CDE3","#8C96C6","#88419D","#D94701","#2171B5","#FD8D3C","#6BAED6","#FD8D3C","#33A02C","#E31A1C","#FF7F00","#6A3D9A","#B15928","#377EB8","#E41A1C")
@@ -48,7 +48,7 @@ getBarplotAsterisks <- function(stat.tests,ranges,categories=cancerTypes,barsize
   arcs <- data.frame()
   ast <- data.frame()
   for (kns in stat.tests$Cancer[stat.tests$p < 0.05]){
-    i <- which(categories==kns)
+    i <- which(categories==kns) - 1
     d <- ddply(ranges[ranges$Cancer==kns,],.(variable),summarise,max=max(y))
     j <- max(d$max)
     k <- min(d$max)
@@ -56,9 +56,13 @@ getBarplotAsterisks <- function(stat.tests,ranges,categories=cancerTypes,barsize
     tmp_arc <- data.frame(Cancer=i, x_arc=modelArc$x+(barsize*i-pairAxis), y_arc=modelArc$y+j)
     #     tmp_arc <- rbind(tmp_arc,
     #       data.frame(Cancer=i, x_arc=2*i+whichBar, y_arc=k))
-    tmp_arc <- rbind(tmp_arc,
-                     data.frame(Cancer=i, x_arc=barsize*i, y_arc=k))
-    arcs <- rbind(arcs,tmp_arc)
+    if (which(d$max==k)==1){
+      tmp_arc <- rbind(tmp_arc,data.frame(Cancer=i, x_arc=barsize*i-1, y_arc=k))
+      arcs <- rbind(tmp_arc,arcs)
+    } else if (which(d$max==k)==2){
+      tmp_arc <- rbind(tmp_arc,data.frame(Cancer=i, x_arc=barsize*i, y_arc=k))
+      arcs <- rbind(arcs,tmp_arc)
+    } 
     
     tmp_ast <- data.frame(Cancer=i,x_ast=barsize*i-pairAxis ,y_ast=j + 1.2*minStep)
     ast <- rbind(ast,tmp_ast)
@@ -228,7 +232,7 @@ studyGroups <- function(x,y,switchesTable){
   sets <- rbind(set1,set2)
   
   # relevance
-  cTable <- table(sets[,c("IsRelevant","Group")])
+  cTable <- table(sets[,c("IsFunctional","Group")])
   fisherTest(cTable,"relevance")
   
   # CDS_change
