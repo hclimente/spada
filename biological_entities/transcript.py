@@ -131,7 +131,7 @@ class Transcript:
 		return segments
 
 	def readPfamDomains(self):
-		featFile = "{0}Data/{1}/InterPro/{2}.tsv".format(options.Options().wd,options.Options().annotation,self.name)
+		featFile = "{}data/{}/InterPro/{}.tsv".format(options.Options().wd,options.Options().annotation,self.name)
 
 		if not os.path.exists(featFile):
 			return
@@ -151,7 +151,7 @@ class Transcript:
 
 	def readProsite(self):
 
-		featFile = "{0}Data/{1}/ProSite/{2}.out".format(options.Options().wd,options.Options().annotation,self.name)
+		featFile = "{}data/{}/ProSite/{}.out".format(options.Options().wd,options.Options().annotation,self.name)
 
 		if not os.path.exists(featFile) or os.stat(featFile).st_size == 0:
 			return
@@ -169,7 +169,7 @@ class Transcript:
 
 	def readIupred(self):
 
-		featFile = "{0}Data/{1}/ProSite/{2}.out".format(options.Options().wd,options.Options().annotation,self.name)
+		featFile = "{}data/{}/ProSite/{}.out".format(options.Options().wd,options.Options().annotation,self.name)
 
 		if not os.path.exists(featFile) or os.stat(featFile).st_size == 0:
 			return

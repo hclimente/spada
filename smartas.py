@@ -139,8 +139,6 @@ if __name__ == '__main__':
 	# analyze model switches
 	elif options.Options().initialStep == "neighborhood-analysis":
 		S.neighborhoodAnalysis()
-	elif options.Options().initialStep == "wgs-mutations":
-		S.studyWGSMutations()
 
 	# summarize results
 	elif options.Options().initialStep == "summary":

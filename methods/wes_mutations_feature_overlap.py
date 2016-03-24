@@ -4,7 +4,7 @@ from libs import options
 from libs import utils
 from methods import method
 
-class MutationFeatureOverlap(method.Method):
+class WESMutationsFeatureOverlap(method.Method):
 	def __init__(self,gn_network,tx_network):
 		method.Method.__init__(self, __name__,gn_network,tx_network)
 
@@ -83,6 +83,10 @@ class MutationFeatureOverlap(method.Method):
 		self.FT_ALL.close()
 		self.MUT_SWT.close()
 		self.FT_SWT.close()
+
+		utils.cmd('/soft/R/R-3.2.3/bin/Rscript', 
+				  'pipeline/methods/mutated_features_analysis.R', 
+				  options.Options().qout)
 
 	def readMutations(self):
 

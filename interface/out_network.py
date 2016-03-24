@@ -20,7 +20,7 @@ def outputGTF(gn_network,tx_network):
 
 def outCandidateList(gn_network,tx_network):
 	logging.info("Writing candidateList.")
-	with open(options.Options().qout + "candidateList_smartas.tsv", "w") as cList:
+	with open(options.Options().qout + "candidateList_info.tsv", "w") as cList:
 		cList.write("GeneId\tSymbol\tNormal_transcript\tTumor_transcript\t")
 		cList.write("Normal_protein\tTumor_protein\tAnnotation\tDriverAnnotation\t")
 		cList.write("NotNoise\tIsModel\tIsFunctional\tDriver\tDruggable\t")
