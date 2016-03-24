@@ -38,14 +38,20 @@ class WESMutations(method.Method):
 
 	def run(self):
 
-		self.logger.info("Looking for mutual exclusion between switches and mutations.")
+		self.logger.info("Filtering WGS mutations.")
 
-		for mutationSet in ["all_mutations","functional_mutations"]:
-			for switchSet in ["all_switches","functional_switches"]:
-				self.calculateMEForGene(mutationSet,switchSet)
-				self.calculateMEForSet(mutationSet,switchSet,onlyDrivers=True)
-				self.calculateMEForSet(mutationSet,switchSet,onlyDrivers=False)
-				self.calculateMEForPanNegative(mutationSet,switchSet)
+		# read raw mutations in the patients with a switch
+		mutations = self.filterWGSMutations()
+
+		self.logger.info("Looking for mutual exclusion between switches and WES mutations.")
+		self.calculateMEForGene("functional_mutations","functional_switches")
+
+		utils.cmd('/soft/R/R-3.2.3/bin/Rscript', 
+				  'pipeline/methods/mutual_exclusion_analysis.R', 
+				  "{}mutations/gene_functional_mutations_functional_switches.txt".format(options.Options().qout),
+				  "{}mutations/wgs_mutations.txt".format(options.Options().qout),
+				  "{}candidateList_coocurrence.tsv".format(options.Options().qout),
+				  "{}candidateList_exclusion.tsv".format(options.Options().qout))
 
 	def readMutations(self,mutationType):
 
@@ -66,7 +72,7 @@ class WESMutations(method.Method):
 			if patient==".":
 				continue
 			
-			patient = patient.split(";")[0][:-1]
+			patient = patient.split(";")[0]
 			
 			mutations[geneID].append(patient)
 
@@ -297,7 +303,40 @@ class WESMutations(method.Method):
 				OUT.write("{0}\t{1}\t{2}\t".format(options.Options().tag,gene,info["symbol"]))
 				OUT.write("{0}\t{1}\t{2}\t{3}\t".format(nTx,tTx,ms,m))
 				OUT.write("{0}\t{1}\t{2}\t{3}\n".format(s,n,p_me,padj_me))
-				
+
+	def filterWGSMutations(self):
+
+		switchPatients = set()
+		for x,y in self._gene_network._net.nodes(data=True):
+			for z in y["isoformSwitches"]:
+				for p in z["patients"]:
+					switchPatients.add(p[:4])
+
+		mutFile = "{}data/Databases/WGS_505_TCGA/mutations.genes.{}.tsv".format(options.Options().wd,options.Options().tag)
+
+		with open("{}mutations/wgs_mutations.txt".format(options.Options().qout),"w") as OUT:
+			OUT.write("Tumor\tGene\tSymbol\tPatient\tPosition\tReference\tVariant\n")
+
+			for line in utils.readTable(mutFile):
+
+				patient = line[1].split("-")[2]
+
+				# skip if variant frequency too low or bSNP138 overlap
+				if float(line[8]) < 0.20 or float(line[5]) == 1:
+					continue
+				# skip if the patient is not among the studied patients
+				elif patient not in switchPatients:
+					continue
+
+				gene = line[10]
+				pos = line[4]
+				ref_allele = line[6]
+				var_allele = line[7]
+				info = self._gene_network._net.node[gene]
+
+				OUT.write("{}\t{}\t{}\t".format(options.Options().tag,gene,info["symbol"]))
+				OUT.write("{}\t{}\t{}\t".format(patient,pos,ref_allele))
+				OUT.write("{}\n".format(var_allele))
 
 if __name__ == '__main__':
 	pass
