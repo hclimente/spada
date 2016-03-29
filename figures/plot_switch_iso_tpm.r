@@ -1,3 +1,5 @@
+#!/soft/R/R-3.2.3/bin/Rscript
+
 library(ggplot2)
 library(grid)
 library(gridExtra)
@@ -14,12 +16,12 @@ tpm.nt.file <- args[5]
 tpm.t.file <- args[6]
 
 # test
-switches.file <- "~/smartas/analyses/brca/candidateList.tsv"
-gene <- "CDK6|1021"
-niso <- "uc011khw.1"
-tiso <- "uc010lez.2"
-tpm.nt.file <- "/projects_rg/TCGA/pipeline/run11/brca_iso_tpm_paired-filtered.txt"
-tpm.t.file <- "/projects_rg/TCGA/pipeline/run11/brca_iso_tpm_tumor-filtered.txt"
+# switches.file <- "~/smartas/analyses/brca/candidateList.tsv"
+# gene <- "CDK6|1021"
+# niso <- "uc011khw.1"
+# tiso <- "uc010lez.2"
+# tpm.nt.file <- "/projects_rg/TCGA/pipeline/run11/brca_iso_tpm_paired-filtered.txt"
+# tpm.t.file <- "/projects_rg/TCGA/pipeline/run11/brca_iso_tpm_tumor-filtered.txt"
 #####
 
 # read files
