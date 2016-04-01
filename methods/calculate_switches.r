@@ -6,14 +6,14 @@
 #     (ie non NA and higher than threshold)
 #   * function returning 1 to any value higher than 0 when all the 
 #     differences are 0.
-#   * return ecdf otherwise
+#   * return ecdf otherwise, counting that the minimum p-value will be 1/n+1
 getEmpiricalDistribution <- function(x,minV){
   
   v <- as.numeric(x)
   
   # discard cases with less than 10 valid cases
   if ( sum(!is.na(v))< 10 | sum(v[!is.na(v)]>=minV)<10){
-    return(function(x){return(NA)})
+    return(function(x){return(rep(NA,length(x)))})
   } else {
     diffMatrix <- abs(outer(v,v,"-"))
     subtraction <- diffMatrix[lower.tri(diffMatrix, diag = FALSE)]
@@ -30,8 +30,25 @@ getEmpiricalDistribution <- function(x,minV){
   }
 }
 
+getMinimumP <- function(x,minV){
+  
+  v <- as.numeric(x)
+  
+  # discard cases with less than 10 valid cases
+  if ( sum(!is.na(v))< 10 | sum(v[!is.na(v)]>=minV)<10){
+    minP <- NA
+  } else {
+    diffMatrix <- abs(outer(v,v,"-"))
+    subtraction <- diffMatrix[lower.tri(diffMatrix, diag = FALSE)]
+    n <- sum(!is.na(subtraction))
+    minP <- 1/(n+1)
+  }
+  return(minP)
+}
+
 library(plyr)
 library(edgeR)
+library(fdrtool)
 
 args <- commandArgs(trailingOnly = TRUE)
 tpm.nt.file <- args[1]
@@ -98,18 +115,19 @@ logxpr.gene.diff[,tumor.paired] <- abs(logxpr.gene[,tumor.paired] - logxpr.gene[
 logxpr.gene.diff[,tumor.unpaired] <- abs(logxpr.gene[,tumor.unpaired] - apply(logxpr.gene[,normal],1,median))
 
 ### get p
+# use raw pvalues: we want to minimize false negatives, and multiple
+# test correction tends to minimize false positives
 logxpr.gene.ecdf <- apply(logxpr.gene[,normal],1,getEmpiricalDistribution,0.1)
 logxpr.gene.diff.p <- mapply(do.call, logxpr.gene.ecdf, apply(logxpr.gene.diff,1,list))
 logxpr.gene.diff.p <- lapply(logxpr.gene.diff.p, function(x) 1 - x)
-logxpr.gene.diff.padj <- lapply(logxpr.gene.diff.p,p.adjust)
-logxpr.gene.diff.padj <- do.call("rbind",logxpr.gene.diff.padj)
+logxpr.gene.diff.p <- do.call("rbind",logxpr.gene.diff.p)
 
 ### prepare df
-logxpr.gene.diff.padj <- as.data.frame(logxpr.gene.diff.padj)
-colnames(logxpr.gene.diff.padj) <- tumor
-logxpr.gene.diff.padj$Gene <- rownames(logxpr.gene.diff.padj)
+logxpr.gene.diff.p <- as.data.frame(logxpr.gene.diff.p)
+colnames(logxpr.gene.diff.p) <- tumor
+logxpr.gene.diff.p$Gene <- rownames(logxpr.gene.diff.p)
 
-rm(logxpr.gene.diff,logxpr.gene.ecdf,logxpr.gene.diff.p)
+rm(logxpr.gene.diff,logxpr.gene.ecdf)
 
 ## PSI
 ### calculate differences
@@ -117,21 +135,52 @@ psi.diff <- data.frame(matrix(nrow=nrow(psi),ncol=length(tumor)))
 colnames(psi.diff) <- tumor
 psi.diff[,tumor.paired] <- abs(psi[,tumor.paired] - psi[,normal])
 psi.diff[,tumor.unpaired] <- abs(psi[,tumor.unpaired] - apply(psi[,normal],1,median))
+psi.diff.l <- as.list(as.data.frame(t(psi.diff)))
 
 ### get p
 psi.ecdf <- apply(psi[,normal],1,getEmpiricalDistribution,0)
-psi.diff.p <- mapply(do.call, psi.ecdf, apply(psi.diff,1,list))
-psi.diff.p <- lapply(psi.diff.p, function(x) 1 - x)
-psi.diff.padj <- lapply(psi.diff.p,p.adjust)
-psi.diff.padj <- do.call("rbind",psi.diff.padj)
+psi.minP <- apply(psi[,normal],1,getMinimumP,0)
+
+psi.diff.p.v <- mapply(function(x,y){x(y)}, psi.ecdf, psi.diff.l)
+psi.diff.p.v <- 1 - psi.diff.p.v
+psi.diff.p.l <- as.list(as.data.frame(psi.diff.p.v))
+
+#### p-values when the difference is 0 are 1, 
+#### instead of the value < 1 attributed by ecdf
+psi.diff.p.m <- mapply(function(p,diff){
+  p[!is.na(diff) & diff==0] <- 1
+  p
+}, psi.diff.p.l, psi.diff.l)
+psi.diff.p <- as.list(as.data.frame(psi.diff.p.m))
+
+#### p-values of 0 get a p-value calculated as 1/(n+1)
+psi.diff.p <- mapply(function(p,minP){
+  p[p==0] <- minP
+  p
+},psi.diff.p,psi.minP)
+psi.diff.p <- as.list(as.data.frame(psi.diff.p))
+
+psi.diff.q <- lapply(psi.diff.p, function(x){
+  if (all(is.na(x))){
+    rep(1,length(x))
+  } else {
+    y <- x[!is.na(x)]
+    fdr <- fdrtool(y, statistic="pvalue", verbose=FALSE, plot=FALSE)
+    z <- rep(1,length(x))
+    if (!all(is.na(fdr$qval))){
+      z[!is.na(x)] <- fdr$qval
+    }
+    z
+  }
+})
 
 ### prepare df
-psi.diff.padj <- as.data.frame(psi.diff.padj)
-colnames(psi.diff.padj) <- tumor
-psi.diff.padj$Gene <- genes
-psi.diff.padj$Transcript <- transcripts
+psi.diff.q <- t(as.data.frame(psi.diff.q))
+colnames(psi.diff.q) <- tumor
+psi.diff.q$Gene <- genes
+psi.diff.q$Transcript <- transcripts
 
-rm(psi.diff,psi.ecdf,psi.diff.p)
+rm(psi.diff,psi.ecdf,psi.diff.p,psi.diff.p.m,psi.diff.p.v,psi.diff.p.l,psi.diff.l)
 
 ## Sign
 psi.sign <- data.frame(matrix(nrow=nrow(psi),ncol=length(tumor)))
@@ -145,7 +194,7 @@ psi.sign[,tumor.unpaired][psi[,tumor.unpaired] < apply(psi[,normal],1,median)] <
 ### Normal
 psi.order.n <- data.frame(medianPsi=apply(psi[,normal],1,median))
 psi.order.n$Gene <- unlist(strsplit(rownames(psi),","))[c(T,F)]
-psi.order.n <- ddply(psi.order.n,.(Gene), summarise, orderNormal=order(-medianPsi))
+psi.order.n <- ddply(psi.order.n,.(Gene), summarise, orderNormal=rank(-medianPsi))
 rownames(psi.order.n) <- rownames(psi)
 
 ### Tumor
@@ -165,9 +214,9 @@ colnames(psi.order.t) <- tumor
 topTumor <- psi.sign=="Tumor" & psi.order.t
 topNormal <- psi.sign=="Normal" & psi.order.n$orderNormal==1
 ### significant deltaPSI
-bigChange <- psi.diff.padj[,tumor] < 0.05
+bigChange <- psi.diff.q[,tumor] < 0.1
 ### non-significant change in gene expression
-x <- merge(psi.diff.padj,logxpr.gene.diff.padj,by="Gene",suffix=c(".psi.diff",".xpr.diff"),all.x=T)
+x <- merge(psi.diff.q,logxpr.gene.diff.p,by="Gene",suffix=c(".psi.diff",".xpr.diff"),all.x=T)
 noExpressionChange <- x[,paste0(tumor,".xpr.diff")] > 0.05
 ### transcripts are expressed
 expressedTumor <- xpr[,tumor] > 0.1
@@ -230,7 +279,7 @@ p <- apply(switches.df.byPat[,c("Paired","Unpaired")],1,
       function(x,p){
         b <- binom.test(x[1],x[1]+x[2],p,"less")
         b$p.value
-      },length(tumor.paired)/length(tumor.unpaired))
+      },length(tumor.paired)/(length(tumor.unpaired)+length(tumor.paired)))
 
 # remove those genes significantly unbalance towards unpaired patients
 # also those that have 0 paired patients, as those are the switches 
