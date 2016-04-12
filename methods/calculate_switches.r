@@ -78,7 +78,6 @@ xpr.gene <- cbind(xpr.gene.nt,xpr.gene.t)
 y <- DGEList(counts=xpr.gene)
 y <- calcNormFactors(y)
 xpr.gene.norm <- cpm(y, normalized.lib.sizes=TRUE)
-#xpr.gene.norm <- as.data.frame(y$counts/y$samples$norm.factors)
 
 ### transform to log
 ### Some cases with very high variability between normal samples AND orders of
@@ -88,28 +87,26 @@ xpr.gene.norm <- cpm(y, normalized.lib.sizes=TRUE)
 logxpr.gene <- log2(xpr.gene.norm)
 logxpr.gene[logxpr.gene==-Inf] <- NA
 
-rm(xpr.gene,xpr.gene.nt,xpr.gene.t,xpr.gene.norm)
-
 # Calculate switches
 ## Gene expression
-logxpr.gene.diff <- data.frame(matrix(nrow=nrow(logxpr.gene),ncol=length(tumor)))
-colnames(logxpr.gene.diff) <- tumor
-logxpr.gene.diff[,tumor.paired] <- abs(logxpr.gene[,tumor.paired] - logxpr.gene[,normal])
-logxpr.gene.diff[,tumor.unpaired] <- abs(logxpr.gene[,tumor.unpaired] - apply(logxpr.gene[,normal],1,median))
+logxpr.gene.ecdf <- apply(logxpr.gene[,normal],1, function(x){
+  if (!all(is.na(x))){
+    ecdf(x)
+  } else {
+    return(function(x){return(NA)})
+  }})
 
 ### get p
 # use raw pvalues: we want to minimize false negatives, and multiple
 # test correction tends to minimize false positives
-logxpr.gene.ecdf <- apply(logxpr.gene[,normal],1,getEmpiricalDistribution,0.1)
-logxpr.gene.diff.p <- mapply(do.call, logxpr.gene.ecdf, apply(logxpr.gene.diff,1,list))
-logxpr.gene.diff.p <- 1 - logxpr.gene.diff.p
+logxpr.gene.p <- mapply(do.call, logxpr.gene.ecdf, apply(logxpr.gene[,tumor],1,list))
 
 ### prepare df
-logxpr.gene.diff.p <- as.data.frame(t(logxpr.gene.diff.p))
-colnames(logxpr.gene.diff.p) <- tumor
-logxpr.gene.diff.p$Gene <- rownames(logxpr.gene.diff.p)
+logxpr.gene.p <- as.data.frame(t(as.data.frame(logxpr.gene.p)))
+colnames(logxpr.gene.p) <- tumor
+logxpr.gene.p$Gene <- rownames(logxpr.gene)
 
-rm(logxpr.gene.diff,logxpr.gene.ecdf)
+rm(xpr.gene,xpr.gene.nt,xpr.gene.t,xpr.gene.norm,logxpr.gene.ecdf)
 
 ## PSI
 ### calculate differences
@@ -141,9 +138,9 @@ rm(psi.ecdf,psi.diff.l,psi.diff.v)
 ## Sign
 psi.sign <- data.frame(matrix(nrow=nrow(psi),ncol=length(tumor)))
 colnames(psi.sign) <- tumor
-psi.sign[,tumor.paired][psi[,tumor.paired] > psi[,normal]] <- "Tumor"
+psi.sign[,tumor.paired][psi[,tumor.paired] > psi[,normal] | !is.na(psi[,tumor.paired]) & is.na(psi[,normal]) ] <- "Tumor"
 psi.sign[,tumor.unpaired][psi[,tumor.unpaired] > apply(psi[,normal],1,median)] <- "Tumor"
-psi.sign[,tumor.paired][psi[,tumor.paired] < psi[,normal]] <- "Normal"
+psi.sign[,tumor.paired][psi[,tumor.paired] < psi[,normal] | is.na(psi[,tumor.paired]) & !is.na(psi[,normal])] <- "Normal"
 psi.sign[,tumor.unpaired][psi[,tumor.unpaired] < apply(psi[,normal],1,median)] <- "Normal"
 
 ## Order
@@ -172,8 +169,8 @@ topNormal <- psi.sign=="Normal" & psi.order.n$orderNormal==1
 ### significant deltaPSI
 bigChange <- psi.diff.p[,tumor] < 0.01 & psi.diff > 0.05
 ### non-significant change in gene expression
-x <- merge(psi.diff.p,logxpr.gene.diff.p,by="Gene",suffix=c(".psi.diff",".xpr.diff"),all.x=T)
-noExpressionChange <- x[,paste0(tumor,".xpr.diff")] > 0.05
+x <- merge(psi.diff.p,logxpr.gene.p,by="Gene",suffix=c(".psi.diff",".xpr"),all.x=T)
+noExpressionChange <- x[,paste0(tumor,".xpr")] > 0.025 & x[,paste0(tumor,".xpr")] < 0.975
 ### transcripts are expressed
 expressedTumor <- xpr[,tumor] > 0.1
 medianN <- apply(xpr[,normal],1,median)
@@ -223,27 +220,34 @@ for (g in names(switches)){
 switches.df <- do.call("rbind",switches.df)
 switches.df <- switches.df[,c("Gene","Normal","Tumor","Sample")]
 
-# we expect the switches to be distributed among paired and
-# unpaired samples, those that do not comply with it are
-# likely to be caused by a lack of representativeness of the median
-# when calculating the deltaPSI
-switches.df.byPat <- ddply(switches.df,.(Gene,Normal,Tumor),summarise,
-                           Paired=sum(Sample %in% tumor.paired), 
-                           Unpaired=sum(Sample %in% tumor.unpaired) )
+# we expect the switches to be distributed among paired and unpaired samples,
+# those that do not comply with it are likely to be caused by a lack of 
+# representativeness of the median when calculating the deltaPSI
+balance <- ddply(switches.df,.(Gene,Normal,Tumor),summarise,
+                 Paired=sum(Sample %in% tumor.paired), 
+                 Unpaired=sum(Sample %in% tumor.unpaired) )
 
-p <- apply(switches.df.byPat[,c("Paired","Unpaired")],1,
-      function(x,p){
-        b <- binom.test(x[1],x[1]+x[2],p,"less")
-        b$p.value
-      },length(tumor.paired)/(length(tumor.unpaired)+length(tumor.paired)))
+balance$p <- apply(balance[,c("Paired","Unpaired")],1,
+                   function(x,p){
+                     binom.test(x[1],x[1]+x[2],p,"less")$p.value
+                   },length(tumor.paired)/(length(tumor.unpaired)+length(tumor.paired)))
 
 # remove those genes significantly unbalance towards unpaired patients
 # also those that have 0 paired patients, as those are the switches 
 # where the method applies
-switches.df.byPat.filt <- subset(switches.df.byPat, p >= 0.05 & Paired>0, select=c("Gene","Normal","Tumor"))
-switches.df.filt <- merge(switches.df.byPat.filt,switches.df)
+balanced <- subset(balance, p >= 0.05 & Paired>0, select=c("Gene","Normal","Tumor"))
+switches.df <- merge(balanced,switches.df)
 
-switches.df.filt.agg <- ddply(switches.df.filt,.(Gene,Normal,Tumor),summarise,
-                              Samples=paste(Sample,collapse=","))
+# remove those cases where we can measure a differential expression 
+# between normal and switched samples
+de <- ddply(switches.df,.(Gene,Normal,Tumor),summarise,
+           p=wilcox.test(logxpr.gene[rownames(logxpr.gene)==unique(Gene),Sample],
+                         logxpr.gene[rownames(logxpr.gene)==unique(Gene),normal])$p.value)
+no.de <- de[de$p >= 0.01,]
+switches.df <- merge(no.de,switches.df)
 
-write.table(switches.df.filt.agg, file=outfile, sep="\t", row.names=F, col.names=F, quote=F)
+# write results
+switches.df.agg <- ddply(switches.df,.(Gene,Normal,Tumor),summarise,
+                         Samples=paste(Sample,collapse=","))
+
+write.table(switches.df.agg, file=outfile, sep="\t", row.names=F, col.names=F, quote=F)
