@@ -220,31 +220,13 @@ for (g in names(switches)){
 switches.df <- do.call("rbind",switches.df)
 switches.df <- switches.df[,c("Gene","Normal","Tumor","Sample")]
 
-# we expect the switches to be distributed among paired and unpaired samples,
-# those that do not comply with it are likely to be caused by a lack of 
-# representativeness of the median when calculating the deltaPSI
-balance <- ddply(switches.df,.(Gene,Normal,Tumor),summarise,
-                 Paired=sum(Sample %in% tumor.paired), 
-                 Unpaired=sum(Sample %in% tumor.unpaired) )
-
-balance$p <- apply(balance[,c("Paired","Unpaired")],1,
-                   function(x,p){
-                     binom.test(x[1],x[1]+x[2],p,"less")$p.value
-                   },length(tumor.paired)/(length(tumor.unpaired)+length(tumor.paired)))
-
-# remove those genes significantly unbalance towards unpaired patients
-# also those that have 0 paired patients, as those are the switches 
-# where the method applies
-balanced <- subset(balance, p >= 0.05 & Paired>0, select=c("Gene","Normal","Tumor"))
-switches.df <- merge(balanced,switches.df)
-
 # remove those cases where we can measure a differential expression 
 # between normal and switched samples
 de <- ddply(switches.df,.(Gene,Normal,Tumor),summarise,
-           p=wilcox.test(logxpr.gene[rownames(logxpr.gene)==unique(Gene),Sample],
-                         logxpr.gene[rownames(logxpr.gene)==unique(Gene),normal])$p.value)
-no.de <- de[de$p >= 0.01,]
-switches.df <- merge(no.de,switches.df)
+            p=wilcox.test(logxpr.gene[rownames(logxpr.gene)==unique(Gene),Sample],
+                          logxpr.gene[rownames(logxpr.gene)==unique(Gene),normal])$p.value)
+non.de <- de[de$p >= 0.01,]
+switches.df <- merge(non.de,switches.df)
 
 # write results
 switches.df.agg <- ddply(switches.df,.(Gene,Normal,Tumor),summarise,
