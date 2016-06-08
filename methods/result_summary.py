@@ -2,7 +2,6 @@ from libs import options
 from libs import utils
 from methods import method
 
-#import cPickle as pickle
 import pickle
 from scipy.stats import fisher_exact
 from itertools import groupby
