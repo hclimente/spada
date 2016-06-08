@@ -2,8 +2,9 @@ from libs import options
 from libs import utils
 from methods import method
 
-import cPickle as pickle
-import fisher
+#import cPickle as pickle
+import pickle
+from scipy.stats import fisher_exact
 from itertools import groupby
 import numpy as np
 from operator import itemgetter
@@ -13,7 +14,7 @@ class ResultSummary(method.Method):
 	def __init__(self,gn_network,tx_network):
 		method.Method.__init__(self, __name__,gn_network,tx_network)
 
-		self._random_gene_network = pickle.load(open("{0}randomGeneNetwork_fixNormal.pkl".format(options.Options().qout)))
+		self._random_gene_network = pickle.load(open("{0}randomGeneNetwork_fixNormal.pkl".format(options.Options().qout),"rb"))
 		self._random_gene_network.createLogger()
 
 		self.proteinStats = { "Random": [], "NonRandom": []}
@@ -74,6 +75,11 @@ class ResultSummary(method.Method):
 		self.logger.info("Summarizing results.")
 
 		txDict = self._transcript_network.nodes(data=True)
+
+		# print out switches and random switches
+		out_network.outCandidateList(self._gene_network,self._transcript_network)
+		out_network.outCandidateList(self._random_gene_network,self._transcript_network,
+			filename="random.candidateList_info.tsv")
 
 		testedSwitches = 0
 
@@ -217,7 +223,7 @@ class ResultSummary(method.Method):
 		for specificCds,specificUtr,cds,origin in zip([nSpecificCds,tSpecificCds],[nSpecificUtr,tSpecificUtr],[nTx.cds,tTx.cds],["nIso","tIso"]):
 		
 			specificRegions = sorted(list(specificUtr | specificCds))
-			exons = [ set(map(itemgetter(1),g)) for k,g in groupby(enumerate(specificRegions), lambda (i,x): i-x) ]
+			exons = [ set(map(itemgetter(1),g)) for k,g in groupby(enumerate(specificRegions), lambda i,x: i-x) ]
 			
 			for exon in exons:
 
@@ -348,13 +354,13 @@ class ResultSummary(method.Method):
 			F.write("{0}\t".format(self.switchStats["d0Enrichment"]["nonDriver"]["Switch"]))
 			F.write("{0}\t".format(self.switchStats["d0Enrichment"]["nonDriver"]["NoSwitch"]))
 			
-			p = fisher.pvalue(self.switchStats["d0Enrichment"]["driver"]["Switch"],
-							self.switchStats["d0Enrichment"]["driver"]["NoSwitch"],
-							self.switchStats["d0Enrichment"]["nonDriver"]["Switch"],
-							self.switchStats["d0Enrichment"]["nonDriver"]["NoSwitch"])
-			oddsRatio = self.switchStats["d0Enrichment"]["driver"]["Switch"]*self.switchStats["d0Enrichment"]["nonDriver"]["NoSwitch"]/(self.switchStats["d0Enrichment"]["driver"]["NoSwitch"]*self.switchStats["d0Enrichment"]["nonDriver"]["Switch"])
+			lContingencyTable = [[self.switchStats["d0Enrichment"]["driver"]["Switch"],
+								  self.switchStats["d0Enrichment"]["driver"]["NoSwitch"]],
+								[self.switchStats["d0Enrichment"]["nonDriver"]["Switch"],
+								self.switchStats["d0Enrichment"]["nonDriver"]["NoSwitch"]]]
+			OR,pval = fisher_exact(lContingencyTable)
 
-			F.write("{0}\t{1}\n".format(p.two_tail,oddsRatio) )
+			F.write("{0}\t{1}\n".format(pval,OR) )
 
 			F.write("{0}\td1_enrichment\t".format(options.Options().tag ))
 			F.write("{0}\t".format(self.switchStats["d1Enrichment"]["D1Driver"]["Switch"]))
@@ -362,13 +368,13 @@ class ResultSummary(method.Method):
 			F.write("{0}\t".format(self.switchStats["d1Enrichment"]["NonD1Driver"]["Switch"]))
 			F.write("{0}\t".format(self.switchStats["d1Enrichment"]["NonD1Driver"]["NoSwitch"]))
 			
-			p = fisher.pvalue(self.switchStats["d1Enrichment"]["D1Driver"]["Switch"],
-							self.switchStats["d1Enrichment"]["D1Driver"]["NoSwitch"],
-							self.switchStats["d1Enrichment"]["NonD1Driver"]["Switch"],
-							self.switchStats["d1Enrichment"]["NonD1Driver"]["NoSwitch"])
-			oddsRatio = self.switchStats["d1Enrichment"]["D1Driver"]["Switch"]*self.switchStats["d1Enrichment"]["NonD1Driver"]["NoSwitch"]/(self.switchStats["d1Enrichment"]["D1Driver"]["NoSwitch"]*self.switchStats["d1Enrichment"]["NonD1Driver"]["Switch"])
+			lContingencyTable = [[self.switchStats["d1Enrichment"]["D1Driver"]["Switch"],
+								  self.switchStats["d1Enrichment"]["D1Driver"]["NoSwitch"]],
+								[self.switchStats["d1Enrichment"]["NonD1Driver"]["Switch"],
+								self.switchStats["d1Enrichment"]["NonD1Driver"]["NoSwitch"]]]
+			OR,pval = fisher_exact(lContingencyTable)
 
-			F.write("{0}\t{1}\n".format(p.two_tail,oddsRatio) )
+			F.write("{0}\t{1}\n".format(pval,OR) )
 
 			# driver enrichment in functional
 			F.write("{0}\td0_functional_enrichment\t".format(options.Options().tag ))
@@ -377,14 +383,13 @@ class ResultSummary(method.Method):
 			F.write("{0}\t".format(self.switchStats["d0Functional"]["nonDriver"]["Functional"]) )
 			F.write("{0}\t".format(self.switchStats["d0Functional"]["nonDriver"]["NonFunctional"]) )
 			
-			p = fisher.pvalue(self.switchStats["d0Functional"]["driver"]["Functional"],
-							self.switchStats["d0Functional"]["driver"]["NonFunctional"],
-							self.switchStats["d0Functional"]["nonDriver"]["Functional"],
-							self.switchStats["d0Functional"]["nonDriver"]["NonFunctional"])
+			lContingencyTable = [[self.switchStats["d0Functional"]["driver"]["Switch"],
+								  self.switchStats["d0Functional"]["driver"]["NoSwitch"]],
+								[self.switchStats["d0Functional"]["nonDriver"]["Switch"],
+								self.switchStats["d0Functional"]["nonDriver"]["NoSwitch"]]]
+			OR,pval = fisher_exact(lContingencyTable)
 
-			oddsRatio = self.switchStats["d0Functional"]["driver"]["Functional"]*self.switchStats["d0Functional"]["nonDriver"]["NonFunctional"]/(self.switchStats["d0Functional"]["driver"]["NonFunctional"]*self.switchStats["d0Functional"]["nonDriver"]["Functional"])
-
-			F.write("{0}\t{1}\n".format(p.two_tail,oddsRatio) )
+			F.write("{0}\t{1}\n".format(pval,OR) )
 
 			# driver d1 enrichment in functional
 			F.write("{0}\td1_functional_enrichment\t".format(options.Options().tag ))
@@ -393,14 +398,13 @@ class ResultSummary(method.Method):
 			F.write("{0}\t".format(self.switchStats["d1Functional"]["NonD1Driver"]["Functional"]) )
 			F.write("{0}\t".format(self.switchStats["d1Functional"]["NonD1Driver"]["NonFunctional"]) )
 			
-			p = fisher.pvalue(self.switchStats["d1Functional"]["D1Driver"]["Functional"],
-							self.switchStats["d1Functional"]["D1Driver"]["NonFunctional"],
-							self.switchStats["d1Functional"]["NonD1Driver"]["Functional"],
-							self.switchStats["d1Functional"]["NonD1Driver"]["NonFunctional"])
+			lContingencyTable = [[self.switchStats["d1Functional"]["D1Driver"]["Switch"],
+								  self.switchStats["d1Functional"]["D1Driver"]["NoSwitch"]],
+								[self.switchStats["d1Functional"]["NonD1Driver"]["Switch"],
+								self.switchStats["d1Functional"]["NonD1Driver"]["NoSwitch"]]]
+			OR,pval = fisher_exact(lContingencyTable)
 
-			oddsRatio = self.switchStats["d1Functional"]["D1Driver"]["Functional"]*self.switchStats["d1Functional"]["NonD1Driver"]["NonFunctional"]/(self.switchStats["d1Functional"]["D1Driver"]["NonFunctional"]*self.switchStats["d1Functional"]["NonD1Driver"]["Functional"])
-
-			F.write("{0}\t{1}\n".format(p.two_tail,oddsRatio) )
+			F.write("{0}\t{1}\n".format(pval,OR) )
 
 			F.write("Cancer\tAnalysis\tMedian case\tMedian control\tp\n")
 
