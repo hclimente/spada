@@ -18,12 +18,12 @@ def outputGTF(gn_network,tx_network):
 				elif switch[1] in line:
 					tGTF.write(line)
 
-def outCandidateList(gn_network,tx_network):
+def outCandidateList(gn_network,tx_network,filename="candidateList_info.tsv"):
 	logging.info("Writing candidateList.")
-	with open(options.Options().qout + "candidateList_info.tsv", "w") as cList:
+	with open(options.Options().qout + filename, "w") as cList:
 		cList.write("GeneId\tSymbol\tNormal_transcript\tTumor_transcript\t")
 		cList.write("Normal_protein\tTumor_protein\tAnnotation\tDriverAnnotation\t")
-		cList.write("NotNoise\tIsModel\tIsFunctional\tDriver\tDruggable\t")
+		cList.write("NotNoise\tIsModel\tIsFunctional\tDriver\tSpecificDriver\tDruggable\t")
 		cList.write("CDS_Normal\tCDS_Tumor\tCDS_change\tUTR_change\tPatients_affected\n")
 
 		hallmarksDict = utils.readGeneset("h.all.v5.0.entrez.gmt")
@@ -48,15 +48,16 @@ def outCandidateList(gn_network,tx_network):
 
 			annotation,driverAnnotation = gn_network.getGeneAnnotation(gene,hallmarksDict,bpDict)
 
-			cList.write("{0}\t{1}\t".format( gene, info["symbol"] ))
-			cList.write("{0}\t{1}\t".format( nIso.name, tIso.name ))
-			cList.write("{0}\t{1}\t".format( nUniprot, tUniprot ))
-			cList.write("{0}\t{1}\t".format( annotation,driverAnnotation ))
-			cList.write("{0}\t{1}\t".format( int(not switchDict["noise"]), int(switchDict["model"]) ))
-			cList.write("{0}\t{1}\t".format( relevance, int(info["driver"]) ))
-			cList.write("{0}\t{1}\t".format( int(info["druggable"]), int(bool(nIso.cds)) ))
-			cList.write("{0}\t{1}\t".format( int(bool(tIso.cds)), int(cdsChange), ))
-			cList.write("{0}\t{1}\n".format( int(utrChange), ",".join(switch.patients) ))
+			cList.write("{}\t{}\t".format( gene, info["symbol"] ))
+			cList.write("{}\t{}\t".format( nIso.name, tIso.name ))
+			cList.write("{}\t{}\t".format( nUniprot, tUniprot ))
+			cList.write("{}\t{}\t".format( annotation,driverAnnotation ))
+			cList.write("{}\t{}\t".format( int(not switchDict["noise"]), int(switchDict["model"]) ))
+			cList.write("{}\t{}\t".format( relevance, int(info["driver"]) ))
+			cList.write("{}\t".format( int(info["specificDriver"]) ))
+			cList.write("{}\t{}\t".format( int(info["druggable"]), int(bool(nIso.cds)) ))
+			cList.write("{}\t{}\t".format( int(bool(tIso.cds)), int(cdsChange), ))
+			cList.write("{}\t{}\n".format( int(utrChange), ",".join(switch.patients) ))
 
 def outTSV(network,path):
 	with open(path + "_nodes.tsv", "w") as NODES:
