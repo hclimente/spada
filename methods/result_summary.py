@@ -1,3 +1,4 @@
+from interface import out_network
 from libs import options
 from libs import utils
 from methods import method
@@ -222,7 +223,7 @@ class ResultSummary(method.Method):
 		for specificCds,specificUtr,cds,origin in zip([nSpecificCds,tSpecificCds],[nSpecificUtr,tSpecificUtr],[nTx.cds,tTx.cds],["nIso","tIso"]):
 		
 			specificRegions = sorted(list(specificUtr | specificCds))
-			exons = [ set(map(itemgetter(1),g)) for k,g in groupby(enumerate(specificRegions), lambda i,x: i-x) ]
+			exons = [ set(map(itemgetter(1),g)) for k,g in groupby(enumerate(specificRegions), lambda x: x[0]-x[1]) ]
 			
 			for exon in exons:
 
@@ -322,13 +323,13 @@ class ResultSummary(method.Method):
 			F.write("{0}\t".format(self.switchStats["cdsTest"]["NonRandom"]["Change"]))
 			F.write("{0}\t".format(self.switchStats["cdsTest"]["NonRandom"]["NoChange"]))
 
-			p = fisher.pvalue(self.switchStats["cdsTest"]["Random"]["Change"],
-							self.switchStats["cdsTest"]["Random"]["NoChange"],
-							self.switchStats["cdsTest"]["NonRandom"]["Change"],
-							self.switchStats["cdsTest"]["NonRandom"]["NoChange"])
-			oddsRatio = self.switchStats["cdsTest"]["Random"]["Change"]*self.switchStats["cdsTest"]["NonRandom"]["NoChange"]/(self.switchStats["cdsTest"]["Random"]["NoChange"]*self.switchStats["cdsTest"]["NonRandom"]["Change"])
+			lContingencyTable = [[self.switchStats["cdsTest"]["Random"]["Change"],
+								  self.switchStats["cdsTest"]["Random"]["NoChange"]],
+								[self.switchStats["cdsTest"]["NonRandom"]["Change"],
+								 self.switchStats["cdsTest"]["NonRandom"]["NoChange"]]]
+			OR,pval = fisher_exact(lContingencyTable)
 
-			F.write("{0}\t{1}\n".format(p.two_tail,oddsRatio) )
+			F.write("{0}\t{1}\n".format(pval,OR) )
 
 			F.write("{0}\tUTR_change\t".format(options.Options().tag ))
 			F.write("{0}\t".format(self.switchStats["utrTest"]["Random"]["Change"]))
@@ -336,13 +337,13 @@ class ResultSummary(method.Method):
 			F.write("{0}\t".format(self.switchStats["utrTest"]["NonRandom"]["Change"]))
 			F.write("{0}\t".format(self.switchStats["utrTest"]["NonRandom"]["NoChange"]))
 
-			p = fisher.pvalue(self.switchStats["utrTest"]["Random"]["Change"],
-							self.switchStats["utrTest"]["Random"]["NoChange"],
-							self.switchStats["utrTest"]["NonRandom"]["Change"],
-							self.switchStats["utrTest"]["NonRandom"]["NoChange"])
-			oddsRatio = self.switchStats["cdsTest"]["Random"]["Change"]*self.switchStats["cdsTest"]["NonRandom"]["NoChange"]/(self.switchStats["cdsTest"]["Random"]["NoChange"]*self.switchStats["cdsTest"]["NonRandom"]["Change"])
+			lContingencyTable = [[self.switchStats["utrTest"]["Random"]["Change"],
+								  self.switchStats["utrTest"]["Random"]["NoChange"]],
+								[self.switchStats["utrTest"]["NonRandom"]["Change"],
+								 self.switchStats["utrTest"]["NonRandom"]["NoChange"]]]
+			OR,pval = fisher_exact(lContingencyTable)
 
-			F.write("{0}\t{1}\n".format(p.two_tail,oddsRatio) )
+			F.write("{0}\t{1}\n".format(pval,OR) )
 
 			##### GENE LEVEL #####
 			F.write("Cancer\tAnalysis\tFeat-Switch\tFeat-NoSwitch\tNoFeat-Switch\tNoFeat-NoSwitch\tp\tOR\n")
