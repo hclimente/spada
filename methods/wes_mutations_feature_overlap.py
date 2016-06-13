@@ -8,7 +8,16 @@ class WESMutationsFeatureOverlap(method.Method):
 	def __init__(self,gn_network,tx_network):
 		method.Method.__init__(self, __name__,gn_network,tx_network)
 
-		self.mutations = self.readMutations()
+		self.functionalMutations = self.readFunctionalMutations()
+
+		# txname="uc002amf.2"
+		# txinfo=self._transcript_network._net.node[txname]
+		# tx = transcript.Transcript(txname,txinfo)
+		# txMuts = self.getTxsMutations(tx)
+		# affectedFeats = self.getFeatureMutations(tx,txMuts,"Pfam")
+
+		# import pdb
+		# pdb.set_trace()
 
 		utils.cmd("mkdir","{}mutations".format(options.Options().qout))
 
@@ -35,36 +44,38 @@ class WESMutationsFeatureOverlap(method.Method):
 		self.FT_SWT.write("Feature\tn\tFeatureLength\tStart\tEnd\n")
 
 	def clean(self):
-		pass
-		# utils.cmd("rm","{0}mutations/mutation_switch_feature_overlap.txt".format(options.Options().qout))
-		# utils.cmd("rm","{0}mutations/debug_mutations.txt".format(options.Options().qout))
+		utils.cmd("mkdir","-p","{}mutations".format(options.Options().qout))
 
 	def run(self):
 
-		for gene,info in self._gene_network.iterate_genes_byPatientNumber():
-			if gene not in self.mutations:
-				continue
+		for gene,info in self._gene_network.iterate_genes_byPatientNumber(onlySplicedGenes=False):
+
+			allTxs = set(info["expressedTxsNormal"]) | set(info["expressedTxsTumor"])
+			asEvidence = bool(info["isoformSwitches"]) | (len(allTxs) >= 2)
 
 			## CALCULATE DOMAIN ALTERATION FREQUENCY IN GENERAL
 			# get affection of prosite/pfams by mutations and their frequency
 			# in the proteome (only most expressed iso per gene)
 			tx = self.getMostAbundantTx(gene,info)
-
 			if tx:
-				self.getProteinMutations(gene,info,tx,self.MUT_ALL,self.FT_ALL)
+				self.getProteinMutations(gene,info,tx,self.MUT_ALL,self.FT_ALL,asEvidence)
 
 			## CALCULATE MUTATION FREQUENCY ON SWITCHED DOMAINS
 			if not info["isoformSwitches"]: continue
 
+			usedTxs = set()
 			for switchDict in info["isoformSwitches"]:
 				if switchDict["noise"]: continue
-				elif not switchDict["model"]: continue
 
 				thisSwitch = self._gene_network.createSwitch(switchDict,self._transcript_network,True)
 
 				thisSwitch.readDeepRelevanceAnalysis(skipIupred=True,skipAnchor=True)
 
 				for tx in [thisSwitch.tTranscript,thisSwitch.nTranscript]:
+					# do not write the same information twice
+					if tx in usedTxs:
+						continue
+
 					protein = self._transcript_network._net.node[tx.name]["proteinSequence"]
 					if protein: 
 						proteinLength = len(protein)
@@ -75,7 +86,8 @@ class WESMutationsFeatureOverlap(method.Method):
 					self.TXS_SWT.write("{}\t{}\t{}\t".format(options.Options().tag,gene,info["symbol"]))
 					self.TXS_SWT.write("{}\t{}\t{}\n".format(tx.name,tpm,proteinLength))
 
-					self.getProteinMutations(gene,info,tx,self.MUT_SWT,self.FT_SWT)
+					self.getProteinMutations(gene,info,tx,self.MUT_SWT,self.FT_SWT,asEvidence)
+					usedTxs.add(tx)
 
 		self.TXS_ALL.close()
 		self.TXS_SWT.close()
@@ -88,22 +100,22 @@ class WESMutationsFeatureOverlap(method.Method):
 				  'pipeline/methods/mutated_features_analysis.R', 
 				  options.Options().qout)
 
-	def readMutations(self):
+	def readFunctionalMutations(self):
 
-		mutFile = "{}data/{}/rawdata/{}_gene_mutation-functional-count_full.txt".format(options.Options().wd,options.Options().annotation,options.Options().tag)
-
+		mutFile = "{}data/{}/rawdata/{}_exon_mutation-functional-count_full.txt".format(options.Options().wd,options.Options().annotation,options.Options().tag)
+		
 		mutations = {}
+		allMuts = []
 
 		for line in utils.readTable(mutFile,header=False):
 
-			geneID,geneSymbol = self._gene_network.nameFilter(full_name=line[3])
-			mutations.setdefault(geneID,{})
-
-			# get patient
 			mutInfo = line[9]
+			tx = line[3].split(";")[1]
 
-			if mutInfo==".":
+			if mutInfo=="." or tx not in self._transcript_network.nodes():
 				continue
+
+			geneID = self._transcript_network._net.node[tx]["gene_id"]
 
 			x = mutInfo.split(";")
 			patient = x[0][:-1]
@@ -113,12 +125,17 @@ class WESMutationsFeatureOverlap(method.Method):
 			start = int(line[7])
 			end = int(line[8])
 
+			if (patient,geneID,start,end) in allMuts:
+				continue
+
+			mutations.setdefault(geneID,{})
 			mutations[geneID].setdefault((start,end),[])
 			mutations[geneID][(start,end)].append((patient,mutType))
+			allMuts.append((patient,geneID,start,end))
 
 		return mutations
 
-	def getProteinMutations(self,gene,info,tx,MUTS,FTS):
+	def getProteinMutations(self,gene,info,tx,MUTS,FTS,asEvidence):
 
 		txMuts = self.getTxsMutations(tx)
 
@@ -135,21 +152,28 @@ class WESMutationsFeatureOverlap(method.Method):
 						MUTS.write("{}\t{}\t{}\n".format(i,mutType,patient))
 					i += 1
 
-			for f in featType:
-				i = 1
-				for start,end in featType[f]:
-					FTS.write("{}\t{}\t{}\t".format(options.Options().tag,gene,info["symbol"]))
-					FTS.write("{}\t{}\t{}\t".format(tx.name,a,f))
-					FTS.write("{}\t{}\t{}\t".format(i,end - start,start))
-					FTS.write("{}\n".format(end))
+			# only count domains from that isoform if can be altered by splicing
+			if asEvidence:
+				for f in featType:
+					i = 1
+					for start,end in featType[f]:
+						FTS.write("{}\t{}\t{}\t".format(options.Options().tag,gene,info["symbol"]))
+						FTS.write("{}\t{}\t{}\t".format(tx.name,a,f))
+						FTS.write("{}\t{}\t{}\t".format(i,end - start,start))
+						FTS.write("{}\n".format(end))
 
-					i += 1
+						i += 1
 
 	def getTxsMutations(self,tx):
+
 		txMutations = {}
 
 		gene = self._transcript_network._net.node[tx.name]["gene_id"]
-		geneMutations = self.mutations[gene]
+
+		if gene in self.functionalMutations:
+			geneMutations = self.functionalMutations[gene]
+		else:
+			geneMutations = []
 
 		# if there is an overlap between mutation and any transcript 
 		# CDS, include those mutations
@@ -158,7 +182,7 @@ class WESMutationsFeatureOverlap(method.Method):
 			mutationRegion = set(range(m[0],m[1]))
 				
 			affectedRegionTx = set(cds) & mutationRegion
-			affectedRegionProt = set([ (cds.index(x)/3)+1 for x in affectedRegionTx ])
+			affectedRegionProt = set([ round((cds.index(x)/3)+1) for x in affectedRegionTx ])
 
 			if affectedRegionProt:
 				txMutations[m] = (geneMutations[m],affectedRegionProt)
@@ -191,9 +215,7 @@ class WESMutationsFeatureOverlap(method.Method):
 			for start,end in features[f]:
 				
 				featureMutation.setdefault(f,[])
-				
 				featureProteinRange = set(range(start, end+1 ))
-
 				affectingMuts = []
 
 				for m in txMutations:
@@ -207,7 +229,7 @@ class WESMutationsFeatureOverlap(method.Method):
 
 					# check upstream mutations that affect the domain too
 					if set(["Frame_Shift_Del","Frame_Shift_Ins","Nonsense_Mutation"]) & set([ x[1] for x in set(thoseMutations) ]):
-						extendedProteinRange = set(range(1,end+1))
+						extendedProteinRange = set(range(1,start))
 						if mutProteinRange & extendedProteinRange:
 							for t in thoseMutations:
 								if t[1] in ["Frame_Shift_Del","Frame_Shift_Ins","Nonsense_Mutation"]:
@@ -227,13 +249,15 @@ class WESMutationsFeatureOverlap(method.Method):
 
 			maxTpm = max([ x[1] for x in txs ])
 
-			txname = [ x for x,tpm in txs if tpm==maxTpm ][0]
-			txinfo = self._transcript_network._net.node[txname]
-			tx = transcript.Transcript(txname,txinfo)
-			proteinLength = len(self._transcript_network._net.node[tx.name]["proteinSequence"])
+			# only if there is any expressed isoform
+			if maxTpm >= 0.1:
+				txname = [ x for x,tpm in txs if tpm==maxTpm ][0]
+				txinfo = self._transcript_network._net.node[txname]
+				tx = transcript.Transcript(txname,txinfo)
+				proteinLength = len(self._transcript_network._net.node[tx.name]["proteinSequence"])
 
-			self.TXS_ALL.write("{}\t{}\t{}\t".format(options.Options().tag,gene,info["symbol"]))
-			self.TXS_ALL.write("{}\t{}\t{}\n".format(txname,maxTpm,proteinLength))
+				self.TXS_ALL.write("{}\t{}\t{}\t".format(options.Options().tag,gene,info["symbol"]))
+				self.TXS_ALL.write("{}\t{}\t{}\n".format(txname,maxTpm,proteinLength))
 
 		return tx
 
