@@ -1,14 +1,13 @@
 from biological_entities import switch
 from libs import utils
 from libs import options
-import network
+from network import network
 
 import abc
 import numpy as np
 import operator
 import pandas as pd
 import random
-import subprocess
 
 class GeneNetwork(network.Network):
 	"""docstring for GeneNetwork
@@ -196,7 +195,7 @@ class GeneNetwork(network.Network):
 		self.logger.debug("Cleaning imported network.")
 
 		# removing isoform switches
-		for gene,info in self.iterate_genes_byPatientNumber():
+		for gene,info in self.iterate_genes_byPatientNumber(alwaysSwitchedGenes=True):
 			self._net.node[gene]["isoformSwitches"] = []
 
 	def importCandidates(self,candidatesFile):
@@ -224,17 +223,28 @@ class GeneNetwork(network.Network):
 	def importSpecificDrivers(self):
 		self.logger.debug("Importing specific drivers.")
 
-		for nameComponents in utils.readTable(options.Options().specificDrivers, header=False):
+		anyDriver = set()
+		specificDrivers = set()
+		for line in utils.readTable("{}data/ucsc/intogen_cancer_drivers-2014.12b/Mutational_drivers_per_tumor_type.tsv".format(options.Options().wd)):
+			anyDriver.add(line[0])
 
-			geneID = self.nameFilter(gene_symbol = nameComponents[0])[0]
+			if line[1]=="COREAD":
+				cancer = "coad"
+			elif line[1]=="HC":
+				cancer = "lihc"
+			elif line[1]=="RCCC":
+				cancer = "kirc"
+			else:
+				cancer = line[1].lower()
 
-			if not geneID: continue
+			if options.Options().tag==cancer:
+				specificDrivers.add(line[0])
 
-			self.logger.debug("Adding {0} as specific driver.".format(geneID))
-
-			self.update_node("specificDriver", True, gene_id = geneID)
-			self.update_node("driver", True, gene_id = geneID)
-			self.update_node("score", 1, gene_id = geneID)
+		for gene,info in self.nodes(data=True):
+			if info["symbol"] in specificDrivers:
+				self.update_node("specificDriver", True, gene_id=gene)
+			if info["symbol"] in anyDriver:
+				self.update_node("driver", True, gene_id=gene)
 
 	def importKnownInteractions(self):
 
@@ -270,7 +280,17 @@ class GeneNetwork(network.Network):
 				self.update_edge("experimental", True, 
 					gene_id1=entrezGeneInteractorA, gene_id2=entrezGeneInteractorB)
 
-	def iterate_genes_byPatientNumber(self):
+	def importEduardInteractions(self):
+
+		for line in utils.readTable("{}data/{}/interactions_found_more_than_three_times.txt".format(options.Options().wd,options.Options().annotation)):
+			geneA = line[0]
+			geneB = line[1]
+
+			# discard non-human interactions
+			self.add_edge(gene_id1=geneA, gene_id2=geneB)
+			self.update_edge("experimental", True, gene_id1=geneA, gene_id2=geneB)
+
+	def iterate_genes_byPatientNumber(self,onlySplicedGenes=True,onlyExpressedGenes=True,alwaysSwitchedGenes=False):
 		'''
 		Iterate genes that have alternative splicing and more than one transcript expressed.
 		'''
@@ -286,10 +306,15 @@ class GeneNetwork(network.Network):
 		for gene in genes:
 			info = self._net.node[gene]
 			allExpressedTxs = set(info["expressedTxsNormal"]) | set(info["expressedTxsTumor"])
-			if len(allExpressedTxs) < 2 and not info["isoformSwitches"]:
-				continue
 			self.logger.debug("Iterating gene {0}.".format(gene))
-			yield gene,info
+			if alwaysSwitchedGenes and info["isoformSwitches"]:
+				yield gene,info
+			else:
+				if onlySplicedGenes and len(allExpressedTxs) < 2 and not info["isoformSwitches"]:
+					continue
+				if onlyExpressedGenes and not bool(allExpressedTxs):
+					continue
+				yield gene,info
 
 	def iterate_switches_byPatientNumber(self,tx_network,only_models=False,relevance=None,partialCreation=False,removeNoise=True):
 		"""Iterate through the isoform switches of a gene network, and
@@ -302,10 +327,12 @@ class GeneNetwork(network.Network):
 		"""
 
 		counter = 1
-		for gene,info in self.iterate_genes_byPatientNumber():		
+		for gene,info in self.iterate_genes_byPatientNumber(alwaysSwitchedGenes=True):
 			if not info["isoformSwitches"]: continue
 
-			for switchDict in info["isoformSwitches"]:
+			switches = sorted(info["isoformSwitches"],key=lambda a:len(a['patients']),reverse=True)
+
+			for switchDict in switches:
 				if removeNoise and switchDict["noise"]:
 					continue
 				elif only_models and not switchDict["model"]:
@@ -413,7 +440,7 @@ class GeneNetwork(network.Network):
 
 	def sampleSwitches(self,tx_network,partialCreation=True,numIterations=2000):
 
-		genesWithSwitches = [ gene for gene,info in self.iterate_genes_byPatientNumber() if info["isoformSwitches"] ]
+		genesWithSwitches = [ gene for gene,info in self.iterate_genes_byPatientNumber(alwaysSwitchedGenes=True) if info["isoformSwitches"] ]
 		genes = random.sample(genesWithSwitches,numIterations)
 
 		for gene in genes:
