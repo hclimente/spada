@@ -1,3 +1,5 @@
+#!/usr/bin/env Rscript
+
 library(plyr)
 
 tryCatch(source("~/smartas/pipeline/scripts/variablesAndFunctions.r"),error=function(e){})
@@ -126,13 +128,13 @@ alterationsPerPatient.z <- ddply(alterationsPerPatient,.(Tumor),summarise,
 
 # plot raw frequency
 p <- ggplot(alterationsPerPatient,aes(x=Switches*100,y=Mutations*100,color=Tumor)) + 
-  geom_point() + 
+  geom_point(size=5) + 
   smartas_theme() +
   labs(x="% splicing drivers switched",y="% mutational drivers mutated") +
   scale_color_manual(values=colorPalette) +
   theme(legend.position="bottom")
 
-out.scatterplot <- paste0("~/smartas/results/switches/figures/mutated_vs_switched_patients.png")
+out.scatterplot <- paste0("~/smartas/results/validation/mutated_vs_switched_patients.png")
 ggsave(out.scatterplot,p,width = 12,height = 12)
 
 # plot distributions
@@ -144,18 +146,18 @@ q <- ggplot(alterationsPerPatient.m) +
   scale_alpha_manual(values=c(1,0.6)) +
   theme(legend.position="bottom")
 
-out.boxplot <- paste0("~/smartas/results/switches/figures/mutated_and_switched_patients_boxplot.png")
+out.boxplot <- paste0("~/smartas/results/validation/mutated_and_switched_patients_boxplot.png")
 ggsave(out.boxplot,q,width = 12,height = 12)
 
 # plot frequency corrected by background frequency (z-score)
 # consider that background information might not need to be corrected
 # e.g. if a cancer has less mutations might be because relies more on AS
 z <- ggplot(alterationsPerPatient.z,aes(x=Switches.z,y=Mutations.z,color=Tumor)) + 
-  geom_point() + 
+  geom_point(size=5) + 
   smartas_theme() +
   labs(x="Z(% splicing drivers switched)",y="Z(% mutational drivers mutated)") +
   scale_color_manual(values=colorPalette) +
   theme(legend.position="bottom")
 
-out.z.scatterplot <- paste0("~/smartas/results/switches/figures/mutated_vs_switched_patients_z.png")
+out.z.scatterplot <- paste0("~/smartas/results/validation/mutated_vs_switched_patients_z.png")
 ggsave(out.z.scatterplot,z,width = 12,height = 12)

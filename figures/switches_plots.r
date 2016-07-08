@@ -1,4 +1,4 @@
-#!/soft/R/R-3.2.1/bin/Rscript
+#!/usr/bin/env Rscript
 
 source("~/smartas/pipeline/scripts/variablesAndFunctions.r")
 
@@ -370,7 +370,7 @@ p <- ggplot(candsStats) +
 
 ggsave(paste0("figures/switchNumber_funcional_drivers.png"),p, width = 8, height = 7)
 
-rm(p,candsStats,func,candidatesDf_copy,drivers,cancer)
+rm(p,candsStats,func,candidatesDf_copy,drivers)
 
 # 1.8 - Plot number of transcripts vs number of patients affected by a switch ====
 

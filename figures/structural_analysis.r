@@ -1,4 +1,4 @@
-#!/soft/R/R-3.2.1/bin/Rscript
+#!/usr/bin/env Rscript
 
 tryCatch(source("~/smartas/pipeline/scripts/variablesAndFunctions.r"),error=function(e){})
 

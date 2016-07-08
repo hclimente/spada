@@ -1,4 +1,4 @@
-#!/soft/R/R-3.2.1/bin/Rscript
+#!/usr/bin/env Rscript
 
 tryCatch(source("~/smartas/pipeline/scripts/variablesAndFunctions.r"),error=function(e){})
 
@@ -8,8 +8,6 @@ setwd('mutations')
 # 3 - MUTATION OVERLAP ---------------------
 
 # 3.1 - calculate allCancers p.values for each combination of mutation and switch types ====
-
-
 muts <- c("all_mutations","functional_mutations")
 swis <- c("all_switches","functional_switches")
 analyses <- c("gene","geneset","pannegative")
@@ -78,11 +76,7 @@ for (a in analyses){
   }
 }
 
-
-
 # 3.2 - calculate gene meScore ====
-
-
 gn_all <- read.delim(paste("tables/gene","all_mutations","functional_switches",'allCancers.txt',sep="_"), header=TRUE)
 gn_fun <- read.delim(paste("tables/gene","functional_mutations","functional_switches",'allCancers.txt',sep="_"), header=TRUE)
 
@@ -110,11 +104,7 @@ p <- ggplot(gn_merged, aes(x=Order,y=NewScore,fill = Sign)) +
   theme(axis.text.x=element_blank())
 ggsave("figures/meScores.png",p)
 
-
-
 # 3.3 - calculate geneset meScore ====
-
-
 gnset_all <- read.delim(paste("tables/geneset","all_mutations","functional_switches",'onlyDrivers','allCancers.txt',sep="_"), header=TRUE)
 gnset_fun <- read.delim(paste("tables/geneset","functional_mutations","functional_switches",'onlyDrivers','allCancers.txt',sep="_"), header=TRUE)
 
@@ -140,8 +130,6 @@ p <- ggplot(gnset_merged, aes(x=Order,y=NewScore,fill = Sign)) +
   scale_fill_manual(values=c("Mutual exclusion"="red","Nothing"="black","Coincidence"="darkblue")) + 
   theme(axis.text.x=element_blank())
 ggsave("figures/meGenesetScores.png",p)
-
-
 
 # 3.4 - calculate p.value of overlap between mutation in a feature and switches affecting it ====
 mut_feat_overlap <- read.delim("mutation_switch_feature_overlap.txt", header=TRUE)
@@ -199,11 +187,7 @@ p <- ggplot() +
   ylab("#mutations (as % of the total in the gene)")
 ggsave("figures/affectedFeatures_mutations_vs_switches.png",p)
 
-
-
 # 3.5 - Plot p_me in a gene against the p_overlap of mutations and features ====
-
-
 gn_fun <- read.delim(paste("tables/gene","functional_mutations","functional_switches",'allCancers.txt',sep="_"), header=TRUE)
 gn_fun <- gn_fun[,c("Gene","Symbol","p_me")]
 
@@ -244,11 +228,7 @@ mut_feat_overlap_agg <- mut_feat_overlap_agg[order(-mut_feat_overlap_agg$Ratio),
 
 write.table(mut_feat_overlap_agg,'tables/mutation_switch_feature_overlap_allCancers2.txt',quote=F,col.names=T,sep="\t",row.names=FALSE)
 
-
-
 # 3.6 - feature overlap ====
-
-
 feat_enrich <- read.delim('feature_enrichment.txt', header=TRUE)
 feat_enrich <- feat_enrich[feat_enrich$DomainFrequency != 0,]
 feat_enrich$MutTotal <- feat_enrich$MutIn + feat_enrich$MutOut
@@ -312,11 +292,7 @@ p <- direct.label(p)
 
 ggsave("figures/domain_enrichment_allCancers.png",p)
 
-
-
 # 3.7 - Search for something that makes the meScore+ special :)  ====
-
-
 x <- gn_merged[gn_merged$NewScore > 1,c("Gene","nTx","tTx")]
 colnames(x) <- c("GeneId","Normal_transcript","Tumor_transcript")
 y <- gn_merged[gn_merged$NewScore < -1,c("Gene","nTx","tTx")]
@@ -337,4 +313,3 @@ structural_features$Feature2 <- gsub(" ","_",structural_features$Feature)
 
 kk <- merge(structural_features,feat_enrich,by.x=c("Cancer","Feature2"),by.y=c("Cancer","Domain"))
 zz <- merge(kk,gn_merged)
-

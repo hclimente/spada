@@ -1,4 +1,4 @@
-#!/soft/R/R-3.2.3/bin/Rscript
+#!/usr/bin/env Rscript
 
 library(ggplot2)
 library(grid)

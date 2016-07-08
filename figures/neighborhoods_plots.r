@@ -1,4 +1,4 @@
-#!/soft/R/R-3.2.1/bin/Rscript
+#!/usr/bin/env Rscript
 
 tryCatch(source("~/smartas/pipeline/scripts/variablesAndFunctions.r"),error=function(e){})
 
@@ -31,22 +31,21 @@ for (gnset in c("functional","all")){
       theme(axis.text.x=element_text(size=5,angle=90,hjust=1,vjust=0.5,colour="black"))
     ggsave(paste0("figures/",type,"_",gnset,"_moreThan8TumorTypes.png"),p, width = 6.5, height = 5)
     
-    set_counts_df$simpleGeneset <- set_counts_df$Geneset
-    set_counts_df$simpleGeneset <- gsub("\n"," ",set_counts_df$simpleGeneset)
-    set_counts_df$simpleGeneset <- gsub("REACTOME ","",set_counts_df$simpleGeneset)
-    set_counts_df$simpleGeneset <- gsub("BIOCARTA ","",set_counts_df$simpleGeneset)
-    set_counts_df$simpleGeneset <- gsub("KEGG ","",set_counts_df$simpleGeneset)
-    set_counts_df$simpleGeneset <- gsub("PID ","",set_counts_df$simpleGeneset)
-    set_counts_df$simpleGeneset <- gsub("HALLMARK ","",set_counts_df$simpleGeneset)
-    
-    pal <- brewer.pal(9, "BuGn")
-    png(paste0("figures/wordcloud_",type,"_",gnset,".png"), width=3000,height=2500)
-    wordcloud(set_counts_df$simpleGeneset,set_counts_df$Counts,colors=pal,scale=c(4,.2))
-    dev.off()
-    
+    if (sum(set_counts_df$Counts>8)){
+      set_counts_df$simpleGeneset <- set_counts_df$Geneset
+      set_counts_df$simpleGeneset <- gsub("\n"," ",set_counts_df$simpleGeneset)
+      set_counts_df$simpleGeneset <- gsub("REACTOME ","",set_counts_df$simpleGeneset)
+      set_counts_df$simpleGeneset <- gsub("BIOCARTA ","",set_counts_df$simpleGeneset)
+      set_counts_df$simpleGeneset <- gsub("KEGG ","",set_counts_df$simpleGeneset)
+      set_counts_df$simpleGeneset <- gsub("PID ","",set_counts_df$simpleGeneset)
+      set_counts_df$simpleGeneset <- gsub("HALLMARK ","",set_counts_df$simpleGeneset)
+      
+      pal <- brewer.pal(9, "BuGn")
+      png(paste0("figures/wordcloud_",type,"_",gnset,".png"), width=3000,height=2500)
+      wordcloud(set_counts_df$simpleGeneset,set_counts_df$Counts,colors=pal,scale=c(4,.2))
+      dev.off()
+    }
   }
 }
 
 rm(p,genesetType,gnset,type,file,sets_raw,set_counts,set_counts_df)
-
-# kk <- read.delim(paste0("hallmark_info/","HALLMARK_ADIPOGENESIS_onlyDrivers.tsv"))
