@@ -1,6 +1,6 @@
 from libs import utils
 from libs import options
-import network
+from network import network
 
 import pandas as pd
 import numpy as np

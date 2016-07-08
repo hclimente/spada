@@ -1,4 +1,4 @@
-import isoform_network
+from network import isoform_network
 
 class UCSCIsoformNetwork(isoform_network.IsoformNetwork):
 	def __init__(self):
