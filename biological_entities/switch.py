@@ -25,6 +25,13 @@ class IsoformSwitch:
 		self._broken_surfaces 		= None
 		self._ptm_change 			= None
 
+		#Candidate measures
+		self._recurrent				= None
+		self._mutatedFeature		= None
+		self._mutuallyExclusive		= None
+		self._coocurrent			= None
+		self._ppi					= None
+
 		#Relevance measure
 		self._deep_domain_change 	= { }
 		self._deep_disorder_change 	= { }
@@ -102,10 +109,47 @@ class IsoformSwitch:
 		# cds_diff is required if there is any feature
 		# utr_diff only is impossible if a feature change is required
 		if self.disorderChange or self.iloopsChange or self.anchorChange or self.domainChange or self.ptmChange:
-			if self.cds_overlap:
+			if self.tx_overlap:
 				return True
 			elif None in [self.nIsoform,self.tIsoform]:
 				return True
+
+		return False
+
+	@property
+	def recurrent(self): 
+		if self._recurrent is None:
+			self.readCandidateAnalysis()
+		return self._recurrent
+
+	@property
+	def coocurrent(self): 
+		if self._coocurrent is None:
+			self.readCandidateAnalysis()
+		return self._coocurrent
+
+	@property
+	def mutatedFeature(self): 
+		if self._mutatedFeature is None:
+			self.readCandidateAnalysis()
+		return self._mutatedFeature
+
+	@property
+	def mutuallyExclusive(self): 
+		if self._mutuallyExclusive is None:
+			self.readCandidateAnalysis()
+		return self._mutuallyExclusive
+
+	@property
+	def ppi(self): 
+		if self._ppi is None:
+			self.readCandidateAnalysis()
+		return self._ppi
+
+	@property
+	def is_candidate(self):
+		if self.recurrent or self.coocurrent or self.mutatedFeature or self.mutuallyExclusive or self.ppi:
+			return True
 
 		return False
 
@@ -118,7 +162,13 @@ class IsoformSwitch:
 		elif self._tumor_transcript.cds_exclusive and self._tumor_transcript.cds_exclusive < 1:
 			return True
 		else:
-			return False 
+			return False
+
+	@property
+	def tx_overlap(self):
+		nTx = set(self._normal_transcript._cds) | set(self._normal_transcript._utr)
+		tTx = set(self._tumor_transcript._cds) | set(self._tumor_transcript._utr)
+		return bool(nTx & tTx)
 
 	@property 
 	def cds_diff(self):
@@ -318,3 +368,29 @@ class IsoformSwitch:
 		correspondence = sorted(correspondence,key=lambda x: x[0][0] if x[0] else x[1][0],reverse=True if self.nTranscript._strand=='-' else False )
 
 		return correspondence
+
+	def readCandidateAnalysis(self):
+
+		if not os.path.exists("{}candidateList_driverEvidence.tsv".format(options.Options().qout)):
+			raise Exception("Candidate information not generated.")
+			return False
+
+		for elements in utils.readTable("{}candidateList_driverEvidence.tsv".format(options.Options().qout)):
+			if elements[3] == self.nTx and elements[4] == self.tTx:
+				if elements[5] == "1": self._recurrent = True
+				elif elements[5] == "0": self._recurrent = False
+
+				if elements[6] == "1": self._mutatedFeature = True 
+				elif elements[6] == "0": self._mutatedFeature = False
+
+				if elements[7] == "1": self._mutuallyExclusive = True
+				elif elements[7] == "0": self._mutuallyExclusive = False
+
+				if elements[8] == "1": self._coocurrent = True
+				elif elements[8] == "0": self._coocurrent = False
+
+				if elements[9] == "1": self._ppi = True
+				elif elements[9] == "0": self._ppi = False
+
+				break
+
