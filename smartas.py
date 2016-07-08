@@ -3,15 +3,24 @@
 from interface import out_network
 from libs import options
 from libs import utils
-from methods import get_i3d_broken_interactions
+
+# calculation
 from methods import get_random_switches
 from methods import get_switches
-from methods import neighborhood_analysis
 from methods import structural_analysis
-from methods import result_summary
+# candidates
 from methods import me_analysis
+from methods import me_geneset_analysis
 from methods import wes_mutations_feature_overlap
-
+from methods import annotate_switches
+# validation
+from methods import explore_pannegative
+from methods import candidates_pathways
+# data
+from methods import result_summary
+from methods import neighborhood_analysis
+# other
+from methods import get_i3d_broken_interactions
 from methods import test
 
 import logging
@@ -25,6 +34,7 @@ class SmartAS:
 		self.logger.info("SmartAS - Finding significant AS events")
 		self.logger.info("Hector Climente - GRIB 2014-2015")
 
+	# initial
 	def getSwitches(self):
 
 		g = get_switches.GetSwitches(None,None,None)
@@ -51,10 +61,11 @@ class SmartAS:
 			# analyze a chunk of the switches
 			s.run()
 
+	# candidates calculation
 	def recurrenceAnalysis(self):
 
-		utils.cmd('/soft/R/R-3.2.3/bin/Rscript', 
-			'pipeline/methods/recurrence_analysis.R', 
+		utils.cmd('Rscript', 
+			"pipeline/methods/recurrence_analysis.R", 
 			"{}candidateList_info.tsv".format(options.Options().qout),
 			"{}candidateList_recurrence.tsv".format(options.Options().qout))
 
@@ -75,6 +86,27 @@ class SmartAS:
 		m.clean()
 		m.run()
 
+	def studyGenesetMutualExclusion(self):
+		m = me_geneset_analysis.MEGenesetAnalysis(True,True)
+		m.clean()
+		m.run()
+
+	def annotateSwitches(self):
+		a = annotate_switches.AnnotateSwitches(True,True)
+		a.run()
+
+	# validation
+	def explorePannegative(self):
+
+		p = explore_pannegative.ExplorePannegative(True,True)
+		p.clean()
+		p.run()
+
+	def candidatesPathways(self):
+
+		c = candidates_pathways.CandidatesPathways(True,True)
+		c.run()
+
 	def summarizeResults(self):
 
 		s = result_summary.ResultSummary(True,True)
@@ -89,13 +121,37 @@ class SmartAS:
 	def studyWESMutationsFeatureOverlap(self):
 		
 		m = wes_mutations_feature_overlap.WESMutationsFeatureOverlap(True,True)
-		#m.clean()
+		m.clean()
 		m.run()
 
 	def testing(self):
 
 		t = test.Test(True,True)
 		t.run()
+
+	def pancancerGetSwitches(self):
+		utils.cmd('Rscript',"pipeline/methods/pancancer_calculate_switches.R","candidateList_info")
+		utils.cmd('Rscript',"pipeline/methods/pancancer_calculate_switches.R","random.candidateList_info")
+
+	def pancancerRecurrenceAnalysis(self):
+		utils.cmd('Rscript', 
+			"pipeline/methods/recurrence_analysis.R",
+			"{}candidateList_info.agg.tsv".format(options.Options().qout),
+			"{}candidateList_recurrence.tsv".format(options.Options().qout))
+	
+	def pancancerStudyWESMutationsFeatureOverlap(self):
+		utils.cmd("mkdir","-p","{}structural_analysis".format(options.Options().qout))
+		utils.cmd("mkdir","-p","{}mutations".format(options.Options().qout))
+		utils.cmd('Rscript', 
+				  'pipeline/methods/pancancer_mutated_features_analysis.R')
+	
+	def pancancerStudyMutualExclusion(self):
+		utils.cmd("mkdir","-p","{}mutations".format(options.Options().qout))
+		utils.cmd('Rscript', 
+				  'pipeline/methods/pancancer_mutual_exclusion_analysis.R')
+
+	def pancancerStudyCoocurrence(self):
+		utils.cmd('Rscript', 'pipeline/methods/pancancer_coocurrence_analysis.R')
 
 if __name__ == '__main__':
 
@@ -118,38 +174,61 @@ if __name__ == '__main__':
 
 	S = SmartAS()
 
-	# Get and characterize switches
-	if options.Options().initialStep == "get-switches":
-	 	S.getSwitches()
+	if options.Options().tag!="pancancer":
+		# Get and characterize switches
+		if options.Options().initialStep == "get-switches":
+		 	S.getSwitches()
 
-	# analyze switches
-	elif options.Options().initialStep == "get-functional-switches":
-		S.structuralAnalysis()
-	elif options.Options().initialStep == "random-switches":
-		S.createRandomSwitches()
+		# analyze switches
+		elif options.Options().initialStep == "get-functional-switches":
+			S.structuralAnalysis()
+		elif options.Options().initialStep == "random-switches":
+			S.createRandomSwitches()
 
-	# get candidates
-	elif options.Options().initialStep == "recurrence-analysis":
-		S.recurrenceAnalysis()
-	elif options.Options().initialStep == "wes-mutations-feature-overlap":
-		S.studyWESMutationsFeatureOverlap()
-	elif options.Options().initialStep == "me-analysis":
-		S.studyMutualExclusion()
-		
-	# analyze model switches
-	elif options.Options().initialStep == "neighborhood-analysis":
-		S.neighborhoodAnalysis()
+		# get candidates
+		elif options.Options().initialStep == "recurrence-analysis":
+			S.recurrenceAnalysis()
+		elif options.Options().initialStep == "wes-mutations-feature-overlap":
+			S.studyWESMutationsFeatureOverlap()
+		elif options.Options().initialStep == "me-analysis":
+			S.studyMutualExclusion()
+		elif options.Options().initialStep == "me-geneset-analysis":
+			S.studyGenesetMutualExclusion()
+		elif options.Options().initialStep == "annotate-candidate-switches":
+			S.annotateSwitches()
 
-	# summarize results
-	elif options.Options().initialStep == "summary":
-		S.summarizeResults()
+		# validation
+		elif options.Options().initialStep == "explore-pannegative":
+			S.explorePannegative()
+		elif options.Options().initialStep == "candidates-pathways":
+			S.candidatesPathways()
+			
+		# analyze model switches
+		elif options.Options().initialStep == "neighborhood-analysis":
+			S.neighborhoodAnalysis()
 
-	# test commands
-	elif options.Options().initialStep == "test":
-		S.testing()
+		# summarize results
+		elif options.Options().initialStep == "summary":
+			S.summarizeResults()
 
-	# deprecated
-	elif options.Options().initialStep == "get-i3d-broken-interactions":
-		S.I3DBrokenInteractions()
+		# test commands
+		elif options.Options().initialStep == "test":
+			S.testing()
+
+		# deprecated
+		elif options.Options().initialStep == "get-i3d-broken-interactions":
+			S.I3DBrokenInteractions()
+	else:
+		# Get and characterize switches
+		if options.Options().initialStep == "get-switches":
+		 	S.pancancerGetSwitches()
+		elif options.Options().initialStep == "recurrence-analysis":
+			S.pancancerRecurrenceAnalysis()
+		elif options.Options().initialStep == "wes-mutations-feature-overlap":
+			S.pancancerStudyWESMutationsFeatureOverlap()
+		elif options.Options().initialStep == "me-analysis":
+			S.pancancerStudyMutualExclusion()
+		elif options.Options().initialStep == "co-occurence":
+			S.pancancerStudyCoocurrence()
 	
 	S.logger.info("SmartAS will close.")
