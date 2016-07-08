@@ -85,10 +85,14 @@ do
 done
 
 # switches.tsv
-analyses='CDS_change CDS_study UTR_change'
+echo -e "Cancer\tAnalysis\tBoth\tOnly_nIso\tOnly_tIso\tNone\tRandom_Both\tRandom_Only_nIso\tRandom_Only_tIso\tRandom_None" >~/smartas/notebook/data/switches/$a.tsv
+grep CDS_study ~/smartas/analyses/????/result_summary/switches_onlyModels.tsv | cut -d':' -f2 >>~/smartas/notebook/data/switches/CDS_study.tsv
+checkFile switches CDS_study.tsv
+
+analyses='CDS_change UTR_change'
 for a in $analyses
 do
-    cat ~/smartas/analyses/????/result_summary/switches_onlyModels.tsv | head -n1 >~/smartas/notebook/data/switches/$a.tsv
+    echo -e "Cancer\tAnalysis\tYes\tNo\tRandom_Yes\tRandom_No\tp\tOR" >~/smartas/notebook/data/switches/$a.tsv
     grep $a ~/smartas/analyses/????/result_summary/switches_onlyModels.tsv | cut -d':' -f2 >>~/smartas/notebook/data/switches/$a.tsv
     checkFile switches $a.tsv
 done

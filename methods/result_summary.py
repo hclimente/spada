@@ -305,54 +305,54 @@ class ResultSummary(method.Method):
 		with open("{0}result_summary/switches{1}.tsv".format(options.Options().qout,options.Options().filetag), "w" ) as F:
 			F.write("Cancer\tAnalysis\tBoth\tOnly_nIso\tOnly_tIso\tNone\t")
 			F.write("Random_Both\tRandom_Only_nIso\tRandom_Only_tIso\tRandom_None\n")
-			F.write("{0}\tCDS_study\t".format(options.Options().tag ))
-			F.write("{0}\t".format(self.switchStats["cdsPresence"]["NonRandom"]["Both"]))
-			F.write("{0}\t".format(self.switchStats["cdsPresence"]["NonRandom"]["OnlyN"]))
-			F.write("{0}\t".format(self.switchStats["cdsPresence"]["NonRandom"]["OnlyT"]))
-			F.write("{0}\t".format(self.switchStats["cdsPresence"]["NonRandom"]["None"]))
-			F.write("{0}\t".format(self.switchStats["cdsPresence"]["Random"]["Both"]))
-			F.write("{0}\t".format(self.switchStats["cdsPresence"]["Random"]["OnlyN"]))
-			F.write("{0}\t".format(self.switchStats["cdsPresence"]["Random"]["OnlyT"]))
-			F.write("{0}\n".format(self.switchStats["cdsPresence"]["Random"]["None"]))
+			F.write("{}\tCDS_study\t".format(options.Options().tag ))
+			F.write("{}\t".format(self.switchStats["cdsPresence"]["NonRandom"]["Both"]))
+			F.write("{}\t".format(self.switchStats["cdsPresence"]["NonRandom"]["OnlyN"]))
+			F.write("{}\t".format(self.switchStats["cdsPresence"]["NonRandom"]["OnlyT"]))
+			F.write("{}\t".format(self.switchStats["cdsPresence"]["NonRandom"]["None"]))
+			F.write("{}\t".format(self.switchStats["cdsPresence"]["Random"]["Both"]))
+			F.write("{}\t".format(self.switchStats["cdsPresence"]["Random"]["OnlyN"]))
+			F.write("{}\t".format(self.switchStats["cdsPresence"]["Random"]["OnlyT"]))
+			F.write("{}\n".format(self.switchStats["cdsPresence"]["Random"]["None"]))
 
 			F.write("Cancer\tAnalysis\tYes\tNo\tRandom_Yes\tRandom_No\tp\tOR\n")
 
-			F.write("{0}\tCDS_change\t".format(options.Options().tag))
-			F.write("{0}\t".format(self.switchStats["cdsTest"]["Random"]["Change"]))
-			F.write("{0}\t".format(self.switchStats["cdsTest"]["Random"]["NoChange"]))
-			F.write("{0}\t".format(self.switchStats["cdsTest"]["NonRandom"]["Change"]))
-			F.write("{0}\t".format(self.switchStats["cdsTest"]["NonRandom"]["NoChange"]))
+			F.write("{}\tCDS_change\t".format(options.Options().tag))
+			F.write("{}\t".format(self.switchStats["cdsTest"]["NonRandom"]["Change"]))
+			F.write("{}\t".format(self.switchStats["cdsTest"]["NonRandom"]["NoChange"]))
+			F.write("{}\t".format(self.switchStats["cdsTest"]["Random"]["Change"]))
+			F.write("{}\t".format(self.switchStats["cdsTest"]["Random"]["NoChange"]))
 
-			lContingencyTable = [[self.switchStats["cdsTest"]["Random"]["Change"],
-								  self.switchStats["cdsTest"]["Random"]["NoChange"]],
-								[self.switchStats["cdsTest"]["NonRandom"]["Change"],
-								 self.switchStats["cdsTest"]["NonRandom"]["NoChange"]]]
+			lContingencyTable = [[self.switchStats["cdsTest"]["NonRandom"]["Change"],
+								  self.switchStats["cdsTest"]["NonRandom"]["NoChange"]],
+								 [self.switchStats["cdsTest"]["Random"]["Change"],
+								  self.switchStats["cdsTest"]["Random"]["NoChange"]]]
 			OR,pval = fisher_exact(lContingencyTable)
 
-			F.write("{0}\t{1}\n".format(pval,OR) )
+			F.write("{}\t{}\n".format(pval,OR) )
 
-			F.write("{0}\tUTR_change\t".format(options.Options().tag ))
-			F.write("{0}\t".format(self.switchStats["utrTest"]["Random"]["Change"]))
-			F.write("{0}\t".format(self.switchStats["utrTest"]["Random"]["NoChange"]))
-			F.write("{0}\t".format(self.switchStats["utrTest"]["NonRandom"]["Change"]))
-			F.write("{0}\t".format(self.switchStats["utrTest"]["NonRandom"]["NoChange"]))
+			F.write("{}\tUTR_change\t".format(options.Options().tag ))
+			F.write("{}\t".format(self.switchStats["utrTest"]["NonRandom"]["Change"]))
+			F.write("{}\t".format(self.switchStats["utrTest"]["NonRandom"]["NoChange"]))
+			F.write("{}\t".format(self.switchStats["utrTest"]["Random"]["Change"]))
+			F.write("{}\t".format(self.switchStats["utrTest"]["Random"]["NoChange"]))
 
-			lContingencyTable = [[self.switchStats["utrTest"]["Random"]["Change"],
-								  self.switchStats["utrTest"]["Random"]["NoChange"]],
-								[self.switchStats["utrTest"]["NonRandom"]["Change"],
-								 self.switchStats["utrTest"]["NonRandom"]["NoChange"]]]
+			lContingencyTable = [[self.switchStats["utrTest"]["NonRandom"]["Change"],
+								  self.switchStats["utrTest"]["NonRandom"]["NoChange"]],
+								 [self.switchStats["utrTest"]["Random"]["Change"],
+								  self.switchStats["utrTest"]["Random"]["NoChange"]]]
 			OR,pval = fisher_exact(lContingencyTable)
 
-			F.write("{0}\t{1}\n".format(pval,OR) )
+			F.write("{}\t{}\n".format(pval,OR) )
 
 			##### GENE LEVEL #####
 			F.write("Cancer\tAnalysis\tFeat-Switch\tFeat-NoSwitch\tNoFeat-Switch\tNoFeat-NoSwitch\tp\tOR\n")
 			# driver enrichment in switches
-			F.write("{0}\td0_enrichment\t".format(options.Options().tag ))
-			F.write("{0}\t".format(self.switchStats["d0Enrichment"]["driver"]["Switch"]))
-			F.write("{0}\t".format(self.switchStats["d0Enrichment"]["driver"]["NoSwitch"]))
-			F.write("{0}\t".format(self.switchStats["d0Enrichment"]["nonDriver"]["Switch"]))
-			F.write("{0}\t".format(self.switchStats["d0Enrichment"]["nonDriver"]["NoSwitch"]))
+			F.write("{}\td0_enrichment\t".format(options.Options().tag ))
+			F.write("{}\t".format(self.switchStats["d0Enrichment"]["driver"]["Switch"]))
+			F.write("{}\t".format(self.switchStats["d0Enrichment"]["driver"]["NoSwitch"]))
+			F.write("{}\t".format(self.switchStats["d0Enrichment"]["nonDriver"]["Switch"]))
+			F.write("{}\t".format(self.switchStats["d0Enrichment"]["nonDriver"]["NoSwitch"]))
 			
 			lContingencyTable = [[self.switchStats["d0Enrichment"]["driver"]["Switch"],
 								  self.switchStats["d0Enrichment"]["driver"]["NoSwitch"]],
@@ -360,7 +360,7 @@ class ResultSummary(method.Method):
 								self.switchStats["d0Enrichment"]["nonDriver"]["NoSwitch"]]]
 			OR,pval = fisher_exact(lContingencyTable)
 
-			F.write("{0}\t{1}\n".format(pval,OR) )
+			F.write("{}\t{}\n".format(pval,OR) )
 
 			F.write("{0}\td1_enrichment\t".format(options.Options().tag ))
 			F.write("{0}\t".format(self.switchStats["d1Enrichment"]["D1Driver"]["Switch"]))
@@ -374,7 +374,7 @@ class ResultSummary(method.Method):
 								self.switchStats["d1Enrichment"]["NonD1Driver"]["NoSwitch"]]]
 			OR,pval = fisher_exact(lContingencyTable)
 
-			F.write("{0}\t{1}\n".format(pval,OR) )
+			F.write("{}\t{}\n".format(pval,OR) )
 
 			# driver enrichment in functional
 			F.write("{0}\td0_functional_enrichment\t".format(options.Options().tag ))
@@ -389,7 +389,7 @@ class ResultSummary(method.Method):
 								self.switchStats["d0Functional"]["nonDriver"]["NonFunctional"]]]
 			OR,pval = fisher_exact(lContingencyTable)
 
-			F.write("{0}\t{1}\n".format(pval,OR) )
+			F.write("{}\t{}\n".format(pval,OR) )
 
 			# driver d1 enrichment in functional
 			F.write("{0}\td1_functional_enrichment\t".format(options.Options().tag ))
@@ -404,7 +404,7 @@ class ResultSummary(method.Method):
 								self.switchStats["d1Functional"]["NonD1Driver"]["NonFunctional"]]]
 			OR,pval = fisher_exact(lContingencyTable)
 
-			F.write("{0}\t{1}\n".format(pval,OR) )
+			F.write("{}\t{}\n".format(pval,OR) )
 
 			F.write("Cancer\tAnalysis\tMedian case\tMedian control\tp\n")
 
