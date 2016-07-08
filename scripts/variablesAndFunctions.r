@@ -4,9 +4,12 @@
 library(plyr)
 library(ggplot2)
 library(reshape2)
-library(directlabels)
+#library(directlabels)
 library(gridExtra)
-library(wordcloud)
+library(magrittr)
+library(readr)
+library(dplyr)
+#library(wordcloud)
 
 cancerTypes <- c("brca","coad","hnsc","kich","kirc","kirp","lihc","luad","lusc","prad","thca")
 workingDir <- "/genomics/users/hector/smartas/results"
@@ -48,7 +51,7 @@ getBarplotAsterisks <- function(stat.tests,ranges,categories=cancerTypes,barsize
   arcs <- data.frame()
   ast <- data.frame()
   for (kns in stat.tests$Cancer[stat.tests$p < 0.05]){
-    i <- which(categories==kns) - 1
+    i <- which(categories==kns)
     d <- ddply(ranges[ranges$Cancer==kns,],.(variable),summarise,max=max(y))
     j <- max(d$max)
     k <- min(d$max)
