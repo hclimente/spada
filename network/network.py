@@ -1,7 +1,7 @@
 from libs import options
 
 import networkx as nx
-import cPickle as pickle
+import pickle
 import abc
 import logging
 

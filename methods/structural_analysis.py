@@ -345,9 +345,8 @@ class StructuralAnalysis(method.Method):
 		REL.write("iLoops\tDomain\tDisorder\tAnchor\tPTM\n")
 
 	def joinFiles(self,tag=""):
-
 		roots = ['interpro_analysis','iupred_analysis','anchor_analysis','prosite_analysis','structural_summary']
-		
+
 		for root in roots:
 			outFile = "{}structural_analysis/{}{}.tsv".format(options.Options().qout,root,tag)
 			files = glob.glob("{}structural_analysis/{}{}_[0-9]*.tsv".format(options.Options().qout,root,tag))
@@ -377,8 +376,8 @@ class StructuralAnalysis(method.Method):
 			g = self._gene_network
 		elif tag=="_random":
 			saveName = "randomGeneNetwork_fixNormal.pkl"
-			import cPickle as pickle
-			g = pickle.load(open("{}{}".format(options.Options().qout,saveName)))
+			import pickle
+			g = pickle.load(open("{}{}".format(options.Options().qout,saveName),"rb"))
 			g.createLogger()
 
 		for elements in utils.readTable("{}structural_analysis/structural_summary{}.tsv".format(options.Options().qout,tag)):
@@ -386,11 +385,10 @@ class StructuralAnalysis(method.Method):
 			nTx = elements[2]
 			tTx = elements[3]
 
-			functional = ("True" in [elements[4],elements[5],elements[6],elements[7],elements[8]]) | (bool(self._transcript_network._net.node[nTx]["proteinSequence"])!=bool(self._transcript_network._net.node[tTx]["proteinSequence"]))
-
 			for switchDict in g._net.node[gene]["isoformSwitches"]:
 				if switchDict["nIso"]==nTx and switchDict["tIso"]==tTx:
-					switchDict["functional"]=functional
+					thisSwitch = g.createSwitch(switchDict,self._transcript_network,True)
+					switchDict["functional"] = thisSwitch.is_functional
 
 		g.saveNetwork(saveName)
 		

@@ -4,7 +4,7 @@ from libs import utils
 from methods import method
 from network import ucsc_gene_network, ucsc_isoform_network
 
-import cPickle as pickle
+import pickle
 
 class GetSwitches(method.Method):
 	def __init__(self, gn_network, tx_network, gn_subnetwork):
@@ -61,7 +61,7 @@ class GetSwitches(method.Method):
 		self.logger.info("Creating gene network.")
 
 		if options.Options().externalSwitchesFile and options.Options().parentTag:
-			self._gene_network = pickle.load(open("{}analyses/{}/geneNetwork.pkl".format(options.Options().wd,options.Options().parentTag),"r"))
+			self._gene_network = pickle.load(open("{}analyses/{}/geneNetwork.pkl".format(options.Options().wd,options.Options().parentTag),"rb"))
 			self._gene_network.createLogger()
 			self._gene_network.cleanNetwork()
 		else:
@@ -82,8 +82,7 @@ class GetSwitches(method.Method):
 				"{}transcript_expression.tsv".format(options.Options().qout))
 
 			self._gene_network.readGeneInfo()
-			if options.Options().specificDrivers:
-				self._gene_network.importSpecificDrivers()
+			self._gene_network.importSpecificDrivers()
 			
 			self._gene_network.importKnownInteractions()
 
