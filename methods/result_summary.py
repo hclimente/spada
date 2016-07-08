@@ -98,10 +98,11 @@ class ResultSummary(method.Method):
 
 			testedSwitches += 1
 			
-		for gene,info,switchDict,thisSwitch in self._random_gene_network.sampleSwitches(self._transcript_network,numIterations=testedSwitches):
-			self.switchAndExonOverview(True,gene,info,switchDict,thisSwitch)
-			self.proteinOverview(True,switchDict,txDict,thisSwitch)
-			self.changedStructuralFeatures(True,gene,info,switchDict,thisSwitch)
+		for _ in range(100):
+			for gene,info,switchDict,thisSwitch in self._random_gene_network.sampleSwitches(self._transcript_network,numIterations=testedSwitches):
+				self.switchAndExonOverview(True,gene,info,switchDict,thisSwitch)
+				self.proteinOverview(True,switchDict,txDict,thisSwitch)
+				self.changedStructuralFeatures(True,gene,info,switchDict,thisSwitch)
 
 		# tests at gene level
 		for gene,info in self._gene_network.iterate_genes_byPatientNumber(alwaysSwitchedGenes=True):
