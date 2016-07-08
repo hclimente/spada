@@ -22,10 +22,10 @@ class WESMutationsFeatureOverlap(method.Method):
 		utils.cmd("mkdir","{}mutations".format(options.Options().qout))
 
 		self.TXS_ALL = open("{}mutations/proteome_information.txt".format(options.Options().qout),"w")
-		self.TXS_ALL.write("Cancer\tGene\tSymbol\tTranscript\tTPM\tProteinLength\n")
+		self.TXS_ALL.write("Cancer\tGene\tSymbol\tTranscript\tTPM\tProteinLength\tasEvidence\n")
 
 		self.TXS_SWT = open("{}mutations/switch_information.txt".format(options.Options().qout),"w")
-		self.TXS_SWT.write("Cancer\tGene\tSymbol\tTranscript\tTPM\tProteinLength\n")
+		self.TXS_SWT.write("Cancer\tGene\tSymbol\tTranscript\tTPM\tProteinLength\tasEvidence\n")
 
 		self.MUT_ALL = open("{}mutations/proteome_mutations.txt".format(options.Options().qout),"w")
 		self.MUT_ALL.write("Cancer\tGene\tSymbol\tTranscript\tAnalysis\t")
@@ -48,17 +48,19 @@ class WESMutationsFeatureOverlap(method.Method):
 
 	def run(self):
 
-		for gene,info in self._gene_network.iterate_genes_byPatientNumber(onlySplicedGenes=False):
+		for gene,info in self._gene_network.iterate_genes_byPatientNumber(onlySplicedGenes=False,onlyExpressedGenes=False):
 
 			allTxs = set(info["expressedTxsNormal"]) | set(info["expressedTxsTumor"])
 			asEvidence = bool(info["isoformSwitches"]) | (len(allTxs) >= 2)
+			expressed = bool(allTxs)
 
-			## CALCULATE DOMAIN ALTERATION FREQUENCY IN GENERAL
+			## CALCULATE DOMAIN ALTERATION FREQUENCY IN GENERAL FOR 
 			# get affection of prosite/pfams by mutations and their frequency
 			# in the proteome (only most expressed iso per gene)
-			tx = self.getMostAbundantTx(gene,info)
-			if tx:
-				self.getProteinMutations(gene,info,tx,self.MUT_ALL,self.FT_ALL,asEvidence)
+			if expressed:
+				tx = self.getMostAbundantTx(gene,info,asEvidence)
+				if tx:
+					self.getProteinMutations(gene,info,tx,self.MUT_ALL,self.FT_ALL)
 
 			## CALCULATE MUTATION FREQUENCY ON SWITCHED DOMAINS
 			if not info["isoformSwitches"]: continue
@@ -84,9 +86,9 @@ class WESMutationsFeatureOverlap(method.Method):
 					tpm = self._transcript_network._net.node[tx.name]["median_TPM_N"]
 
 					self.TXS_SWT.write("{}\t{}\t{}\t".format(options.Options().tag,gene,info["symbol"]))
-					self.TXS_SWT.write("{}\t{}\t{}\n".format(tx.name,tpm,proteinLength))
+					self.TXS_SWT.write("{}\t{}\t{}\t{}\n".format(tx.name,tpm,proteinLength,asEvidence))
 
-					self.getProteinMutations(gene,info,tx,self.MUT_SWT,self.FT_SWT,asEvidence)
+					self.getProteinMutations(gene,info,tx,self.MUT_SWT,self.FT_SWT)
 					usedTxs.add(tx)
 
 		self.TXS_ALL.close()
@@ -96,9 +98,7 @@ class WESMutationsFeatureOverlap(method.Method):
 		self.MUT_SWT.close()
 		self.FT_SWT.close()
 
-		utils.cmd('/soft/R/R-3.2.3/bin/Rscript', 
-				  'pipeline/methods/mutated_features_analysis.R', 
-				  options.Options().qout)
+		utils.cmd('Rscript', 'pipeline/methods/mutated_features_analysis.R', options.Options().qout)
 
 	def readFunctionalMutations(self):
 
@@ -135,7 +135,7 @@ class WESMutationsFeatureOverlap(method.Method):
 
 		return mutations
 
-	def getProteinMutations(self,gene,info,tx,MUTS,FTS,asEvidence):
+	def getProteinMutations(self,gene,info,tx,MUTS,FTS):
 
 		txMuts = self.getTxsMutations(tx)
 
@@ -153,16 +153,15 @@ class WESMutationsFeatureOverlap(method.Method):
 					i += 1
 
 			# only count domains from that isoform if can be altered by splicing
-			if asEvidence:
-				for f in featType:
-					i = 1
-					for start,end in featType[f]:
-						FTS.write("{}\t{}\t{}\t".format(options.Options().tag,gene,info["symbol"]))
-						FTS.write("{}\t{}\t{}\t".format(tx.name,a,f))
-						FTS.write("{}\t{}\t{}\t".format(i,end - start,start))
-						FTS.write("{}\n".format(end))
+			for f in featType:
+				i = 1
+				for start,end in featType[f]:
+					FTS.write("{}\t{}\t{}\t".format(options.Options().tag,gene,info["symbol"]))
+					FTS.write("{}\t{}\t{}\t".format(tx.name,a,f))
+					FTS.write("{}\t{}\t{}\t".format(i,end - start,start))
+					FTS.write("{}\n".format(end))
 
-						i += 1
+					i += 1
 
 	def getTxsMutations(self,tx):
 
@@ -239,7 +238,7 @@ class WESMutationsFeatureOverlap(method.Method):
 
 		return featureMutation
 
-	def getMostAbundantTx(self,gene,info):
+	def getMostAbundantTx(self,gene,info,asEvidence):
 		tx = None
 
 		# get most-abundant, coding transcript as representative of the gene
@@ -257,7 +256,7 @@ class WESMutationsFeatureOverlap(method.Method):
 				proteinLength = len(self._transcript_network._net.node[tx.name]["proteinSequence"])
 
 				self.TXS_ALL.write("{}\t{}\t{}\t".format(options.Options().tag,gene,info["symbol"]))
-				self.TXS_ALL.write("{}\t{}\t{}\n".format(txname,maxTpm,proteinLength))
+				self.TXS_ALL.write("{}\t{}\t{}\t{}\n".format(txname,maxTpm,proteinLength,asEvidence))
 
 		return tx
 
