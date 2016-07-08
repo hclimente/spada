@@ -104,7 +104,7 @@ class ResultSummary(method.Method):
 			self.changedStructuralFeatures(True,gene,info,switchDict,thisSwitch)
 
 		# tests at gene level
-		for gene,info in self._gene_network.iterate_genes_byPatientNumber():
+		for gene,info in self._gene_network.iterate_genes_byPatientNumber(alwaysSwitchedGenes=True):
 			dicts = [ x for x in info["isoformSwitches"] if x["model"] and not x["noise"] ]
 
 			modelDict = None
@@ -383,10 +383,10 @@ class ResultSummary(method.Method):
 			F.write("{0}\t".format(self.switchStats["d0Functional"]["nonDriver"]["Functional"]) )
 			F.write("{0}\t".format(self.switchStats["d0Functional"]["nonDriver"]["NonFunctional"]) )
 			
-			lContingencyTable = [[self.switchStats["d0Functional"]["driver"]["Switch"],
-								  self.switchStats["d0Functional"]["driver"]["NoSwitch"]],
-								[self.switchStats["d0Functional"]["nonDriver"]["Switch"],
-								self.switchStats["d0Functional"]["nonDriver"]["NoSwitch"]]]
+			lContingencyTable = [[self.switchStats["d0Functional"]["driver"]["Functional"],
+								  self.switchStats["d0Functional"]["driver"]["NonFunctional"]],
+								[self.switchStats["d0Functional"]["nonDriver"]["Functional"],
+								self.switchStats["d0Functional"]["nonDriver"]["NonFunctional"]]]
 			OR,pval = fisher_exact(lContingencyTable)
 
 			F.write("{0}\t{1}\n".format(pval,OR) )
@@ -398,10 +398,10 @@ class ResultSummary(method.Method):
 			F.write("{0}\t".format(self.switchStats["d1Functional"]["NonD1Driver"]["Functional"]) )
 			F.write("{0}\t".format(self.switchStats["d1Functional"]["NonD1Driver"]["NonFunctional"]) )
 			
-			lContingencyTable = [[self.switchStats["d1Functional"]["D1Driver"]["Switch"],
-								  self.switchStats["d1Functional"]["D1Driver"]["NoSwitch"]],
-								[self.switchStats["d1Functional"]["NonD1Driver"]["Switch"],
-								self.switchStats["d1Functional"]["NonD1Driver"]["NoSwitch"]]]
+			lContingencyTable = [[self.switchStats["d1Functional"]["D1Driver"]["Functional"],
+								  self.switchStats["d1Functional"]["D1Driver"]["NonFunctional"]],
+								[self.switchStats["d1Functional"]["NonD1Driver"]["Functional"],
+								self.switchStats["d1Functional"]["NonD1Driver"]["NonFunctional"]]]
 			OR,pval = fisher_exact(lContingencyTable)
 
 			F.write("{0}\t{1}\n".format(pval,OR) )
