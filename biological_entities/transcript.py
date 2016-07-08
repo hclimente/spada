@@ -95,6 +95,18 @@ class Transcript:
 			return exclusive/(exclusive+nonExclusive)
 		except ZeroDivisionError:
 			return None
+
+	@property
+	def tx_exclusive(self): 
+		tx = self._cds.copy()
+		tx.update(self._utr)
+
+		exclusive = float(sum([ 1 for x in tx if tx[x] ]))
+		nonExclusive = float(sum([ 1 for x in tx if not tx[x] ]))
+		try:
+			return exclusive/(exclusive+nonExclusive)
+		except ZeroDivisionError:
+			return None
 	
 	def getSegments(self,thing,minLength=1,gap=0):
 		segments = []
