@@ -2,7 +2,7 @@ from libs import options
 from libs import utils
 from methods import method
 
-import fisher
+from scipy.stats import fisher_exact
 
 class GetI3DBrokenInteractions(method.Method):
 	def __init__(self,gn_network,tx_network,gn_subnetwork=False):
@@ -126,15 +126,10 @@ class GetI3DBrokenInteractions(method.Method):
 			for tag2 in lst: negIsoSp += stats["isoSp"][tag2]
 			for tag2 in lst: negIsoSp += stats["nIsoSp"][tag2]
 
-			p = fisher.pvalue(stats["isoSp"][tag],negIsoSp,stats["nIsoSp"][tag],negNIsoSp)
-			try:
-				oddsRatio = stats["isoSp"][tag]*stats["nIsoSp"][tag]/(negIsoSp*negNIsoSp)
-			except ZeroDivisionError: 
-				oddsRatio = "NA"
-			self.logger.debug("{0} - {1} p-values: left:{2}\tright:{3}. OR: {4}".format(protein.tx,tag,p.left_tail,p.right_tail,oddsRatio))
+			lContingencyTable = [[stats["isoSp"][tag],negIsoSp],
+								 [stats["nIsoSp"][tag],negNIsoSp]]
+			OR,pval = fisher_exact(lContingencyTable,alternative="greater")
 
-			if tag == "I": 
-				pval = p.right_tail
-				OR = oddsRatio
+			self.logger.debug("{} - {} p-value greater:{}. OR: {}".format(protein.tx,tag,pval,OR))
 
 		return (pval,OR,percent)
