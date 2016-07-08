@@ -61,6 +61,9 @@ tumor <- grep("^.{4}T$",colnames(psi), value=TRUE)
 tumor.paired <- gsub("N$","T",normal)
 tumor.unpaired <- setdiff(tumor,tumor.paired)
 
+## calculate median psi in normal
+medianPsi.n <- apply(psi[,normal],1,median)
+
 ## read isoform expression
 xpr.nt <- read.table(tpm.nt.file, check.names=FALSE)
 xpr.t <- read.table(tpm.t.file, check.names=FALSE)
@@ -86,6 +89,11 @@ xpr.gene.norm <- cpm(y, normalized.lib.sizes=TRUE)
 ### Example: ADAMTS8|11095, Normal:uc001qgg.3, Tumor:uc001qgf.2, Sample: A46PT
 logxpr.gene <- log2(xpr.gene.norm)
 logxpr.gene[logxpr.gene==-Inf] <- NA
+
+out.logxr <- file.path(dirname(outfile),"logxpr.gene.txt")
+rownames(logxpr.gene) <- rownames(xpr.gene)
+colnames(logxpr.gene) <- colnames(xpr.gene)
+write.table(logxpr.gene, file=out.logxr, sep="\t", quote=F)
 
 # Calculate switches
 ## Gene expression
@@ -113,9 +121,13 @@ rm(xpr.gene,xpr.gene.nt,xpr.gene.t,xpr.gene.norm,logxpr.gene.ecdf)
 psi.diff <- data.frame(matrix(nrow=nrow(psi),ncol=length(tumor)))
 colnames(psi.diff) <- tumor
 psi.diff[,tumor.paired] <- abs(psi[,tumor.paired] - psi[,normal])
-psi.diff[,tumor.unpaired] <- abs(psi[,tumor.unpaired] - apply(psi[,normal],1,median))
+psi.diff[,tumor.unpaired] <- abs(psi[,tumor.unpaired] - medianPsi.n)
 psi.diff.l <- as.list(as.data.frame(t(psi.diff)))
 psi.diff.v <- as.vector(t(psi.diff))
+
+out.psidiff <- file.path(dirname(outfile),"psi.diff.txt")
+rownames(psi.diff) <- rownames(psi)
+write.table(psi.diff, file=out.psidiff, sep="\t", quote=F)
 
 ### get p
 psi.ecdf <- apply(psi[,normal],1,getEmpiricalDistribution,0)
@@ -139,33 +151,15 @@ rm(psi.ecdf,psi.diff.l,psi.diff.v)
 psi.sign <- data.frame(matrix(nrow=nrow(psi),ncol=length(tumor)))
 colnames(psi.sign) <- tumor
 psi.sign[,tumor.paired][psi[,tumor.paired] > psi[,normal] | !is.na(psi[,tumor.paired]) & is.na(psi[,normal]) ] <- "Tumor"
-psi.sign[,tumor.unpaired][psi[,tumor.unpaired] > apply(psi[,normal],1,median)] <- "Tumor"
+psi.sign[,tumor.unpaired][psi[,tumor.unpaired] > medianPsi.n] <- "Tumor"
 psi.sign[,tumor.paired][psi[,tumor.paired] < psi[,normal] | is.na(psi[,tumor.paired]) & !is.na(psi[,normal])] <- "Normal"
-psi.sign[,tumor.unpaired][psi[,tumor.unpaired] < apply(psi[,normal],1,median)] <- "Normal"
-
-## Order
-### Normal
-psi.order.n <- data.frame(medianPsi=apply(psi[,normal],1,median))
-psi.order.n$Gene <- unlist(strsplit(rownames(psi),","))[c(T,F)]
-psi.order.n <- ddply(psi.order.n,.(Gene), summarise, orderNormal=rank(-medianPsi))
-rownames(psi.order.n) <- rownames(psi)
-
-### Tumor
-x <- by(psi[,tumor], psi$Gene, function(y){
-  apply(y[,colnames(y)!="Gene"],2,function(z){
-    v <- rep(F,length(z))
-    v[which.max(z)] <- T
-    v
-  })
-})
-psi.order.t <- do.call("rbind",x)
-colnames(psi.order.t) <- tumor
+psi.sign[,tumor.unpaired][psi[,tumor.unpaired] < medianPsi.n] <- "Normal"
 
 # Define switches
 ## Conditions
 ### transcripts are among the top expressed in the prefered condition
-topTumor <- psi.sign=="Tumor" & psi.order.t
-topNormal <- psi.sign=="Normal" & psi.order.n$orderNormal==1
+topTumor <- psi.sign=="Tumor"
+topNormal <- psi.sign=="Normal"
 ### significant deltaPSI
 bigChange <- psi.diff.p[,tumor] < 0.01 & psi.diff > 0.05
 ### non-significant change in gene expression
@@ -183,31 +177,48 @@ elegibleTxs[!((topNormal & expressedNormal | topTumor & expressedTumor) & bigCha
 elegibleTxs$Transcript <- transcripts
 elegibleTxs$Gene <- genes
 
-### filter out transcripts that do not pass any of the conditions
-elegibleTxs <- elegibleTxs[rowSums(!is.na(elegibleTxs[,!colnames(elegibleTxs) %in% c("Gene","Transcript")]))>0,]
-
 ## Calculate switches
 switches <- by(elegibleTxs,elegibleTxs$Gene, function(x){
-  z <- apply(x[,! colnames(x) %in% c("Gene","Transcript")],2,function(y){
-    z <- y[!is.na(y)]
-    if("Normal" %in% z & "Tumor" %in% z)
-      return(list("Normal"=names(z[z=="Normal"]), "Tumor"=names(z[z=="Tumor"])))
-    else
-      return(list("Normal"=NA, "Tumor"=NA))
-  })
+  candidates <- x[,! colnames(x) %in% c("Gene","Transcript")]
+  txs <- x$Transcript
+  g <- unique(x$Gene)
+  pats.swt <- list()
+  for (i in 1:ncol(candidates)){
+    z <- candidates[,i]
+    if(sum(z=="Normal",na.rm=T)>=1 & sum(z=="Tumor",na.rm=T)>=1){
+      psis.t <- as.numeric(psi[genes==g,tumor[i]])
+      if (tumor[i] %in% tumor.paired)
+        psis.n <- as.numeric(psi[genes==g,gsub("T$","N",tumor[i])])
+      else
+        psis.n <- as.numeric(medianPsi.n[genes==g])
+      
+      tumor.isos <- txs[!is.na(z) & z=="Tumor"]
+      normal.isos <- txs[!is.na(z) & z=="Normal"]
+      
+      t <- tumor.isos[order(-psis.t[!is.na(z) & z=="Tumor"])][1]
+      n <- normal.isos[order(-psis.n[!is.na(z) & z=="Normal"])][1]
+      
+      if (psis.t[txs==t]<psis.t[txs==n] | psis.n[txs==n]<psis.n[txs==t])
+        pats.swt[[i]] <- list("Normal"=NA, "Tumor"=NA)
+      else
+        pats.swt[[i]] <- list("Normal"=n, "Tumor"=t)
+      
+    } else
+      pats.swt[[i]] <- list("Normal"=NA, "Tumor"=NA)
+  }
   
-  z <- data.frame(do.call("rbind",z))
-  z$Sample <- rownames(z)
-  validCases <- rowSums(is.na(z[,c("Normal","Tumor")])) < 2
-  z <- z[validCases,]
-  if (nrow(z)){
-    z$Gene <- unique(x$Gene)
-    z$Normal <- as.character(z$Normal)
-    z$Tumor <- as.character(z$Tumor)
-    z 
+  pats.swt <- data.frame(do.call("rbind",pats.swt))
+  pats.swt$Sample <- tumor
+  validCases <- rowSums(is.na(pats.swt[,c("Normal","Tumor")])) < 2
+  pats.swt <- pats.swt[validCases,]
+  if (nrow(pats.swt)){
+    pats.swt$Gene <- unique(x$Gene)
+    pats.swt$Normal <- as.character(pats.swt$Normal)
+    pats.swt$Tumor <- as.character(pats.swt$Tumor)
+    pats.swt 
   } else
     NA
-  })
+})
 
 switches.df <- list()
 for (g in names(switches)){
