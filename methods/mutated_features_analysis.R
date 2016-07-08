@@ -1,6 +1,9 @@
 library(reshape2)
 library(plyr)
+library(dplyr)
 library(gtools)
+library(readr)
+library(magrittr)
 
 # calculate entropy among all genes with the domain
 shannon.entropy <- function(p){
@@ -28,24 +31,27 @@ my.binom.test <- function(x,testNumber){
 }
 
 args <- commandArgs(trailingOnly = TRUE)
-#out <- args[1]
-out <- "~/smartas/analyses/coad/"
+out <- args[1]
 
 proteome.muts.file <- paste0(out,"mutations/proteome_mutations.txt")
 proteome.fts.file <- paste0(out,"mutations/proteome_features.txt")
 switch.prosite.file <- paste0(out,"structural_analysis/prosite_analysis.tsv")
 switch.pfam.file <- paste0(out,"structural_analysis/interpro_analysis.tsv")
-switch.file <- paste0(out,"candidateList_info.tsv")
 out.file <- paste0(out,"candidateList_mutatedFeatures.tsv")
 
-switches <- read.delim(switch.file,row.names=NULL)
+switch.file <- paste0(out,"candidateList_info.tsv")
+if(!file.exists(switch.file)){
+  switch.file <- paste0(out,"candidateList_info.agg.tsv")
+}
+
+switches <- read_tsv(switch.file)
 
 # read mutations
-proteome.muts <- read.delim(proteome.muts.file,row.names=NULL)
+proteome.muts <- read_tsv(proteome.muts.file)
 allMuts <- c("Frame_Shift_Del","Frame_Shift_Ins","In_Frame_Del","In_Frame_Ins","Missense_Mutation","Nonsense_Mutation","Nonstop_Mutation","Frame_Shift_Del_out","Frame_Shift_Ins_out","Nonsense_Mutation_out")
 inFeatureMuts <- c("Frame_Shift_Del","Frame_Shift_Ins","In_Frame_Del","In_Frame_Ins","Missense_Mutation","Nonsense_Mutation","Nonstop_Mutation")
 
-proteome.muts.wide <- dcast(data=proteome.muts,formula=Feature+Analysis+Cancer+Transcript~Type)
+proteome.muts.wide <- dcast(data=proteome.muts,formula=Feature+Analysis+Cancer+Transcript~Type,fun.aggregate=length,value.var="Patient")
 
 absent.mutTypes <- setdiff(c("Frame_Shift_Del","Frame_Shift_Ins","In_Frame_Del","In_Frame_Ins","Missense_Mutation","Nonsense_Mutation","Nonstop_Mutation"),proteome.muts$Type)
 if (length(absent.mutTypes)!=0)
@@ -67,13 +73,14 @@ proteome.muts.agg <- ddply(proteome.muts.wide,.(Feature,Analysis),summarize,
                            TotalMutations = sum(TotalMutations))
 
 # read features
-proteome.fts <- read.delim(proteome.fts.file,row.names=NULL)
+proteome.fts <- read_tsv(proteome.fts.file)
 
 # read switches
-switch.prosite <- read.delim(switch.prosite.file,row.names=NULL)
-switch.prosite <- subset(switch.prosite, What!="Nothing")
-switch.pfam <- read.delim(switch.pfam.file,row.names=NULL)
-switch.pfam <- subset(switch.pfam, What!="Nothing")
+switch.prosite <- read_tsv(switch.prosite.file) %>%
+  filter(What!="Nothing")
+switch.pfam <- read_tsv(switch.pfam.file) %>%
+  filter(What!="Nothing")
+
 switch.fts <- rbind(switch.pfam,switch.prosite)
 
 switchesFull <- merge(switches,subset(switch.fts, select=c("Gene","Symbol","NormalTranscript","TumorTranscript","What","Feature")),by.x=c("GeneId","Symbol","Normal_transcript","Tumor_transcript"),by.y=c("Gene","Symbol","NormalTranscript","TumorTranscript"))
@@ -81,7 +88,10 @@ switchesFull <- merge(switches,subset(switch.fts, select=c("Gene","Symbol","Norm
 # aggregate by transcript and cancer to get the proteome size and expected frequencies
 tests <- list()
 for (f in c("prosite","Pfam")){
-  ft.agg <- ddply(subset(proteome.fts, Analysis==f),.(Feature),summarize, TotalLength = sum(FeatureLength) )
+  ft.agg <- proteome.fts %>%
+    filter(Analysis==f) %>%
+    group_by(Feature) %>%
+    summarize(TotalLength = sum(FeatureLength))
   
   # corrected: only mutations in domains are counted; only domains should be counted
   L <- sum(ft.agg$TotalLength)
@@ -89,24 +99,30 @@ for (f in c("prosite","Pfam")){
   
   ## Test features enriched in mutations
   # aggregate mutations
-  ft.mut.enrichment <- subset(proteome.muts.agg, Analysis==f)
+  ft.mut.enrichment <- proteome.muts.agg %>%
+    filter(Analysis==f) %>%
+    merge(ft.agg)
   ft.allMutations <- sum(ft.mut.enrichment$TotalMutations)
   
   # calculate statistics
-  ft.mut.enrichment <- merge(ft.mut.enrichment,ft.agg)
-  ft.mut.enrichment$fc_m <- ft.mut.enrichment$TotalMutations/ft.allMutations/ft.mut.enrichment$ExpectedMutFrequency
-  ft.mut.enrichment$p_m <- apply(ft.mut.enrichment[,c("TotalMutations","ExpectedMutFrequency")],1, my.binom.test, ft.allMutations)
-  ft.mut.enrichment$adjp_m <- p.adjust(ft.mut.enrichment$p_m)
+  ft.mut.enrichment <- ft.mut.enrichment %>%
+    mutate(., fc_m = TotalMutations/ft.allMutations/ExpectedMutFrequency,
+           p_m = apply(.[,c("TotalMutations","ExpectedMutFrequency")],1, my.binom.test, ft.allMutations)) %>%
+    mutate(adjp_m = p.adjust(p_m))
   
-  write.table(ft.mut.enrichment[,c("Feature","TotalMutations","TotalLength","ExpectedMutFrequency","fc_m","p_m","adjp_m","H_m","Frame_Shift_Del","Frame_Shift_Ins","In_Frame_Del","In_Frame_Ins","Missense_Mutation","Nonsense_Mutation","Nonstop_Mutation","Frame_Shift_Del_out","Frame_Shift_Ins_out","Nonsense_Mutation_out")],paste0(out,"mutations/",f,".mutation.enrichment.txt"),sep="\t",row.names = FALSE,quote=F)
+  #write.table(ft.mut.enrichment[,c("Feature","TotalMutations","TotalLength","ExpectedMutFrequency","fc_m","p_m","adjp_m","H_m","Frame_Shift_Del","Frame_Shift_Ins","In_Frame_Del","In_Frame_Ins","Missense_Mutation","Nonsense_Mutation","Nonstop_Mutation","Frame_Shift_Del_out","Frame_Shift_Ins_out","Nonsense_Mutation_out")],paste0(out,"mutations/",f,".mutation.enrichment.txt"),sep="\t",row.names = FALSE,quote=F)
   
   tests[[f]] <- ft.mut.enrichment
 }
 
 enrichment <- do.call("rbind",tests)
 
-df <- unique(switchesFull[switchesFull$Feature %in% enrichment$Feature[enrichment$adjp_m<0.05 & enrichment$H_m > 0],c("GeneId","Symbol","Normal_transcript","Tumor_transcript")])
+df <- switchesFull %>%
+  filter(Feature %in% enrichment$Feature[enrichment$adjp_m<0.05 & enrichment$H_m > 0]) %>%
+  select(c(GeneId,Symbol,Normal_transcript,Tumor_transcript)) %>%
+  unique
+
 switches$AffectingMutatedFeature <- 0
 switches$AffectingMutatedFeature[switches$Normal_transcript %in% df$Normal_transcript & switches$Tumor_transcript %in% df$Tumor_transcript] <- 1
 
-write.table(switches[,c("GeneId","Symbol","Normal_transcript","Tumor_transcript","AffectingMutatedFeature")],out.file,sep="\t",row.names = FALSE,quote=F)
+#write.table(switches[,c("GeneId","Symbol","Normal_transcript","Tumor_transcript","AffectingMutatedFeature")],out.file,sep="\t",row.names = FALSE,quote=F)
