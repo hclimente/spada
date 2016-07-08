@@ -24,6 +24,7 @@ class Options(object):
                                         self._wd,self._annotation,self._tag)
         self._quickOut              = "{}analyses/{}/".format(self._wd,self._tag)
         self._parallelRange         = options.parallelRange
+        self._parallelRange2         = options.parallelRange2
         self._externalSwitchesFile  = options.externalSwitchesFile
         self._parentTag             = options.parentTag
         # step for gene packs to parallelize
@@ -62,6 +63,8 @@ class Options(object):
     @property
     def parallelRange(self):    return self._parallelRange
     @property
+    def parallelRange2(self):    return self._parallelRange2
+    @property
     def externalSwitchesFile(self): return self._externalSwitchesFile
     @property
     def parentTag(self): return self._parentTag
@@ -91,6 +94,8 @@ class Options(object):
                             default='',help='Path of the specific drivers for the cancer type.')
         parser.add_argument('-p', '--parallel-range', dest='parallelRange', action='store', default='0',
                             type=int,help='Range of nodes if parallel.')
+        parser.add_argument('-p2', '--scd-parallel-range', dest='parallelRange2', action='store', default='0',
+                            type=int,help='2nd range of nodes if parallel.')
         parser.add_argument('-e', '--external-switches', dest='externalSwitchesFile', action='store', 
                             default=None,type=str, 
                             help='File containing switches calculated with other methods.')
