@@ -4,13 +4,15 @@ from libs import options
 from libs import utils
 from methods import method
 
+import math
+
 class WESMutationsFeatureOverlap(method.Method):
 	def __init__(self,gn_network,tx_network):
 		method.Method.__init__(self, __name__,gn_network,tx_network)
 
 		self.functionalMutations = self.readFunctionalMutations()
 
-		# txname="uc002amf.2"
+		# txname="uc002gig.1"
 		# txinfo=self._transcript_network._net.node[txname]
 		# tx = transcript.Transcript(txname,txinfo)
 		# txMuts = self.getTxsMutations(tx)
@@ -181,7 +183,7 @@ class WESMutationsFeatureOverlap(method.Method):
 			mutationRegion = set(range(m[0],m[1]))
 				
 			affectedRegionTx = set(cds) & mutationRegion
-			affectedRegionProt = set([ round((cds.index(x)/3)+1) for x in affectedRegionTx ])
+			affectedRegionProt = set([ math.floor((cds.index(x)/3)+1) for x in affectedRegionTx ])
 
 			if affectedRegionProt:
 				txMutations[m] = (geneMutations[m],affectedRegionProt)
