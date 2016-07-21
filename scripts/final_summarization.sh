@@ -168,7 +168,9 @@ analyses='anchor_analysis iupred_analysis interpro_analysis prosite_analysis str
 getVersion structural_analysis 
 rm -r ~/smartas/notebook/data/structural_analysis
 mkdir ~/smartas/notebook/data/structural_analysis
-ln -s /projects_rg/TCGA/users/hector/SmartAS/structural_analysis/pfam_go_term ~/smartas/notebook/data/structural_analysis/
+cp -r /projects_rg/TCGA/users/hector/SmartAS/structural_analysis/pfam_go_term ~/smartas/notebook/data/structural_analysis/
+cp -r /projects_rg/TCGA/users/hector/SmartAS/eporta/comet_output/ ~/smartas/notebook/data/structural_analysis/
+cp /projects_rg/TCGA/users/hector/SmartAS/eporta/Switched_interactions_consensus.txt /projects_rg/TCGA/users/hector/SmartAS/eporta/num_patients_with_each_switch.txt ~/smartas/notebook/data/structural_analysis/
 
 for knsur in $cancerTypes
 do
@@ -275,7 +277,7 @@ rm -r ~/smartas/notebook/data/mutations
 mkdir ~/smartas/notebook/data/mutations
 
 # WES ME analysis
-echo -e "Tumor\tGeneId\tSymbol\tNormal_transcript\tTumor_transcript\tMS\tM\tS\tN\tp.me\tadjp.me\tp.o\tadjp.o" >~/smartas/notebook/data/mutations/gene_functional_mutations_all_switches.txt
+echo -e "Tumor\tGeneId\tSymbol\tNormal_transcript\tTumor_transcript\tMS\tM\tS\tN\tp\tOR\tSwitched\tMutated" >~/smartas/notebook/data/mutations/gene_functional_mutations_all_switches.txt
 grep -v ^Tumor smartas/analyses/????/mutations/gene_functional_mutations_all_switches.txt | cut -d':' -f2- >>~/smartas/notebook/data/mutations/gene_functional_mutations_all_switches.txt
 checkFile mutations gene_functional_mutations_all_switches.txt
 
