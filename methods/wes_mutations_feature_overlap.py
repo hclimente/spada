@@ -12,7 +12,7 @@ class WESMutationsFeatureOverlap(method.Method):
 
 		self.functionalMutations = self.readFunctionalMutations()
 
-		# txname="uc002gig.1"
+		# txname="uc001kjc.3"
 		# txinfo=self._transcript_network._net.node[txname]
 		# tx = transcript.Transcript(txname,txinfo)
 		# txMuts = self.getTxsMutations(tx)
@@ -236,7 +236,8 @@ class WESMutationsFeatureOverlap(method.Method):
 								if t[1] in ["Frame_Shift_Del","Frame_Shift_Ins","Nonsense_Mutation"]:
 									affectingMuts.append((t[0],t[1]+"_out"))
 						
-				featureMutation[f].append(affectingMuts)
+				if affectingMuts:
+					featureMutation[f].append(affectingMuts)
 
 		return featureMutation
 
