@@ -83,6 +83,8 @@ class ResultSummary(method.Method):
 
 		testedSwitches = 0
 
+		self.logger.info("Taking measures on switches.")
+
 		# tests at switch level
 		for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_byPatientNumber(self._transcript_network,only_models=True,partialCreation=True,removeNoise=True):
 			self.logger.debug("Getting statistics for switch {0}_{1}_{2}.".format(gene,thisSwitch.nTx,thisSwitch.tTx))
@@ -97,12 +99,6 @@ class ResultSummary(method.Method):
 			# self.disorderChange(switch)
 
 			testedSwitches += 1
-			
-		for _ in range(100):
-			for gene,info,switchDict,thisSwitch in self._random_gene_network.sampleSwitches(self._transcript_network,numIterations=testedSwitches):
-				self.switchAndExonOverview(True,gene,info,switchDict,thisSwitch)
-				self.proteinOverview(True,switchDict,txDict,thisSwitch)
-				self.changedStructuralFeatures(True,gene,info,switchDict,thisSwitch)
 
 		# tests at gene level
 		for gene,info in self._gene_network.iterate_genes_byPatientNumber(alwaysSwitchedGenes=True):
@@ -113,6 +109,14 @@ class ResultSummary(method.Method):
 				modelDict = dicts[0]
 
 			self.driverTests(gene,info,modelDict)
+		
+		self.logger.info("Sampling random switches and taking measures.")
+		for i in range(100):
+			for gene,info,switchDict,thisSwitch in self._random_gene_network.sampleSwitches(self._transcript_network,numIterations=testedSwitches):
+				self.logger.debug("Iteration #{}.".format(i))
+				self.switchAndExonOverview(True,gene,info,switchDict,thisSwitch)
+				self.proteinOverview(True,switchDict,txDict,thisSwitch)
+				self.changedStructuralFeatures(True,gene,info,switchDict,thisSwitch)
 
 		self.printSwitchInfo()
 		self.printStructutalInfo()
