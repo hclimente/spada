@@ -46,17 +46,8 @@ def geneclusterLaunch(tag,base,*args):
 	for argument in args:
 		command += " " + argument
 
-	with open(tag+".sh","w") as configFile:
-		configFile.write('#!/bin/sh\n')
-		configFile.write('#$ -q normal\n')
-		configFile.write('#$ -cwd\n')
-		configFile.write("#$ -e /data/users/hector/{0}.log\n".format(tag))
-		configFile.write("#$ -o /data/users/hector/{0}.log\n".format(tag))
-
-		configFile.write("source ~/.bashrc\n")
-		configFile.write(command+"\n")
-
-	cmd("qsub","-N",tag,tag+".sh")
+	cmd("qsub","-b y","-V","-N {}".format(tag),"-q short-low","-cwd","-e /data/users/hector/e-{}.log".format(tag),
+		"-o /data/users/hector/o-{}.log".format(tag),command)
 
 def launchJobs(gnNetwork,task,q="short"):
 
