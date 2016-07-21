@@ -461,8 +461,8 @@ class GeneNetwork(network.Network):
 			driverAnnotation = "d1"
 		
 		if [ x for x in hallmarksDict if gene in hallmarksDict[x] ]:
-			annotation = [ x for x in hallmarksDict if gene in hallmarksDict[x] ][0]
+			annotation = ",".join(sorted([ x for x in hallmarksDict if gene in hallmarksDict[x] ]))
 		elif [ x for x in biologicalProcessDict if gene in biologicalProcessDict[x] ]:
-			annotation = [ x for x in biologicalProcessDict if gene in biologicalProcessDict[x] ][0]
+			annotation = ",".join(sorted([ x for x in biologicalProcessDict if gene in biologicalProcessDict[x] ]))
 
 		return (annotation,driverAnnotation)
