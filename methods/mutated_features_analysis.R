@@ -110,7 +110,12 @@ for (f in c("prosite","Pfam")){
            p_m = apply(.[,c("TotalMutations","ExpectedMutFrequency")],1, my.binom.test, ft.allMutations)) %>%
     mutate(adjp_m = p.adjust(p_m))
   
-  #write.table(ft.mut.enrichment[,c("Feature","TotalMutations","TotalLength","ExpectedMutFrequency","fc_m","p_m","adjp_m","H_m","Frame_Shift_Del","Frame_Shift_Ins","In_Frame_Del","In_Frame_Ins","Missense_Mutation","Nonsense_Mutation","Nonstop_Mutation","Frame_Shift_Del_out","Frame_Shift_Ins_out","Nonsense_Mutation_out")],paste0(out,"mutations/",f,".mutation.enrichment.txt"),sep="\t",row.names = FALSE,quote=F)
+  ft.mut.enrichment %>%
+    select(Feature,TotalMutations,TotalLength,ExpectedMutFrequency,fc_m,p_m,adjp_m,
+           H_m,Frame_Shift_Del,Frame_Shift_Ins,In_Frame_Del,In_Frame_Ins,
+           Missense_Mutation,Nonsense_Mutation,Nonstop_Mutation,Frame_Shift_Del_out,
+           Frame_Shift_Ins_out,Nonsense_Mutation_out) %>%
+  write_tsv(paste0(out,"mutations/",f,".mutation.enrichment.txt"))
   
   tests[[f]] <- ft.mut.enrichment
 }
@@ -125,4 +130,6 @@ df <- switchesFull %>%
 switches$AffectingMutatedFeature <- 0
 switches$AffectingMutatedFeature[switches$Normal_transcript %in% df$Normal_transcript & switches$Tumor_transcript %in% df$Tumor_transcript] <- 1
 
-#write.table(switches[,c("GeneId","Symbol","Normal_transcript","Tumor_transcript","AffectingMutatedFeature")],out.file,sep="\t",row.names = FALSE,quote=F)
+switches %>%
+  select(GeneId,Symbol,Normal_transcript,Tumor_transcript,AffectingMutatedFeature) %>%
+  write_tsv(out.file)
