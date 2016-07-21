@@ -13,6 +13,7 @@ from methods import me_analysis
 from methods import me_geneset_analysis
 from methods import wes_mutations_feature_overlap
 from methods import annotate_switches
+from methods import me_ppi
 # validation
 from methods import explore_pannegative
 from methods import candidates_pathways
@@ -150,6 +151,11 @@ class SmartAS:
 		utils.cmd('Rscript', 
 				  'pipeline/methods/pancancer_mutual_exclusion_analysis.R')
 
+	def pancancerStudyPPIMutualExclusion(self):
+		m = me_ppi.MEPPI(False,False)
+		m.clean()
+		m.run()
+
 	def pancancerStudyCoocurrence(self):
 		utils.cmd('Rscript', 'pipeline/methods/pancancer_coocurrence_analysis.R')
 
@@ -228,6 +234,8 @@ if __name__ == '__main__':
 			S.pancancerStudyWESMutationsFeatureOverlap()
 		elif options.Options().initialStep == "me-analysis":
 			S.pancancerStudyMutualExclusion()
+		elif options.Options().initialStep == "me-ppi":
+			S.pancancerStudyPPIMutualExclusion()
 		elif options.Options().initialStep == "co-occurence":
 			S.pancancerStudyCoocurrence()
 	
