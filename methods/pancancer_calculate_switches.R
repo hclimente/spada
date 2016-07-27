@@ -16,12 +16,12 @@ all.switches <- do.call("rbind",all.switches)
 all.switches.file <- paste0("~/smartas/analyses/pancancer/",switches.filename,".tumorSplit.tsv")
 write.table(all.switches, all.switches.file, sep="\t", row.names=F, quote=F)
 
+# a switch is regarded as Reliable pancancer if it's NotNoise and Model in at least a tumor
 switches.agg <- all.switches %>%
     group_by(GeneId,Symbol,Normal_transcript,Tumor_transcript,Normal_protein,
              Tumor_protein,DriverAnnotation,Driver,Druggable,IsFunctional,
              CDS_Normal,CDS_Tumor,CDS_change,UTR_change) %>%
-    summarise(NotNoise=max(NotNoise), 
-              IsModel=max(IsModel),
+    summarise(Reliable=max((NotNoise+IsModel)==2), 
               Tumors=paste(Tumor,collapse = ","),
               Patients_affected=paste(Patients_affected,collapse = ","), 
               PatientNumber=sum(PatientNumber), 
@@ -29,7 +29,7 @@ switches.agg <- all.switches %>%
     arrange(desc(Percentage)) %>%
     select(GeneId,Symbol,Normal_transcript,Tumor_transcript,
            Normal_protein,Tumor_protein,DriverAnnotation,
-           NotNoise,IsModel,IsFunctional,Driver,Druggable,CDS_Normal,
+           Reliable,IsFunctional,Driver,Druggable,CDS_Normal,
            CDS_Tumor,CDS_change,UTR_change,Tumors,PatientNumber,
            Percentage,Patients_affected)
 

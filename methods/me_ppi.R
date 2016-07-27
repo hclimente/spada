@@ -15,8 +15,10 @@ candidateInfo <- read_tsv(paste0(root,"notebook/data/pancancer/candidateList_ful
   mutate(Candidate = revalue(as.character(Candidate),replace=c("TRUE"="Candidate","FALSE"="Non-candidate"))) %>%
   select(GeneId,Symbol,Normal_transcript,Tumor_transcript,Recurrent,AffectingMutatedFeature,Coocurrent,Candidate)
 
-switches <- read_tsv(paste0(wdp,"candidateList_info.tumorSplit.tsv"))
-switches.agg <- read_tsv(paste0(wdp,"candidateList_info.agg.tsv"))
+switches <- read_tsv(paste0(wdp,"candidateList_info.tumorSplit.tsv")) %>%
+  filter(NotNoise==1 & IsModel==1 & IsFunctional==1)
+switches.agg <- read_tsv(paste0(wdp,"candidateList_info.agg.tsv")) %>%
+  filter(Reliable==1 & IsFunctional==1)
 
 #############################
 ##         DRIVERS         ##
@@ -61,11 +63,13 @@ ppi.cols <- paste(c("Origin","Interaction"), floor(seq(1,no_col.ppi,0.5)), sep="
 
 # read table
 ppi <- read.table(ppi.file,header=F,fill=T,col.names=1:no_col) %>%
-  set_colnames(c("GeneId","Symbol","Normal_transcript","Tumor_transcript","partnerId","partnerSymbol",ppi.cols)) %>%
+  set_colnames(c("GeneId","Symbol","Normal_transcript","Tumor_transcript",
+                 "partnerId","partnerSymbol",ppi.cols)) %>%
   # all Origin columns contail "DDI_match", so we can disregard them
   select(-starts_with("Origin_")) %>%
   # convert from wide to long table format
-  melt(id.vars = c("GeneId","Symbol","Normal_transcript","Tumor_transcript","partnerId","partnerSymbol"),
+  melt(id.vars = c("GeneId","Symbol","Normal_transcript",
+                   "Tumor_transcript","partnerId","partnerSymbol"),
        value.name = "Interaction") %>%
   select(-variable) %>%
   # remove cases with no interaction described
@@ -128,7 +132,9 @@ affected.wide <- affected.long %>%
 ## substitute NA's
 affected.wide[is.na(affected.wide)] <- ""
 
-write_tsv(affected.wide, paste0(wdp,"ppi/mutation_matrix.tsv"))
+as.data.frame(affected.wide) %>%
+  mutate(.,Gene=rownames(.)) %>%
+  write_tsv(paste0(wdp,"ppi/mutation_matrix.tsv"))
 
 #############################
 ##    CALCULATE OVERLAP    ##
