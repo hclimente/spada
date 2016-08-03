@@ -1,4 +1,5 @@
 source("~/smartas/pipeline/scripts/variablesAndFunctions.r")
+library(tidyr)
 
 args <- commandArgs(trailingOnly = TRUE)
 switches.in <- args[1]
@@ -48,14 +49,18 @@ patients <- merge(wgs.patients,switch.patients,all=TRUE)
 co.tmp <- patients %>%
 	group_by(GeneId,Symbol,Normal_transcript,Tumor_transcript) %>%
 	summarise(MS=sum(!is.na(SwitchedPatient) & !is.na(MutPatient)),
-		M=sum(is.na(SwitchedPatient) & !is.na(MutPatient)),
-		S=sum(!is.na(SwitchedPatient) & is.na(MutPatient)))
+            M=sum(is.na(SwitchedPatient) & !is.na(MutPatient)),
+            S=sum(!is.na(SwitchedPatient) & is.na(MutPatient))) %>%
+  ungroup()
 
 ### get M cases (where no pair of transcripts can be inferred)
-co.s <- subset(co.tmp, !is.na(Normal_transcript) & !is.na(Tumor_transcript))
-co.m <- subset(co.tmp, is.na(Normal_transcript) & is.na(Tumor_transcript),select=c("GeneId","M"))
+co.s <- co.tmp %>%
+  filter(!is.na(Normal_transcript) & !is.na(Tumor_transcript))
+co.m <- co.tmp %>%
+  filter(is.na(Normal_transcript) & is.na(Tumor_transcript)) %>%
+  select(GeneId,M)
 
-co <- merge(co.m,co.s,by=c("GeneId")) %>%
+co <- merge(co.m, co.s, by = c("GeneId")) %>%
 	mutate(M = M.x)
 
 discount <- patients %>%
@@ -75,7 +80,7 @@ co <- apply(co[,c("MS","M","S","N")],1, function(x){
   f <- fisher.test(x=matrix(x,nrow=2,ncol=2),alternative="greater")
   or <- y[1]*y[4]/(y[2]*y[3])
   
-  c(p.o=f$p.value,or=f$estimate,my.or=or)}) %>%
+  c( p.o = f$p.value, or = f$estimate, my.or = or )}) %>%
 	t %>%
 	as.data.frame %>%
 	set_colnames(c("p.o","OR","eOR")) %>%
@@ -83,10 +88,11 @@ co <- apply(co[,c("MS","M","S","N")],1, function(x){
 
 # complete information and save
 co.info <- switches.info %>%
-	select(GeneId,Symbol,Normal_transcript,Tumor_transcript,Annotation,DriverAnnotation,Driver,Druggable) %>%
+	select(GeneId,Symbol,Normal_transcript,Tumor_transcript,
+         Annotation,DriverAnnotation,Driver,Druggable) %>%
 	merge(co,all.x=TRUE) %>%
 	arrange(p.o) %>%
   mutate(Tumor=unique(wgs$Tumor)) %>%
 	select(Tumor,GeneId,Symbol,Normal_transcript,Tumor_transcript,MS,M,S,N,p.o)
 
-write.table(co.info, out.candidates, sep="\t", row.names=F, quote=F)
+write_tsv(co.info, out.candidates)
