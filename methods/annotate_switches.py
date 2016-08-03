@@ -96,7 +96,7 @@ class AnnotateSwitches(method.Method):
 				for line in utils.readTable(infile):
 					switch = "{}_{}".format(line[3],line[4])
 
-					p = float(line[10])
+					p = float(line[9])
 					panneg.setdefault(switch,0)
 
 					if p < 0.05:
