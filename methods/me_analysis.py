@@ -34,15 +34,13 @@ class MEAnalysis(method.Method):
 
 		self.logger.info("Filtering WGS mutations.")
 		self.logger.info("Getting co-occurrence candidates.")
-		utils.cmd("/soft/R/R-3.2.3/bin/Rscript", 
-				  "pipeline/methods/mutation_coocurrence_analysis.R", 
+		utils.cmd("Rscript", "pipeline/methods/mutation_coocurrence_analysis.R", 
 				  "{}candidateList_info.tsv".format(options.Options().qout),
 				  "{}mutations/wgs_mutations.txt".format(options.Options().qout),
 				  "{}mutations/gene_wgs_mutations_all_switches.txt".format(options.Options().qout))
 
 		self.logger.info("Getting mutual exclusion candidates.")
-		utils.cmd("/soft/R/R-3.2.3/bin/Rscript", 
-				  "pipeline/methods/mutual_exclusion_analysis.R", 
+		utils.cmd("Rscript", "pipeline/methods/mutual_exclusion_analysis.R", 
 				  "{}mutations/gene_functional_mutations_all_switches.txt".format(options.Options().qout),
 				  "{}mutations/gene_wgs_mutations_all_switches.txt".format(options.Options().qout),
 				  "{}candidateList_mutationME.tsv".format(options.Options().qout))
