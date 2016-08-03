@@ -32,15 +32,6 @@ do
     grep $a ~/smartas/analyses/????/result_summary/switches_onlyModels.tsv | cut -d':' -f2 >~/smartas/notebook/data/switches/$a.tsv
 done
 
-echo exons
-echo -e "Cancer\tRandom\tSwitch\tOrigin\tType\tLength\tCDSLength\tCDSRelativeSize\tPosition\tKeepOrf" >~/smartas/notebook/data/switches/exons.tsv
-ls ~/smartas/analyses/????/result_summary/exons_onlyModels.tsv | xargs -n 1 tail -n +2 >>~/smartas/notebook/data/switches/exons.tsv
-
-cut -f1,2 ~/smartas/notebook/data/switches/exons.tsv | sort | uniq -c | sed 's/^ \+//' | sed 's/ /\t/g' >~/smartas/notebook/data/switches/exonsPerSwitch.tsv
-
-echo -e "Cancer\tRandom\tGene\tSymbol\tnTranscript\ttTranscript\tTag\tOrfChange\tnormalSegment\ttumorSegment" >~/smartas/notebook/data/switches/exons_new.tsv
-grep -v ^Cancer ~/smartas/analyses/????/result_summary/exons_new_onlyModels.tsv | cut -d':' -f2 >>~/smartas/notebook/data/switches/exons_new.tsv
-
 echo isoform length
 echo -e "Cancer\tRandom\tnIsoLength\ttIsoLength\tnIsoSpecificLength\ttIsoSpecificLength" >~/smartas/notebook/data/switches/isoform_length.tsv
 ls ~/smartas/analyses/????/result_summary/isoform_length_onlyModels.tsv | xargs -n 1 tail -n +2 >>~/smartas/notebook/data/switches/isoform_length.tsv
@@ -49,10 +40,7 @@ echo evidence of driverness
 echo -e "Tumor\tGeneId\tSymbol\tNormal_transcript\tTumor_transcript\tRecurrence\tAffects_mutated_feature\tPPI\tPannegative\tDriverME" >~/smartas/notebook/data/switches/driverEvidence.tsv
 grep -v ^Tumor ~/smartas/analyses/????/candidateList_driverEvidence.tsv | cut -d':' -f2 >>~/smartas/notebook/data/switches/driverEvidence.tsv
 
-echo "######################"
-echo "##   NEIGHBORHOOD   ##"
-echo "######################"
-
+echo neighborhoods
 analyses='canonical_pathways hallmarks go_biological_process oncogenic_signatures'
 genesubgroups="all functional"
 
@@ -62,18 +50,6 @@ do
     do
         echo -e "GeneSet\tCancer\tpval\tqval\tNormalizedAverageAffection\tSwitchingGenes\tOR\tsg\tsng\tnsg\tnsng" >~/smartas/notebook/data/switches/"$a"_$g.txt
         grep -v ^GeneSet smartas/analyses/????/neighborhood_analysis/"$a"_"$g"_onlyModels.txt  | cut -d':' -f2- >>~/smartas/notebook/data/switches/"$a"_$g.txt
-    done
-done
-
-hallmark_files=`ls smartas/analyses/????/mutations/hallmark_info/*tsv | cut -d'/' -f6 | sort | uniq`
-#mkdir ~/smartas/notebook/data/switches/hallmark_info
-
-for hll_file in $hallmark_files
-do
-    echo -e "Patient\tGene\tState\tCancer" >~/smartas/notebook/data/switches/hallmark_info/$hll_file
-    for knsur in $cancerTypes
-    do
-        grep -v ^patient smartas/analyses/$knsur/mutations/hallmark_info/$hll_file | cut -d':' -f2- | awk -v knsur=$knsur 'BEGIN{OFS="\t";} {print $0,knsur }' >>~/smartas/notebook/data/switches/hallmark_info/$hll_file
     done
 done
 
