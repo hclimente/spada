@@ -18,16 +18,14 @@ class AnnotateSwitches(method.Method):
 		mutAffectation = self.readSwitchesAffectingMutated()
 		self.logger.info("Reading PPI effect.")
 		ppi = self.readPPIAffection()
-		self.logger.info("Reading pannegative switches.")
+		self.logger.info("Reading pannegative switches and mutual exclusion with drivers.")
 		panneg = self.readPannegative()
-		self.logger.info("Reading mutual exclusion with drivers.")
-		driverMe = self.readDriverME()
 
 		self.logger.info("Annotating tumor-type switches.")
 		with open("{}candidateList_driverEvidence.tsv".format(options.Options().qout),"w") as OUT:
 			OUT.write("Tumor\tGeneId\tSymbol\tNormal_transcript\t")
-			OUT.write("Tumor_transcript\tRecurrence\tAffects_mutated_feature\t")
-			OUT.write("PPI\tPannegative\tDriverME\n")
+			OUT.write("Tumor_transcript\tRecurrence\t")
+			OUT.write("Affects_mutated_feature\tPPI\tPannegative\n")
 			
 			for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_byPatientNumber(
 				self._transcript_network,only_models=True,relevance=True,partialCreation=True):
@@ -39,11 +37,10 @@ class AnnotateSwitches(method.Method):
 
 				ppi.setdefault(swt,0)
 				panneg.setdefault(swt,0)
-				driverMe.setdefault(swt,0)
 			
 				OUT.write("{}\t{}\t{}\t{}\t{}\t".format(options.Options().tag,gene,symbol,nTx,tTx))
 				OUT.write("{}\t{}\t".format(recurrence[swt],mutAffectation[swt]))
-				OUT.write("{}\t{}\t{}\n".format(ppi[swt],panneg[swt],driverMe[swt]))
+				OUT.write("{}\t{}\n".format(ppi[swt],panneg[swt]))
 
 	def readProteome(self):
 		proteome = {}
@@ -71,7 +68,7 @@ class AnnotateSwitches(method.Method):
 
 	def readPPIAffection(self):
 		ppi = {}
-		for line in utils.readTable("{}projects_rg/eporta/Switched_interactions_consensus.txt".format(options.Options().wd), header=False):
+		for line in utils.readTable("{}projects_rg/eporta/raw_tables/Switched_interactions_consensus.txt".format(options.Options().wd), header=False):
 			switch = "{}_{}".format(line[2],line[3])
 
 			partner = line[4]
@@ -87,7 +84,20 @@ class AnnotateSwitches(method.Method):
 	def readPannegative(self):
 		panneg = {}
 
-		for i in range(2,11):
+		infile = "{}mutations/mutual_exclusion_top_drivers.txt".format(options.Options().qout)
+
+		# ask for mutual exclusion with a driver from the same pathway and with at least the aggregation of 3 drivers
+		if os.path.isfile(infile):
+			for line in utils.readTable(infile):
+				switch = "{}_{}".format(line[3],line[4])
+
+				p = float(line[13])
+				panneg.setdefault(switch,0)
+
+				if p < 0.05:
+					panneg[switch] = 1
+
+		for i in range(3,11):
 			infile = "{}mutations/pannegative_mutual_exclusion.top_{}_drivers.txt".format(options.Options().qout,i)
 
 			if not os.path.isfile(infile):
@@ -99,26 +109,15 @@ class AnnotateSwitches(method.Method):
 					p = float(line[9])
 					panneg.setdefault(switch,0)
 
-					if p < 0.05:
+					if p < 0.05 and panneg[switch] == 1:
 						panneg[switch] = i
 
+		# remove those cases where not both conditions are met
+		for switch in panneg:
+			if panneg[switch] < 3:
+				panneg[switch] = 0
+
 		return(panneg)
-
-	def readDriverME(self):
-		driverMe = {}
-		infile = "{}mutations/mutual_exclusion_top_drivers.txt".format(options.Options().qout)
-
-		if os.path.isfile(infile):
-			for line in utils.readTable(infile):
-				switch = "{}_{}".format(line[3],line[4])
-
-				p = float(line[13])
-				driverMe.setdefault(switch,0)
-
-				if p < 0.05:
-					driverMe[switch] = 1
-
-		return(driverMe)
 
 if __name__ == '__main__':
 	pass

@@ -10,9 +10,9 @@ wd <- "~/smartas/analyses/pancancer/"
 switches <- read_tsv(paste0(wd,"candidateList_info.agg.tsv"))
 candidates <- read_tsv("~/smartas/notebook/data/switches/driverEvidence.tsv") %>%
                          group_by(Normal_transcript,Tumor_transcript) %>%
-                         summarise(Recurrence = max(Recurrence), DriverME = max(DriverME),
+                         summarise(Recurrence = max(Recurrence), PPI = max(PPI),
                                    Affects_mutated_feature = max(Affects_mutated_feature),
-                                   PPI = max(PPI), Pannegative = max(Pannegative))
+                                   Pannegative = max(Pannegative))
 wes <- read_tsv(paste0(wd,"mutations/gene_functional_mutations_all_switches.txt")) %>%
 	set_colnames(c("GeneId","Symbol","Normal_transcript","Tumor_transcript","MS.pam","M.pam","S.pam","N.pam","p.pam.me"))
 wgs <- read_tsv(paste0(wd,"mutations/gene_wgs_mutations_all_switches.txt")) %>%
