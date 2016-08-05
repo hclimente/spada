@@ -15,7 +15,7 @@ do
 done
 
 echo switches
-echo -e "Cancer\tAnalysis\tBoth\tOnly_nIso\tOnly_tIso\tNone\tRandom_Both\tRandom_Only_nIso\tRandom_Only_tIso\tRandom_None" >~/smartas/notebook/data/switches/$a.tsv
+echo -e "Cancer\tAnalysis\tBoth\tOnly_nIso\tOnly_tIso\tNone\tRandom_Both\tRandom_Only_nIso\tRandom_Only_tIso\tRandom_None" >~/smartas/notebook/data/switches/CDS_study.tsv
 grep CDS_study ~/smartas/analyses/????/result_summary/switches_onlyModels.tsv | cut -d':' -f2 >>~/smartas/notebook/data/switches/CDS_study.tsv
 
 analyses='CDS_change UTR_change'
@@ -37,7 +37,7 @@ echo -e "Cancer\tRandom\tnIsoLength\ttIsoLength\tnIsoSpecificLength\ttIsoSpecifi
 ls ~/smartas/analyses/????/result_summary/isoform_length_onlyModels.tsv | xargs -n 1 tail -n +2 >>~/smartas/notebook/data/switches/isoform_length.tsv
 
 echo evidence of driverness
-echo -e "Tumor\tGeneId\tSymbol\tNormal_transcript\tTumor_transcript\tRecurrence\tAffects_mutated_feature\tPPI\tPannegative\tDriverME" >~/smartas/notebook/data/switches/driverEvidence.tsv
+echo -e "Tumor\tGeneId\tSymbol\tNormal_transcript\tTumor_transcript\tRecurrence\tAffects_mutated_feature\tPPI\tPannegative" >~/smartas/notebook/data/switches/driverEvidence.tsv
 grep -v ^Tumor ~/smartas/analyses/????/candidateList_driverEvidence.tsv | cut -d':' -f2 >>~/smartas/notebook/data/switches/driverEvidence.tsv
 
 echo neighborhoods
@@ -63,9 +63,6 @@ mkdir ~/smartas/notebook/data/structural_analysis
 
 echo Copy Eduard\'s files
 cp -r /projects_rg/TCGA/users/hector/SmartAS/structural_analysis/pfam_go_term ~/smartas/notebook/data/structural_analysis/
-cp -r /projects_rg/TCGA/users/hector/SmartAS/eporta/comet_output/ ~/smartas/notebook/data/structural_analysis/
-cp -r /projects_rg/TCGA/users/hector/SmartAS/eporta/estimate/ ~/smartas/notebook/data/switches/
-cp /projects_rg/TCGA/users/hector/SmartAS/eporta/Switched_interactions_consensus.txt /projects_rg/TCGA/users/hector/SmartAS/eporta/num_patients_with_each_switch.txt ~/smartas/notebook/data/structural_analysis/
 
 analyses='anchor_analysis iupred_analysis interpro_analysis prosite_analysis structural_summary'
 
