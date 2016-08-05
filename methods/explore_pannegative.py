@@ -189,7 +189,8 @@ class ExplorePannegative(method.Method):
 			pwgene = [ x for x in self.canonicalPathways if gene in self.canonicalPathways[x] and x in pathways ]
 
 			ms,m,s,n = self.getContingencyTable(patientsWithSwitch,patientsWithMutation,self.patients)
-			p = fisher.pvalue(ms,m,s,n)
+			lContingencyTable = [[ms,m],[s,n]]
+			OR,pval = fisher_exact(lContingencyTable,alternative="greater")
 			try:
 				d = len(networkx.shortest_path(self._gene_network._net,gene,driverId))
 			except networkx.exception.NetworkXNoPath:
@@ -198,4 +199,4 @@ class ExplorePannegative(method.Method):
 			OUT.write("{}\t{}\t{}\t".format(options.Options().tag,gene,info["symbol"]))
 			OUT.write("{}\t{}\t".format(switchDict["nIso"],switchDict["tIso"]))
 			OUT.write("{}\t{}\t{}\t{}\t".format(driverId,driverName,",".join(pwgene),d))
-			OUT.write("{}\t{}\t{}\t{}\t{}\n".format(ms,m,s,n,p.left_tail))
+			OUT.write("{}\t{}\t{}\t{}\t{}\n".format(ms,m,s,n,pval))
