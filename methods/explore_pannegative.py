@@ -59,7 +59,7 @@ class ExplorePannegative(method.Method):
 			OUT.write("Tumor\tGeneId\tSymbol\tNormal_transcript\tTumor_transcript\t")
 			OUT.write("Driver\tDriverSymbol\tPathway\tDistance\tMS\tM\tS\tN\tp.me\n")
 			
-			for i in range(10):
+			for i in range(min(10, len(sortedDrivers))):
 				driverName = sortedDrivers[i]
 				mutatedSamples = set(self.functionalMutations[driverName]) & self.patients
 
