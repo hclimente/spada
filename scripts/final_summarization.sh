@@ -15,25 +15,25 @@ do
 done
 
 echo switches
-echo -e "Cancer\tAnalysis\tBoth\tOnly_nIso\tOnly_tIso\tNone\tRandom_Both\tRandom_Only_nIso\tRandom_Only_tIso\tRandom_None" >~/smartas/notebook/data/switches/CDS_study.tsv
+echo -e "Tumor\tAnalysis\tBoth\tOnly_nIso\tOnly_tIso\tNone\tRandom_Both\tRandom_Only_nIso\tRandom_Only_tIso\tRandom_None" >~/smartas/notebook/data/switches/CDS_study.tsv
 grep CDS_study ~/smartas/analyses/????/result_summary/switches_onlyModels.tsv | cut -d':' -f2 >>~/smartas/notebook/data/switches/CDS_study.tsv
 
 analyses='CDS_change UTR_change'
 for a in $analyses
 do
-    echo -e "Cancer\tAnalysis\tYes\tNo\tRandom_Yes\tRandom_No\tp\tOR" >~/smartas/notebook/data/switches/$a.tsv
+    echo -e "Tumor\tAnalysis\tYes\tNo\tRandom_Yes\tRandom_No\tp\tOR" >~/smartas/notebook/data/switches/$a.tsv
     grep $a ~/smartas/analyses/????/result_summary/switches_onlyModels.tsv | cut -d':' -f2 >>~/smartas/notebook/data/switches/$a.tsv
 done
 
 analyses="d0_enrichment d1_enrichment d0_functional_enrichment d1_functional_enrichment"
 for a in $analyses
 do
-    echo -e "Cancer\tAnalysis\tFS\tFNS\tNFS\tNFNS\tp.me\tOR" >~/smartas/notebook/data/switches/$a.tsv
+    echo -e "Tumor\tAnalysis\tFS\tFNS\tNFS\tNFNS\tp.me\tOR" >~/smartas/notebook/data/switches/$a.tsv
     grep $a ~/smartas/analyses/????/result_summary/switches_onlyModels.tsv | cut -d':' -f2 >~/smartas/notebook/data/switches/$a.tsv
 done
 
 echo isoform length
-echo -e "Cancer\tRandom\tnIsoLength\ttIsoLength\tnIsoSpecificLength\ttIsoSpecificLength" >~/smartas/notebook/data/switches/isoform_length.tsv
+echo -e "Tumor\tNormal_transcript\tTumor_transcript\tRandom\tnIsoLength\ttIsoLength\tnIsoSpecificLength\ttIsoSpecificLength" >~/smartas/notebook/data/switches/isoform_length.tsv
 ls ~/smartas/analyses/????/result_summary/isoform_length_onlyModels.tsv | xargs -n 1 tail -n +2 >>~/smartas/notebook/data/switches/isoform_length.tsv
 
 echo evidence of driverness
@@ -77,15 +77,15 @@ do
 done
 
 echo structural_features
-echo -e "Cancer\tGene\tSymbol\tnTx\ttTx\tRandom\tAnalysis\tWhatsHappenning\tFeature\tDriver\tASDriver\tDriverType" >~/smartas/notebook/data/structural_analysis/structural_features.onlyModels.tsv
+echo -e "Tumor\tGeneId\tSymbol\tNormal_transcript\tTumor_transcript\tRandom\tAnalysis\tWhatsHappenning\tFeature\tDriver\tASDriver\tDriverType" >~/smartas/notebook/data/structural_analysis/structural_features.onlyModels.tsv
 grep -v ^Cancer ~/smartas/analyses/????/result_summary/structural_features_onlyModels.tsv | cut -d':' -f2- >>~/smartas/notebook/data/structural_analysis/structural_features.onlyModels.tsv
 
 echo interpro_analysis
-echo -e "Gene\tSymbol\tNormalTranscript\tTumorTranscript\tWhat\tFeature\tnormalReps\ttumorReps\tnMacroScore\tnMicroScore\tnJaccard\ttMacroScore\ttMicroScore\ttJaccard" >~/smartas/notebook/data/structural_analysis/interpro_analysis.tsv
+echo -e "GeneId\tSymbol\tNormal_transcript\tTumor_transcript\tWhat\tFeature\tnormalReps\ttumorReps\tnMacroScore\tnMicroScore\tnJaccard\ttMacroScore\ttMicroScore\ttJaccard" >~/smartas/notebook/data/structural_analysis/interpro_analysis.tsv
 grep -v ^Gene ~/smartas/analyses/????/structural_analysis/interpro_analysis.tsv | cut -d':' -f2- | sort | uniq >>~/smartas/notebook/data/structural_analysis/interpro_analysis.tsv
 
 echo prosite_analysis
-echo -e "Gene\tSymbol\tNormalTranscript\tTumorTranscript\tWhat\tFeature\tnormalReps\ttumorReps\tnMacroScore\tnMicroScore\tnJaccard\ttMacroScore\ttMicroScore\ttJaccard" >~/smartas/notebook/data/structural_analysis/prosite_analysis.tsv
+echo -e "GeneId\tSymbol\tNormal_transcript\tTumor_transcript\tWhat\tFeature\tnormalReps\ttumorReps\tnMacroScore\tnMicroScore\tnJaccard\ttMacroScore\ttMicroScore\ttJaccard" >~/smartas/notebook/data/structural_analysis/prosite_analysis.tsv
 grep -v ^Gene ~/smartas/analyses/????/structural_analysis/prosite_analysis.tsv | cut -d':' -f2- | sort | uniq >>~/smartas/notebook/data/structural_analysis/prosite_analysis.tsv
 
 echo "######################"
@@ -105,35 +105,35 @@ echo -e "Tumor\tGeneId\tSymbol\tNormal_transcript\tTumor_transcript\tMS\tM\tS\tN
 grep -v ^Tumor smartas/analyses/????/mutations/gene_wgs_mutations_all_switches.txt | cut -d':' -f2- >>~/smartas/notebook/data/mutations/gene_wgs_mutations_all_switches.txt
 
 echo proteome features
-echo -e "Cancer\tGene\tSymbol\tTranscript\tAnalysis\tFeature\tn\tFeatureLength\tStart\tEnd" >~/smartas/notebook/data/mutations/proteome_features.txt
+echo -e "Tumor\tGeneId\tSymbol\tTranscript\tAnalysis\tFeature\tn\tFeatureLength\tStart\tEnd" >~/smartas/notebook/data/mutations/proteome_features.txt
 grep -v ^Cancer smartas/analyses/????/mutations/proteome_features.txt | cut -d':' -f2- >>~/smartas/notebook/data/mutations/proteome_features.txt
 
 echo proteome mutations
-echo -e "Cancer\tGene\tSymbol\tTranscript\tAnalysis\tFeature\tn\tType\tPatient" >~/smartas/notebook/data/mutations/proteome_mutations.txt
+echo -e "Tumor\tGeneId\tSymbol\tTranscript\tAnalysis\tFeature\tn\tType\tPatient" >~/smartas/notebook/data/mutations/proteome_mutations.txt
 grep -v ^Cancer smartas/analyses/????/mutations/proteome_mutations.txt | cut -d':' -f2- >>~/smartas/notebook/data/mutations/proteome_mutations.txt
 
 echo proteome information
-echo -e "Cancer\tGene\tSymbol\tTranscript\tTPM\tProteinLength\tasEvidence" >~/smartas/notebook/data/mutations/proteome_information.txt
+echo -e "Tumor\tGeneId\tSymbol\tTranscript\tTPM\tProteinLength\tasEvidence" >~/smartas/notebook/data/mutations/proteome_information.txt
 grep -v ^Cancer smartas/analyses/????/mutations/proteome_information.txt | cut -d':' -f2- >>~/smartas/notebook/data/mutations/proteome_information.txt
 
 echo switches features
-echo -e "Cancer\tGene\tSymbol\tTranscript\tAnalysis\tFeature\tn\tFeatureLength\tStart\tEnd" >~/smartas/notebook/data/mutations/switch_features.txt
+echo -e "Tumor\tGeneId\tSymbol\tTranscript\tAnalysis\tFeature\tn\tFeatureLength\tStart\tEnd" >~/smartas/notebook/data/mutations/switch_features.txt
 grep -v ^Cancer smartas/analyses/????/mutations/switch_features.txt | cut -d':' -f2- >>~/smartas/notebook/data/mutations/switch_features.txt
 
 echo switches mutations
-echo -e "Cancer\tGene\tSymbol\tTranscript\tAnalysis\tFeature\tn\tType\tPatient" >~/smartas/notebook/data/mutations/switch_mutations.txt
+echo -e "Tumor\tGeneId\tSymbol\tTranscript\tAnalysis\tFeature\tn\tType\tPatient" >~/smartas/notebook/data/mutations/switch_mutations.txt
 grep -v ^Cancer smartas/analyses/????/mutations/switch_mutations.txt | cut -d':' -f2- >>~/smartas/notebook/data/mutations/switch_mutations.txt
 
 echo switches information
-echo -e "Cancer\tGene\tSymbol\tTranscript\tTPM\tProteinLength\tasEvidence" >~/smartas/notebook/data/mutations/switch_information.txt
+echo -e "Tumor\tGeneId\tSymbol\tTranscript\tTPM\tProteinLength\tasEvidence" >~/smartas/notebook/data/mutations/switch_information.txt
 grep -v ^Cancer smartas/analyses/????/mutations/switch_information.txt | cut -d':' -f2- >>~/smartas/notebook/data/mutations/switch_information.txt
 
 echo wgs mutations
-echo -e "Tumor\tGene\tSymbol\tPatient\tPosition\tReference\tVariant" >~/smartas/notebook/data/mutations/wgs_mutations.txt
+echo -e "Tumor\tGeneId\tSymbol\tPatient\tPosition\tReference\tVariant" >~/smartas/notebook/data/mutations/wgs_mutations.txt
 grep -v ^Tumor smartas/analyses/????/mutations/wgs_mutations.txt | cut -d':' -f2- >>~/smartas/notebook/data/mutations/wgs_mutations.txt
 
 echo wes mutations
-echo -e "Tumor\tGene\tSymbol\tTranscript\tPatient\tStart\tEnd\tType\tMedianExpression" >~/smartas/notebook/data/mutations/wes_mutations.txt
+echo -e "Tumor\tGeneId\tSymbol\tTranscript\tPatient\tStart\tEnd\tType\tMedianExpression" >~/smartas/notebook/data/mutations/wes_mutations.txt
 grep -v ^Tumor smartas/analyses/????/mutations/wes_mutations.txt | cut -d':' -f2- >>~/smartas/notebook/data/mutations/wes_mutations.txt
 
 echo me with top drivers
