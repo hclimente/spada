@@ -35,6 +35,7 @@ class AnnotateSwitches(method.Method):
 				symbol = info["symbol"]
 				swt = "{}_{}".format(nTx,tTx)
 
+				recurrence.setdefault(swt,0)
 				ppi.setdefault(swt,0)
 				panneg.setdefault(swt,0)
 			
