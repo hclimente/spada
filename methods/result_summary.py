@@ -138,6 +138,7 @@ class ResultSummary(method.Method):
 		tLength = 0
 		nSpLength = 0
 		tSpLength = 0
+		switch = "{}_{}".format(switchDict["nIso"],switchDict["tIso"])
 
 		if thisSwitch.nIsoform:
 			nLength = len(thisSwitch.nIsoform.seq)
@@ -152,7 +153,7 @@ class ResultSummary(method.Method):
 			[tSp.extend(x) for x in tIso]
 			tSpLength = len(tSp)
 
-		self.proteinStats[randomTag].append((nLength,tLength,nSpLength,tSpLength))
+		self.proteinStats[randomTag].append((switch,nLength,tLength,nSpLength,tSpLength))
 
 	def driverTests(self,gene,info,switchDict):
 		if info["driver"]: 	driverTag = "driver"
@@ -298,14 +299,15 @@ class ResultSummary(method.Method):
 	def printSwitchInfo(self):
 
 		with open("{0}result_summary/isoform_length{1}.tsv".format(options.Options().qout,options.Options().filetag), "w" ) as F:
-			F.write("Cancer\tRandom\tnIsoLength\ttIsoLength\tnIsoSpecificLength\ttIsoSpecificLength\n")
-			for nlen,tlen,nsplen,tsplen in self.proteinStats["NonRandom"]:
-				F.write("{0}\tNonRandom\t".format(options.Options().tag))
-				F.write("{0}\t{1}\t{2}\t{3}\n".format(nlen,tlen,nsplen,tsplen))
-
-			for nlen,tlen,nsplen,tsplen in self.proteinStats["Random"]:
-				F.write("{0}\tRandom\t".format(options.Options().tag))
-				F.write("{0}\t{1}\t{2}\t{3}\n".format(nlen,tlen,nsplen,tsplen))
+			F.write("Cancer\tNormal_transcript\tTumor_transcript\tRandom\tnIsoLength")
+			F.write("\ttIsoLength\tnIsoSpecificLength\ttIsoSpecificLength\n")
+			for r in self.proteinStats:
+				for switch,nlen,tlen,nsplen,tsplen in self.proteinStats[r]:
+					switchIsoforms = switch.split("_")
+					nIso = switchIsoforms[0]
+					tIso = switchIsoforms[1]
+					F.write("{}\t{}\t{}\t{}\t".format(options.Options().tag,nIso,tIso,r))
+					F.write("{}\t{}\t{}\t{}\n".format(nlen,tlen,nsplen,tsplen))
 		
 		with open("{0}result_summary/switches{1}.tsv".format(options.Options().qout,options.Options().filetag), "w" ) as F:
 			F.write("Cancer\tAnalysis\tBoth\tOnly_nIso\tOnly_tIso\tNone\t")
