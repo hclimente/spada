@@ -7,6 +7,9 @@ library(tidyr)
 
 # read stroma/immune information
 origin <- read_tsv(paste0(wd,"candidateList.origin.tsv"))
+recurrence <- read_tsv(paste0(wd,"candidateList_recurrence.tsv")) %>%
+  mutate(Spurious = ifelse(padj.recurrence < 0.05 & what == "less", TRUE, FALSE)) %>%
+  select(Normal_transcript,Tumor_transcript,Spurious)
 
 #############################
 ##        AGGREGATED       ##
@@ -35,6 +38,8 @@ switches <- merge(switches,candidates,all.x=T) %>%
 
 switches %>%
   merge(origin) %>%
+  merge(recurrence) %>%
+  mutate(Reliable = ifelse(Spurious, 0, Reliable)) %>%
   # rearrange columns
   select(GeneId,Symbol,Normal_transcript,Tumor_transcript,Normal_protein:IsFunctional,Origin,
          Driver:Pannegative, Candidate, MS.pam:p.mut.o) %>%
@@ -62,6 +67,8 @@ switches.split <- merge(switches.split,candidates,all.x=T) %>%
 
 switches.split %>%
   merge(origin) %>%
+  merge(recurrence) %>%
+  mutate(Reliable = ifelse(Spurious, 0, Reliable)) %>%
   # rearrange columns
   select(Tumor,GeneId,Symbol,Normal_transcript,Tumor_transcript,Normal_protein:IsFunctional,
          Reliable,Origin,Driver:Pannegative, Candidate, MS.pam:p.mut.o) %>%
