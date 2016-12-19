@@ -286,12 +286,8 @@ class StructuralAnalysis(method.Method):
 
 					featInfo[isoform.tx] = sorted(featInfo[isoform.tx], key=operator.itemgetter("macro"))
 
-				featInfoZipped = map(None, featInfo[thisSwitch.nTx], featInfo[thisSwitch.tTx])
-
-				for i in range(len(featInfoZipped)):
-
-					nDict = featInfoZipped[i][0]
-					tDict = featInfoZipped[i][1]
+				i = 1
+				for nDict,tDict in zip(featInfo[thisSwitch.nTx], featInfo[thisSwitch.tTx]):
 
 					nMacroScore = "NA"
 					nMicroScore = "NA"
@@ -323,10 +319,11 @@ class StructuralAnalysis(method.Method):
 
 					OUT.write("{}\t{}\t{}\t".format(gene,info["symbol"],thisSwitch.nTx))
 					OUT.write("{}\t{}\t{}\t".format(thisSwitch.tTx,whatsHappening,feature))
-					OUT.write("{}/{}\t".format(i+1,len(featInfo[thisSwitch.nTx])))
-					OUT.write("{}/{}\t".format(i+1,len(featInfo[thisSwitch.tTx])))
+					OUT.write("{}/{}\t".format(i,len(featInfo[thisSwitch.nTx])))
+					OUT.write("{}/{}\t".format(i,len(featInfo[thisSwitch.tTx])))
 					OUT.write("{}\t{}\t{}\t".format(nMacroScore,nMicroScore,nJaccard))
 					OUT.write("{}\t{}\t{}\n".format(tMacroScore,tMicroScore,tJaccard))
+					i += 1
 
 		return anyFeature["pfam"],anyFeature["prosite"]
 
