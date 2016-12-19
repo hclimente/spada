@@ -26,7 +26,7 @@ class AnnotateSwitches(method.Method):
 			OUT.write("Tumor\tGeneId\tSymbol\tNormal_transcript\t")
 			OUT.write("Tumor_transcript\tRecurrence\t")
 			OUT.write("Affects_mutated_feature\tPPI\tPannegative\n")
-			
+
 			for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_byPatientNumber(
 				self._transcript_network,partialCreation=True, removeNoise=False):
 
@@ -38,7 +38,7 @@ class AnnotateSwitches(method.Method):
 				recurrence.setdefault(swt,0)
 				ppi.setdefault(swt,0)
 				panneg.setdefault(swt,0)
-			
+
 				OUT.write("{}\t{}\t{}\t{}\t{}\t".format(options.Options().tag,gene,symbol,nTx,tTx))
 				OUT.write("{}\t{}\t".format(recurrence[swt],mutAffectation[swt]))
 				OUT.write("{}\t{}\n".format(ppi[swt],panneg[swt]))
@@ -55,7 +55,7 @@ class AnnotateSwitches(method.Method):
 		recurrent = {}
 		for line in utils.readTable("{}analyses/pancancer/candidateList_recurrence.tsv".format(options.Options().wd)):
 			switch = "{}_{}".format(line[2],line[3])
-			recurrent[switch] = int(float(line[5]) < 0.05)
+			recurrent[switch] = int(float(line[5]) < 0.05 & line[6] == "greater")
 
 		return(recurrent)
 
