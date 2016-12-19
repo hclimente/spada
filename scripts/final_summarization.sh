@@ -42,15 +42,11 @@ grep -v ^Tumor ~/smartas/analyses/????/candidateList_driverEvidence.tsv | cut -d
 
 echo neighborhoods
 analyses='canonical_pathways hallmarks go_biological_process oncogenic_signatures'
-genesubgroups="all functional"
 
 for a in $analyses
 do
-    for g in $genesubgroups
-    do
-        echo -e "GeneSet\tCancer\tpval\tqval\tNormalizedAverageAffection\tSwitchingGenes\tOR\tsg\tsng\tnsg\tnsng" >~/smartas/notebook/data/switches/"$a"_$g.txt
-        grep -v ^GeneSet smartas/analyses/????/neighborhood_analysis/"$a"_"$g"_onlyModels.txt  | cut -d':' -f2- >>~/smartas/notebook/data/switches/"$a"_$g.txt
-    done
+    echo -e "Tumor\tGeneSet\tpval\tfdr5\tOR\tSwitchedGenes" >~/smartas/notebook/data/switches/$a.ppi.txt
+    grep -v ^Tumor smartas/analyses/????/neighborhood_analysis/$a.ppi.txt  | cut -d':' -f2- >>~/smartas/notebook/data/switches/$a.ppi.txt
 done
 
 echo "######################"
@@ -60,9 +56,6 @@ echo "######################"
 echo Delete previous
 rm -r ~/smartas/notebook/data/structural_analysis
 mkdir ~/smartas/notebook/data/structural_analysis
-
-echo Copy Eduard\'s files
-cp -r /projects_rg/TCGA/users/hector/SmartAS/structural_analysis/pfam_go_term ~/smartas/notebook/data/structural_analysis/
 
 analyses='anchor_analysis iupred_analysis interpro_analysis prosite_analysis structural_summary'
 
@@ -87,6 +80,15 @@ grep -v ^Gene ~/smartas/analyses/????/structural_analysis/interpro_analysis.tsv 
 echo prosite_analysis
 echo -e "GeneId\tSymbol\tNormal_transcript\tTumor_transcript\tWhat\tFeature\tnormalReps\ttumorReps\tnMacroScore\tnMicroScore\tnJaccard\ttMacroScore\ttMicroScore\ttJaccard" >~/smartas/notebook/data/structural_analysis/prosite_analysis.tsv
 grep -v ^Gene ~/smartas/analyses/????/structural_analysis/prosite_analysis.tsv | cut -d':' -f2- | sort | uniq >>~/smartas/notebook/data/structural_analysis/prosite_analysis.tsv
+
+echo iupred_analysis
+echo -e "GeneId\tSymbol\tNormal_transcript\tTumor_transcript\tWhat\tSequence\tStartPos\tEndPos\tJaccard\tmicroScore\tmacroScore\tSignificant" >~/smartas/notebook/data/structural_analysis/iupred_analysis.tsv
+grep -v ^Gene ~/smartas/analyses/????/structural_analysis/iupred_analysis.tsv | cut -d':' -f2- | sort | uniq >>~/smartas/notebook/data/structural_analysis/iupred_analysis.tsv
+
+echo anchor_analysis
+echo -e "GeneId\tSymbol\tNormal_transcript\tTumor_transcript\tWhat\tSequence\tStartPos\tEndPos\tJaccard\tmicroScore\tmacroScore\tSignificant" >~/smartas/notebook/data/structural_analysis/anchor_analysis.tsv
+grep -v ^Gene ~/smartas/analyses/????/structural_analysis/anchor_analysis.tsv | cut -d':' -f2- | sort | uniq >>~/smartas/notebook/data/structural_analysis/anchor_analysis.tsv
+
 
 echo "######################"
 echo "##     MUTATIONS    ##"
