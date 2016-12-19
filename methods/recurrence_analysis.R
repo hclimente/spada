@@ -2,17 +2,17 @@ source("~/smartas/pipeline/scripts/variablesAndFunctions.r")
 
 args <- commandArgs(trailingOnly = TRUE)
 switches.file <- args[1]
-out.file <- args[2]
+switches.origin <- args[2]
+out.file <- args[3]
 
 # read switches
+origin <- read_tsv(switches.origin)
+
 switches <- read_tsv(switches.file) %>%
+  merge(origin) %>%
+  filter(Origin == "Tumor") %>%
   ## calculate patient number
   mutate(Patient_number = Patients_affected %>% strsplit(",") %>% lapply(length) %>% unlist)
-
-if ("Origin" %in% colnames(switches)){
-  switches <- switches %>%
-    filter(Origin == "Tumor")
-}
 
 # calculate expected frequency of a switch
 patientNumber <- switches$Patients_affected %>% strsplit(",") %>% unlist %>% unique %>% length

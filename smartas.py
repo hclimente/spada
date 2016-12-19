@@ -40,17 +40,17 @@ class SmartAS:
 
 		g = get_switches.GetSwitches(None,None,None)
 		g.run()
-			
+
 	def structuralAnalysis(self):
 
 		s = structural_analysis.StructuralAnalysis(True,True)
 
 		if not options.Options().parallelRange:
 			# non-parallelized operation
-			
+
 			import glob
 			files=glob.glob("{}structural_analysis/interpro_analysis_[0-9]*.tsv".format(options.Options().qout))
-			
+
 			if files:
 				# all analyses ran already
 				s.joinFiles()
@@ -65,8 +65,8 @@ class SmartAS:
 	# candidates calculation
 	def recurrenceAnalysis(self):
 
-		utils.cmd('Rscript', 
-			"pipeline/methods/recurrence_analysis.R", 
+		utils.cmd('Rscript',
+			"pipeline/methods/recurrence_analysis.R",
 			"{}candidateList_info.tsv".format(options.Options().qout),
 			"{}candidateList_recurrence.tsv".format(options.Options().qout))
 
@@ -115,12 +115,12 @@ class SmartAS:
 		s.run()
 
 	def createRandomSwitches(self):
-		
+
 		r = get_random_switches.GetRandomSwitches(True,True)
 		r.run()
 
 	def studyWESMutationsFeatureOverlap(self):
-		
+
 		m = wes_mutations_feature_overlap.WESMutationsFeatureOverlap(True,True)
 		m.clean()
 		m.run()
@@ -135,20 +135,23 @@ class SmartAS:
 		utils.cmd('Rscript',"pipeline/methods/pancancer_calculate_switches.R","random.candidateList_info")
 
 	def pancancerRecurrenceAnalysis(self):
-		utils.cmd('Rscript', 
+		utils.cmd('Rscript',
+				  'pipeline/methods/get_switch_origin.R')
+		utils.cmd('Rscript',
 			"pipeline/methods/recurrence_analysis.R",
 			"{}candidateList_info.agg.tsv".format(options.Options().qout),
+			"{}candidateList.origin.tsv".format(options.Options().qout),
 			"{}candidateList_recurrence.tsv".format(options.Options().qout))
-	
+
 	def pancancerStudyWESMutationsFeatureOverlap(self):
 		utils.cmd("mkdir","-p","{}structural_analysis".format(options.Options().qout))
 		utils.cmd("mkdir","-p","{}mutations".format(options.Options().qout))
-		utils.cmd('Rscript', 
+		utils.cmd('Rscript',
 				  'pipeline/methods/pancancer_mutated_features_analysis.R')
-	
+
 	def pancancerStudyMutualExclusion(self):
 		utils.cmd("mkdir","-p","{}mutations".format(options.Options().qout))
-		utils.cmd('Rscript', 
+		utils.cmd('Rscript',
 				  'pipeline/methods/pancancer_mutual_exclusion_analysis.R')
 
 	def pancancerStudyPPIMutualExclusion(self):
@@ -208,7 +211,7 @@ if __name__ == '__main__':
 			S.explorePannegative()
 		elif options.Options().initialStep == "candidates-pathways":
 			S.candidatesPathways()
-			
+
 		# analyze model switches
 		elif options.Options().initialStep == "neighborhood-analysis":
 			S.neighborhoodAnalysis()
@@ -238,5 +241,5 @@ if __name__ == '__main__':
 			S.pancancerStudyPPIMutualExclusion()
 		elif options.Options().initialStep == "co-occurence":
 			S.pancancerStudyCoocurrence()
-	
+
 	S.logger.info("SmartAS will close.")
