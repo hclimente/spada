@@ -28,7 +28,7 @@ class AnnotateSwitches(method.Method):
 			OUT.write("Affects_mutated_feature\tPPI\tPannegative\n")
 			
 			for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_byPatientNumber(
-				self._transcript_network,only_models=True,relevance=True,partialCreation=True):
+				self._transcript_network,partialCreation=True, removeNoise=False):
 
 				nTx = switchDict["nIso"]
 				tTx = switchDict["tIso"]
@@ -69,7 +69,7 @@ class AnnotateSwitches(method.Method):
 
 	def readPPIAffection(self):
 		ppi = {}
-		for line in utils.readTable("{}projects_rg/eporta/raw_tables/Switched_interactions_consensus.txt".format(options.Options().wd), header=False):
+		for line in utils.readTable("{}notebook/data/eporta/raw_tables/Switched_interactions_consensus.txt".format(options.Options().wd), header=False):
 			switch = "{}_{}".format(line[2],line[3])
 
 			partner = line[4]
@@ -77,8 +77,20 @@ class AnnotateSwitches(method.Method):
 			if partner in self.proteome:
 				allInteractions = line[6:]
 				mostExpressed = [ x for x in allInteractions if self.proteome[partner] in x ]
-				if [ x for x in mostExpressed if "Kept" not in x ]:
-					ppi[switch] = 1
+				mostExpressedInfo = [ x for x in mostExpressed if "Kept" not in x ]
+				if mostExpressedInfo:
+					# Kept-uc002tdi.2-PF00018/PF00017_PF00018/PF00018
+					mostExpressedInfo = mostExpressedInfo[0]
+					ddi = mostExpressedInfo.split("-")[-1].split("_")
+					switchInvolvedDomains = set([ x.split("/")[0] for x in ddi ])
+
+					for dline in utils.readTable("{}structural_analysis/interpro_analysis.tsv".format(options.Options().qout)):
+						if "{}_{}".format(dline[2],dline[3]) == switch:
+							d = dline[5].split("|")[0]
+							if d in switchInvolvedDomains:
+								c = dline[4]
+								if c != "Nothing":
+									ppi[switch] = 1
 
 		return(ppi)
 
@@ -95,7 +107,7 @@ class AnnotateSwitches(method.Method):
 				p = float(line[13])
 				panneg.setdefault(switch,0)
 
-				if p < 0.05:
+				if p < 0.05 and line[7] != "":
 					panneg[switch] = 1
 
 		for i in range(3,11):
@@ -110,7 +122,7 @@ class AnnotateSwitches(method.Method):
 					p = float(line[9])
 					panneg.setdefault(switch,0)
 
-					if p < 0.05 and panneg[switch] == 1:
+					if p < 0.05 and panneg[switch] > 0:
 						panneg[switch] = i
 
 		# remove those cases where not both conditions are met
