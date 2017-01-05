@@ -1,7 +1,7 @@
 SmartAS
 =======
 
-SmartAS is a pipeline oriented to finding interesting isoform switches between two conditions, with as many replicates as desired.
+SmartAS is a pipeline oriented to finding interesting isoform switches between two conditions, with as many replicates as desired. An analysis of the TCGA dataset using this pipeline is available [here](https://github.com/hclimente/smartas).
 
 The working directory must have the following structure:
 
