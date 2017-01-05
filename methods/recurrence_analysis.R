@@ -16,9 +16,9 @@ frequencies <- switches %>%
   mutate(Patient_number = Patients_affected %>% strsplit(",") %>% lapply(length) %>% unlist)
 
 # calculate expected frequency of a switch
-patientNumber <- switches$Patients_affected %>% strsplit(",") %>% unlist %>% unique %>% length
-geneNumber <- switches$GeneId %>% unique %>% length
-f.exp <- sum(switches$Patient_number)/(geneNumber*patientNumber)
+patientNumber <- frequencies$Patients_affected %>% strsplit(",") %>% unlist %>% unique %>% length
+geneNumber <- frequencies$GeneId %>% unique %>% length
+f.exp <- sum(frequencies$Patient_number)/(geneNumber*patientNumber)
 
 # binomial test
 tests <- lapply(frequencies$Patient_number, binom.test, patientNumber, f.exp)
