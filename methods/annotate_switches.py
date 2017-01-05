@@ -55,7 +55,7 @@ class AnnotateSwitches(method.Method):
 		recurrent = {}
 		for line in utils.readTable("{}analyses/pancancer/candidateList_recurrence.tsv".format(options.Options().wd)):
 			switch = "{}_{}".format(line[2],line[3])
-			recurrent[switch] = int(float(line[5]) < 0.05 & line[6] == "greater")
+			recurrent[switch] = int((float(line[5]) < 0.05) & (line[6] == "greater"))
 
 		return(recurrent)
 
