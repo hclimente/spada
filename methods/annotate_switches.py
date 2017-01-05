@@ -58,7 +58,7 @@ class AnnotateSwitches(method.Method):
 			if line[5] == 'NA':
 				next
 			switch = "{}_{}".format(line[2],line[3])
-			recurrent[switch] = int(float(line[5]) < 0.05 & line[6] == "greater")
+			recurrent[switch] = int((float(line[5]) < 0.05) & (line[6] == "greater"))
 
 		return(recurrent)
 
