@@ -54,6 +54,9 @@ class AnnotateSwitches(method.Method):
 	def readRecurrence(self):
 		recurrent = {}
 		for line in utils.readTable("{}analyses/pancancer/candidateList_recurrence.tsv".format(options.Options().wd)):
+			# skip those cases where no test was performed
+			if line[5] == 'NA':
+				next
 			switch = "{}_{}".format(line[2],line[3])
 			recurrent[switch] = int((float(line[5]) < 0.05) & (line[6] == "greater"))
 
