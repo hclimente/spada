@@ -25,7 +25,7 @@ tests <- lapply(frequencies$Patient_number, binom.test, patientNumber, f.exp)
 frequencies <- frequencies %>%
   mutate(p.recurrence = unlist(lapply(tests,function(x){x$p.value})),
          padj.recurrence = p.adjust(p.recurrence),
-         what = ifelse(switches$Patient_number/patientNumber > f.exp, "greater", "less"))
+         what = ifelse(frequencies$Patient_number/patientNumber > f.exp, "greater", "less"))
 
 # complete with unused switches
 frequencies %>%
