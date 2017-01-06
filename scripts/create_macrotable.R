@@ -39,7 +39,8 @@ switches <- merge(switches,candidates,all.x=T) %>%
 switches %>%
   merge(origin) %>%
   merge(recurrence) %>%
-  mutate(Reliable = ifelse(Spurious, 0, Reliable)) %>%
+  mutate(Reliable = ifelse(Spurious, 0, Reliable),
+         Reliable = ifelse(Origin != "Tumor", 0, Reliable)) %>%
   # rearrange columns
   select(GeneId,Symbol,Normal_transcript,Tumor_transcript,Normal_protein:IsFunctional,Origin,
          Driver:Pannegative, Candidate, MS.pam:p.mut.o) %>%
