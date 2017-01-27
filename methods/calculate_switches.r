@@ -2,22 +2,22 @@
 #   x numerical vector
 #   minV minimum value to consider that measure
 # Returns:
-#   * function returning NA when there are less than 10 valid values 
+#   * function returning NA when there are less than 10 valid values
 #     (ie non NA and higher than threshold)
-#   * function returning 1 to any value higher than 0 when all the 
+#   * function returning 1 to any value higher than 0 when all the
 #     differences are 0.
 #   * return ecdf otherwise, counting that the minimum p-value will be 1/n+1
 getEmpiricalDistribution <- function(x,minV){
-  
+
   v <- as.numeric(x)
-  
+
   # discard cases with less than 10 valid cases
   if ( sum(!is.na(v))< 10 | sum(v[!is.na(v)]>=minV)<10){
     return(function(x){return(rep(NA,length(x)))})
   } else {
     diffMatrix <- abs(outer(v,v,"-"))
     subtraction <- diffMatrix[lower.tri(diffMatrix, diag = FALSE)]
-    
+
     if (all(subtraction[!is.na(subtraction)]==0)){
       return(function(x){
         p <- rep(NA,length(x))
@@ -130,12 +130,13 @@ rownames(psi.diff) <- rownames(psi)
 write.table(psi.diff, file=out.psidiff, sep="\t", quote=F)
 
 ### get p
+out.psi.diff.p <- file.path(dirname(outfile),"psi.diff.p.txt")
 psi.ecdf <- apply(psi[,normal],1,getEmpiricalDistribution,0)
 
 psi.diff.p <- mapply(function(x,y){x(y)}, psi.ecdf, psi.diff.l)
 psi.diff.p <- 1 - psi.diff.p
 
-#### p-values when the difference is 0 are 1, 
+#### p-values when the difference is 0 are 1,
 #### instead of the value < 1 attributed by ecdf
 psi.diff.p[!is.na(psi.diff.v) & psi.diff.v==0] <- 1
 
@@ -144,6 +145,8 @@ psi.diff.p <- as.data.frame(t(psi.diff.p))
 colnames(psi.diff.p) <- tumor
 psi.diff.p$Gene <- genes
 psi.diff.p$Transcript <- transcripts
+
+write.table(psi.diff.p, file=out.psi.diff.p, sep="\t", quote=F)
 
 rm(psi.ecdf,psi.diff.l,psi.diff.v)
 
@@ -191,22 +194,22 @@ switches <- by(elegibleTxs,elegibleTxs$Gene, function(x){
         psis.n <- as.numeric(psi[genes==g,gsub("T$","N",tumor[i])])
       else
         psis.n <- as.numeric(medianPsi.n[genes==g])
-      
+
       tumor.isos <- txs[!is.na(z) & z=="Tumor"]
       normal.isos <- txs[!is.na(z) & z=="Normal"]
-      
+
       t <- tumor.isos[order(-psis.t[!is.na(z) & z=="Tumor"])][1]
       n <- normal.isos[order(-psis.n[!is.na(z) & z=="Normal"])][1]
-      
+
       if (psis.t[txs==t]<psis.t[txs==n] | psis.n[txs==n]<psis.n[txs==t])
         pats.swt[[i]] <- list("Normal"=NA, "Tumor"=NA)
       else
         pats.swt[[i]] <- list("Normal"=n, "Tumor"=t)
-      
+
     } else
       pats.swt[[i]] <- list("Normal"=NA, "Tumor"=NA)
   }
-  
+
   pats.swt <- data.frame(do.call("rbind",pats.swt))
   pats.swt$Sample <- tumor
   validCases <- rowSums(is.na(pats.swt[,c("Normal","Tumor")])) < 2
@@ -215,7 +218,7 @@ switches <- by(elegibleTxs,elegibleTxs$Gene, function(x){
     pats.swt$Gene <- unique(x$Gene)
     pats.swt$Normal <- as.character(pats.swt$Normal)
     pats.swt$Tumor <- as.character(pats.swt$Tumor)
-    pats.swt 
+    pats.swt
   } else
     NA
 })
@@ -231,7 +234,7 @@ for (g in names(switches)){
 switches.df <- do.call("rbind",switches.df)
 switches.df <- switches.df[,c("Gene","Normal","Tumor","Sample")]
 
-# remove those cases where we can measure a differential expression 
+# remove those cases where we can measure a differential expression
 # between normal and switched samples
 de <- ddply(switches.df,.(Gene,Normal,Tumor),summarise,
             p=wilcox.test(logxpr.gene[rownames(logxpr.gene)==unique(Gene),Sample],
