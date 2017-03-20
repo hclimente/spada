@@ -193,7 +193,10 @@ class AnnotateSwitches(method.Method):
 			cdd.setdefault(swt, 100)
 
 			for driver in drivers:
-				d = nx.shortest_path_length(self._gene_network._net, gene, driver)
+				try:
+					d = nx.shortest_path_length(self._gene_network._net, gene, driver)
+				except networkx.exception.NetworkXNoPath:
+					continue
 				if d < cdd[swt]:
 					cdd[swt] = d
 
