@@ -181,6 +181,8 @@ class AnnotateSwitches(method.Method):
 	def getClosestDriverDistance(self):
 		cdd = {}
 
+		drivers = [ x for x,y in self._gene_network._net.nodes(data=True) if y["driver"]]
+
 		for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_byPatientNumber(
 			self._transcript_network,partialCreation=True, removeNoise=False):
 
@@ -188,9 +190,12 @@ class AnnotateSwitches(method.Method):
 			tTx = switchDict["tIso"]
 			swt = "{}_{}".format(nTx,tTx)
 
-			for visiting_node in nx.bfs_tree(self._gene_network._net, gene):
-				if self._gene_network._net.node[visiting_node].get('driver', True):
-					cdd[swt] = nx.shortest_path_length(self._gene_network._net, gene, visiting_node)
+			cdd.setdefault(swt, 100)
+
+			for driver in drivers:
+				d = nx.shortest_path_length(self._gene_network._net, gene, driver)
+				if d < cdd[swt]:
+					cdd[swt] = d
 
 		return(cdd)
 
