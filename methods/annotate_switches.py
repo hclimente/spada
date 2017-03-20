@@ -189,8 +189,8 @@ class AnnotateSwitches(method.Method):
 			swt = "{}_{}".format(nTx,tTx)
 
 			for visiting_node in nx.bfs_tree(self._gene_network._net, gene):
-	    		if self._gene_network._net.node[visiting_node].get('driver', True):
-	        		cdd[swt] = nx(self._gene_network._net, gene, visiting_node)
+				if self._gene_network._net.node[visiting_node].get('driver', True):
+					cdd[swt] = nx.shortest_path_length(self._gene_network._net, gene, visiting_node)
 
 		return(cdd)
 

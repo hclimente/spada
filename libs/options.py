@@ -79,7 +79,7 @@ class Options(object):
         parser.add_argument('-s', '--initial-step', dest='initial_step', action='store', 
                             type=str, help='Where should SmartAS start.')
         parser.add_argument('-wd', '--working-directory', dest='wd', action='store', 
-                            default='/home/hector/smartas/', 
+                            default='/data/users/hector/smartas/', 
                             help='Root file of SmartAS folder in the current machine.')
         parser.add_argument('-m', '--minimum-expression', dest='minExpression', action='store', 
                             default='-1', type=float, 
