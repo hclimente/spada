@@ -29,14 +29,14 @@ class AnnotateSwitches(method.Method):
 		self.logger.info("Calculating mutual exclusion.")
 		me = self.getME()
 		self.logger.info("Calculating distance to closest driver.")
-		ccd = self.getClosestDriverDistance()
+		cdd = self.getClosestDriverDistance()
 
 		self.logger.info("Annotating tumor-type switches.")
 		with open("{}candidateList_driverEvidence.tsv".format(options.Options().qout),"w") as OUT:
 			OUT.write("Tumor\tGeneId\tSymbol\tNormal_transcript\t")
 			OUT.write("Tumor_transcript\tRecurrence\t")
 			OUT.write("Affects_mutated_feature\tPPI\tPannegative\t")
-			OUT.write("Centrality\tME\tCCD\n")
+			OUT.write("Centrality\tME\tCDD\n")
 
 			for gene,info,switchDict,thisSwitch in self._gene_network.iterate_switches_byPatientNumber(
 				self._transcript_network,partialCreation=True, removeNoise=False):
@@ -56,10 +56,10 @@ class AnnotateSwitches(method.Method):
 
 				centrality.setdefault(gene,0)
 				me.setdefault(swt,0)
-				ccd.setdefault(swt,0)
+				cdd.setdefault(swt,0)
 
 				OUT.write("{}\t{}\t".format(centrality[gene],me[swt]))
-				OUT.write("{}\n".format(ccd[swt]))
+				OUT.write("{}\n".format(cdd[swt]))
 
 	def readProteome(self):
 		proteome = {}

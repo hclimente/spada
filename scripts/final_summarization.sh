@@ -37,7 +37,7 @@ echo -e "Tumor\tNormal_transcript\tTumor_transcript\tRandom\tnIsoLength\ttIsoLen
 ls ~/smartas/analyses/????/result_summary/isoform_length_onlyModels.tsv | xargs -n 1 tail -n +2 >>~/smartas/notebook/data/switches/isoform_length.tsv
 
 echo evidence of driverness
-echo -e "Tumor\tGeneId\tSymbol\tNormal_transcript\tTumor_transcript\tRecurrence\tAffects_mutated_feature\tPPI\tPannegative" >~/smartas/notebook/data/switches/driverEvidence.tsv
+echo -e "Tumor\tGeneId\tSymbol\tNormal_transcript\tTumor_transcript\tRecurrence\tAffects_mutated_feature\tPPI\tPannegative\tCentrality\tME\tCDD\n" >~/smartas/notebook/data/switches/driverEvidence.tsv
 grep -v ^Tumor ~/smartas/analyses/????/candidateList_driverEvidence.tsv | cut -d':' -f2 >>~/smartas/notebook/data/switches/driverEvidence.tsv
 
 echo neighborhoods
@@ -171,4 +171,4 @@ echo "##      SUMMARY     ##"
 echo "######################"
 
 echo Creating additional summary plots
-smartas/pipeline/figures/summary_plots.r 
+smartas/pipeline/figures/summary_plots.r
