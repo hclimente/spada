@@ -27,13 +27,13 @@ from methods import test
 import logging
 import os
 
-class SmartAS:
+class spada:
 	def __init__(self):
 
 		self.logger = logging.getLogger()
 
-		self.logger.info("SmartAS - Finding significant AS events")
-		self.logger.info("Hector Climente - GRIB 2014-2015")
+		self.logger.info("SPADA - Finding significant AS events")
+		self.logger.info("Héctor Climente-González - GRIB 2014-2017")
 
 	# initial
 	def getSwitches(self):
@@ -181,7 +181,7 @@ if __name__ == '__main__':
 	console.setFormatter(formatter)
 	logging.getLogger().addHandler(console)
 
-	S = SmartAS()
+	S = spada()
 
 	if options.Options().tag!="pancancer":
 		# Get and characterize switches
@@ -242,4 +242,4 @@ if __name__ == '__main__':
 		elif options.Options().initialStep == "co-occurence":
 			S.pancancerStudyCoocurrence()
 
-	S.logger.info("SmartAS will close.")
+	S.logger.info("SPADA will close.")
