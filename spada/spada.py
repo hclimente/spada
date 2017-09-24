@@ -66,7 +66,7 @@ class spada:
 	def recurrenceAnalysis(self):
 
 		utils.cmd('Rscript',
-			"pipeline/methods/recurrence_analysis.R",
+			"pipeline/meta/recurrence_analysis.R",
 			"{}candidateList_info.tsv".format(options.Options().qout),
 			"{}candidateList_recurrence.tsv".format(options.Options().qout))
 
@@ -130,38 +130,6 @@ class spada:
 		t = test.Test(True,True)
 		t.run()
 
-	def pancancerGetSwitches(self):
-		utils.cmd('Rscript',"pipeline/methods/pancancer_calculate_switches.R","candidateList_info")
-		utils.cmd('Rscript',"pipeline/methods/pancancer_calculate_switches.R","random.candidateList_info")
-
-	def pancancerRecurrenceAnalysis(self):
-		utils.cmd('Rscript',
-				  'pipeline/methods/get_switch_origin.R')
-		utils.cmd('Rscript',
-			"pipeline/methods/recurrence_analysis.R",
-			"{}candidateList_info.agg.tsv".format(options.Options().qout),
-			"{}candidateList.origin.tsv".format(options.Options().qout),
-			"{}candidateList_recurrence.tsv".format(options.Options().qout))
-
-	def pancancerStudyWESMutationsFeatureOverlap(self):
-		utils.cmd("mkdir","-p","{}structural_analysis".format(options.Options().qout))
-		utils.cmd("mkdir","-p","{}mutations".format(options.Options().qout))
-		utils.cmd('Rscript',
-				  'pipeline/methods/pancancer_mutated_features_analysis.R')
-
-	def pancancerStudyMutualExclusion(self):
-		utils.cmd("mkdir","-p","{}mutations".format(options.Options().qout))
-		utils.cmd('Rscript',
-				  'pipeline/methods/pancancer_mutual_exclusion_analysis.R')
-
-	def pancancerStudyPPIMutualExclusion(self):
-		m = me_ppi.MEPPI(False,False)
-		m.clean()
-		m.run()
-
-	def pancancerStudyCoocurrence(self):
-		utils.cmd('Rscript', 'pipeline/methods/pancancer_coocurrence_analysis.R')
-
 if __name__ == '__main__':
 
 	if not os.path.exists("{}".format(options.Options().qout)):
@@ -183,63 +151,48 @@ if __name__ == '__main__':
 
 	S = spada()
 
-	if options.Options().tag!="pancancer":
-		# Get and characterize switches
-		if options.Options().initialStep == "get-switches":
-		 	S.getSwitches()
+	# Get and characterize switches
+	if options.Options().initialStep == "get-switches":
+	 	S.getSwitches()
 
-		# analyze switches
-		elif options.Options().initialStep == "get-functional-switches":
-			S.structuralAnalysis()
-		elif options.Options().initialStep == "random-switches":
-			S.createRandomSwitches()
+	# analyze switches
+	elif options.Options().initialStep == "get-functional-switches":
+		S.structuralAnalysis()
+	elif options.Options().initialStep == "random-switches":
+		S.createRandomSwitches()
 
-		# get candidates
-		elif options.Options().initialStep == "recurrence-analysis":
-			S.recurrenceAnalysis()
-		elif options.Options().initialStep == "wes-mutations-feature-overlap":
-			S.studyWESMutationsFeatureOverlap()
-		elif options.Options().initialStep == "me-analysis":
-			S.studyMutualExclusion()
-		elif options.Options().initialStep == "me-geneset-analysis":
-			S.studyGenesetMutualExclusion()
-		elif options.Options().initialStep == "annotate-candidate-switches":
-			S.annotateSwitches()
+	# get candidates
+	elif options.Options().initialStep == "recurrence-analysis":
+		S.recurrenceAnalysis()
+	elif options.Options().initialStep == "wes-mutations-feature-overlap":
+		S.studyWESMutationsFeatureOverlap()
+	elif options.Options().initialStep == "me-analysis":
+		S.studyMutualExclusion()
+	elif options.Options().initialStep == "me-geneset-analysis":
+		S.studyGenesetMutualExclusion()
+	elif options.Options().initialStep == "annotate-candidate-switches":
+		S.annotateSwitches()
 
-		# validation
-		elif options.Options().initialStep == "explore-pannegative":
-			S.explorePannegative()
-		elif options.Options().initialStep == "candidates-pathways":
-			S.candidatesPathways()
+	# validation
+	elif options.Options().initialStep == "explore-pannegative":
+		S.explorePannegative()
+	elif options.Options().initialStep == "candidates-pathways":
+		S.candidatesPathways()
 
-		# analyze model switches
-		elif options.Options().initialStep == "neighborhood-analysis":
-			S.neighborhoodAnalysis()
+	# analyze model switches
+	elif options.Options().initialStep == "neighborhood-analysis":
+		S.neighborhoodAnalysis()
 
-		# summarize results
-		elif options.Options().initialStep == "summary":
-			S.summarizeResults()
+	# summarize results
+	elif options.Options().initialStep == "summary":
+		S.summarizeResults()
 
-		# test commands
-		elif options.Options().initialStep == "test":
-			S.testing()
+	# test commands
+	elif options.Options().initialStep == "test":
+		S.testing()
 
-		# deprecated
-		elif options.Options().initialStep == "get-i3d-broken-interactions":
-			S.I3DBrokenInteractions()
-	else:
-		# Get and characterize switches
-		if options.Options().initialStep == "get-switches":
-		 	S.pancancerGetSwitches()
-		elif options.Options().initialStep == "recurrence-analysis":
-			S.pancancerRecurrenceAnalysis()
-		elif options.Options().initialStep == "wes-mutations-feature-overlap":
-			S.pancancerStudyWESMutationsFeatureOverlap()
-		elif options.Options().initialStep == "me-analysis":
-			S.pancancerStudyMutualExclusion()
-		elif options.Options().initialStep == "me-ppi":
-			S.pancancerStudyPPIMutualExclusion()
-		elif options.Options().initialStep == "co-occurence":
-			S.pancancerStudyCoocurrence()
+	# deprecated
+	elif options.Options().initialStep == "get-i3d-broken-interactions":
+		S.I3DBrokenInteractions()
 
 	S.logger.info("SPADA will close.")
