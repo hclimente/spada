@@ -5,6 +5,7 @@ from libs import options
 from libs import utils
 
 # calculation
+from methods import create_network
 from methods import get_random_switches
 from methods import get_switches
 from methods import structural_analysis
@@ -31,9 +32,12 @@ class spada:
 	def __init__(self):
 
 		self.logger = logging.getLogger()
+		self.logger.info("SPADA - Finding significant splicing changes.")
 
-		self.logger.info("SPADA - Finding significant AS events")
-		self.logger.info("Héctor Climente-González - GRIB 2014-2017")
+	def createNetwork(self):
+
+		c.create_network.CreateNetwork(None, None, None)
+		c.run()
 
 	# initial
 	def getSwitches(self):

@@ -1,7 +1,6 @@
 from libs import options
 
 import pickle
-import gridmap
 import logging
 
 class Method:
@@ -16,7 +15,7 @@ class Method:
 			else:
 				self._gene_network = gn_network
 			self._gene_network.createLogger()
-		
+
 		if tx_network:
 			if isinstance(tx_network,bool):
 				self._transcript_network = pickle.load(open(options.Options().qout + "txNetwork.pkl","rb"))
@@ -25,7 +24,7 @@ class Method:
 			else:
 				self._transcript_network = tx_network
 			self._transcript_network.createLogger()
-			
+
 		if gn_subnetwork:
 			if isinstance(gn_subnetwork,bool):
 				self._gene_subnetwork = pickle.load(open(options.Options().qout + "geneSubnetwork.pkl","rb"))
@@ -34,9 +33,3 @@ class Method:
 			else:
 				self._gene_subnetwork = gn_subnetwork
 			self._gene_subnetwork.createLogger()
-
-	def grid(self,f,*args):
-		arguments = [ x for x in args ]
-		funct = gridmap.Job(f,arguments,queue="normal")
-		out = gridmap.process_jobs([funct])
-		return out

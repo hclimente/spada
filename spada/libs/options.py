@@ -18,7 +18,7 @@ class Options(object):
         self._wd                    = options.wd if options.wd[-1]== "/" else options.wd + "/"
         self._minExpression         = options.minExpression
         self._annotation            = options.annotation
-        self._tag                   = options.tag 
+        self._tag                   = options.tag
         self._only_models           = options.onlyModels
         self._specificDrivers       = "{}data/{}/specific_drivers/{}Drivers.txt".format(
                                         self._wd,self._annotation,self._tag)
@@ -72,17 +72,17 @@ class Options(object):
     def step(self): return self._step
 
     def parseOptions(self, *args, **kwds):
-        parser = Parser(prog="smartas.py", description = "Find significant alternative splicing switches. Analyze their functional impact.", epilog= "Hector Climente, 2016", fromfile_prefix_chars='@')
+        parser = Parser(prog="spada.py", description = "Find significant alternative splicing switches. Analyze their functional impact.", epilog= "Hector Climente, 2016", fromfile_prefix_chars='@')
 
-        parser.add_argument('-f','--config-file', dest='config_file', action = 'store', 
+        parser.add_argument('-f','--config-file', dest='config_file', action = 'store',
                             help = 'Input file with the parameters')
-        parser.add_argument('-s', '--initial-step', dest='initial_step', action='store', 
+        parser.add_argument('-s', '--initial-step', dest='initial_step', action='store',
                             type=str, help='Where should SmartAS start.')
-        parser.add_argument('-wd', '--working-directory', dest='wd', action='store', 
-                            default='/data/users/hector/smartas/', 
+        parser.add_argument('-wd', '--working-directory', dest='wd', action='store',
+                            default='.',
                             help='Root file of SmartAS folder in the current machine.')
-        parser.add_argument('-m', '--minimum-expression', dest='minExpression', action='store', 
-                            default='-1', type=float, 
+        parser.add_argument('-m', '--minimum-expression', dest='minExpression', action='store',
+                            default='-1', type=float,
                             help='Minimum expression to consider a transcript not residual.')
         parser.add_argument('-i', '--annotation', dest='annotation', action='store', default='ucsc',
                             help='Used annotation.')
@@ -90,14 +90,14 @@ class Options(object):
                             help='Only use the model switches.')
         parser.add_argument('-t', '--tag', dest='tag' ,action='store',
                             help='Identifier of the analysis.')
-        parser.add_argument('-d', '--specific-drivers', dest='specificDrivers', action='store', 
+        parser.add_argument('-d', '--specific-drivers', dest='specificDrivers', action='store',
                             default='',help='Path of the specific drivers for the cancer type.')
         parser.add_argument('-p', '--parallel-range', dest='parallelRange', action='store', default='0',
                             type=int,help='Range of nodes if parallel.')
         parser.add_argument('-p2', '--scd-parallel-range', dest='parallelRange2', action='store', default='0',
                             type=int,help='2nd range of nodes if parallel.')
-        parser.add_argument('-e', '--external-switches', dest='externalSwitchesFile', action='store', 
-                            default=None,type=str, 
+        parser.add_argument('-e', '--external-switches', dest='externalSwitchesFile', action='store',
+                            default=None,type=str,
                             help='File containing switches calculated with other methods.')
         parser.add_argument('-x', '--parent-tag', dest='parentTag', action='store', default=None,
                             type=str, help='Tag of another experiment to partially use the information.')
@@ -110,7 +110,7 @@ class Options(object):
         return options
 
     def printToFile(self,filename="",initialStep=None, wd=None, gwd=None, minExpression=None, annotation=None, tag=None, specificDrivers=None,parallelRange=None,onlyModels=None):
-        """Print the config to a new file, only those values that are different 
+        """Print the config to a new file, only those values that are different
         than the default ones. Overwrite those that are passed as arguments."""
         if not filename:
             cfgFilename = "{0}{1}.cfg".format(self.wd,self._tag)
@@ -122,22 +122,22 @@ class Options(object):
                 CONFIG.write("initial-step=" + str(initialStep) + "\n")
             elif self._initial_step != 0:
                 CONFIG.write("initial-step=" + str(self._initial_step) + "\n")
-            
+
             if wd:
                 CONFIG.write("working-directory=" + wd + "\n")
             elif self._wd != '/home/hector/smartas/':
                 CONFIG.write("working-directory=" + self._wd + "\n")
-            
+
             if minExpression:
                 CONFIG.write("minimum-expression=" + str(minExpression) + "\n")
-            elif self._minExpression != -1.0:         
+            elif self._minExpression != -1.0:
                 CONFIG.write("minimum-expression=" + str(self._minExpression) + "\n")
-            
+
             if annotation:
                 CONFIG.write("annotation=" + annotation + "\n")
             elif self._annotation != "ucsc":
                 CONFIG.write("annotation=" + self._annotation + "\n")
-            
+
             if tag:
                 CONFIG.write("tag=" + tag + "\n")
             elif self._tag:
@@ -148,7 +148,7 @@ class Options(object):
 
             if onlyModels is not None and not onlyModels:
                 CONFIG.write("all-switches\n" )
-            
+
             if specificDrivers:
                 CONFIG.write("specific-drivers=" + specificDrivers + "\n")
             elif self._specificDrivers:
@@ -157,7 +157,7 @@ class Options(object):
         return cfgFilename
 
     def getCommandLineParameters(self,initialStep=None, wd=None, gwd=None, minExpression=None, annotation=None, tag=None, specificDrivers=None,parallelRange=None,onlyModels=None):
-        """Print the config to a new file, only those values that are different 
+        """Print the config to a new file, only those values that are different
         than the default ones. Overwrite those that are passed as arguments."""
 
         cfg = []
@@ -166,22 +166,22 @@ class Options(object):
             cfg.extend(["--initial-step",str(initialStep)])
         elif self._initial_step != 0:
             cfg.extend(["--initial-step",str(self._initial_step)])
-        
+
         if wd:
             cfg.extend(["--working-directory",wd])
         elif self._wd != '/home/hector/smartas/':
             cfg.extend(["--working-directory",self._wd])
-        
+
         if minExpression:
             cfg.extend(["--minimum-expression",str(minExpression)])
-        elif self._minExpression != -1.0:         
+        elif self._minExpression != -1.0:
             cfg.extend(["--minimum-expression",str(self._minExpression)])
-        
+
         if annotation:
             cfg.extend(["--annotation",annotation])
         elif self._annotation != "ucsc":
             cfg.extend(["--annotation",self._annotation])
-        
+
         if tag:
             cfg.extend(["--tag",tag])
         elif self._tag:
@@ -192,7 +192,7 @@ class Options(object):
 
         if onlyModels is not None and not onlyModels:
             cfg.extend(["--all-switches"])
-        
+
         if specificDrivers:
             cfg.extend(["--specific-drivers",specificDrivers])
         elif self._specificDrivers:
