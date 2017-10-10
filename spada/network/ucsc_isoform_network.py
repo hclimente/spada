@@ -1,4 +1,4 @@
-from network import isoform_network
+from spada.network import isoform_network
 
 class UCSCIsoformNetwork(isoform_network.IsoformNetwork):
 	def __init__(self):
@@ -11,7 +11,7 @@ class UCSCIsoformNetwork(isoform_network.IsoformNetwork):
 		if full_name:
 			nameComponents 	= full_name.split("|")
 
-			if len(nameComponents) > 1:		
+			if len(nameComponents) > 1:
 				geneSymbol 	= nameComponents[0]
 				geneID 		= nameComponents[1]
 

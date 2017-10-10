@@ -1,6 +1,6 @@
 from interface import out_network
-from libs import options
-from libs import utils
+from spada import options
+from spada import utils
 from methods import method
 from network import ucsc_gene_network, ucsc_isoform_network
 
@@ -31,10 +31,10 @@ class GetSwitches(method.Method):
 
 			# copy random switches
 			utils.cmd("cp",
-					  "{}analyses/{}/randomGeneNetwork.pkl".format(options.Options().wd,options.Options().parentTag),
+					  "{}analyses/{}/randomgenes.pkl".format(options.Options().wd,options.Options().parentTag),
 					  options.Options().qout)
 
-		self._gene_network.saveNetwork("geneNetwork.pkl")
+		self._gene_network.saveNetwork("genes.pkl")
 
 		#out_network.outputGTF(self._gene_network,self._transcript_network)
 		out_network.outCandidateList(self._gene_network,self._transcript_network)
@@ -61,7 +61,7 @@ class GetSwitches(method.Method):
 		self.logger.info("Creating gene network.")
 
 		if options.Options().externalSwitchesFile and options.Options().parentTag:
-			self._gene_network = pickle.load(open("{}analyses/{}/geneNetwork.pkl".format(options.Options().wd,options.Options().parentTag),"rb"))
+			self._gene_network = pickle.load(open("{}analyses/{}/genes.pkl".format(options.Options().wd,options.Options().parentTag),"rb"))
 			self._gene_network.createLogger()
 			self._gene_network.cleanNetwork()
 		else:
@@ -86,11 +86,11 @@ class GetSwitches(method.Method):
 			
 			self._gene_network.importKnownInteractions()
 
-		self._gene_network.saveNetwork("geneNetwork.pkl")
+		self._gene_network.saveNetwork("genes.pkl")
 
 	def createTranscriptNetwork(self,recover=False):
 		if options.Options().externalSwitchesFile and options.Options().parentTag:
-			self._transcript_network = pickle.load(open("{}analyses/{}/txNetwork.pkl".format(options.Options().wd,options.Options().parentTag),"r"))
+			self._transcript_network = pickle.load(open("{}analyses/{}/transcripts.pkl".format(options.Options().wd,options.Options().parentTag),"r"))
 			self._transcript_network.createLogger()
 		else:
 			if options.Options().annotation == "ucsc":
@@ -102,7 +102,7 @@ class GetSwitches(method.Method):
 			self.logger.info("Creating transcript network.")
 			self._transcript_network.importTranscriptome()
 		
-		self._transcript_network.saveNetwork("txNetwork.pkl")
+		self._transcript_network.saveNetwork("transcripts.pkl")
 
 if __name__ == '__main__':
 	pass

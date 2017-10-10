@@ -1,7 +1,5 @@
-from libs import options
-from libs import utils
-from biological_entities import protein
-from biological_entities import transcript
+from spada import utils
+from spada.biological_entities import protein, transcript
 
 import os
 import operator
@@ -42,17 +40,17 @@ class IsoformSwitch:
 		self._neighborhood_change 	= None
 		#iLoops analysis
 		self._iloops_change 		= None
-		
+
 	@property
 	def nTx(self): return self._normal_transcript_name
 	@property
 	def tTx(self): return self._tumor_transcript_name
 	@property
 	def patients(self): return self._patients
-	
-	@property 
+
+	@property
 	def nIsoform(self): return self._normal_protein
-	@property 
+	@property
 	def tIsoform(self): return self._tumor_protein
 	@property
 	def nTranscript(self): return self._normal_transcript
@@ -65,27 +63,27 @@ class IsoformSwitch:
 			self.readRelevanceAnalysis()
 		return self._iloops_change
 	@property
-	def domainChange(self): 
+	def domainChange(self):
 		if self._domain_change is None:
 			self.readRelevanceAnalysis()
 		return self._domain_change
 	@property
-	def disorderChange(self): 
+	def disorderChange(self):
 		if self._disorder_change is None:
 			self.readRelevanceAnalysis()
 		return self._disorder_change
 	@property
-	def anchorChange(self): 
+	def anchorChange(self):
 		if self._anchor_change is None:
 			self.readRelevanceAnalysis()
 		return self._anchor_change
 	@property
-	def brokenSurfaces(self): 
+	def brokenSurfaces(self):
 		if self._broken_surfaces is None:
 			self.readRelevanceAnalysis()
 		return self._broken_surfaces
 	@property
-	def ptmChange(self): 
+	def ptmChange(self):
 		if self._ptm_change is None:
 			self.readRelevanceAnalysis()
 		return self._ptm_change
@@ -117,31 +115,31 @@ class IsoformSwitch:
 		return False
 
 	@property
-	def recurrent(self): 
+	def recurrent(self):
 		if self._recurrent is None:
 			self.readCandidateAnalysis()
 		return self._recurrent
 
 	@property
-	def coocurrent(self): 
+	def coocurrent(self):
 		if self._coocurrent is None:
 			self.readCandidateAnalysis()
 		return self._coocurrent
 
 	@property
-	def mutatedFeature(self): 
+	def mutatedFeature(self):
 		if self._mutatedFeature is None:
 			self.readCandidateAnalysis()
 		return self._mutatedFeature
 
 	@property
-	def mutuallyExclusive(self): 
+	def mutuallyExclusive(self):
 		if self._mutuallyExclusive is None:
 			self.readCandidateAnalysis()
 		return self._mutuallyExclusive
 
 	@property
-	def ppi(self): 
+	def ppi(self):
 		if self._ppi is None:
 			self.readCandidateAnalysis()
 		return self._ppi
@@ -153,7 +151,7 @@ class IsoformSwitch:
 
 		return False
 
-	@property 
+	@property
 	def cds_overlap(self):
 		"""Returns True if there is an overlap between the transcripts coding sequence."""
 		#Check that is not None and thad the exclusive region is not the whole CDS.
@@ -170,14 +168,14 @@ class IsoformSwitch:
 		tTx = set(self._tumor_transcript._cds) | set(self._tumor_transcript._utr)
 		return bool(nTx & tTx)
 
-	@property 
+	@property
 	def cds_diff(self):
 		"""Returns a list with the differencen between the transcripts coding sequences."""
 		cdsDiff = [ x for x in self._normal_transcript.cds if x not in self._tumor_transcript.cds ]
 		cdsDiff.extend( [ x for x in self._tumor_transcript.cds if x not in self._normal_transcript.cds ])
 		return cdsDiff
 
-	@property 
+	@property
 	def utr_diff(self):
 		"""Returns True if there is a difference between the transcripts utr sequences."""
 		utrDiff = [ x for x in self._normal_transcript.utr if x not in self._tumor_transcript.utr ]
@@ -213,9 +211,9 @@ class IsoformSwitch:
 		"""Changes the values of the CDS dictionary of the transcripts to
 			a bool, indicating if they are transcript specific or not."""
 		for gPos in self._normal_transcript.cds:
-			if gPos not in self._tumor_transcript.cds: 	
+			if gPos not in self._tumor_transcript.cds:
 				self._normal_transcript._cds[gPos] = True
-			else: 										
+			else:
 				self._normal_transcript._cds[gPos] = False
 
 		for gPos in self._tumor_transcript.cds:
@@ -240,7 +238,7 @@ class IsoformSwitch:
 				self._tumor_transcript._utr[gPos] = False
 
 	def getAlteredRegions(self):
-		"""Calculates the specific and non-specific residues of the isoforms 
+		"""Calculates the specific and non-specific residues of the isoforms
 		involved in an isoform switch."""
 		for res in self._normal_protein._structure:
 			if res.genomicPosition not in [ y.genomicPosition for y in self._tumor_protein._structure]:
@@ -253,17 +251,17 @@ class IsoformSwitch:
 	def readRelevanceAnalysis(self):
 
 		randomTag = "_random" if self.patients==[] else ""
-		
-		if not os.path.exists("{}structural_analysis/structural_summary{}.tsv".format(options.Options().qout,randomTag)):
+
+		if not os.path.exists("structural_analysis/structural_summary{}.tsv".format(randomTag)):
 			raise Exception("Relevance information not generated.")
 			return False
 
-		for elements in utils.readTable("{}structural_analysis/structural_summary{}.tsv".format(options.Options().qout,randomTag)):
+		for elements in utils.readTable("structural_analysis/structural_summary{}.tsv".format(randomTag)):
 			if elements[2] == self.nTx and elements[3] == self.tTx:
 				if elements[4] == "True": self._iloops_change = True
 				elif elements[4] == "False": self._iloops_change = False
 
-				if elements[5] == "True": self._domain_change = True 
+				if elements[5] == "True": self._domain_change = True
 				elif elements[5] == "False": self._domain_change = False
 
 				if elements[6] == "True": self._disorder_change = True
@@ -282,7 +280,7 @@ class IsoformSwitch:
 			return
 
 		if self.domainChange and not skipDomain:
-			for line in utils.readTable("{}structural_analysis/interpro_analysis{}.tsv".format(options.Options().qout,filetag)):
+			for line in utils.readTable("structural_analysis/interpro_analysis{}.tsv".format(filetag)):
 				if line[2] == self.nTx and line[3] == self.tTx:
 					self._deep_domain_change.setdefault(line[5].replace(" ","_"),[])
 					if "Gained" in line[4]:
@@ -293,7 +291,7 @@ class IsoformSwitch:
 						self._deep_domain_change[line[5].replace(" ","_")].append("Nothing")
 
 		if self.disorderChange and not skipIupred:
-			for line in utils.readTable("{}structural_analysis/iupred_analysis{}.tsv".format(options.Options().qout,filetag)):
+			for line in utils.readTable("structural_analysis/iupred_analysis{}.tsv".format(filetag)):
 				if line[2] == self.nTx and line[3] == self.tTx and float(line[-1]):
 					self._deep_disorder_change.setdefault(line[5],[])
 					if "Gained" in line[4]:
@@ -302,9 +300,9 @@ class IsoformSwitch:
 						self._deep_disorder_change[line[5]].append("Lost_in_tumor")
 					elif "Nothing" in line[4]:
 						self._deep_disorder_change[line[5]].append("Nothing")
-		
+
 		if self.anchorChange and not skipAnchor:
-			for line in utils.readTable("{}structural_analysis/anchor_analysis{}.tsv".format(options.Options().qout,filetag)):
+			for line in utils.readTable("structural_analysis/anchor_analysis{}.tsv".format(filetag)):
 				if line[2] == self.nTx and line[3] == self.tTx and float(line[-1]):
 					self._deep_anchor_change.setdefault(line[5],[])
 					if "Gained" in line[4]:
@@ -313,9 +311,9 @@ class IsoformSwitch:
 						self._deep_anchor_change[line[5]].append("Lost_in_tumor")
 					elif "Nothing" in line[4]:
 						self._deep_anchor_change[line[5]].append("Nothing")
-			
+
 		if self.ptmChange and not skipPtm:
-			for line in utils.readTable("{}structural_analysis/prosite_analysis{}.tsv".format(options.Options().qout,filetag)):
+			for line in utils.readTable("structural_analysis/prosite_analysis{}.tsv".format(filetag)):
 				if line[2] == self.nTx and line[3] == self.tTx:
 					self._deep_ptm_change.setdefault(line[5],[])
 					if "Gained" in line[4]:
@@ -358,7 +356,7 @@ class IsoformSwitch:
 
 					prevItem = sorted([ x for x in c if x[thisIdx]==pos-1 ],key=operator.itemgetter(otherIdx),reverse=True)[0]
 					nextItem = sorted([ x for x in c if x[thisIdx]==pos+1 ],key=operator.itemgetter(otherIdx))[0]
-		
+
 					if prevItem[otherIdx]+2 == nextItem[otherIdx]:
 						thisCorrespondence[otherIdx] = otherIso[prevItem[otherIdx]+2]
 
@@ -371,16 +369,16 @@ class IsoformSwitch:
 
 	def readCandidateAnalysis(self):
 
-		if not os.path.exists("{}candidateList_driverEvidence.tsv".format(options.Options().qout)):
+		if not os.path.exists("candidateList_driverEvidence.tsv"):
 			raise Exception("Candidate information not generated.")
 			return False
 
-		for elements in utils.readTable("{}candidateList_driverEvidence.tsv".format(options.Options().qout)):
+		for elements in utils.readTable("candidateList_driverEvidence.tsv"):
 			if elements[3] == self.nTx and elements[4] == self.tTx:
 				if elements[5] == "1": self._recurrent = True
 				elif elements[5] == "0": self._recurrent = False
 
-				if elements[6] == "1": self._mutatedFeature = True 
+				if elements[6] == "1": self._mutatedFeature = True
 				elif elements[6] == "0": self._mutatedFeature = False
 
 				if elements[7] == "1": self._mutuallyExclusive = True
@@ -393,4 +391,3 @@ class IsoformSwitch:
 				elif elements[9] == "0": self._ppi = False
 
 				break
-

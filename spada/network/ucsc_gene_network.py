@@ -1,6 +1,5 @@
-from libs import options
-from libs import utils
-from network import gene_network
+from spada import utils
+from spada.network import gene_network
 
 import abc
 
@@ -15,7 +14,7 @@ class UCSCGeneNetwork(gene_network.GeneNetwork):
 		if full_name:
 			nameComponents 	= full_name.split("|")
 
-			if len(nameComponents) > 1:		
+			if len(nameComponents) > 1:
 				geneSymbol 	= nameComponents[0]
 				geneID 		= nameComponents[1]
 

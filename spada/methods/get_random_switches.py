@@ -1,6 +1,6 @@
 from biological_entities import switch
-from libs import options
-from libs import utils
+from spada import options
+from spada import utils
 from methods import method
 from methods import structural_analysis
 

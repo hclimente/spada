@@ -1,5 +1,3 @@
-from libs import options
-
 import networkx as nx
 import pickle
 import abc
@@ -10,15 +8,15 @@ class Network:
 	__metaclass__ = abc.ABCMeta
 
 	def __init__(self, name):
-		
+
 		self._name			= name
 		self._net 			= nx.Graph()
 		self._rejectedNodes = set()
 		self.createLogger()
-	
+
 	## Getters ##
 	def n(self): 		return self._net
-	
+
 	## Pseudo-getters ##
 	def nodes(self, **kwds): 	return self._net.nodes(**kwds)
 	def edges(self, **kwds):	return self._net.edges(**kwds)
@@ -39,7 +37,7 @@ class Network:
 			if secondKey not in self._net.node[nodeId][key]:
 				self._net.node[nodeId][key].setdefault(secondKey,set())
 			self._net.node[nodeId][key][secondKey].add(finalValue)
-		else: 
+		else:
 			if self._net.node[nodeId] is not None and self._net.node[nodeId] != finalValue:
 				self.logger.debug("Node {0}, {1} had a value of {2}. Updated to {3}.".format(
 									nodeId, key, self._net.node[nodeId][key], finalValue) )
@@ -59,7 +57,7 @@ class Network:
 			self._net.edge[node1][node2][key].append( finalValue )
 		elif isinstance( self._net.edge[node1][node2][key], set):
 			self._net.edge[node1][node2][key].add( finalValue )
-		else: 
+		else:
 			if self._net.edge[node1][node2][key] is not None and self._net.edge[node1][node2][key] != finalValue:
 				self.logger.debug("Edge {0} - {1}, {2} had a value of {3}. Updated to {4} .".format(
 								node1, node2, key, self._net.edge[node1][node2][key], finalValue) )
@@ -79,11 +77,11 @@ class Network:
 		return True
 
 	def saveNetwork(self,filename):
-		
-		self.logger.debug("Saving network at {}{}.".format(options.Options().qout,filename))
+
+		self.logger.debug("Saving network at {}.".format(filename))
 		#Unattach logger to save without thread problems
 		self.removeLogger()
-		with open(options.Options().qout + filename, "wb") as NET_DUMP:
+		with open(filename, "wb") as NET_DUMP:
 			pickle.dump(self, NET_DUMP, -1)
 
 		self.createLogger()

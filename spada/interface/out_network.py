@@ -1,14 +1,13 @@
-from libs import options
-from libs import utils
+from spada import utils
 
 import logging
 
-def outputGTF(gn_network,tx_network):
+def outputGTF(gn_network, tx_network, annotation):
 	logging.info("Writing GTF files.")
-	with open(options.Options().qout + "/candidates_normal.gtf", 'w') as nGTF, \
-		 open(options.Options().qout + "/candidates_tumor.gtf", 'w') as tGTF, \
-		 open("{}data/{}/annotation.gtf".format(options.Options().wd,options.Options().annotation), "r") as ALLTRANSCRIPTS:
-	
+	with open("candidates_normal.gtf", 'w') as nGTF, \
+		 open("candidates_tumor.gtf", 'w') as tGTF, \
+		 open("data/{}/annotation.gtf".format(annotation), "r") as ALLTRANSCRIPTS:
+
 		switchesInfo = [ (z.nTx,z.tTx) for w,x,y,z in gn_network.iterate_switches_byPatientNumber(tx_network,partialCreation=True) ]
 
 		for line in ALLTRANSCRIPTS:
@@ -20,7 +19,7 @@ def outputGTF(gn_network,tx_network):
 
 def outCandidateList(gn_network,tx_network,filename="candidateList_info.tsv"):
 	logging.info("Writing candidateList.")
-	with open(options.Options().qout + filename, "w") as cList:
+	with open(filename, "w") as cList:
 		cList.write("GeneId\tSymbol\tNormal_transcript\tTumor_transcript\t")
 		cList.write("Normal_protein\tTumor_protein\tAnnotation\tDriverAnnotation\t")
 		cList.write("NotNoise\tIsModel\tIsFunctional\tDriver\tSpecificDriver\tDruggable\t")
@@ -28,7 +27,7 @@ def outCandidateList(gn_network,tx_network,filename="candidateList_info.tsv"):
 
 		hallmarksDict = utils.readGeneset("h.all.v5.0.entrez.gmt")
 		bpDict = utils.readGeneset("c5.bp.v4.0.entrez.gmt")
-		
+
 		for gene,info,switchDict,switch in gn_network.iterate_switches_byPatientNumber(tx_network,partialCreation=True,removeNoise=False):
 			nIso = switch.nTranscript
 			tIso = switch.tTranscript
@@ -88,7 +87,7 @@ def outTSV(network,path):
 		for col in columns:
 			EDGES.write("\t"+col)
 		EDGES.write("\n")
-		
+
 		for node1,node2,properties in network.edges(data=True):
 			EDGES.write(node1 + "\t" + node2)
 			for key in properties:

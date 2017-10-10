@@ -1,6 +1,6 @@
 from interface import out_network
-from libs import options
-from libs import utils
+from spada import options
+from spada import utils
 from methods import method
 
 import pickle

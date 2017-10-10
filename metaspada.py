@@ -54,7 +54,7 @@ if __name__ == '__main__':
 						format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
 						datefmt='%m-%d %H:%M',
 					   	filename='{}logs/{}_{}{}.log'.format(options.Options().qout,
-					   		options.Options().tag, options.Options().initialStep,
+					   		options.Options().tag, options.Options().task,
 					   		options.Options().filetag), filemode='w')
 
 	console = logging.StreamHandler()
@@ -66,17 +66,19 @@ if __name__ == '__main__':
 
 	M = metaspada()
 
-	if options.Options().initialStep == "get-switches":
+	if options.Options().task == "get-switches":
 	 	M.pancancerGetSwitches()
-	elif options.Options().initialStep == "recurrence-analysis":
+	elif options.Options().task == "recurrence-analysis":
 		M.pancancerRecurrenceAnalysis()
-	elif options.Options().initialStep == "wes-mutations-feature-overlap":
+	elif options.Options().task == "wes-mutations-feature-overlap":
 		M.pancancerStudyWESMutationsFeatureOverlap()
-	elif options.Options().initialStep == "me-analysis":
+	elif options.Options().task == "me-analysis":
 		M.pancancerStudyMutualExclusion()
-	elif options.Options().initialStep == "me-ppi":
+	elif options.Options().task == "me-ppi":
 		M.pancancerStudyPPIMutualExclusion()
-	elif options.Options().initialStep == "co-occurence":
+	elif options.Options().task == "co-occurence":
 		M.pancancerStudyCoocurrence()
+	else:
+		M.logger.error("Unrecognized task {}".format(options.Options().task))
 
 	M.logger.info("METASPADA will close.")

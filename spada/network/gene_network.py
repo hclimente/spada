@@ -1,7 +1,6 @@
-from biological_entities import switch
-from libs import utils
-from libs import options
-from network import network
+from spada.biological_entities import switch
+from spada import utils
+from spada.network import network
 
 import abc
 import numpy as np
@@ -22,9 +21,9 @@ class GeneNetwork(network.Network):
 		druggable(bool,False) 			Gene described as druggable.
 		specificDriver(bool,False) 		Gene described as driver in this cancer type.
 		driverType(str,"") 				Role that plays the gene in tumorigenesis.
-		expressedTxsNormal(set,()) 		Set with transcripts with a median expression > 0.1 
+		expressedTxsNormal(set,()) 		Set with transcripts with a median expression > 0.1
 										in normal samples.
-		expressedTxsTumor(set,()) 		Set with transcripts with a median expression > 0.1 
+		expressedTxsTumor(set,()) 		Set with transcripts with a median expression > 0.1
 										in tumor samples.
 		neighborhoods(dictionary,{})	Adjusted p-value of differential expression.
 
@@ -52,7 +51,7 @@ class GeneNetwork(network.Network):
 		self.logger.debug("Importing node: full name {0} id {1} symbol {2}".format(
 								full_name, gene_id, gene_symbol) )
 		geneID,geneSymbol = self.nameFilter(full_name=full_name, gene_id=gene_id, gene_symbol=gene_symbol)
-		
+
 		if geneID in self._net.nodes():
 			self.logger.debug("Node {0} already exist.".format(geneID))
 			return True
@@ -62,14 +61,14 @@ class GeneNetwork(network.Network):
 			return False
 		else:
 			self.logger.debug("Node {0} imported.".format(geneID))
-			self._net.add_node( geneID, 
+			self._net.add_node( geneID,
 								symbol 				= geneSymbol,
 								isoformSwitches 	= [],
 								specificDriver 		= False,
-								driver 				= False, 
+								driver 				= False,
 								driverType 			= None,
 								asDriver 			= False,
-								druggable 			= False, 
+								druggable 			= False,
 								expressedTxsNormal	= set(),
 								expressedTxsTumor	= set(),
 								neighborhoods		= {} )
@@ -77,12 +76,12 @@ class GeneNetwork(network.Network):
 			return True
 
 	def update_node(self, key, value,full_name = "",gene_id = "",secondKey=""):
-		"""Changes the value of a node attribute, specified by the key argument. 
+		"""Changes the value of a node attribute, specified by the key argument.
 		Returns True if succesful; else, returns False."""
 
 		geneID, geneSymbol = self.nameFilter(full_name=full_name, gene_id=gene_id)
 		finalValue = value
-		
+
 		if geneID is None:
 			self.logger.error("Unable to get gene id from {0} {1}".format(full_name, geneID))
 			return False
@@ -96,7 +95,7 @@ class GeneNetwork(network.Network):
 		node_id1 = self.nameFilter(full_name=full_name1, gene_id=gene_id1)[0]
 		node_id2 = self.nameFilter(full_name=full_name2, gene_id=gene_id2)[0]
 
-		if (node_id1 is None or node_id1 is "") or (node_id2 is None or node_id2 is ""): 
+		if (node_id1 is None or node_id1 is "") or (node_id2 is None or node_id2 is ""):
 			self.logger.warning( "Cannot add edge {1} - {3} ({0} - {2}).".format(
 									full_name1, gene_id1, full_name2, gene_id2) )
 			return False
@@ -107,14 +106,14 @@ class GeneNetwork(network.Network):
 			self.logger.warning("Node {0} does not exist.".format(node_id2))
 			return False
 
-		return self._add_edge(	node_id1, 
-								node_id2, 
+		return self._add_edge(	node_id1,
+								node_id2,
 								experimental = None)
 
 	def update_edge(self, key, value, full_name1 = "", gene_id1 = "", full_name2 = "", gene_id2 = ""):
-		"""Changes the value of an edge attribute, specified by the key argument. 
+		"""Changes the value of an edge attribute, specified by the key argument.
 		Returns True if succesful; else, returns False."""
-		
+
 		node_id1 = self.nameFilter(full_name=full_name1, gene_id=gene_id1)[0]
 		node_id2 = self.nameFilter(full_name=full_name2, gene_id=gene_id2)[0]
 
@@ -126,9 +125,9 @@ class GeneNetwork(network.Network):
 			- expressedGenes.lst: R-generated file containing the transcripts above
 			a threshold of expression.
 		"""
-		
+
 		# expression info
-		for line in utils.readTable(options.Options().qout + "transcript_expression.tsv"):
+		for line in utils.readTable("transcript_expression.tsv"):
 			gene = line[0]
 			tx = line[1]
 			expressedNormal = float(line[2]) > 0.1
@@ -143,7 +142,7 @@ class GeneNetwork(network.Network):
 		# druggability info
 		for line in utils.readTable("data/Databases/dgidb_export_all_drivers_bygene_results.tsv"):
 			geneSymbol = line[0]
-				
+
 			for gene,info in self.nodes(data=True):
 				if info["symbol"] == geneSymbol:
 					self.update_node("druggable",True,gene_id=gene )
@@ -160,7 +159,7 @@ class GeneNetwork(network.Network):
 		for line in utils.readTable("data/Databases/cancer_networks_SuppTables_v7_S7.csv"):
 			geneSymbol = line[0]
 			role = line[1]
-			
+
 			for gene,info in self.nodes(data=True):
 				if info["symbol"] == geneSymbol:
 					if info["driver"]:
@@ -174,10 +173,10 @@ class GeneNetwork(network.Network):
 			self.update_node("asDriver",True,gene_id=geneid)
 
 	def importExternalCandidates(self):
-		
+
 		self.logger.debug("Retrieving externally calculated isoform switches.")
 
-		for line in utils.readTable(options.Options().externalSwitchesFile):
+		for line in utils.readTable(externalSwitchesFile):
 			Gene = line[0]
 
 			switch = {}
@@ -191,7 +190,7 @@ class GeneNetwork(network.Network):
 			self.update_node("isoformSwitches",switch,full_name=Gene)
 
 	def cleanNetwork(self):
-		
+
 		self.logger.debug("Cleaning imported network.")
 
 		# removing isoform switches
@@ -220,12 +219,12 @@ class GeneNetwork(network.Network):
 
 			self.update_node("isoformSwitches",switch,full_name=Gene)
 
-	def importSpecificDrivers(self):
+	def getDriverInfo(self, driverInfo, tag):
 		self.logger.debug("Importing specific drivers.")
 
 		anyDriver = set()
 		specificDrivers = set()
-		for line in utils.readTable("{}data/ucsc/intogen_cancer_drivers-2014.12b/Mutational_drivers_per_tumor_type.tsv".format(options.Options().wd)):
+		for line in utils.readTable(driverInfo):
 			anyDriver.add(line[0])
 
 			if line[1]=="COREAD":
@@ -237,7 +236,7 @@ class GeneNetwork(network.Network):
 			else:
 				cancer = line[1].lower()
 
-			if options.Options().tag==cancer:
+			if tag==cancer:
 				specificDrivers.add(line[0])
 
 		for gene,info in self.nodes(data=True):
@@ -246,9 +245,9 @@ class GeneNetwork(network.Network):
 			if info["symbol"] in anyDriver:
 				self.update_node("driver", True, gene_id=gene)
 
-	def importKnownInteractions(self):
+	def getInteractome(self, tab2):
 
-		for line in utils.readTable("{}data/{}/BIOGRID-MV-Physical-3.4.133.tab2.txt".format(options.Options().wd,options.Options().annotation)):
+		for line in utils.readTable(tab2):
 			bioGRIDInteractionID		= line[0]
 			entrezGeneInteractorA		= line[1]
 			entrezGeneInteractorB		= line[2]
@@ -275,20 +274,10 @@ class GeneNetwork(network.Network):
 			sourceDatabase				= line[23]
 
 			# discard non-human interactions
-			if (organismInteractorA=="9606") & (organismInteractorB=="9606"):
-				self.add_edge(gene_id1=entrezGeneInteractorA, gene_id2=entrezGeneInteractorB)
-				self.update_edge("experimental", True, 
-					gene_id1=entrezGeneInteractorA, gene_id2=entrezGeneInteractorB)
-
-	def importEduardInteractions(self):
-
-		for line in utils.readTable("{}data/{}/interactions_found_more_than_three_times.txt".format(options.Options().wd,options.Options().annotation)):
-			geneA = line[0]
-			geneB = line[1]
-
-			# discard non-human interactions
-			self.add_edge(gene_id1=geneA, gene_id2=geneB)
-			self.update_edge("experimental", True, gene_id1=geneA, gene_id2=geneB)
+			if (organismInteractorA == "9606") & (organismInteractorB == "9606"):
+				self.add_edge(gene_id1 = entrezGeneInteractorA, gene_id2 = entrezGeneInteractorB)
+				self.update_edge("experimental", True,
+					gene_id1 = entrezGeneInteractorA, gene_id2 = entrezGeneInteractorB)
 
 	def iterate_genes_byPatientNumber(self,onlySplicedGenes=True,onlyExpressedGenes=True,alwaysSwitchedGenes=False):
 		'''
@@ -319,10 +308,10 @@ class GeneNetwork(network.Network):
 	def iterate_switches_byPatientNumber(self,tx_network,only_models=False,relevance=None,partialCreation=False,removeNoise=True):
 		"""Iterate through the isoform switches of a gene network, and
 			generate a list of (gene,geneInformation,isoformSwitch).
-			Only return those switches with an overlap between the CDS 
+			Only return those switches with an overlap between the CDS
 			of the transcripts and that have different features.
 
-			only_models(bool): if True, only the first switch (the most 
+			only_models(bool): if True, only the first switch (the most
 				common) will be returned for each gene.
 		"""
 
@@ -339,22 +328,22 @@ class GeneNetwork(network.Network):
 					continue
 
 				thisSwitch = self.createSwitch(switchDict,tx_network,partialCreation)
-				
+
 				if relevance is not None and relevance != thisSwitch.is_functional:
 					continue
-				
+
 				self.logger.debug("Iterating switch number {0}.".format(counter))
 				counter += 1
-					
+
 				yield gene,info,switchDict,thisSwitch
 
 	def iterate_functionalSwitches_byPatientNumber(self,tx_network,only_models=False,partialCreation=False,removeNoise=True):
 		"""Iterate through the isoform switches of a gene network, and
 			generate a list of (gene,geneInformation,isoformSwitch).
-			Only return those switches with an overlap between the CDS 
+			Only return those switches with an overlap between the CDS
 			of the transcripts and that have different features.
 
-			only_models(bool): if True, only the first switch (the most 
+			only_models(bool): if True, only the first switch (the most
 				common) will be returned for each gene.
 		"""
 
@@ -363,10 +352,10 @@ class GeneNetwork(network.Network):
 	def iterate_nonFunctionalSwitches_byPatientNumber(self,tx_network,only_models=False,partialCreation=False,removeNoise=True):
 		"""Iterate through the isoform switches of a gene network, and
 			generate a list of (gene,geneInformation,isoformSwitch).
-			Only return those switches with an overlap between the CDS 
+			Only return those switches with an overlap between the CDS
 			of the transcripts and that have different features.
 
-			only_models(bool): if True, only the first switch (the most 
+			only_models(bool): if True, only the first switch (the most
 				common) will be returned for each gene.
 		"""
 
@@ -375,7 +364,7 @@ class GeneNetwork(network.Network):
 	def createSwitch(self,switchDict,tx_network,partialCreation):
 		"""Create a switch object from the switch dictionary.
 
-			partialCreation(bool): if False, the heavy protein 
+			partialCreation(bool): if False, the heavy protein
 				objects are not created.
 		"""
 		thisSwitch = switch.IsoformSwitch(switchDict["nIso"],switchDict["tIso"],switchDict["patients"])
@@ -404,7 +393,7 @@ class GeneNetwork(network.Network):
 				d[x["tIso"]] = { "T":d[x["tIso"]]["T"]+len(x["patients"]), "N":d[x["tIso"]]["N"] }
 
 			scores = [ d[x]["N"] - d[x]["T"] for x in d ]
-			consensus = { 'N': [ x for x in d if max(scores) == (d[x]["N"]-d[x]["T"]) ], 
+			consensus = { 'N': [ x for x in d if max(scores) == (d[x]["N"]-d[x]["T"]) ],
 						  'T': [ x for x in d if min(scores) == (d[x]["N"]-d[x]["T"]) ] }
 
 			sortedSwitches = sorted(info["isoformSwitches"],key=lambda a:len(a['patients']),reverse=True)
@@ -451,7 +440,7 @@ class GeneNetwork(network.Network):
 			yield gene,info,switchDict,thisSwitch
 
 	def getGeneAnnotation(self,gene,hallmarksDict,biologicalProcessDict):
-		
+
 		annotation = "Nothing"
 		driverAnnotation = "Nothing"
 
@@ -459,7 +448,7 @@ class GeneNetwork(network.Network):
 			driverAnnotation = "driver"
 		elif [ x for x in self._net.neighbors(gene) if self._net.node[x]["driver"] ]:
 			driverAnnotation = "d1"
-		
+
 		if [ x for x in hallmarksDict if gene in hallmarksDict[x] ]:
 			annotation = ",".join(sorted([ x for x in hallmarksDict if gene in hallmarksDict[x] ]))
 		elif [ x for x in biologicalProcessDict if gene in biologicalProcessDict[x] ]:

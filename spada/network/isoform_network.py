@@ -1,6 +1,5 @@
-from libs import utils
-from libs import options
-from network import network
+from spada import utils
+from spada.network import network
 
 import pandas as pd
 import numpy as np
@@ -42,7 +41,7 @@ class IsoformNetwork(network.Network):
 		raise NotImplementedError()
 
 	def add_node(self,tx,geneFullname):
-		
+
 		if tx in self.nodes():
 			self.logger.debug("Transcript {0}, gene {1} already in the network.".format(tx, geneFullname))
 			return True
@@ -52,19 +51,19 @@ class IsoformNetwork(network.Network):
 		if not gene:
 			self.logger.debug("No gene could be extracted for transcript {0}, gene {1}.".format(tx, geneFullname))
 			return False
-		
-		self._net.add_node( tx, 
+
+		self._net.add_node( tx,
 							gene_id			= gene,
-							exonStructure	= None,
+							exonStructure	= [],
 							txCoords		= None,
 							cdsCoords		= None,
 							strand 			= None,
 							chr 			= None,
-							median_TPM_N	= None, 
-							median_PSI_N	= None, 
-							median_TPM_T	= None, 
-							median_PSI_T	= None, 
-							iLoopsFamily 	= None, 
+							median_TPM_N	= None,
+							median_PSI_N	= None,
+							median_TPM_T	= None,
+							median_PSI_T	= None,
+							iLoopsFamily 	= None,
 							proteinSequence	= None,
 							Uniprot 		= None)
 
@@ -81,7 +80,7 @@ class IsoformNetwork(network.Network):
 
 	def importTranscriptome(self):
 		# create transcripts from expression info
-		for line in utils.readTable(options.Options().qout + "transcript_expression.tsv",header=False):
+		for line in utils.readTable("transcript_expression.tsv",header=False):
 			gene = line[0]
 			tx = line[1]
 			median_TPM_n = float(line[2]) if(line[2] != "NA") else None
@@ -89,7 +88,7 @@ class IsoformNetwork(network.Network):
 			median_PSI_n = float(line[4]) if(line[4] != "NA") else None
 			median_PSI_t = float(line[5]) if(line[5] != "NA") else None
 
-			if not self.add_node(tx, gene): 
+			if not self.add_node(tx, gene):
 				continue
 
 			if median_TPM_n is not None: self.update_node( tx, "median_TPM_N", median_TPM_n )
@@ -98,12 +97,12 @@ class IsoformNetwork(network.Network):
 			if median_PSI_t is not None: self.update_node( tx, "median_PSI_T", median_PSI_t )
 
 		# exon and CDS info
-		for line in utils.readTable("{0}data/{1}/knownGene.txt".format(options.Options().wd, options.Options().annotation), header=False):
+		for line in utils.readTable("data/{}/knownGene.txt".format("TODO"), header=False):
 			if line[0] not in self.nodes(): continue
 
 			tx			= line[0]
-			chrom		= line[1] 
-			strand		= line[2] 
+			chrom		= line[1]
+			strand		= line[2]
 			txStart		= int(line[3])
 			txEnd		= int(line[4])
 			cdsStart	= int(line[5])
@@ -125,7 +124,7 @@ class IsoformNetwork(network.Network):
 			self.update_node(tx, "chr", chrom)
 
 		self.logger.debug("Reading transcript info: protein sequence, Uniprot and iLoops family.")
-		with open("{}data/{}/sequences.uniprot.loops.fa".format(options.Options().wd, options.Options().annotation)) as FASTA:
+		with open("data/{}/sequences.uniprot.loops.fa".format(options.Options().annotation)) as FASTA:
 			txName 			= ""
 			geneFullname 	= ""
 			sequence 		= ""
@@ -135,10 +134,10 @@ class IsoformNetwork(network.Network):
 			for line in FASTA:
 				if ">" in line:
 					if txName:
-						if sequence:		self.update_node(txName, "proteinSequence", sequence)	
+						if sequence:		self.update_node(txName, "proteinSequence", sequence)
 						if Uniprot: 		self.update_node(txName, "Uniprot", Uniprot[:-1])
 						if iLoopsFamily: 	self.update_node(txName, "iLoopsFamily", iLoopsFamily)
-						
+
 					elements = line[1:].strip().split("#")
 					txName 			= elements[0]
 					geneFullname 	= elements[1]

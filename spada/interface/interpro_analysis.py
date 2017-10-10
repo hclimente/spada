@@ -1,8 +1,8 @@
-from libs import options
-from libs import utils
+from spada import utils
 
 import os
 
+"""
 class InterproAnalysis:
     def __init__(self):
         pass
@@ -48,13 +48,13 @@ class InterproAnalysis:
 
             tx=protein_accession.strip().split("#")[0]
 
-            if score and score > 0.01: 
+            if score and score > 0.01:
                 continue
-            elif analysis not in acceptedAnalysis: 
+            elif analysis not in acceptedAnalysis:
                 continue
             elif tx != protein.tx:
                 raise Exception("Error reading InterPro features for {0}. Invalid identifier {1} found.".format(protein.tx,tx))
-            
+
             isoSpecificRes = set([ x._num for x in protein._structure if x.isoformSpecific ])
             featureRes = set(range(start,stop+1))
             intersection = float(len(isoSpecificRes & featureRes))
@@ -67,3 +67,4 @@ class InterproAnalysis:
             featInfo["percentAffected"] = intersection/len(featureRes) * 100
 
             yield featInfo
+"""

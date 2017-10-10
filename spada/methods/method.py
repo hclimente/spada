@@ -1,35 +1,33 @@
-from libs import options
-
 import pickle
 import logging
 
 class Method:
-	def __init__(self, name, gn_network,tx_network,gn_subnetwork=False):
+	def __init__(self, name, genes, transcripts, gn_subnetwork = False):
 		self.logger = logging.getLogger(name)
 
-		if gn_network:
-			if isinstance(gn_network,bool):
-				self._gene_network = pickle.load(open(options.Options().qout + "geneNetwork.pkl","rb"))
-			elif isinstance(gn_network,str):
-				self._gene_network = pickle.load(open(options.Options().qout+gn_network,"rb"))
+		if genes:
+			if isinstance(genes, bool):
+				self._genes = pickle.load(open("genes.pkl", "rb"))
+			elif isinstance(genes, str):
+				self._genes = pickle.load(open(genes, "rb"))
 			else:
-				self._gene_network = gn_network
-			self._gene_network.createLogger()
+				self._genes = genes
+			self._genes.createLogger()
 
-		if tx_network:
-			if isinstance(tx_network,bool):
-				self._transcript_network = pickle.load(open(options.Options().qout + "txNetwork.pkl","rb"))
-			elif isinstance(tx_network,str):
-				self._transcript_network = pickle.load(open(options.Options().qout+tx_network,"rb"))
+		if transcripts:
+			if isinstance(transcripts, bool):
+				self._txs = pickle.load(open("transcripts.pkl", "rb"))
+			elif isinstance(transcripts, str):
+				self._txs = pickle.load(open(transcripts, "rb"))
 			else:
-				self._transcript_network = tx_network
-			self._transcript_network.createLogger()
+				self._txs = transcripts
+			self._txs.createLogger()
 
 		if gn_subnetwork:
-			if isinstance(gn_subnetwork,bool):
-				self._gene_subnetwork = pickle.load(open(options.Options().qout + "geneSubnetwork.pkl","rb"))
-			elif isinstance(gn_subnetwork,str):
-				self._gene_subnetwork = pickle.load(open(options.Options().qout+gn_subnetwork,"rb"))
+			if isinstance(gn_subnetwork, bool):
+				self._gene_subnetwork = pickle.load(open("geneSubnetwork.pkl", "rb"))
+			elif isinstance(gn_subnetwork, str):
+				self._gene_subnetwork = pickle.load(open(gn_subnetwork, "rb"))
 			else:
 				self._gene_subnetwork = gn_subnetwork
 			self._gene_subnetwork.createLogger()

@@ -1,6 +1,6 @@
 from interface import interpro_analysis
-from libs import options
-from libs import utils
+from spada import options
+from spada import utils
 from methods import method
 
 from collections import Counter
@@ -369,7 +369,7 @@ class StructuralAnalysis(method.Method):
 						OUT.write(IN.read())
 
 		if tag=="":
-			saveName = "geneNetwork.pkl"
+			saveName = "genes.pkl"
 			g = self._gene_network
 		elif tag=="_random":
 			saveName = "randomGeneNetwork_fixNormal.pkl"

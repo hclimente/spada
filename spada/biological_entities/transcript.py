@@ -1,5 +1,4 @@
-from libs import utils
-from libs import options
+from spada import utils
 
 import logging
 import os
@@ -21,15 +20,15 @@ class Transcript:
 		self._cds = {}
 		self._utr = {}
 		self._exon = {}
-		
-		if self._strand == "+": 
+
+		if self._strand == "+":
 			if self._cds_coordinates is None:
 				cdsStart = float("Inf")
 				cdsEnd 	 = float("-Inf")
 			else:
 				cdsStart = self._cds_coordinates[0]
 				cdsEnd 	 = self._cds_coordinates[1]
-			
+
 			exon = 1
 			for exonStart,exonEnd in self._exons:
 				for gPos in range(exonStart, exonEnd):
@@ -45,7 +44,7 @@ class Transcript:
 					self._exon[gPos]=exon
 				exon +=1
 
-		elif self._strand == "-": 
+		elif self._strand == "-":
 			if self._cds_coordinates is None:
 				cdsStart = float("-Inf")
 				cdsEnd 	 = float("Inf")
@@ -73,14 +72,14 @@ class Transcript:
 	@property
 	def utr(self): return self._utr
 	@property
-	def cds(self): 
+	def cds(self):
 		if len(self._cds)==1:
 			return {}
 		else:
 			return self._cds
 
 	@property
-	def cds_ordered(self): 
+	def cds_ordered(self):
 		if len(self._cds) > 1:
 			reverseOrder = False if self._strand=='+' else True
 
@@ -88,7 +87,7 @@ class Transcript:
 				yield nt
 
 	@property
-	def cds_exclusive(self): 
+	def cds_exclusive(self):
 		exclusive = float(sum([ 1 for x in self._cds if self._cds[x] ]))
 		nonExclusive = float(sum([ 1 for x in self._cds if not self._cds[x] ]))
 		try:
@@ -97,7 +96,7 @@ class Transcript:
 			return None
 
 	@property
-	def tx_exclusive(self): 
+	def tx_exclusive(self):
 		tx = self._cds.copy()
 		tx.update(self._utr)
 
@@ -107,14 +106,14 @@ class Transcript:
 			return exclusive/(exclusive+nonExclusive)
 		except ZeroDivisionError:
 			return None
-	
+
 	def getSegments(self,thing,minLength=1,gap=0):
 		segments = []
 		segment = []
 		gapped = []
 
 		reverseOrder = False if self._strand=='+' else True
-    
+
 		for nt in sorted(self._cds,reverse=reverseOrder):
 			flag = False
 			if thing =="isoform-specific":
@@ -143,6 +142,8 @@ class Transcript:
 		return segments
 
 	def readPfamDomains(self):
+		pass
+		"""
 		featFile = "{}data/{}/InterPro/{}.tsv".format(options.Options().wd,options.Options().annotation,self.name)
 
 		if not os.path.exists(featFile):
@@ -160,9 +161,11 @@ class Transcript:
 
 			self._pfam.setdefault(domainId,[])
 			self._pfam[domainId].append((int(line[6]),int(line[7])))
+		"""
 
 	def readProsite(self):
-
+		pass
+		"""
 		featFile = "{}data/{}/ProSite/{}.out".format(options.Options().wd,options.Options().annotation,self.name)
 
 		if not os.path.exists(featFile) or os.stat(featFile).st_size == 0:
@@ -177,10 +180,12 @@ class Transcript:
 
 			self._ptms.setdefault(prositeId,[])
 			self._ptms[prositeId].append((int(line[-3].replace(" -","")),int(line[-2])))
+		"""
 
 
 	def readIupred(self):
-
+		pass
+		"""
 		featFile = "{}data/{}/ProSite/{}.out".format(options.Options().wd,options.Options().annotation,self.name)
 
 		if not os.path.exists(featFile) or os.stat(featFile).st_size == 0:
@@ -195,3 +200,4 @@ class Transcript:
 
 			self._ptms.setdefault(prositeId,[])
 			self._ptms[prositeId].append((int(line[-3].replace(" -","")),int(line[-2])))
+		"""

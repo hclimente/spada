@@ -19,4 +19,4 @@ Gene1	tumor_isoform	normal_isoform
 Gene2	tumor_isoform	normal_isoform
 
 ```
-The parent SmartAS experiment, identified by a tag, needs to be located under the same annotation directory in the working directory. It must me specified using the argument parent-tag e.g. parent-tag=brca. The new experiment will copy both the gene (geneNetwork.pkl) and the transcript (txNetwork.pkl) networks from its parent.
+The parent SmartAS experiment, identified by a tag, needs to be located under the same annotation directory in the working directory. It must me specified using the argument parent-tag e.g. parent-tag=brca. The new experiment will copy both the gene (genes.pkl) and the transcript (transcripts.pkl) networks from its parent.

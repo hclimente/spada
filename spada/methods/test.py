@@ -1,6 +1,6 @@
-from libs import options
-from libs import utils
-from methods import method
+from spada import options
+from spada import utils
+from spada.methods import method
 
 class Test(method.Method):
 	def __init__(self, gn_network, tx_network, gn_subnetwork=False):
