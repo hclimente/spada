@@ -52,7 +52,7 @@ class WESMutationsFeatureOverlap(method.Method):
 
 		for gene,info in self._gene_network.iterate_genes_byPatientNumber(onlySplicedGenes=False,onlyExpressedGenes=False):
 
-			allTxs = set(info["expressedTxsNormal"]) | set(info["expressedTxsTumor"])
+			allTxs = set(info["expressedTxsN"]) | set(info["expressedTxsT"])
 			asEvidence = bool(info["isoformSwitches"]) | (len(allTxs) >= 2)
 			expressed = bool(allTxs)
 

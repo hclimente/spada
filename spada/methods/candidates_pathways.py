@@ -37,7 +37,7 @@ class CandidatesPathways(method.Method):
 			if line[4]!="NA" and bool(int(line[4])):
 				self.genesWithCandidateSwitch.add(line[0])
 
-		for gene,info in [ (x,y) for x,y in self._gene_network.nodes(data=True) if y["expressedTxsNormal"] or y["expressedTxsTumor"] ]:
+		for gene,info in [ (x,y) for x,y in self._gene_network.nodes(data=True) if y["expressedTxsN"] or y["expressedTxsT"] ]:
 			self.allGenes.add(gene)
 
 	def run(self):

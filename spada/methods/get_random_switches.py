@@ -51,18 +51,18 @@ class GetRandomSwitches(method.Method):
 			S.run()	
 
 	def sampleTranscripts_fixNormal(self,gcopy):
-		for gene,info in [ (x,y) for x,y in gcopy.nodes(data=True) if len(set(y["expressedTxsNormal"]) & set(y["expressedTxsTumor"]))>1]:
+		for gene,info in [ (x,y) for x,y in gcopy.nodes(data=True) if len(set(y["expressedTxsN"]) & set(y["expressedTxsT"]))>1]:
 			# set normal isoform as the most expressed in normal, shuffle the rest for tumor
-			txExpression = [ (x,self._transcript_network._net.node[x]["median_TPM_N"]) for x in info["expressedTxsNormal"] ]
+			txExpression = [ (x,self._transcript_network._net.node[x]["median_TPM_N"]) for x in info["expressedTxsN"] ]
 			nTx = max(txExpression, key=operator.itemgetter(1))[0]
 			nTxExpression = max(txExpression, key=operator.itemgetter(1))[1]
 
-			if nTx not in info["expressedTxsNormal"]:
+			if nTx not in info["expressedTxsN"]:
 				self.logger.warning("Median most expressed transcript from gene {} is not considered expressed. \
 					Probably due to the threshold applied. TPM={}. Will be skipped. ".format(gene,txExpression))
 				continue
 
-			txs = list(info["expressedTxsTumor"])
+			txs = list(info["expressedTxsT"])
 			if nTx in txs:
 				txs.remove(nTx)
 
@@ -86,8 +86,8 @@ class GetRandomSwitches(method.Method):
 
 	def sampleTranscripts_random(self, gcopy):
 		
-		for gene,info in [ (x,y) for x,y in gcopy.nodes(data=True) if len(set(y["expressedTxsNormal"]) & set(y["expressedTxsTumor"]))>1]:
-			allExpressedTxs = set(y["expressedTxsNormal"]) & set(y["expressedTxsTumor"])
+		for gene,info in [ (x,y) for x,y in gcopy.nodes(data=True) if len(set(y["expressedTxsN"]) & set(y["expressedTxsT"]))>1]:
+			allExpressedTxs = set(y["expressedTxsN"]) & set(y["expressedTxsT"])
 
 			allSwitches = [ x for x in itertools.combinations(allExpressedTxs,2) ]
 			random.shuffle(allSwitches)

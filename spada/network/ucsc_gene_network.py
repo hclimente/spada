@@ -28,6 +28,6 @@ class UCSCGeneNetwork(gene_network.GeneNetwork):
 			assumedGeneId = [ x for x,y in self.nodes(data=True) if y["symbol"]==geneSymbol ]
 
 			if assumedGeneId:
-				geneID == assumedGeneId[0]
+				geneID = assumedGeneId[0]
 
 		return (geneID, geneSymbol)

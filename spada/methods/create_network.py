@@ -9,7 +9,7 @@ import pickle
 import pandas as pd
 
 class CreateNetwork(method.Method):
-	def __init__(self, annotation):
+	def __init__(self, tumor, annotation):
 
 		method.Method.__init__(self, __name__, None, None, None)
 
@@ -23,24 +23,40 @@ class CreateNetwork(method.Method):
 			self.logger.error("Unrecognized annotation: {}.".format(annotation))
 			exit()
 
-	def run(self, gtf, normalExpression, tumorExpression, ppi, drivers):
+		self._genes.tumor = tumor
+		self._txs.tumor = tumor
 
-		self.readGTF(gtf)
+	def run(self, gtf, normalExpression, tumorExpression, minExpression, proteins, ppi, drivers):
 
+		self.logger.info("Importing genes and transcripts from GTF.")
+		self.createNetworks(gtf)
+
+		self.logger.info("Reading expression and calculating PSI.")
 		for exprFile,origin in zip([normalExpression, tumorExpression], ["N", "T"]):
 			expression = pd.DataFrame.from_csv(exprFile, sep='\t')
-			self.updateNodes(self._txs, "median_TPM_" + origin, self.readExpression(expression))
-			self.updateNodes(self._txs, "median_PSI_" + origin, self.calculatePSI(expression))
+			medianExpression = self.readExpression(expression)
+			medianPSI = self.calculatePSI(expression)
+			expressed = self.isExpressed(medianExpression, minExpression)
 
-		self.annotateGenes(ppi, drivers)
+			self._txs.update_nodes("median_TPM_" + origin, medianExpression)
+			self._txs.update_nodes("median_PSI_" + origin, medianPSI)
+			self._genes.update_nodes("expressedTxs" + origin, expressed)
 
+		self.logger.info("Building protein-protein interaction network.")
+		self.getInteractions(ppi)
+
+		self.logger.info("Reading known driver genes.")
+		drivers, specificDrivers = self.readDrivers(drivers)
+		self._genes.update_nodes("driver", drivers)
+		self._genes.update_nodes("specificDriver", specificDrivers)
+
+		self.logger.info("Saving networks.")
 		self._genes.saveNetwork("genes.pkl")
 		self._txs.saveNetwork("transcripts.pkl")
 
-	def readGTF(self, gtf):
+	def createNetworks(self, gtf):
 
-		self.logger.info("Importing genes and transcripts from GTF.")
-		for line in self.readGTFline(gtf):
+		for line in utils.readGTF(gtf):
 
 			if line["feature"] == "gene":
 				self._genes.add_node(gene_id = line["gene_id"], gene_symbol = line["gene_name"])
@@ -51,31 +67,10 @@ class CreateNetwork(method.Method):
 				self._txs.update_node(line["transcript_id"], "chr", line["chromosome"] )
 			elif line["feature"] == "exon":
 				self._txs.update_node(line["transcript_id"], "exonStructure", [line["start"], line["end"]] )
+			elif line["feature"] == "CDS":
+				self._txs.update_node(line["transcript_id"], "cdsCoords", [line["start"], line["end"]] )
 			else:
 				pass
-
-	def readGTFline(self, gtf):
-
-		for line in utils.readTable(gtf, header=False):
-
-			# read common fields
-			parsed = {}
-			parsed["chromosome"] = line[0]
-			parsed["source"] 	 = line[1]
-			parsed["feature"] 	 = line[2]
-			parsed["start"] 	 = line[3]
-			parsed["end"] 		 = line[4]
-			parsed["score"] 	 = line[5]
-			parsed["strand"] 	 = line[6]
-			parsed["phase"] 	 = line[7]
-
-			# read additional fields
-			for field in line[8].strip().split(";"):
-				if len(field):
-					field = field.strip().split(" ")
-					parsed[field[0]] = field[1].strip('"')
-
-			yield parsed
 
 	def readExpression(self, expression):
 
@@ -96,14 +91,51 @@ class CreateNetwork(method.Method):
 
 		return(medians)
 
-	def annotateGenes(self, ppi, drivers):
+	def isExpressed(self, expression, threshold):
 
-		self._genes.getInteractome(ppi)
-		self._genes.getDriverInfo(drivers)
+		expressed = {}
 
-	def updateNodes(self, net, field, vals):
-		for node, value in vals.items():
-			net.update_node(node, field, value )
+		for tx, median in expression.items():
+			if median > threshold:
+				gene = self._txs._net.node[tx]["gene_id"]
+
+				expressed.setdefault(gene, set())
+				expressed[gene].add(tx)
+
+		return(expressed)
+
+	def getInteractions(self, ppi):
+
+		edges = set()
+
+		for line in utils.readPSIMITAB(ppi):
+
+			if line["organismA"][0]["id"] != "9606" or line["organismB"][0]["id"] != "9606":
+				next
+
+			symbolA = [ x["id"] for x in line["symbolA"] if "extra" in x and x["extra"] == "gene name" ]
+			symbolB = [ x["id"] for x in line["symbolB"] if "extra" in x and x["extra"] == "gene name" ]
+
+			if symbolA and symbolB:
+				self._genes.add_edge(symbol1 = symbolA[0], symbolB = symbolB[0])
+
+		return(edges)
+
+	def readDrivers(self, drivers):
+
+		allDrivers = {}
+		specificDrivers = {}
+
+		for line in utils.readTable(drivers):
+			gene_id = line[0]
+			tumor   = line[1]
+
+			allDrivers[gene_id] = True
+
+			if tumor == self._genes.tumor:
+				specificDrivers[gene_id] = True
+
+		return allDrivers, specificDrivers
 
 if __name__ == '__main__':
 	pass

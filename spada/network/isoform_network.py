@@ -22,7 +22,6 @@ class IsoformNetwork(network.Network):
 		median_PSI_N(float,None) 	Median PSI of the isoform in the normal patients.
 		median_TPM_T(float,None) 	Median TPM of the isoform in the tumor patients.
 		median_PSI_T(float,None) 	Median PSI of the isoform in the tumor patients.
-		iLoopsFamily(str,None) 		Loop pattern.
 		proteinSequence(str,None)	Protein sequence.
 		Uniprot(str,None)			Associated UniprotId.
 
@@ -71,6 +70,14 @@ class IsoformNetwork(network.Network):
 
 	def update_node(self, tx, key, value):
 		return self._update_node(tx, key, value)
+
+	def update_nodes(self, key, values):
+		for tx, value in values.items():
+			if isinstance(value, set):
+				for v in value:
+					self.update_node(tx, key, v)
+			else:
+				self.update_node(tx, key, value)
 
 	def add_edge(self, tx1, tx2):
 		self._net.add_edge(tx1,tx2)

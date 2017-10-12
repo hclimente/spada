@@ -9,7 +9,7 @@ class MEGenesetAnalysis(method.Method):
 		method.Method.__init__(self,__name__,gn_network,tx_network)
 
 		# get list of all expressed genes
-		self.allGenes = set([ x for x,y in self._gene_network.nodes(data=True) if y["expressedTxsNormal"] or y["expressedTxsTumor"] ])
+		self.allGenes = set([ x for x,y in self._gene_network.nodes(data=True) if y["expressedTxsN"] or y["expressedTxsT"] ])
 
 		self.logger.info("Reading canonical pathways.")
 		self.sets = {}

@@ -101,10 +101,6 @@ parser.add_argument('-wd', '--working-directory', dest='wd', action='store',
 					help='Root file of SmartAS folder in the current machine.')
 parser.add_argument('-a', '--all-switches', dest='onlyModels', action='store_false',
 					help='Only use the model switches.')
-parser.add_argument('-t', '--tag', dest='tag' ,action='store',
-					help='Identifier of the analysis.')
-parser.add_argument('-d', '--specific-drivers', dest='specificDrivers', action='store',
-					default='',help='Path of the specific drivers for the cancer type.')
 parser.add_argument('-p', '--parallel-range', dest='parallelRange', action='store', default='0',
 					type=int,help='Range of nodes if parallel.')
 parser.add_argument('-p2', '--scd-parallel-range', dest='parallelRange2', action='store', default='0',
@@ -117,10 +113,12 @@ subparsers = parser.add_subparsers(help='sub-command help')
 ################################################
 
 def createNetwork(o):
-	c = create_network.CreateNetwork(o.annotation)
-	c.run(o.gtf, o.normalExpression, o.tumorExpression, o.ppi, o.drivers, o.minExpression)
+	c = create_network.CreateNetwork(o.tumor, o.annotation)
+	c.run(o.gtf, o.normalExpression, o.tumorExpression, o.minExpression, o.fasta, o.ppi, o.drivers)
 
 subparser_init = subparsers.add_parser('init', help='Initialize help')
+subparser_init.add_argument('-T', '--tumor', dest='tumor' ,action='store',
+							help='Identifier of the analysis.')
 subparser_init.add_argument('-g', '--gtf', dest='gtf', action='store',
 							help='GTF with the gene, transcript and exon annotation.')
 subparser_init.add_argument('-n', '--expression-normal', dest='normalExpression', action='store',
@@ -129,13 +127,15 @@ subparser_init.add_argument('-t', '--expression-tumor', dest='tumorExpression', 
 							help='Table with transcript-level expression data of the tumor samples.')
 subparser_init.add_argument('-p', '--ppi', dest='ppi', action='store',
 							help='File with protein-protein interactions, in PSI-MI TAB format >= 2.5.')
+subparser_init.add_argument('-f', '--fasta', dest='fasta', action='store',
+							help='Fasta file with the protein product of each transcript.')
 subparser_init.add_argument('-i', '--annotation', dest='annotation', action='store', default='gencode',
 							help='Used annotation.')
 subparser_init.add_argument('-d', '--drivers', dest='drivers', action='store',
 							help='Drivers.')
 subparser_init.add_argument('-m', '--minimum-expression', dest='minExpression', action='store',
 					 		default='-1', type=float,
-					 		help='Minimum log10(TPM) to consider a transcript expressed.')
+					 		help='Minimum expression value to consider a transcript expressed.')
 
 subparser_init.set_defaults(task="createNetwork")
 subparser_init.set_defaults(func=createNetwork)
@@ -153,7 +153,6 @@ subparser_switches.add_argument('-e', '--external-switches', dest='externalSwitc
 								default=None,type=str,
 								help='File containing switches calculated with other methods.')
 
-
 ################################################
 ###   MAIN                                  ####
 ################################################
@@ -163,7 +162,7 @@ options = parser.parse_args()
 logging.basicConfig(level=logging.DEBUG,
 					format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
 					datefmt='%m-%d %H:%M',
-				   	filename='.{}_{}.log'.format(options.tag, options.task), filemode='w')
+				   	filename='.{}.log'.format(options.task), filemode='w')
 
 console = logging.StreamHandler()
 console.setLevel(logging.INFO)

@@ -8,10 +8,22 @@ class GENCODEGeneNetwork(gene_network.GeneNetwork):
 		gene_network.GeneNetwork.__init__(self, __name__)
 
 	def nameFilter(self, full_name="", gene_id="", gene_symbol=""):
+
 		geneSymbol 	= None
 		geneID 		= None
 
 		if full_name:
 			geneID 	= full_name
+		if not geneID and geneSymbol:
+			assumedGeneId = [ x for x,y in self.nodes(data=True) if y["symbol"] == geneSymbol ]
+
+			if assumedGeneId:
+				geneID = assumedGeneId[0]
+		else:
+			if gene_id:
+				geneID 		= gene_id
+			if gene_symbol:
+				geneSymbol 	= gene_symbol
+
 
 		return (geneID, geneSymbol)

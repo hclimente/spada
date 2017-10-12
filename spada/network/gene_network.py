@@ -17,20 +17,17 @@ class GeneNetwork(network.Network):
 		symbol(str) 					Gene Symbol
 		isoformSwitches(list,[]) 		List of detected isoform switches [[isoN, isoT], [isoN, isoT]]
 		driver(bool,False) 				Gene described as a driver.
-		asDriver(bool,False) 			Gene described as driver through alternative splicing.
-		druggable(bool,False) 			Gene described as druggable.
 		specificDriver(bool,False) 		Gene described as driver in this cancer type.
 		driverType(str,"") 				Role that plays the gene in tumorigenesis.
-		expressedTxsNormal(set,()) 		Set with transcripts with a median expression > 0.1
+		expressedTxsN(set,()) 			Set with transcripts with a median expression > 0.1
 										in normal samples.
-		expressedTxsTumor(set,()) 		Set with transcripts with a median expression > 0.1
+		expressedTxsT(set,()) 			Set with transcripts with a median expression > 0.1
 										in tumor samples.
 		neighborhoods(dictionary,{})	Adjusted p-value of differential expression.
 
 	Edge information:
 		id1(str) 						Gene id of interactor 1.
 		id2(str) 						Gene id of interactor 2.
-		experimental(bool,None) 		Interaction found through experiments.
 
 	"""
 
@@ -67,15 +64,13 @@ class GeneNetwork(network.Network):
 								specificDriver 		= False,
 								driver 				= False,
 								driverType 			= None,
-								asDriver 			= False,
-								druggable 			= False,
-								expressedTxsNormal	= set(),
-								expressedTxsTumor	= set(),
+								expressedTxsN		= set(),
+								expressedTxsT		= set(),
 								neighborhoods		= {} )
 
 			return True
 
-	def update_node(self, key, value,full_name = "",gene_id = "",secondKey=""):
+	def update_node(self, key, value, full_name = "", gene_id = "", secondKey=""):
 		"""Changes the value of a node attribute, specified by the key argument.
 		Returns True if succesful; else, returns False."""
 
@@ -83,32 +78,40 @@ class GeneNetwork(network.Network):
 		finalValue = value
 
 		if geneID is None:
-			self.logger.error("Unable to get gene id from {0} {1}".format(full_name, geneID))
+			self.logger.error("Unable to get gene id from {} {}".format(full_name, geneID))
 			return False
 
 		return self._update_node(geneID,key,finalValue,secondKey)
 
-	def add_edge(self, full_name1 = "", gene_id1 = "", full_name2 = "", gene_id2 = ""):
+	def update_nodes(self, key, values):
+		for gene, value in values.items():
+			if isinstance(value, set):
+				for v in value:
+					self.update_node(key, v, gene_id = gene)
+			else:
+				self.update_node(key, value, gene_id = gene)
+
+	def add_edge(self, full_name1 = "", gene_id1 = "", symbol1 = "",
+					   full_name2 = "", gene_id2 = "", symbol2 = ""):
 		"""Adds an edge to the network. Return True if succesful; else, return False.
 		The value of the attributes are the default, specified in GeneNetwork documentation."""
 
-		node_id1 = self.nameFilter(full_name=full_name1, gene_id=gene_id1)[0]
-		node_id2 = self.nameFilter(full_name=full_name2, gene_id=gene_id2)[0]
+		node_id1 = self.nameFilter(full_name=full_name1, gene_id=gene_id1, gene_symbol=symbol1)[0]
+		node_id2 = self.nameFilter(full_name=full_name2, gene_id=gene_id2, gene_symbol=symbol2)[0]
 
 		if (node_id1 is None or node_id1 is "") or (node_id2 is None or node_id2 is ""):
-			self.logger.warning( "Cannot add edge {1} - {3} ({0} - {2}).".format(
+			self.logger.warning( "Cannot add edge {} - {} ({} - {}).".format(
 									full_name1, gene_id1, full_name2, gene_id2) )
 			return False
 		elif node_id1 not in self.nodes():
-			self.logger.warning("Node {0} does not exist.".format(node_id1))
+			self.logger.warning("Node {} does not exist.".format(node_id1))
 			return False
 		elif node_id2 not in self.nodes():
-			self.logger.warning("Node {0} does not exist.".format(node_id2))
+			self.logger.warning("Node {} does not exist.".format(node_id2))
 			return False
 
-		return self._add_edge(	node_id1,
-								node_id2,
-								experimental = None)
+		return self._add_edge(node_id1, node_id2)
+
 
 	def update_edge(self, key, value, full_name1 = "", gene_id1 = "", full_name2 = "", gene_id2 = ""):
 		"""Changes the value of an edge attribute, specified by the key argument.
@@ -118,76 +121,6 @@ class GeneNetwork(network.Network):
 		node_id2 = self.nameFilter(full_name=full_name2, gene_id=gene_id2)[0]
 
 		return self._update_edge(node_id1, node_id2, key, value)
-
-	def readGeneInfo(self):
-		"""Read tsv files containing characteristics of the genes. Updates the nodes.:
-			- compilationTable.tsv: gene annotation of drivers, epigenetic factors and RBPs.
-			- expressedGenes.lst: R-generated file containing the transcripts above
-			a threshold of expression.
-		"""
-
-		# expression info
-		for line in utils.readTable("transcript_expression.tsv"):
-			gene = line[0]
-			tx = line[1]
-			expressedNormal = float(line[2]) > 0.1
-			expressedTumor = float(line[3]) > 0.1
-
-			if self.add_node(full_name=gene):
-				if expressedNormal:
-					self.update_node("expressedTxsNormal",tx,full_name=gene)
-				if expressedTumor:
-					self.update_node("expressedTxsTumor",tx,full_name=gene)
-
-		# druggability info
-		for line in utils.readTable("data/Databases/dgidb_export_all_drivers_bygene_results.tsv"):
-			geneSymbol = line[0]
-
-			for gene,info in self.nodes(data=True):
-				if info["symbol"] == geneSymbol:
-					self.update_node("druggable",True,gene_id=gene )
-					break
-
-		# driver info
-		## is driver: only for ucsc
-		for line in utils.readTable("data/ucsc/drivers_ucsc_notation.txt",sep="|"):
-			geneid = line[1]
-
-			self.update_node("driver",True,gene_id=geneid)
-
-		## which kind of driver
-		for line in utils.readTable("data/Databases/cancer_networks_SuppTables_v7_S7.csv"):
-			geneSymbol = line[0]
-			role = line[1]
-
-			for gene,info in self.nodes(data=True):
-				if info["symbol"] == geneSymbol:
-					if info["driver"]:
-						self.update_node("driverType",role,gene_id=gene )
-					break
-
-		## AS driver: only for ucsc
-		for line in utils.readTable("data/ucsc/asdrivers_ucsc_notation.txt",sep="|"):
-			geneid = line[1]
-
-			self.update_node("asDriver",True,gene_id=geneid)
-
-	def importExternalCandidates(self):
-
-		self.logger.debug("Retrieving externally calculated isoform switches.")
-
-		for line in utils.readTable(externalSwitchesFile):
-			Gene = line[0]
-
-			switch = {}
-			switch["tIso"] 			= line[1]
-			switch["nIso"] 			= line[2]
-			switch["patients"] 		= []
-			switch["functional"] 	= None
-			switch["model"] 		= True
-			switch["noise"] 		= False
-
-			self.update_node("isoformSwitches",switch,full_name=Gene)
 
 	def cleanNetwork(self):
 
@@ -219,66 +152,6 @@ class GeneNetwork(network.Network):
 
 			self.update_node("isoformSwitches",switch,full_name=Gene)
 
-	def getDriverInfo(self, driverInfo, tag):
-		self.logger.debug("Importing specific drivers.")
-
-		anyDriver = set()
-		specificDrivers = set()
-		for line in utils.readTable(driverInfo):
-			anyDriver.add(line[0])
-
-			if line[1]=="COREAD":
-				cancer = "coad"
-			elif line[1]=="HC":
-				cancer = "lihc"
-			elif line[1]=="RCCC":
-				cancer = "kirc"
-			else:
-				cancer = line[1].lower()
-
-			if tag==cancer:
-				specificDrivers.add(line[0])
-
-		for gene,info in self.nodes(data=True):
-			if info["symbol"] in specificDrivers:
-				self.update_node("specificDriver", True, gene_id=gene)
-			if info["symbol"] in anyDriver:
-				self.update_node("driver", True, gene_id=gene)
-
-	def getInteractome(self, tab2):
-
-		for line in utils.readTable(tab2):
-			bioGRIDInteractionID		= line[0]
-			entrezGeneInteractorA		= line[1]
-			entrezGeneInteractorB		= line[2]
-			bioGRIDIDInteractorA		= line[3]
-			bioGRIDIDInteractorB		= line[4]
-			systematicNameInteractorA	= line[5]
-			systematicNameInteractorB	= line[6]
-			officialSymbolInteractorA	= line[7]
-			officialSymbolInteractorB	= line[8]
-			synonymsInteractorA			= line[9]
-			synonymsInteractorB			= line[10]
-			experimentalSystem			= line[11]
-			experimentalSystemType		= line[12]
-			author						= line[13]
-			pubmedID					= line[14]
-			organismInteractorA			= line[15]
-			organismInteractorB			= line[16]
-			throughput					= line[17]
-			score						= line[18]
-			modification				= line[19]
-			phenotypes					= line[20]
-			qualifications				= line[21]
-			tags						= line[22]
-			sourceDatabase				= line[23]
-
-			# discard non-human interactions
-			if (organismInteractorA == "9606") & (organismInteractorB == "9606"):
-				self.add_edge(gene_id1 = entrezGeneInteractorA, gene_id2 = entrezGeneInteractorB)
-				self.update_edge("experimental", True,
-					gene_id1 = entrezGeneInteractorA, gene_id2 = entrezGeneInteractorB)
-
 	def iterate_genes_byPatientNumber(self,onlySplicedGenes=True,onlyExpressedGenes=True,alwaysSwitchedGenes=False):
 		'''
 		Iterate genes that have alternative splicing and more than one transcript expressed.
@@ -294,7 +167,7 @@ class GeneNetwork(network.Network):
 
 		for gene in genes:
 			info = self._net.node[gene]
-			allExpressedTxs = set(info["expressedTxsNormal"]) | set(info["expressedTxsTumor"])
+			allExpressedTxs = set(info["expressedTxsN"]) | set(info["expressedTxsT"])
 			self.logger.debug("Iterating gene {0}.".format(gene))
 			if alwaysSwitchedGenes and info["isoformSwitches"]:
 				yield gene,info
