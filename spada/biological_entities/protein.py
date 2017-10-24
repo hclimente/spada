@@ -2,7 +2,6 @@ from spada.biological_entities import aminoacid
 from spada.interface import interpro_analysis
 from spada import utils
 
-from Bio import pairwise2
 import logging
 import os
 
@@ -11,14 +10,11 @@ class Protein:
 
 		self._tx				= tx
 		self._gene				= txInfo["gene_id"]
-		self._uniprot			= txInfo["Uniprot"]
 		self._sequence			= txInfo["proteinSequence"]
 		self._structure			= []
 		self._residueCorresp	= {}
-		self._has_pdbs			= False
 		self._pfam				= []
 		self._prosite			= {}
-		self._pdbs				= {}
 
 		if self._sequence is not None:
 			for res in range(0, len(self._sequence) ):
@@ -29,10 +25,6 @@ class Protein:
 	@property
 	def tx(self): return self._tx
 	@property
-	def uniprot(self): return self._uniprot
-	@property
-	def hasPdbs(self): return self._has_pdbs
-	@property
 	def seq(self): return self._sequence
 
 	@property
@@ -40,91 +32,6 @@ class Protein:
 		if len(self._structure) > 1:
 			for res in sorted(self._structure,key=lambda x: x.num):
 				yield res
-
-	def mapSubsequence(self, querySequence, strict=True):
-
-		#Get alignment
-		alignments = pairwise2.align.globalms(self._sequence, querySequence, 2, -1, -.5, -.1)
-
-		oriSeq = alignments[0][0]
-		subSeq = alignments[0][1]
-
-		posOri = 0
-		posSub = 0
-		correspondence = []
-
-		for lPos in range(0, len(subSeq) ):
-
-			if subSeq[lPos] != "-" and posOri < len(self._sequence):
-				thisRes = querySequence[posSub]
-
-				if not strict:
-					correspondence.append(posOri)
-				elif self._sequence[posOri] == thisRes:
-					correspondence.append(posOri)
-				else:
-					logging.debug("Unmatched residue {0} != {1}.".format(self._sequence[posOri], thisRes))
-
-				posSub += 1
-
-			if oriSeq[lPos] != "-":
-				posOri += 1
-
-		return correspondence
-
-	def calculateVolumes(self,interactionPdb,chain):
-
-		self._has_pdbs = True
-
-		#Generate the pdb object, extract the chain of interest and calculate volumes
-
-		pdb = PDB(interactionPdb)
-		chainObj = pdb.get_chain_by_id(chain)
-		try:
-			chainObj.calculate_dssp()
-		except AttributeError:
-			return False
-
-		interacting_surface		= []
-		non_interacting_surface = []
-		buried					= []
-
-		#Get interface
-		ppComplex = Complex(pdb, PNI=False, PHI=False)
-
-		for i in ppComplex.PPInterfaces:
-			if i.protein_chain.chain == chain:
-				interacting_surface.extend([ x.identifier for x in i.protein_view_interface.keys()])
-			elif i.protein_interactor.chain == chain:
-				interacting_surface.extend([ x.identifier for x in i.interactor_view_interface.keys()])
-
-		# Get non-interface (surface and core)
-		non_interacting_surface.extend( [ x.identifier for x in chainObj.aminoacids if x.identifier not in interacting_surface and x.exposed] )
-		buried.extend( [ x.identifier for x in chainObj.aminoacids if x.identifier not in interacting_surface and not x.exposed] )
-
-		#Map the sequence found in the PDB to the full sequence
-		a = self.mapSubsequence(chainObj.protein_sequence)
-
-		for x in range(0, len(a)):
-			thisRes = chainObj.aminoacids[x]
-
-			if thisRes.identifier in buried:
-				self._structure[a[x]].setTag("B")
-				self._structure[a[x]]._pdbMapping[interactionPdb] = ( chainObj.chain, thisRes.identifier, "B" )
-				logging.debug("{0}: residue {1}-{2} ({3} in sequence) detected as buried.".format(
-											interactionPdb, chainObj.chain, thisRes.identifier, x))
-			elif thisRes.identifier in non_interacting_surface:
-				self._structure[a[x]].setTag("NIS")
-				self._structure[a[x]]._pdbMapping[interactionPdb] = ( chainObj.chain, thisRes.identifier, "NIS" )
-				logging.debug("{0}: residue {1}-{2} ({3} in sequence) detected as non-interacting surface.".format(
-											interactionPdb, chainObj.chain, thisRes.identifier, x))
-			elif thisRes.identifier in interacting_surface:
-				self._structure[a[x]].setTag("IS")
-				self._structure[a[x]]._pdbMapping[interactionPdb] = ( chainObj.chain, thisRes.identifier, "IS" )
-				logging.debug("{0}: residue {1}-{2} ({3} in sequence) detected as interacting surface.".format(
-											interactionPdb, chainObj.chain, thisRes.identifier, x))
-
-		return True
 
 	def mapResiduesToGenome(self, exons, cds, strand):
 		"""Assign the position of the first nucleotide of the codon to each AminoAcid."""
