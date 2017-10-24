@@ -114,6 +114,7 @@ def readFasta(fasta):
 			else:
 				sequence += line.strip()
 
+		yield protein, sequence
 
 def geneclusterLaunch(tag,base,*args):
 	command = base
