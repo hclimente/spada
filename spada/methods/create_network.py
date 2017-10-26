@@ -54,8 +54,8 @@ class CreateNetwork(method.Method):
 
 		self.logger.info("Reading known driver genes.")
 		drivers, specificDrivers = self.readDrivers(drivers)
-		self._genes.update_nodes("driver", drivers)
-		self._genes.update_nodes("specificDriver", specificDrivers)
+		self._genes.update_nodes("driver", self.symbol2ids(drivers))
+		self._genes.update_nodes("specificDriver", self.symbol2ids(specificDrivers))
 
 		self.logger.info("Saving networks.")
 		self._genes.saveNetwork("genes.pkl")
@@ -69,13 +69,13 @@ class CreateNetwork(method.Method):
 				self._genes.add_node(gene_id = line["gene_id"], gene_symbol = line["gene_name"])
 			elif line["feature"] == "transcript":
 				self._txs.add_node(line["transcript_id"], line["gene_id"])
-				self._txs.update_node(line["transcript_id"], "txCoords", [line["start"], line["end"]] )
+				self._txs.update_node(line["transcript_id"], "txCoords", [int(line["start"]), int(line["end"]) ])
 				self._txs.update_node(line["transcript_id"], "strand", line["strand"] )
 				self._txs.update_node(line["transcript_id"], "chr", line["chromosome"] )
 			elif line["feature"] == "exon":
-				self._txs.update_node(line["transcript_id"], "exonStructure", [line["start"], line["end"]] )
+				self._txs.update_node(line["transcript_id"], "exonStructure", [int(line["start"]), int(line["end"]) ])
 			elif line["feature"] == "CDS":
-				self._txs.update_node(line["transcript_id"], "cdsCoords", [line["start"], line["end"]] )
+				self._txs.update_node(line["transcript_id"], "cdsCoords", [int(line["start"]), int(line["end"]) ])
 			else:
 				pass
 
@@ -161,6 +161,18 @@ class CreateNetwork(method.Method):
 			end = int(line[4])
 
 			self._txs.update_node(tx, featureType, (start,end), feature)
+
+	def symbol2ids(self, symbols):
+
+		ids = {}
+
+		for symbol, value in symbols.items():
+			gene_id = [ g for g,i in self._genes.nodes(data=True) if i["symbol"] == symbol ]
+
+			if gene_id:
+				ids[gene_id[0]] = value
+
+		return(ids)
 
 if __name__ == '__main__':
 	pass

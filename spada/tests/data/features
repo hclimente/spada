@@ -1,3 +1,6 @@
+transcript	featureType	feature_id	start	end
 ENST00000335137.3	Pfam	xyz	3	6
+ENST00000335137.3	Pfam	xyz	40	93
+ENST00000335137.3	Pfam	kile	40	93	
 ENST00000417324.1	IDR	ASDASD	4	13
 ENST00000442987.3	Prosite	aasd	23	123
