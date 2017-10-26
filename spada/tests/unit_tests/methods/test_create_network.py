@@ -29,4 +29,4 @@ def test_calculatePSI():
     c._txs.add_node("B", "1")
     c._txs.add_node("C", "2")
 
-    assert c.calculatePSI(expression) == {"A": 4/9, "B": 5/9, "C": 1}
+    assert c.calculatePSI(expression) == {"A": 1/3, "B": 2/3, "C": 1}
