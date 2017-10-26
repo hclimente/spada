@@ -2,7 +2,7 @@ from spada.methods import create_network
 import os
 
 scriptPath = os.path.realpath(__file__)
-dataPath = os.path.dirname(scriptPath) + "/data"
+dataPath = os.path.dirname(scriptPath) + "/../../data"
 
 c = create_network.CreateNetwork("test", "gencode")
 c.run("{}/gtf".format(dataPath),

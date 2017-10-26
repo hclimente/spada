@@ -14,8 +14,8 @@ class GENCODEGeneNetwork(gene_network.GeneNetwork):
 
 		if full_name:
 			geneID 	= full_name
-		if not geneID and geneSymbol:
-			assumedGeneId = [ x for x,y in self.nodes(data=True) if y["symbol"] == geneSymbol ]
+		if not gene_id and gene_symbol:
+			assumedGeneId = [ x for x,y in self.nodes(data=True) if y["symbol"] == gene_symbol ]
 
 			if assumedGeneId:
 				geneID = assumedGeneId[0]

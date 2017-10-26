@@ -113,20 +113,21 @@ class CreateNetwork(method.Method):
 
 	def getInteractions(self, ppi):
 
-		edges = set()
+		symbols = [ y["symbol"] for x,y in self._genes.nodes(data=True) ]
 
 		for line in utils.readPSIMITAB(ppi):
 
 			if line["organismA"][0]["id"] != "9606" or line["organismB"][0]["id"] != "9606":
 				next
 
-			symbolA = [ x["id"] for x in line["symbolA"] if "extra" in x and x["extra"] == "gene name" ]
-			symbolB = [ x["id"] for x in line["symbolB"] if "extra" in x and x["extra"] == "gene name" ]
+			symbolA = [ x["id"] for x in line["symbolA"] if x["type"] == 'entrez gene/locuslink' ]
+			symbolA.extend([ x["id"] for x in line["aliasA"] if x.get("extra", None) in ["gene name", "gene name synonym"] and x["id"] in symbols ])
+			symbolB = [ x["id"] for x in line["symbolB"] if x["type"] == 'entrez gene/locuslink' ]
+			symbolB.extend([ x["id"] for x in line["aliasB"] if x.get("extra", None) in ["gene name", "gene name synonym"] and x["id"] in symbols ])
 
-			if symbolA and symbolB:
-				self._genes.add_edge(symbol1 = symbolA[0], symbolB = symbolB[0])
-
-		return(edges)
+			for A in symbolA:
+				for B in symbolB:
+					self._genes.add_edge(symbol1 = A, symbol2 = B)
 
 	def readDrivers(self, drivers):
 

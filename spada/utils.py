@@ -66,23 +66,24 @@ def readPSIMITAB(psimitab):
 	def parseField(field):
 		parsed = {}
 
-		x = field.split(":")
-		parsed["type"] = x[0]
+		if (len(field) > 1):
+			x = field.split(":")
+			parsed["type"] = x[0]
 
-		if "(" in x[1]:
-			x = x[1].strip(")").split("(")
-			parsed["id"] = x[0]
-			parsed["extra"] = x[1]
-		else:
-			parsed["id"] = x[1]
+			if "(" in x[1]:
+				x = x[1].strip(")").split("(")
+				parsed["id"] = x[0]
+				parsed["extra"] = x[1]
+			else:
+				parsed["id"] = x[1]
 
 		return(parsed)
 
 	for line in readTable(psimitab):
 
 		parsed = {}
-		parsed["geneA"] 		= line[0]
-		parsed["geneB"] 		= line[1]
+		parsed["geneA"] 		= [ parseField(x) for x in line[0].split("|") ]
+		parsed["geneB"] 		= [ parseField(x) for x in line[1].split("|") ]
 		parsed["symbolA"] 		= [ parseField(x) for x in line[2].split("|") ]
 		parsed["symbolB"] 		= [ parseField(x) for x in line[3].split("|") ]
 		parsed["aliasA"] 		= [ parseField(x) for x in line[4].split("|") ]
