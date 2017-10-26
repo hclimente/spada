@@ -5,6 +5,7 @@ from spada.network import ucsc_gene_network, ucsc_isoform_network
 from spada.network import gencode_gene_network, gencode_isoform_network
 
 from networkx import get_node_attributes
+from numpy import exp2
 import pickle
 import pandas as pd
 
@@ -26,7 +27,7 @@ class CreateNetwork(method.Method):
 		self._genes.tumor = tumor
 		self._txs.tumor = tumor
 
-	def run(self, gtf, normalExpression, tumorExpression, minExpression, proteins, ppi, drivers):
+	def run(self, gtf, normalExpression, tumorExpression, minExpression, sequences, ppi, drivers, features):
 
 		self.logger.info("Importing genes and transcripts from GTF.")
 		self.createNetworks(gtf)
@@ -41,6 +42,12 @@ class CreateNetwork(method.Method):
 			self._txs.update_nodes("median_TPM_" + origin, medianExpression)
 			self._txs.update_nodes("median_PSI_" + origin, medianPSI)
 			self._genes.update_nodes("expressedTxs" + origin, expressed)
+
+		self.logger.info("Reading protein sequences.")
+		self.getIsoformSequences(sequences)
+
+		self.logger.info("Reading isoform features.")
+		self.getIsoformFeatures(features)
 
 		self.logger.info("Building protein-protein interaction network.")
 		self.getInteractions(ppi)
@@ -83,7 +90,7 @@ class CreateNetwork(method.Method):
 
 		tx2gene = get_node_attributes(self._txs._net, 'gene_id')
 
-		psi = lambda x: x / x.sum()
+		psi = lambda x: exp2(x) / exp2(x).sum()
 
 		psis = expression.groupby(tx2gene).transform(psi)
 		medians = psis.median(axis = 1)
@@ -136,6 +143,23 @@ class CreateNetwork(method.Method):
 				specificDrivers[gene_id] = True
 
 		return allDrivers, specificDrivers
+
+	def getIsoformSequences(self, proteins):
+
+		for tx, sequence in utils.readFasta(proteins):
+			self._txs.update_node(tx, "proteinSequence", sequence)
+
+	def getIsoformFeatures(self, features):
+
+		for line in utils.readTable(features):
+
+			tx = line[0]
+			featureType = line[1]
+			feature = line[2]
+			start = int(line[3])
+			end = int(line[4])
+
+			self._txs.update_node(tx, featureType, (start,end), feature)
 
 if __name__ == '__main__':
 	pass

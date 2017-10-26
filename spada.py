@@ -6,6 +6,7 @@ from spada.interface import out_network
 
 import argparse
 import logging
+from math import log2
 import os
 
 def structuralAnalysis():
@@ -114,28 +115,34 @@ subparsers = parser.add_subparsers(help='sub-command help')
 
 def createNetwork(o):
 	c = create_network.CreateNetwork(o.tumor, o.annotation)
-	c.run(o.gtf, o.normalExpression, o.tumorExpression, o.minExpression, o.fasta, o.ppi, o.drivers)
+	c.run(o.gtf, o.normalExpression, o.tumorExpression, log2(o.minExpression), o.seq, o.ppi, o.drivers, o.features)
 
 subparser_init = subparsers.add_parser('init', help='Initialize help')
 subparser_init.add_argument('-T', '--tumor', dest='tumor' ,action='store',
-							help='Identifier of the analysis.')
+							help='Identifier of the analysis e.g. the tumor type.')
+subparser_init.add_argument('-a', '--annotation', dest='annotation', action='store', default='gencode',
+							choices=['ucsc', 'gencode'],
+							help='Used annotation.')
 subparser_init.add_argument('-g', '--gtf', dest='gtf', action='store',
-							help='GTF with the gene, transcript and exon annotation.')
+							help='GTF with the gene, transcript, exon and CDS annotation.')
 subparser_init.add_argument('-n', '--expression-normal', dest='normalExpression', action='store',
-							help='Table with transcript-level expression data of the normal samples.')
+							help='Tab-separated table with transcript-level expression data of the normal samples \
+							in log2(TPM); a row per annotated transcript, indicated in the first column.')
 subparser_init.add_argument('-t', '--expression-tumor', dest='tumorExpression', action='store',
-							help='Table with transcript-level expression data of the tumor samples.')
+							help='Equivalent to --expression-normal for the tumor samples.')
+subparser_init.add_argument('-m', '--minimum-expression', dest='minExpression', action='store',
+					 		default='0.1', type=float,
+					 		help='Minimum expression value, in TPM, to consider a transcript expressed.')
 subparser_init.add_argument('-p', '--ppi', dest='ppi', action='store',
 							help='File with protein-protein interactions, in PSI-MI TAB format >= 2.5.')
-subparser_init.add_argument('-f', '--fasta', dest='fasta', action='store',
-							help='Fasta file with the protein product of each transcript.')
-subparser_init.add_argument('-i', '--annotation', dest='annotation', action='store', default='gencode',
-							help='Used annotation.')
+subparser_init.add_argument('-s', '--seq', dest='seq', action='store',
+							help='Fasta file with the protein sequences of each transcript.')
+subparser_init.add_argument('-f', '--features', dest='features', action='store',
+							help='Tab-separated table with transcript-level features.')
 subparser_init.add_argument('-d', '--drivers', dest='drivers', action='store',
-							help='Drivers.')
-subparser_init.add_argument('-m', '--minimum-expression', dest='minExpression', action='store',
-					 		default='-1', type=float,
-					 		help='Minimum expression value to consider a transcript expressed.')
+							help='Tab-separated table containing the genes to be considered tumor drivers. The first column \
+							contains the gene symbol, and the second the tumor type where it was detected (which must match \
+							--tumor when required).')
 
 subparser_init.set_defaults(task="createNetwork")
 subparser_init.set_defaults(func=createNetwork)

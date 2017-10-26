@@ -23,53 +23,49 @@ class Network:
 
 	def _update_node(self, nodeId, key, value, secondKey=""):
 
-		finalValue = value
-
 		if nodeId not in self.nodes():
-			self.logger.warning("Tried to update node {0}, but does not exist.".format(nodeId))
+			self.logger.warning("Tried to update node {}, but does not exist.".format(nodeId))
 			return False
 
 		if isinstance( self._net.node[nodeId][key], list):
-			self._net.node[nodeId][key].append( finalValue )
+			self._net.node[nodeId][key].append( value )
 		elif isinstance( self._net.node[nodeId][key], set):
-			self._net.node[nodeId][key].add( finalValue )
+			self._net.node[nodeId][key].add( value )
 		elif isinstance( self._net.node[nodeId][key], dict):
 			if secondKey not in self._net.node[nodeId][key]:
 				self._net.node[nodeId][key].setdefault(secondKey,set())
-			self._net.node[nodeId][key][secondKey].add(finalValue)
+			self._net.node[nodeId][key][secondKey].add(value)
 		else:
-			if self._net.node[nodeId] is not None and self._net.node[nodeId] != finalValue:
-				self.logger.debug("Node {0}, {1} had a value of {2}. Updated to {3}.".format(
-									nodeId, key, self._net.node[nodeId][key], finalValue) )
-			self._net.node[nodeId][key] = finalValue
+			if self._net.node[nodeId] is not None and self._net.node[nodeId] != value:
+				self.logger.debug("Node {}, {} had a value of {}. Updated to {}.".format(
+									nodeId, key, self._net.node[nodeId][key], value) )
+			self._net.node[nodeId][key] = value
 
 		return True
 
 	def _update_edge(self, node1, node2, key, value):
 
-		finalValue = value
-
 		if not [ (x,y) for (x,y) in self.edges() if (node1,node2) == (x,y) or (node1,node2) == (y,x) ]:
-			self.logger.warning("Tried to update edge {0} - {1}, but it does not exist.".format(node1, node2))
+			self.logger.warning("Tried to update edge {} - {}, but it does not exist.".format(node1, node2))
 			return False
 
 		if isinstance( self._net.edge[node1][node2][key], list):
-			self._net.edge[node1][node2][key].append( finalValue )
+			self._net.edge[node1][node2][key].append( value )
 		elif isinstance( self._net.edge[node1][node2][key], set):
-			self._net.edge[node1][node2][key].add( finalValue )
+			self._net.edge[node1][node2][key].add( value )
 		else:
-			if self._net.edge[node1][node2][key] is not None and self._net.edge[node1][node2][key] != finalValue:
-				self.logger.debug("Edge {0} - {1}, {2} had a value of {3}. Updated to {4} .".format(
-								node1, node2, key, self._net.edge[node1][node2][key], finalValue) )
+			if self._net.edge[node1][node2][key] is not None and self._net.edge[node1][node2][key] != value:
+				self.logger.debug("Edge {} - {}, {} had a value of {}. Updated to {} .".format(
+								node1, node2, key, self._net.edge[node1][node2][key], value) )
 
-			self._net.edge[node1][node2][key] = finalValue
+			self._net.edge[node1][node2][key] = value
 
 		return True
 
 	def _add_edge(self, node1, node2, **kwds):
 
 		if [ (x,y) for (x,y) in self.edges() if (node1,node2) == (x,y) or (node1,node2) == (y,x) ]:
-			self.logger.debug("Tried to add edge {0} - {1}, but it exists.".format(node1, node2))
+			self.logger.debug("Tried to add edge {} - {}, but it exists.".format(node1, node2))
 			return False
 
 		self._net.add_edge(node1, node2, **kwds)

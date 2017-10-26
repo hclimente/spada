@@ -1,8 +1,8 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
   name='spada',
-  packages=['spada'],
+  packages=find_packages('.'),
   version='1.0',
   description='Find splicing-led, functional changes of the proteome. ',
   author='Héctor Climente-González',
@@ -20,5 +20,5 @@ setup(
         'Programming Language :: Python :: 3.5'],
   install_requires=['networkx>=1.11',
                     'pandas>=0.20.3',
-                    'biopython>=1.69']
+					'numpy>=1.13.1']
 )
