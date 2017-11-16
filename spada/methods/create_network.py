@@ -4,6 +4,7 @@ from spada.methods import method
 from spada.network import ucsc_gene_network, ucsc_isoform_network
 from spada.network import gencode_gene_network, gencode_isoform_network
 
+from itertools import product
 from networkx import get_node_attributes
 from numpy import exp2
 import pickle
@@ -27,7 +28,7 @@ class CreateNetwork(method.Method):
 		self._genes.tumor = tumor
 		self._txs.tumor = tumor
 
-	def run(self, gtf, normalExpression, tumorExpression, minExpression, sequences, ppi, drivers, features):
+	def run(self, gtf, normalExpression, tumorExpression, minExpression, sequences, ppi, ddi, drivers, features):
 
 		self.logger.info("Importing genes and transcripts from GTF.")
 		self.createNetworks(gtf)
@@ -51,6 +52,7 @@ class CreateNetwork(method.Method):
 
 		self.logger.info("Building protein-protein interaction network.")
 		self.getInteractions(ppi)
+		self.getDomainInteractions(ddi)
 
 		self.logger.info("Reading known driver genes.")
 		drivers, specificDrivers = self.readDrivers(drivers)
@@ -128,6 +130,22 @@ class CreateNetwork(method.Method):
 			for A in symbolA:
 				for B in symbolB:
 					self._genes.add_edge(symbol1 = A, symbol2 = B)
+
+	def getDomainInteractions(self, ddi):
+
+		allDDIs = { frozenset([d1,d2]) for d1,d2 in utils.readTable(ddi) }
+
+		for gene1, gene2 in self._genes._net.edges():
+			txs1 = [ (t,i["Pfam"]) for t,i in self._txs.nodes(data=True) if i["gene_id"] == gene1 and i["Pfam"] ]
+			txs2 = [ (t,i["Pfam"]) for t,i in self._txs.nodes(data=True) if i["gene_id"] == gene2 and i["Pfam"] ]
+
+			for tx1,d1 in txs1:
+				for tx2,d2 in txs2:
+					possibleDDIs = { frozenset(x) for x in product(d1, d2) }
+					matches = possibleDDIs & allDDIs
+
+					if matches:
+						self._txs.add_edge(tx1, tx2, ddi = matches)
 
 	def readDrivers(self, drivers):
 

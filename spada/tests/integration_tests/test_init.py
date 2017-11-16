@@ -15,6 +15,7 @@ def test_init():
 		  -3.3,
 		  "{}/fasta".format(dataPath),
 		  "{}/mitab".format(dataPath),
+		  "{}/ddis".format(dataPath),
 		  "{}/drivers".format(dataPath),
 		  "{}/features".format(dataPath))
 

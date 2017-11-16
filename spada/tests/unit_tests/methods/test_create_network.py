@@ -3,9 +3,10 @@
 from spada.methods import create_network
 from spada import utils
 
+import networkx as nx
+import os
 import pandas as pd
 import pytest
-import os
 
 def test_createNetworks():
 
@@ -98,6 +99,40 @@ def test_getInteractions():
 	assert c._genes._net.has_edge("E", "F")
 	assert c._genes._net.has_edge("G", "H")
 	assert len(c._genes._net.edges()) == 4
+
+def test_getDomainInteractions():
+
+	c = create_network.CreateNetwork("test", "gencode")
+
+	c._genes.add_node(gene_id = "A", gene_symbol = "")
+	c._genes.add_node(gene_id = "B", gene_symbol = "")
+	c._genes.add_node(gene_id = "C", gene_symbol = "")
+	c._genes.add_edge(gene_id1 = "A", gene_id2 = "B")
+	c._genes.add_edge(gene_id1 = "A", gene_id2 = "C")
+
+	c._txs.add_node("A1", "A")
+	c._txs.update_node("A1", "Pfam", (0,0), "D1")
+	c._txs.update_node("A1", "Pfam", (0,0), "D2")
+	c._txs.update_node("A1", "Pfam", (0,0), "D6")
+	c._txs.add_node("A2", "A")
+	c._txs.update_node("A2", "Pfam", (0,0), "D1")
+	c._txs.update_node("A2", "Pfam", (0,0), "D3")
+	c._txs.add_node("B1", "B")
+	c._txs.update_node("B1", "Pfam", (0,0), "D4")
+	c._txs.add_node("C1", "C")
+	c._txs.update_node("C1", "Pfam", (0,0), "D5")
+
+	scriptPath = os.path.realpath(__file__)
+	dataPath = os.path.dirname(scriptPath) + "/../../data"
+	ddis = dataPath + "/ddis"
+	c.getDomainInteractions(ddis)
+
+	assert c._txs._net.has_edge("A1", "B1")
+	assert c._txs._net["A1"]["B1"]["ddi"] == {frozenset({"D2","D4"}), frozenset({"D6","D4"})}
+	assert c._txs._net.has_edge("A2", "C1")
+	assert c._txs._net["A2"]["C1"]["ddi"] == {frozenset({"D3","D5"})}
+	assert not c._txs._net.has_edge("A1", "A2")
+	assert not c._txs._net.has_edge("B1", "C1")
 
 def test_readDrivers():
 

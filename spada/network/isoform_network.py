@@ -79,8 +79,8 @@ class IsoformNetwork(network.Network):
 			else:
 				self.update_node(tx, key, value)
 
-	def add_edge(self, tx1, tx2):
-		self._net.add_edge(tx1,tx2)
+	def add_edge(self, tx1, tx2, **kwargs):
+		self._net.add_edge(tx1, tx2, **kwargs)
 
 	def update_edge(self, tx1, tx2, key, value):
 		return self._update_edge(tx1, tx2, key, value)
