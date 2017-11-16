@@ -6,7 +6,7 @@ import pytest
 def test_init():
 
 	scriptPath = os.path.realpath(__file__)
-	dataPath = os.path.dirname(scriptPath) + "/../../data"
+	dataPath = os.path.dirname(scriptPath) + "/../data"
 
 	c = create_network.CreateNetwork("test", "gencode")
 	c.run("{}/gtf".format(dataPath),
@@ -37,6 +37,9 @@ def test_init():
 
 	# interactions
 	assert len(c._genes._net.edges()) == 0
+
+	# ddis
+	assert len(c._txs._net.edges()) == 0
 
 	# driver
 	assert not c._genes.nodes()["ENSG00000186092.4"]["driver"] and not c._genes.nodes()["ENSG00000186092.4"]["specificDriver"]
