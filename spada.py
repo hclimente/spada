@@ -115,7 +115,7 @@ subparsers = parser.add_subparsers(help='sub-command help')
 
 def createNetwork(o):
 	c = create_network.CreateNetwork(o.tumor, o.annotation)
-	c.run(o.gtf, o.normalExpression, o.tumorExpression, log2(o.minExpression), o.seq, o.ppi, o.drivers, o.features)
+	c.run(o.gtf, o.normalExpression, o.tumorExpression, log2(o.minExpression), o.seq, o.ppi, o.ddi, o.drivers, o.features)
 
 subparser_init = subparsers.add_parser('init', help='Initialize help')
 subparser_init.add_argument('-T', '--tumor', dest='tumor' ,action='store',
@@ -135,11 +135,13 @@ subparser_init.add_argument('-m', '--minimum-expression', dest='minExpression', 
 					 		help='Minimum expression value, in TPM, to consider a transcript expressed.')
 subparser_init.add_argument('-p', '--ppi', dest='ppi', action='store',
 							help='File with protein-protein interactions, in PSI-MI TAB format >= 2.5.')
+subparser_init.add_argument('-d', '--ddi', dest='ddi', action='store',
+							help='Pairs of interacting domains, in TSV format.')
 subparser_init.add_argument('-s', '--seq', dest='seq', action='store',
 							help='Fasta file with the protein sequences of each transcript.')
 subparser_init.add_argument('-f', '--features', dest='features', action='store',
 							help='Tab-separated table with transcript-level features.')
-subparser_init.add_argument('-d', '--drivers', dest='drivers', action='store',
+subparser_init.add_argument('-D', '--drivers', dest='drivers', action='store',
 							help='Tab-separated table containing the genes to be considered tumor drivers. The first column \
 							contains the gene symbol, and the second the tumor type where it was detected (which must match \
 							--tumor when required).')
