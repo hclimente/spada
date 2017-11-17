@@ -12,7 +12,7 @@ getEmpiricalDistribution <- function(x,minV){
   v <- as.numeric(x)
 
   # discard cases with less than 10 valid cases
-  if ( sum(!is.na(v))< 10 | sum(v[!is.na(v)]>=minV)<10){
+  if ( sum(!is.na(v)) < 10 | sum(v[!is.na(v)] >= minV) < 10){
     return(function(x){return(rep(NA,length(x)))})
   } else {
     diffMatrix <- abs(outer(v,v,"-"))

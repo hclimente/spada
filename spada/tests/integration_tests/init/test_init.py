@@ -36,10 +36,13 @@ def test_init():
 	assert c._txs.nodes()["ENST00000335137.3"]["cdsCoords"] == [69091,70005]
 
 	# interactions
-	assert len(c._genes._net.edges()) == 0
+	assert len(c._genes._net.edges()) == 1
+	assert c._genes._net.has_edge("ENSG00000269981.1", "ENSG00000223972.5")
 
 	# ddis
-	assert len(c._txs._net.edges()) == 0
+	assert len(c._txs._net.edges()) == 1
+	assert c._txs._net.has_edge("ENST00000595919.1", "ENST00000450305.2")
+	assert c._txs._net["ENST00000595919.1"]["ENST00000450305.2"]["ddi"] == {frozenset({"D2","D4"})}
 
 	# driver
 	assert not c._genes.nodes()["ENSG00000186092.4"]["driver"] and not c._genes.nodes()["ENSG00000186092.4"]["specificDriver"]
@@ -59,8 +62,8 @@ def test_init():
 	assert c._txs.nodes()["ENST00000466430.5"]["proteinSequence"] == "ASFASFASASFASF"
 
 	# features
-	assert c._txs.nodes()["ENST00000335137.3"]["Pfam"]["xyz"] == {(3,6), (40,93)}
-	assert c._txs.nodes()["ENST00000335137.3"]["Pfam"]["kile"] == {(40,93)}
-	assert len(c._txs.nodes()["ENST00000335137.3"]["Pfam"]) == 2
-	assert c._txs.nodes()["ENST00000417324.1"]["IDR"]["ASDASD"] == {(4,13)}
-	assert c._txs.nodes()["ENST00000442987.3"]["Prosite"]["aasd"] == {(23,123)}
+	assert c._txs.nodes()["ENST00000595919.1"]["Pfam"]["D1"] == {(3,6), (40,93)}
+	assert c._txs.nodes()["ENST00000595919.1"]["Pfam"]["D2"] == {(40,93)}
+	assert len(c._txs.nodes()["ENST00000595919.1"]["Pfam"]) == 2
+	assert c._txs.nodes()["ENST00000417324.1"]["IDR"]["I1"] == {(4,13)}
+	assert c._txs.nodes()["ENST00000442987.3"]["Prosite"]["P1"] == {(23,123)}

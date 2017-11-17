@@ -191,18 +191,18 @@ def test_getIsoformFeatures():
 	features = dataPath + "/features"
 
 	c = create_network.CreateNetwork("test", "gencode")
-	c._txs.add_node("ENST00000335137.3", "1")
+	c._txs.add_node("ENST00000595919.1", "1")
 	c._txs.add_node("ENST00000417324.1", "1")
 	c._txs.add_node("ENST00000442987.3", "2")
 
-	assert not c._txs.nodes()["ENST00000335137.3"]["Pfam"]
+	assert not c._txs.nodes()["ENST00000595919.1"]["Pfam"]
 	assert not c._txs.nodes()["ENST00000417324.1"]["IDR"]
 	assert not c._txs.nodes()["ENST00000442987.3"]["Prosite"]
 
 	c.getIsoformFeatures(features)
 
-	assert c._txs.nodes()["ENST00000335137.3"]["Pfam"]["xyz"] == {(3,6), (40,93)}
-	assert c._txs.nodes()["ENST00000335137.3"]["Pfam"]["kile"] == {(40,93)}
-	assert len(c._txs.nodes()["ENST00000335137.3"]["Pfam"]) == 2
-	assert c._txs.nodes()["ENST00000417324.1"]["IDR"]["ASDASD"] == {(4,13)}
-	assert c._txs.nodes()["ENST00000442987.3"]["Prosite"]["aasd"] == {(23,123)}
+	assert c._txs.nodes()["ENST00000595919.1"]["Pfam"]["D1"] == {(3,6), (40,93)}
+	assert c._txs.nodes()["ENST00000595919.1"]["Pfam"]["D2"] == {(40,93)}
+	assert len(c._txs.nodes()["ENST00000595919.1"]["Pfam"]) == 2
+	assert c._txs.nodes()["ENST00000417324.1"]["IDR"]["I1"] == {(4,13)}
+	assert c._txs.nodes()["ENST00000442987.3"]["Prosite"]["P1"] == {(23,123)}

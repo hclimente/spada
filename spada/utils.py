@@ -21,7 +21,7 @@ def cmdOut(*args):
 	logger.debug(strCommand)
 	return subprocess.Popen(command, stdout=subprocess.PIPE)
 
-def readTable(path, sep="\t", header=True):
+def readTable(path, sep = "\t", header = True, skipCommented = True):
 	"""Read a table in a file, and generate a list of strings per row.
 	Skips rows starting with "#".
 
@@ -31,7 +31,7 @@ def readTable(path, sep="\t", header=True):
 	counter = 0
 	with open(path) as FILE:
 		for line in FILE:
-			if line[0]=="#":
+			if line[0]=="#" and skipCommented:
 				continue
 			elif header and counter is 0:
 				counter = 1
@@ -79,7 +79,7 @@ def readPSIMITAB(psimitab):
 
 		return(parsed)
 
-	for line in readTable(psimitab):
+	for line in readTable(psimitab, skipCommented = False):
 
 		parsed = {}
 		parsed["geneA"] 		= [ parseField(x) for x in line[0].split("|") ]
