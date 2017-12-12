@@ -2,7 +2,7 @@ import pickle
 import logging
 
 class Method:
-	def __init__(self, name, genes, transcripts, gn_subnetwork = False):
+	def __init__(self, name, genes, transcripts):
 		self.logger = logging.getLogger(name)
 
 		if genes:
@@ -22,12 +22,3 @@ class Method:
 			else:
 				self._txs = transcripts
 			self._txs.createLogger()
-
-		if gn_subnetwork:
-			if isinstance(gn_subnetwork, bool):
-				self._gene_subnetwork = pickle.load(open("geneSubnetwork.pkl", "rb"))
-			elif isinstance(gn_subnetwork, str):
-				self._gene_subnetwork = pickle.load(open(gn_subnetwork, "rb"))
-			else:
-				self._gene_subnetwork = gn_subnetwork
-			self._gene_subnetwork.createLogger()

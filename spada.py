@@ -94,18 +94,13 @@ def testing():
 
 parser = argparse.ArgumentParser(prog = "spada.py",
 				description = "Find significant alternative splicing switches. Analyze their functional impact.",
-				epilog= "Héctor Climente-González, 2014-2017",
-				fromfile_prefix_chars='@')
+				epilog= "Héctor Climente-González, 2014-2017")
 
 parser.add_argument('-wd', '--working-directory', dest='wd', action='store',
 					default='.',
 					help='Root file of SmartAS folder in the current machine.')
 parser.add_argument('-a', '--all-switches', dest='onlyModels', action='store_false',
 					help='Only use the model switches.')
-parser.add_argument('-p', '--parallel-range', dest='parallelRange', action='store', default='0',
-					type=int,help='Range of nodes if parallel.')
-parser.add_argument('-p2', '--scd-parallel-range', dest='parallelRange2', action='store', default='0',
-					type=int,help='2nd range of nodes if parallel.')
 
 subparsers = parser.add_subparsers(help='sub-command help')
 
@@ -150,17 +145,17 @@ subparser_init.set_defaults(task="createNetwork")
 subparser_init.set_defaults(func=createNetwork)
 
 ################################################
-###   CALCULATE SWITCHES                    ####
+###   IMPORT SWITCHES                       ####
 ################################################
 
 def getSwitches():
-	g = get_switches.GetSwitches(None,None,None)
-	g.run()
+	g = get_switches.GetSwitches()
+	g.run(o.switchesFile)
 
 subparser_switches = subparsers.add_parser('switches', help='Calculate switches help')
-subparser_switches.add_argument('-e', '--external-switches', dest='externalSwitchesFile', action='store',
+subparser_switches.add_argument('-s', '--switches', dest='switchesFile', action='store',
 								default=None,type=str,
-								help='File containing switches calculated with other methods.')
+								help='File containing switches as TSV.')
 
 ################################################
 ###   MAIN                                  ####

@@ -5,21 +5,23 @@ import os
 import operator
 
 class IsoformSwitch:
-	def __init__(self, nTx, tTx, patients):
+	def __init__(self, nTx, tTx, samples):
 		self._normal_transcript_name= nTx
 		self._tumor_transcript_name = tTx
-		self._patients 				= patients
+		self._samples 				= samples
 
 		self._normal_transcript 	= None
 		self._tumor_transcript 		= None
 		self._normal_protein 		= None
 		self._tumor_protein 		= None
 
+		self._candidate 				= None
+		self._noise 				= None
+
 		#Relevance measure
 		self._iloops_change		 	= None
 		self._domain_change 		= None
 		self._disorder_change 		= None
-		self._anchor_change 		= None
 		self._broken_surfaces 		= None
 		self._ptm_change 			= None
 
@@ -33,7 +35,6 @@ class IsoformSwitch:
 		#Relevance measure
 		self._deep_domain_change 	= { }
 		self._deep_disorder_change 	= { }
-		self._deep_anchor_change 	= { }
 		self._deep_ptm_change 		= { }
 
 		#Neighborhood analysis
@@ -46,7 +47,14 @@ class IsoformSwitch:
 	@property
 	def tTx(self): return self._tumor_transcript_name
 	@property
-	def patients(self): return self._patients
+	def samples(self): return self._samples
+
+	@property
+	def isCandidate(self): return self._candidate
+	def setCandidate(self, candidate): self._candidate = candidate
+	@property
+	def isNoise(self): return self._noise
+	def setNoise(self, noise): self._noise = noise
 
 	@property
 	def nIsoform(self): return self._normal_protein
@@ -72,11 +80,6 @@ class IsoformSwitch:
 		if self._disorder_change is None:
 			self.readRelevanceAnalysis()
 		return self._disorder_change
-	@property
-	def anchorChange(self):
-		if self._anchor_change is None:
-			self.readRelevanceAnalysis()
-		return self._anchor_change
 	@property
 	def brokenSurfaces(self):
 		if self._broken_surfaces is None:
@@ -106,7 +109,7 @@ class IsoformSwitch:
 		"""
 		# cds_diff is required if there is any feature
 		# utr_diff only is impossible if a feature change is required
-		if self.disorderChange or self.iloopsChange or self.anchorChange or self.domainChange or self.ptmChange:
+		if self.disorderChange or self.iloopsChange or self.domainChange or self.ptmChange:
 			if self.tx_overlap:
 				return True
 			elif None in [self.nIsoform,self.tIsoform]:
@@ -191,18 +194,15 @@ class IsoformSwitch:
 		self.get_cdsDiff()
 		self.get_utrDiff()
 
-	def addIsos(self,nInfo,tInfo,partialCreation=False):
+	def addIsos(self, nInfo, tInfo):
 		"""Creates the isoform objects for the transcripts involved
 		in the switch if they have an UniProt identifier. If both do,
 		it calculates the shared and specific regions."""
 		if nInfo["proteinSequence"] and nInfo["cdsCoords"]:
 			self._normal_protein = protein.Protein( self._normal_transcript_name, nInfo)
-			if not partialCreation:
-				self._normal_protein.checkInteractome3DStructures()
+
 		if tInfo["proteinSequence"] and tInfo["cdsCoords"]:
 			self._tumor_protein  = protein.Protein( self._tumor_transcript_name, tInfo)
-			if not partialCreation:
-				self._tumor_protein.checkInteractome3DStructures()
 
 		if self._normal_protein and self._tumor_protein:
 			self.getAlteredRegions()
@@ -250,7 +250,7 @@ class IsoformSwitch:
 
 	def readRelevanceAnalysis(self):
 
-		randomTag = "_random" if self.patients==[] else ""
+		randomTag = "_random" if self.samples==[] else ""
 
 		if not os.path.exists("structural_analysis/structural_summary{}.tsv".format(randomTag)):
 			raise Exception("Relevance information not generated.")
@@ -267,15 +267,12 @@ class IsoformSwitch:
 				if elements[6] == "True": self._disorder_change = True
 				elif elements[6] == "False": self._disorder_change = False
 
-				if elements[7] == "True": self._anchor_change = True
-				elif elements[7] == "False": self._anchor_change = False
-
 				if elements[8] == "True": self._ptm_change = True
 				elif elements[8] == "False": self._ptm_change = False
 
 				break
 
-	def readDeepRelevanceAnalysis(self,skipDomain=False,skipIupred=False,skipAnchor=False,skipPtm=False,filetag=""):
+	def readDeepRelevanceAnalysis(self,skipDomain=False,skipIupred=False,skipPtm=False,filetag=""):
 		if not self.is_functional:
 			return
 
@@ -300,17 +297,6 @@ class IsoformSwitch:
 						self._deep_disorder_change[line[5]].append("Lost_in_tumor")
 					elif "Nothing" in line[4]:
 						self._deep_disorder_change[line[5]].append("Nothing")
-
-		if self.anchorChange and not skipAnchor:
-			for line in utils.readTable("structural_analysis/anchor_analysis{}.tsv".format(filetag)):
-				if line[2] == self.nTx and line[3] == self.tTx and float(line[-1]):
-					self._deep_anchor_change.setdefault(line[5],[])
-					if "Gained" in line[4]:
-						self._deep_anchor_change[line[5]].append("Gained_in_tumor")
-					elif "Lost" in line[4]:
-						self._deep_anchor_change[line[5]].append("Lost_in_tumor")
-					elif "Nothing" in line[4]:
-						self._deep_anchor_change[line[5]].append("Nothing")
 
 		if self.ptmChange and not skipPtm:
 			for line in utils.readTable("structural_analysis/prosite_analysis{}.tsv".format(filetag)):

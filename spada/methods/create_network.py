@@ -13,7 +13,7 @@ import pandas as pd
 class CreateNetwork(method.Method):
 	def __init__(self, tumor, annotation):
 
-		method.Method.__init__(self, __name__, None, None, None)
+		method.Method.__init__(self, __name__, None, None)
 
 		if annotation == "ucsc":
 			self._genes = ucsc_gene_network.UCSCGeneNetwork()

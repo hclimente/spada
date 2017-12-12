@@ -15,7 +15,7 @@ class GeneNetwork(network.Network):
 	Node information:
 		id(str) 						Gene Id
 		symbol(str) 					Gene Symbol
-		isoformSwitches(list,[]) 		List of detected isoform switches [[isoN, isoT], [isoN, isoT]]
+		switches(list,[]) 		List of detected isoform switches [[isoN, isoT], [isoN, isoT]]
 		driver(bool,False) 				Gene described as a driver.
 		specificDriver(bool,False) 		Gene described as driver in this cancer type.
 		driverType(str,"") 				Role that plays the gene in tumorigenesis.
@@ -60,7 +60,7 @@ class GeneNetwork(network.Network):
 			self.logger.debug("Node {0} imported.".format(geneID))
 			self._net.add_node( geneID,
 								symbol 				= geneSymbol,
-								isoformSwitches 	= [],
+								switches 			= [],
 								specificDriver 		= False,
 								driver 				= False,
 								driverType 			= None,
@@ -112,6 +112,14 @@ class GeneNetwork(network.Network):
 
 		return self._add_edge(node_id1, node_id2)
 
+	def getSwitch(self, gene, nTx, tTx):
+
+		thisSwitch = [ x for x in self.nodes()[gene]["switches"] if x.nTx == nTx and x.tTx == tTx ]
+
+		if thisSwitch:
+			return(thisSwitch[0])
+		else:
+		 	return(None)
 
 	def update_edge(self, key, value, full_name1 = "", gene_id1 = "", full_name2 = "", gene_id2 = ""):
 		"""Changes the value of an edge attribute, specified by the key argument.
@@ -128,29 +136,27 @@ class GeneNetwork(network.Network):
 
 		# removing isoform switches
 		for gene,info in self.iterate_genes_byPatientNumber(alwaysSwitchedGenes=True):
-			self._net.node[gene]["isoformSwitches"] = []
+			self._net.node[gene]["switches"] = []
 
-	def importCandidates(self,candidatesFile):
+	def readSwitches(self, switchesFile, tx_network):
 		"""Import a set of genes with an isoform switch from candidateList.tsv.
 		"""
 		self.logger.debug("Retrieving calculated isoform switches.")
 
-		switches = pd.DataFrame.from_csv(candidatesFile, sep="\t", header=None, index_col=None)
-		switches.columns = ["Gene","Transcript_normal","Transcript_tumor","Samples"]
+		switches = pd.DataFrame.from_csv(switchesFile, sep="\t", index_col=None)
+		switches.columns = ["Gene","nTx","tTx","Samples"]
 		switches.Samples = switches.Samples.str.split(",")
 
 		for index,row in switches.iterrows():
 			Gene = row["Gene"]
 
-			switch = {}
-			switch["nIso"] 			= row["Transcript_normal"]
-			switch["tIso"] 			= row["Transcript_tumor"]
-			switch["patients"] 		= row["Samples"]
-			switch["functional"] 	= None
-			switch["model"] 		= None
-			switch["noise"] 		= None
+			thisSwitch = switch.IsoformSwitch(row["nTx"], row["tTx"],row["Samples"])
+			nInfo = tx_network.nodes()[thisSwitch.nTx]
+			tInfo = tx_network.nodes()[thisSwitch.tTx]
+			thisSwitch.addTxs(nInfo, tInfo)
+			thisSwitch.addIsos(nInfo, tInfo)
 
-			self.update_node("isoformSwitches",switch,full_name=Gene)
+			self.update_node("switches", thisSwitch, full_name = Gene)
 
 	def iterate_genes_byPatientNumber(self,onlySplicedGenes=True,onlyExpressedGenes=True,alwaysSwitchedGenes=False):
 		'''
@@ -162,17 +168,17 @@ class GeneNetwork(network.Network):
 			top = bottom + options.Options().step
 			consideredGenes = consideredGenes[bottom:top]
 
-		geneAndPatients = [ (x,sum([ len(z["patients"]) for z in self._net.node[x]["isoformSwitches"] ])) for x in consideredGenes ]
+		geneAndPatients = [ (x,sum([ len(z["patients"]) for z in self._net.node[x]["switches"] ])) for x in consideredGenes ]
 		genes = [ x for x,y in sorted(geneAndPatients, key=operator.itemgetter(1), reverse=True) ]
 
 		for gene in genes:
 			info = self._net.node[gene]
 			allExpressedTxs = set(info["expressedTxsN"]) | set(info["expressedTxsT"])
 			self.logger.debug("Iterating gene {0}.".format(gene))
-			if alwaysSwitchedGenes and info["isoformSwitches"]:
+			if alwaysSwitchedGenes and info["switches"]:
 				yield gene,info
 			else:
-				if onlySplicedGenes and len(allExpressedTxs) < 2 and not info["isoformSwitches"]:
+				if onlySplicedGenes and len(allExpressedTxs) < 2 and not info["switches"]:
 					continue
 				if onlyExpressedGenes and not bool(allExpressedTxs):
 					continue
@@ -190,9 +196,9 @@ class GeneNetwork(network.Network):
 
 		counter = 1
 		for gene,info in self.iterate_genes_byPatientNumber(alwaysSwitchedGenes=True):
-			if not info["isoformSwitches"]: continue
+			if not info["switches"]: continue
 
-			switches = sorted(info["isoformSwitches"],key=lambda a:len(a['patients']),reverse=True)
+			switches = sorted(info["switches"],key=lambda a:len(a['patients']),reverse=True)
 
 			for switchDict in switches:
 				if removeNoise and switchDict["noise"]:
@@ -249,65 +255,56 @@ class GeneNetwork(network.Network):
 		return thisSwitch
 
 	def calculateCompatibilityTable(self):
-		incompatible = []
-		bestpatible = {}
+		noise = []
+		candidates = {}
 
 		for gene,info in self.nodes(data=True):
-			if not info["isoformSwitches"]:
+
+			if not info["switches"]:
 				continue
 
-			txs = []
-			[ txs.extend([x["nIso"],x["tIso"]]) for x in info["isoformSwitches"] ]
+			nTxs = {}
+			tTxs = {}
+			for thisSwitch in info["switches"]:
+				nTxs[thisSwitch.nTx] = nTxs.get(thisSwitch.nTx, 0) + len(thisSwitch.samples)
+				tTxs[thisSwitch.tTx] = tTxs.get(thisSwitch.tTx, 0) + len(thisSwitch.samples)
 
-			d = dict.fromkeys(set(txs), {"N":0,"T":0} )
+			txs = set(nTxs.keys()) | set(tTxs.keys())
 
-			for x in info["isoformSwitches"]:
-				d[x["nIso"]] = { "N":d[x["nIso"]]["N"]+len(x["patients"]), "T":d[x["nIso"]]["T"] }
-				d[x["tIso"]] = { "T":d[x["tIso"]]["T"]+len(x["patients"]), "N":d[x["tIso"]]["N"] }
+			scores = dict( (x, nTxs.get(x, 0) - tTxs.get(x, 0)) for x in txs )
+			nTop = set([ x for x,s in scores.items() if max(scores.values()) == s ])
+			tTop = set([ x for x,s in scores.items() if min(scores.values()) == s ])
 
-			scores = [ d[x]["N"] - d[x]["T"] for x in d ]
-			consensus = { 'N': [ x for x in d if max(scores) == (d[x]["N"]-d[x]["T"]) ],
-						  'T': [ x for x in d if min(scores) == (d[x]["N"]-d[x]["T"]) ] }
-
-			sortedSwitches = sorted(info["isoformSwitches"],key=lambda a:len(a['patients']),reverse=True)
-			for x in sortedSwitches:
-				if x["nIso"] in consensus["N"] and x["tIso"] in consensus["T"]:
-					bestpatible[gene] = {"N":x["nIso"], "T":x["tIso"], "n":len(x["patients"])}
+			sortedSwitches = sorted(info["switches"], key=lambda a:len(a.samples), reverse=True)
+			for thisSwitch in sortedSwitches:
+				# only consider as top isoforms not present in the other condition
+				if thisSwitch.nTx in (nTop - tTop) and thisSwitch.tTx in (tTop - nTop):
+					candidates[gene] = thisSwitch
 					break
 
 			# no good switch could be found
-			if not gene in bestpatible:
-				continue
+			if not gene in candidates:
+				noise.extend([ len(x.samples) for x in info["switches"] ])
+			else:
+				noise.extend([ len(x.samples) for x in info["switches"] if x.nTx == candidates[gene].tTx or x.tTx == candidates[gene].nTx ])
 
-			incompatible.append(max([max( d[x]["N"] for x in d if x == bestpatible[gene]["T"] ),max( d[x]["T"] for x in d if x == bestpatible[gene]["N"] )]))
-
-		threshold = np.percentile(incompatible,99)
+		cutoff = np.percentile(noise, 99)
 
 		for gene,info in self.nodes(data=True):
-			if not info["isoformSwitches"]: continue
+			if not info["switches"]: continue
 
-			for s in info["isoformSwitches"]:
-				if len(s["patients"]) <= threshold:
-					s["noise"] = True
-				else:
-					s["noise"] = False
-
-				if gene in bestpatible:
-					if s["nIso"] == bestpatible[gene]["N"] and s["tIso"] == bestpatible[gene]["T"]:
-						s["model"] = True
-					else:
-						s["model"] = False
-				else:
-					s["model"] = False
+			for s in info["switches"]:
+				s.setNoise( len(s.samples) <= cutoff )
+				s.setCandidate( gene in candidates and s == candidates[gene] )
 
 	def sampleSwitches(self,tx_network,partialCreation=True,numIterations=2000):
 
-		genesWithSwitches = [ gene for gene,info in self.iterate_genes_byPatientNumber(alwaysSwitchedGenes=True) if info["isoformSwitches"] ]
+		genesWithSwitches = [ gene for gene,info in self.iterate_genes_byPatientNumber(alwaysSwitchedGenes=True) if info["switches"] ]
 		genes = random.sample(genesWithSwitches,numIterations)
 
 		for gene in genes:
 			info = self._net.node[gene]
-			switchDict = random.choice(info["isoformSwitches"])
+			switchDict = random.choice(info["switches"])
 			thisSwitch = self.createSwitch(switchDict,tx_network,partialCreation)
 
 			yield gene,info,switchDict,thisSwitch
