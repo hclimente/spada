@@ -35,7 +35,7 @@ class CreateNetwork(method.Method):
 
 		self.logger.info("Reading expression and calculating PSI.")
 		for exprFile,origin in zip([normalExpression, tumorExpression], ["N", "T"]):
-			expression = pd.DataFrame.from_csv(exprFile, sep='\t')
+			expression = pd.read_csv(exprFile, sep='\t', index_col=0)
 			medianExpression = self.readExpression(expression)
 			medianPSI = self.calculatePSI(expression)
 			expressed = self.isExpressed(medianExpression, minExpression)

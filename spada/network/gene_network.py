@@ -143,7 +143,7 @@ class GeneNetwork(network.Network):
 		"""
 		self.logger.debug("Retrieving calculated isoform switches.")
 
-		switches = pd.DataFrame.from_csv(switchesFile, sep="\t", index_col=None)
+		switches = pd.read_csv(switchesFile, sep="\t")
 		switches.columns = ["Gene","nTx","tTx","Samples"]
 		switches.Samples = switches.Samples.str.split(",")
 
