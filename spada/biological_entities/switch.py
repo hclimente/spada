@@ -1,6 +1,7 @@
 from spada import utils
 from spada.biological_entities import protein, transcript
 
+from itertools import zip_longest
 import os
 import operator
 
@@ -15,7 +16,7 @@ class IsoformSwitch:
 		self._normal_protein 		= None
 		self._tumor_protein 		= None
 
-		self._candidate 				= None
+		self._candidate 			= None
 		self._noise 				= None
 
 		#Relevance measure
@@ -185,19 +186,15 @@ class IsoformSwitch:
 		utrDiff.extend( [ x for x in self._tumor_transcript.utr if x not in self._normal_transcript.utr ])
 		return utrDiff
 
-	def addTxs(self,nInfo,tInfo):
+	def addTxInfo(self,nInfo,tInfo):
 		"""Creates the transcript objects for the transcripts involved
 		in the switch and calculates UTR and CDS differences."""
 		self._normal_transcript = transcript.Transcript( self._normal_transcript_name, nInfo )
 		self._tumor_transcript 	= transcript.Transcript( self._tumor_transcript_name, tInfo )
 
-		self.get_cdsDiff()
-		self.get_utrDiff()
+		self.computeCdsDiff()
+		self.computeUtrDiff()
 
-	def addIsos(self, nInfo, tInfo):
-		"""Creates the isoform objects for the transcripts involved
-		in the switch if they have an UniProt identifier. If both do,
-		it calculates the shared and specific regions."""
 		if nInfo["proteinSequence"] and nInfo["cdsCoords"]:
 			self._normal_protein = protein.Protein( self._normal_transcript_name, nInfo)
 
@@ -207,7 +204,7 @@ class IsoformSwitch:
 		if self._normal_protein and self._tumor_protein:
 			self.getAlteredRegions()
 
-	def get_cdsDiff(self):
+	def computeCdsDiff(self):
 		"""Changes the values of the CDS dictionary of the transcripts to
 			a bool, indicating if they are transcript specific or not."""
 		for gPos in self._normal_transcript.cds:
@@ -222,7 +219,7 @@ class IsoformSwitch:
 			else:
 				self._tumor_transcript._cds[gPos] = False
 
-	def get_utrDiff(self):
+	def computeUtrDiff(self):
 		"""Changes the values of the UTR dictionary of the transcripts to
 			a bool, indicating if they are transcript specific or not."""
 		for gPos in self._normal_transcript.utr:
@@ -240,12 +237,13 @@ class IsoformSwitch:
 	def getAlteredRegions(self):
 		"""Calculates the specific and non-specific residues of the isoforms
 		involved in an isoform switch."""
+
 		for res in self._normal_protein._structure:
-			if res.genomicPosition not in [ y.genomicPosition for y in self._tumor_protein._structure]:
+			if res.genomicPosition not in [ y.genomicPosition for y in self._tumor_protein._structure ]:
 				res.setIsoformSpecific(True)
 
 		for res in self._tumor_protein._structure:
-			if res.genomicPosition not in [ y.genomicPosition for y in self._normal_protein._structure]:
+			if res.genomicPosition not in [ y.genomicPosition for y in self._normal_protein._structure ]:
 				res.setIsoformSpecific(True)
 
 	def readRelevanceAnalysis(self):
@@ -377,3 +375,126 @@ class IsoformSwitch:
 				elif elements[9] == "0": self._ppi = False
 
 				break
+
+	def analyzeDomains(self, which):
+
+		featureInfo = []
+		features = set()
+
+		if not which in ["Pfam", "Prosite"]:
+			raise Exception(which + ' not recognized. Use Pfam or Prosite.')
+
+		for isoform in [self.nIsoform,self.tIsoform]:
+			if not isoform:
+				continue
+
+			f = isoform._prosite if which == "Prosite" else isoform._pfam
+			[ features.add(x) for x in f ]
+
+		for feature in features:
+
+			featInfo = { self.nTx: [], self.tTx: []}
+
+			for isoform in [self.nIsoform, self.tIsoform]:
+
+				if not isoform:
+					continue
+
+				featureRegions = isoform.getSegments(feature, minLength = 1, gap = 0)
+				specificRegions = isoform.getSegments("isoform-specific")
+
+				for region in featureRegions:
+
+					thisIsosp = []
+					if None not in [self.nIsoform,self.tIsoform]:
+						[ thisIsosp.extend(x) for x in specificRegions if set(x) & set(region) ]
+					else:
+						thisIsosp = set(region)
+					intersection = float(len(set(region) & set(thisIsosp)))
+					domainLenght = float(len(set(region)))
+					specificLength = float(len(set(thisIsosp)))
+
+					macroScore = intersection/domainLenght
+					microScore =  float("nan") if specificLength == 0 else intersection/specificLength
+					jaccard = intersection/len(set(region) | set(thisIsosp))
+
+					featInfo[isoform.tx].append({"macro": macroScore,"micro": microScore, "jaccard": jaccard})
+
+				featInfo[isoform.tx] = sorted(featInfo[isoform.tx], key=operator.itemgetter("macro"))
+
+			i = 1
+			emptyDict = {"macro": float("nan"), "micro": float("nan"), "jaccard": float("nan")}
+			for nDict,tDict in zip_longest(featInfo[self.nTx], featInfo[self.tTx], fillvalue = emptyDict):
+
+				what = "Nothing"
+				if nDict["macro"] > 0 and tDict == emptyDict:
+					what = "Lost_in_tumor"
+				elif tDict["macro"] > 0 and nDict == emptyDict:
+					what = "Gained_in_tumor"
+
+				f = { "feature": feature, "index": i, "what": what, \
+					  "nM": nDict["macro"], "nm": nDict["micro"], "nJ": nDict["jaccard"], \
+					  "tM": tDict["macro"], "tm": tDict["micro"], "tJ": tDict["jaccard"] }
+				featureInfo. append(f)
+				i += 1
+
+		return featureInfo
+
+	def analyzeIDR(self, idr_threshold):
+
+		idrInfo = []
+
+		for protein,what in zip([self.nIsoform,self.tIsoform], ["Lost_in_tumor","Gained_in_tumor"]):
+
+			if not protein:
+				continue
+
+			idrs = protein.getSegments("idrs", minLength = 5, gap = 2)
+			isoform = protein.getSegments("isoform-specific")
+
+			for idr in idrs:
+
+				whatsHappening = what
+				idrSet = set(idr)
+
+				overlappingIsoSpecific = []
+				if None not in [self.nIsoform,self.tIsoform]:
+					[ overlappingIsoSpecific.extend(x) for x in isoform if set(x) & idrSet]
+				else:
+					overlappingIsoSpecific = idrSet
+
+				if not overlappingIsoSpecific:
+					jaccard = float("nan")
+					macroScore = float("nan")
+					microScore = float("nan")
+					whatsHappening = "Nothing"
+					significant = 0
+
+				else:
+					overlappingIsoSpecificSet = set(overlappingIsoSpecific)
+
+					intersection = float(len(overlappingIsoSpecificSet & idrSet))
+					union = float(len(overlappingIsoSpecificSet | idrSet))
+
+					jaccard = intersection/union
+					microScore = intersection/len(overlappingIsoSpecificSet)
+					macroScore = intersection/len(idrSet)
+					significant = int(max(microScore,macroScore) > idr_threshold)
+
+				motifSequence = ""
+				start = float("inf")
+				end = float("-inf")
+				for thisRes in idr:
+					res = thisRes.res.upper() if thisRes.isoformSpecific else thisRes.res.lower()
+					motifSequence += res
+					if thisRes.num > end:
+						end = thisRes.num
+					if thisRes.num < start:
+						start = thisRes.num
+
+				if significant:
+					f = { "feature": motifSequence, "start": start, "end": end, \
+						  "what": what, "M": macroScore, "m": microScore, "J": jaccard }
+					idrInfo.append(f)
+
+		return idrInfo

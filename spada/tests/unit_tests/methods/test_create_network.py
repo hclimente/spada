@@ -8,14 +8,14 @@ import os
 import pandas as pd
 import pytest
 
+scriptPath = os.path.realpath(__file__)
+dataPath = os.path.dirname(scriptPath) + "/../../data"
+
+
 def test_createNetworks():
 
 	c = create_network.CreateNetwork("test", "gencode")
-
-	scriptPath = os.path.realpath(__file__)
-	dataPath = os.path.dirname(scriptPath) + "/../../data"
-	gtf = dataPath + "/gtf"
-	c.createNetworks(gtf)
+	c.createNetworks(dataPath + "/gtf")
 
 	assert len(c._genes.nodes()) == 14
 	assert len(c._txs.nodes()) == 21
@@ -31,6 +31,8 @@ def test_createNetworks():
 	assert c._txs.nodes()["ENST00000335137.3"]["strand"] == "+"
 	assert c._txs.nodes()["ENST00000335137.3"]["chr"] == "chr1"
 	assert c._txs.nodes()["ENST00000335137.3"]["cdsCoords"] == [69091,70005]
+	os.remove("genes.pkl")
+	os.remove("transcripts.pkl")
 
 def test_readExpression():
 
@@ -89,10 +91,7 @@ def test_getInteractions():
 	c._genes.add_node(gene_id = "G", gene_symbol = "TPM1")
 	c._genes.add_node(gene_id = "H", gene_symbol = "KXD1")
 
-	scriptPath = os.path.realpath(__file__)
-	dataPath = os.path.dirname(scriptPath) + "/../../data"
-	mitab = dataPath + "/ppis"
-	c.getInteractions(mitab)
+	c.getInteractions(dataPath + "/ppis")
 
 	assert c._genes._net.has_edge("A", "B")
 	assert c._genes._net.has_edge("C", "D")
@@ -122,10 +121,7 @@ def test_getDomainInteractions():
 	c._txs.add_node("C1", "C")
 	c._txs.update_node("C1", "Pfam", (0,0), "D5")
 
-	scriptPath = os.path.realpath(__file__)
-	dataPath = os.path.dirname(scriptPath) + "/../../data"
-	ddis = dataPath + "/ddis"
-	c.getDomainInteractions(ddis)
+	c.getDomainInteractions(dataPath + "/ddis")
 
 	assert c._txs._net.has_edge("A1", "B1")
 	assert c._txs._net["A1"]["B1"]["ddi"] == {frozenset({"D2","D4"}), frozenset({"D6","D4"})}
@@ -137,11 +133,7 @@ def test_getDomainInteractions():
 def test_readDrivers():
 
 	c = create_network.CreateNetwork("test", "gencode")
-
-	scriptPath = os.path.realpath(__file__)
-	dataPath = os.path.dirname(scriptPath) + "/../../data"
-	drivers = dataPath + "/drivers"
-	drivers, specificDrivers = c.readDrivers(drivers)
+	drivers, specificDrivers = c.readDrivers(dataPath + "/drivers")
 
 	assert len(drivers) == 3
 	assert len(specificDrivers) == 2
@@ -186,10 +178,6 @@ def test_getIsoformSequences():
 
 def test_getIsoformFeatures():
 
-	scriptPath = os.path.realpath(__file__)
-	dataPath = os.path.dirname(scriptPath) + "/../../data"
-	features = dataPath + "/features"
-
 	c = create_network.CreateNetwork("test", "gencode")
 	c._txs.add_node("ENST00000595919.1", "1")
 	c._txs.add_node("ENST00000417324.1", "1")
@@ -199,7 +187,7 @@ def test_getIsoformFeatures():
 	assert not c._txs.nodes()["ENST00000417324.1"]["IDR"]
 	assert not c._txs.nodes()["ENST00000442987.3"]["Prosite"]
 
-	c.getIsoformFeatures(features)
+	c.getIsoformFeatures(dataPath + "/features")
 
 	assert c._txs.nodes()["ENST00000595919.1"]["Pfam"]["D1"] == {(3,6), (40,93)}
 	assert c._txs.nodes()["ENST00000595919.1"]["Pfam"]["D2"] == {(40,93)}

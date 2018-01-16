@@ -130,7 +130,7 @@ class GeneNetwork(network.Network):
 
 		return self._update_edge(node_id1, node_id2, key, value)
 
-	def cleanNetwork(self):
+	def clean(self):
 
 		self.logger.debug("Cleaning imported network.")
 
@@ -153,23 +153,20 @@ class GeneNetwork(network.Network):
 			thisSwitch = switch.IsoformSwitch(row["nTx"], row["tTx"],row["Samples"])
 			nInfo = tx_network.nodes()[thisSwitch.nTx]
 			tInfo = tx_network.nodes()[thisSwitch.tTx]
-			thisSwitch.addTxs(nInfo, tInfo)
-			thisSwitch.addIsos(nInfo, tInfo)
+			thisSwitch.addTxInfo(nInfo, tInfo)
 
 			self.update_node("switches", thisSwitch, full_name = Gene)
 
-	def iterate_genes_byPatientNumber(self,onlySplicedGenes=True,onlyExpressedGenes=True,alwaysSwitchedGenes=False):
+	def iterate_genes_byPatientNumber(self, onlySplicedGenes=True, onlyExpressedGenes=True, alwaysSwitchedGenes=False, bottom = 0, top = None):
 		'''
 		Iterate genes that have alternative splicing and more than one transcript expressed.
 		'''
-		consideredGenes = self.nodes()
-		if options.Options().parallelRange:
-			bottom = options.Options().parallelRange - 1
-			top = bottom + options.Options().step
-			consideredGenes = consideredGenes[bottom:top]
 
-		geneAndPatients = [ (x,sum([ len(z["patients"]) for z in self._net.node[x]["switches"] ])) for x in consideredGenes ]
-		genes = [ x for x,y in sorted(geneAndPatients, key=operator.itemgetter(1), reverse=True) ]
+		if top == None:
+			top = len(self.nodes()) - 1
+
+		geneAndPatients = [ (g,sum([ len(s.samples) for s in self._net.node[g]["switches"] ])) for g in self.nodes() ][bottom:top]
+		genes = [ g for g,n in sorted(geneAndPatients, key=operator.itemgetter(1), reverse=True) ]
 
 		for gene in genes:
 			info = self._net.node[gene]
@@ -184,7 +181,7 @@ class GeneNetwork(network.Network):
 					continue
 				yield gene,info
 
-	def iterate_switches_byPatientNumber(self,tx_network,only_models=False,relevance=None,partialCreation=False,removeNoise=True):
+	def iterate_switches_byPatientNumber(self, tx_network, only_models=False, relevance=None, removeNoise=True):
 		"""Iterate through the isoform switches of a gene network, and
 			generate a list of (gene,geneInformation,isoformSwitch).
 			Only return those switches with an overlap between the CDS
@@ -198,25 +195,22 @@ class GeneNetwork(network.Network):
 		for gene,info in self.iterate_genes_byPatientNumber(alwaysSwitchedGenes=True):
 			if not info["switches"]: continue
 
-			switches = sorted(info["switches"],key=lambda a:len(a['patients']),reverse=True)
+			switches = sorted(info["switches"], key = lambda a: len(a.samples),reverse=True)
 
-			for switchDict in switches:
-				if removeNoise and switchDict["noise"]:
+			for thisSwitch in switches:
+				if removeNoise and thisSwitch.isNoise:
 					continue
-				elif only_models and not switchDict["model"]:
+				elif only_models and not thisSwitch.isCandidate:
 					continue
-
-				thisSwitch = self.createSwitch(switchDict,tx_network,partialCreation)
-
-				if relevance is not None and relevance != thisSwitch.is_functional:
+				elif relevance is not None and relevance != thisSwitch.is_functional:
 					continue
 
-				self.logger.debug("Iterating switch number {0}.".format(counter))
+				self.logger.debug("Iterating switch number {}.".format(counter))
 				counter += 1
 
-				yield gene,info,switchDict,thisSwitch
+				yield gene,info,thisSwitch
 
-	def iterate_functionalSwitches_byPatientNumber(self,tx_network,only_models=False,partialCreation=False,removeNoise=True):
+	def iterate_functionalSwitches_byPatientNumber(self, tx_network, only_models=False, removeNoise=True):
 		"""Iterate through the isoform switches of a gene network, and
 			generate a list of (gene,geneInformation,isoformSwitch).
 			Only return those switches with an overlap between the CDS
@@ -226,9 +220,9 @@ class GeneNetwork(network.Network):
 				common) will be returned for each gene.
 		"""
 
-		self.iterate_switches_byPatientNumber(tx_network,only_models,True,partialCreation,removeNoise)
+		self.iterate_switches_byPatientNumber(tx_network, only_models, True, removeNoise)
 
-	def iterate_nonFunctionalSwitches_byPatientNumber(self,tx_network,only_models=False,partialCreation=False,removeNoise=True):
+	def iterate_nonFunctionalSwitches_byPatientNumber(self, tx_network, only_models=False, removeNoise=True):
 		"""Iterate through the isoform switches of a gene network, and
 			generate a list of (gene,geneInformation,isoformSwitch).
 			Only return those switches with an overlap between the CDS
@@ -238,7 +232,7 @@ class GeneNetwork(network.Network):
 				common) will be returned for each gene.
 		"""
 
-		self.iterate_switches_byPatientNumber(tx_network,only_models,False,partialCreation,removeNoise)
+		self.iterate_switches_byPatientNumber(tx_network, only_models, False, removeNoise)
 
 	def createSwitch(self,switchDict,tx_network,partialCreation):
 		"""Create a switch object from the switch dictionary.

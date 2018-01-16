@@ -26,14 +26,14 @@ class GetRandomSwitches(method.Method):
 			gcopy = copy.deepcopy(self._gene_network)
 			self._gene_network.createLogger()
 			gcopy.createLogger()
-			gcopy.cleanNetwork()
+			gcopy.clean()
 			gcopy.removeLogger()
-			
+
 			# random: two random transcripts among those expressed in tumor or normal
 			gcopy_random = copy.deepcopy(gcopy)
 			gcopy_random.createLogger()
 			self.sampleTranscripts_random(gcopy_random)
-			gcopy_random.saveNetwork("randomGeneNetwork_random.pkl")			
+			gcopy_random.saveNetwork("randomGeneNetwork_random.pkl")
 
 			# random: most expressed isoform is normal
 			gcopy_fixNormal = copy.deepcopy(gcopy)
@@ -48,7 +48,7 @@ class GetRandomSwitches(method.Method):
 			self.logger.info("Calculating features for random switches.")
 			gcopy = pickle.load(open("{}randomGeneNetwork_fixNormal.pkl".format(options.Options().qout),"rb"))
 			S = structural_analysis.StructuralAnalysis(gcopy,self._transcript_network,isRand=True)
-			S.run()	
+			S.run()
 
 	def sampleTranscripts_fixNormal(self,gcopy):
 		for gene,info in [ (x,y) for x,y in gcopy.nodes(data=True) if len(set(y["expressedTxsN"]) & set(y["expressedTxsT"]))>1]:
@@ -85,15 +85,15 @@ class GetRandomSwitches(method.Method):
 				info["isoformSwitches"].append(switchDict)
 
 	def sampleTranscripts_random(self, gcopy):
-		
+
 		for gene,info in [ (x,y) for x,y in gcopy.nodes(data=True) if len(set(y["expressedTxsN"]) & set(y["expressedTxsT"]))>1]:
 			allExpressedTxs = set(y["expressedTxsN"]) & set(y["expressedTxsT"])
 
 			allSwitches = [ x for x in itertools.combinations(allExpressedTxs,2) ]
 			random.shuffle(allSwitches)
-			
+
 			allSwitches = allSwitches[0:self.MAX_SWITCHES]
-			
+
 			for oneSwitch in allSwitches:
 				switchDict = {}
 				switchDict["nIso"] = oneSwitch[0]

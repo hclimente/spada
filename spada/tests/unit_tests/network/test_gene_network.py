@@ -13,6 +13,7 @@ def test_readSwitches():
 	gn.createLogger()
 	txs = pickle.load(open(dataPath + "/transcripts.pkl", "rb"))
 	txs.createLogger()
+	gn.clean()
 	gn.readSwitches(dataPath + "/switches", txs)
 
 	# number of switches is correct
@@ -38,10 +39,6 @@ def test_calculateCompatibilityTable():
 
 	gn = pickle.load(open(dataPath + "/genes.pkl", "rb"))
 	gn.createLogger()
-	txs = pickle.load(open(dataPath + "/transcripts.pkl", "rb"))
-	txs.createLogger()
-	gn.readSwitches(dataPath + "/switches", txs)
-
 	gn.calculateCompatibilityTable()
 
 	# switches have at most 1 candidate, some have noise

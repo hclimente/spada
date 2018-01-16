@@ -1,5 +1,4 @@
 from collections import Counter
-import logging
 
 class AminoAcid:
 	def __init__(self, resNum, resName):
@@ -14,10 +13,9 @@ class AminoAcid:
 		self._isoformSpecific 	= False
 		self._pdbMapping 		= {}
 		self._genomicPosition 	= None
-		self._iuPred_score 		= None
-		self._anchor_score 		= None
+		self._disordered 		= False
 		self._kinases 	 		= set()
-		self._feature			= []
+		self._features			= set()
 
 	@property
 	def res(self): return self._res
@@ -27,22 +25,11 @@ class AminoAcid:
 	def genomicPosition(self): return self._genomicPosition
 	def setGenomicPosition(self,genomicPosition): self._genomicPosition = genomicPosition
 	@property
-	def isDisordered(self):
-		if self._iuPred_score < 0.5:
-			return False
-		else:
-			return True
-	def set_iuPredScore(self, value): self._iuPred_score = value
+	def disordered(self): return self._disordered
+	def setDisordered(self, disordered): self._disordered = disordered
+
 	@property
-	def isAnchored(self):
-		if self._anchor_score < 0.5:
-			return False
-		else:
-			return True
-	def set_anchorScore(self, value): self._anchor_score = value
-	
-	@property
-	def tag(self): 
+	def tag(self):
 		"""Returns the mode from the list of tags."""
 		frequency = Counter(self._tag).most_common(1)
 		if frequency:
@@ -54,5 +41,4 @@ class AminoAcid:
 
 	@property
 	def isoformSpecific(self): 	return self._isoformSpecific
-	
 	def setIsoformSpecific(self,isoformSpecific): self._isoformSpecific=isoformSpecific

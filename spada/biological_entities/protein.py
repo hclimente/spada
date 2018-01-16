@@ -1,5 +1,4 @@
 from spada.biological_entities import aminoacid
-from spada.interface import interpro_analysis
 from spada import utils
 
 import logging
@@ -13,14 +12,18 @@ class Protein:
 		self._sequence			= txInfo["proteinSequence"]
 		self._structure			= []
 		self._residueCorresp	= {}
-		self._pfam				= []
-		self._prosite			= {}
+		self._pfam				= txInfo["Pfam"]
+		self._prosite			= txInfo["Prosite"]
+		self._idr				= txInfo["IDR"]
 
 		if self._sequence is not None:
 			for res in range(0, len(self._sequence) ):
 				self._structure.append( aminoacid.AminoAcid(res+1, self._sequence[res]) )
 
 			self.mapResiduesToGenome(txInfo["exonStructure"], txInfo["cdsCoords"], txInfo["strand"])
+			self.annotateFeaturesToResidues("Pfam", self._pfam)
+			self.annotateFeaturesToResidues("Prosite", self._prosite)
+			self.annotateFeaturesToResidues("IDR", self._idr)
 
 	@property
 	def tx(self): return self._tx
@@ -72,39 +75,47 @@ class Protein:
 
 				gap = (start - end)%3
 
-		for aminoAcid, gPos in zip(self._structure, genomicPositions[:-1]): #Remove the stop codon
-			aminoAcid.setGenomicPosition(gPos)
+		if len(self._structure) != len(genomicPositions) - 1:
+			raise Exception('Lengths of protein sequence and CDS do not match ({} vs. {}).'.format(len(self._structure), len(genomicPositions) - 1))
+
+		for aa, gPos in zip(self._structure, genomicPositions[:-1]): #Remove the stop codon
+			aa.setGenomicPosition(gPos)
+
+	def annotateFeaturesToResidues(self, featureType, features):
+		for feature,region in features.items():
+			for start,end in region:
+				for aa in self.structure_ordered:
+					if aa.num >= start and aa.num <= end:
+						aa._features.add(feature)
 
 	def getFeatures(self,interproOut):
 		for featInfo in interpro_analysis.InterproAnalysis().readInterpro(interproOut,self):
 			self._pfam.append(featInfo)
 
-	def getSegments(self,thing,minLength=1,gap=0):
+	def getSegments(self, segmentType, minLength = 1, gap = 0):
 		segments = []
 		segment = []
 		gapped = []
 
-		for res in self.structure_ordered:
+		for aa in self.structure_ordered:
 			flag = False
-			if thing =="isoform-specific":
-				flag = res.isoformSpecific
-			elif thing =="non-isoform-specific":
-				flag = not res.isoformSpecific
-			elif thing =="anchor":
-				flag = res.isAnchored
-			elif thing =="disordered":
-				flag = res.isDisordered
+			if segmentType == "isoform-specific":
+				flag = aa.isoformSpecific
+			elif segmentType == "non-isoform-specific":
+				flag = not aa.isoformSpecific
+			elif segmentType == "idrs":
+				flag = any(aa._features & set(self._idr))
 			else:
-				flag = thing in res._feature
+				flag = segmentType in aa._features
 
 			if flag:
 				if gapped:
 					segment.extend(gapped)
 					gapped = []
-				segment.append(res)
+				segment.append(aa)
 			elif segment:
 				if len(gapped) < gap:
-					gapped.append(res)
+					gapped.append(aa)
 				else:
 					if len(segment) >= minLength:
 						segments.append(segment)
@@ -116,173 +127,3 @@ class Protein:
 			segments.append(segment)
 
 		return segments
-
-	def readAnchor(self):
-		pass
-		"""
-		outfile = "{0}data/{1}/ANCHOR/{2}.txt".format(options.Options().wd,options.Options().annotation,self.tx)
-
-		if not os.path.isfile(outfile):
-			out = []
-			fasta = "{0}{1}{2}.fa".format(options.Options().qout,self.tx,options.Options().filetag)
-			with open(fasta,"w") as FASTA:
-				FASTA.write(">{0}\n{1}\n".format(self.tx,self.seq))
-
-			proc = utils.cmdOut("anchor",fasta)
-			out = [ x.strip().split() for x in proc.stdout if "#" not in x ]
-			os.remove(fasta)
-
-			with open(outfile,"w") as ANCHORout:
-				for line in out:
-					resNum  = int(line[0])
-					residue	= line[1]
-					score	= float(line[2].strip())
-					ANCHORout.write("{0}\t{1}\t{2}\n".format(resNum,residue,score))
-					thisRes = self._structure[resNum-1]
-
-					if residue != thisRes.res:
-						self.logger.error("Not matching residue in ANCHOR analysis, transcript {0}.".format(self.tx))
-						continue
-
-					thisRes.set_anchorScore(score)
-
-		else:
-			for line in utils.readTable(outfile,header=False):
-				resNum  = int(line[0])
-				residue	= line[1]
-				score	= float(line[2].strip())
-				thisRes = self._structure[resNum-1]
-
-				if residue != thisRes.res:
-					self.logger.error("Not matching residue in ANCHOR analysis, transcript {0}.".format(self.tx))
-					continue
-
-				thisRes.set_anchorScore(score)
-		"""
-
-	def readIupred(self,mode):
-		pass
-		"""
-		outfile = "{}data/{}/IUPred/{}.{}.txt".format(options.Options().wd,options.Options().annotation,self.tx,mode)
-
-		if not os.path.isfile(outfile):
-			out = []
-			fasta = "{}{}{}.fa".format(options.Options().qout,self.tx,options.Options().filetag)
-			with open(fasta,"w") as FASTA:
-				FASTA.write(">{0}\n{1}\n".format(self.tx,self.seq))
-
-			proc = utils.cmdOut(options.Options().wd+"pipeline/libs/bin/iupred/iupred",fasta,mode)
-			out = [ x.strip().split(" ") for x in proc.stdout if "#" not in x ]
-			os.remove(fasta)
-
-			with open(outfile,"w") as IUout:
-				for line in out:
-					resNum  = int(line[0])
-					residue	= line[1]
-					score	= float(line[-1])
-					IUout.write("{0}\t{1}\t{2}\n".format(resNum,residue,score))
-
-					thisRes = self._structure[resNum-1]
-					if residue != thisRes.res:
-						self.logger.error("Not matching residue in ANCHOR analysis, transcript {0}.".format(self.tx))
-						continue
-					thisRes.set_iuPredScore(score)
-
-		else:
-			for line in utils.readTable(outfile,header=False):
-				resNum  = int(line[0])
-				residue	= line[1]
-				score	= float(line[-1])
-				thisRes = self._structure[resNum-1]
-
-				if residue != thisRes.res:
-					self.logger.error("Not matching residue in ANCHOR analysis, transcript {0}.".format(self.tx))
-					continue
-
-				thisRes.set_iuPredScore(score)
-		"""
-
-	def readInterpro(self):
-		pass
-		"""
-		outfile = "{0}data/{1}/InterPro/{2}.tsv".format(options.Options().wd,options.Options().annotation,self.tx)
-		acceptedAnalysis = ["Pfam"]
-
-		if not os.path.isfile(outfile):
-			return
-
-		else:
-			for line in utils.readTable(outfile,header=False):
-				# https://code.google.com/p/interproscan/wiki/OutputFormats#Tab-separated_values_format_%28TSV%29
-				protein_accession	= line[0] #Protein Accession
-				md5_digest			= line[1] #Sequence MD5 digest
-				seq_length			= line[2] #Sequence Length
-				analysis			= line[3] #Analysis
-				signature_accession = line[4] #Signature Accession
-				signature_descript  = line[5].replace(" ","_") #Signature Description
-				start				= int(line[6]) #Start location
-				stop				= int(line[7]) #Stop location
-				try:
-					 score			= float(line[8]) #Score - is the e-value of the match reported by member database method
-				except ValueError:
-					 score			= None
-				status				= True if line[9] == "T" else False #Status - is the status of the match (T: true)
-				date				= line[10] #Date - is the date of the run
-				if len(line) > 11:
-					interpro_annotation = line[11] #(InterPro annotations - accession)
-				else:
-					interpro_annotation = ""
-				if len(line) > 12:
-					interpro_descript	= line[12] #(InterPro annotations - description)
-				else:
-					interpro_descript	= ""
-				if len(line) > 13:
-					go_annotation		= line[13] #(GO annotations)
-				else:
-					go_annotation		= ""
-				if len(line) > 14:
-					pathway_annotation  = line[14] #(Pathways annotations)
-				else:
-					pathway_annotation  = ""
-				tx = protein_accession.strip().split("#")[0]
-				if score and score > 0.01:
-					 continue
-				elif analysis not in acceptedAnalysis:
-					 continue
-				elif tx != self.tx:
-					 raise Exception("Error reading InterPro features for {0}. Invalid identifier {1} found.".format(self.tx,tx))
-
-				for resNum in range(start,stop):
-					thisRes = self._structure[resNum-1]
-					thisRes._feature.append("{0}|{1}".format(signature_accession,signature_descript))
-
-				featInfo = {}
-				featInfo["region"]		= [start,stop]
-				featInfo["accession"]	= signature_accession
-				featInfo["description"]	= signature_descript
-				featInfo["analysis"]	= analysis
-				featInfo["go"]	 		= go_annotation
-				self._pfam.append(featInfo)
-		"""
-
-	def readProsite(self):
-		pass
-		"""
-		featFile = "{0}data/{1}/ProSite/{2}.out".format(options.Options().wd,options.Options().annotation,self.tx)
-
-		if not os.path.exists(featFile) or os.stat(featFile).st_size == 0:
-			return
-
-		for line in utils.readTable(featFile,header=False):
-
-			prositeId = line[-1].replace(" ","_")
-
-			self._prosite.setdefault(prositeId,[])
-			self._prosite[prositeId].append((int(line[-3].replace(" -","")),int(line[-2])))
-
-			for ptm in self._prosite:
-				for start,end in self._prosite[ptm]:
-					for resNum in range(start,end):
-						thisRes = self._structure[resNum-1]
-						thisRes._feature.append(ptm)
-		"""
