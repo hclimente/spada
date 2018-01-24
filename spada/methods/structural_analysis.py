@@ -1,46 +1,31 @@
-from spada import utils
 from spada.methods import method
-
-import os
 
 class StructuralAnalysis(method.Method):
 	def __init__(self, gn_network, tx_network, isRandom = False):
 
-		if not os.path.exists("structural_analysis"):
-			utils.cmd("mkdir","structural_analysis")
-
 		method.Method.__init__(self, __name__,gn_network,tx_network)
 
-		tag = "_random" if isRandom else ""
-
-		self._pfam_file = "structural_analysis/pfam_analysis{}.tsv".format(tag)
-		self.PFAM = open(self._pfam_file,"w")
-		self.writeDomainsHeader(self.PFAM)
-
-		self._idr_file = "structural_analysis/idr_analysis{}.tsv".format(tag)
-		self.IDR = open(self._idr_file,"w")
-		self.writeIDRHeader(self.IDR)
-
-		self._prosite_file = "structural_analysis/prosite_analysis{}.tsv".format(tag)
-		self.PROSITE = open(self._prosite_file,"w")
-		self.writeDomainsHeader(self.PROSITE)
+		self._tag = "_random" if isRandom else ""
 
 	def run(self):
 		self.logger.info("Structural analysis.")
 
-		for gene,info,thisSwitch in self._genes.iterate_switches_byPatientNumber(self._txs, removeNoise = False):
-			#if gene == "ENSG00.5": import pdb; pdb.set_trace()
-			pfam_change		= thisSwitch.analyzeDomains("Pfam")
-			prosite_change	= thisSwitch.analyzeDomains("Prosite")
-			idr_change   	= thisSwitch.analyzeIDR(0.2)
+		with open("pfam_analysis{}.tsv".format(self._tag), "w") as PFAM, \
+			 open("prosite_analysis{}.tsv".format(self._tag), "w") as PROSITE, \
+			 open("idr_analysis{}.tsv".format(self._tag), "w") as IDR:
 
-			self.writeDomains(self.PFAM, gene, thisSwitch, pfam_change)
-			self.writeDomains(self.PROSITE, gene, thisSwitch, prosite_change)
-			self.writeIDR(self.IDR, gene, thisSwitch, idr_change)
+			self.writeDomainsHeader(PFAM)
+			self.writeDomainsHeader(PROSITE)
+			self.writeIDRHeader(IDR)
 
-		self.PFAM.close()
-		self.IDR.close()
-		self.PROSITE.close()
+			for gene,info,thisSwitch in self._genes.iterate_switches_byPatientNumber(self._txs, removeNoise = False):
+				pfam_change		= thisSwitch.analyzeDomains("Pfam")
+				prosite_change	= thisSwitch.analyzeDomains("Prosite")
+				idr_change   	= thisSwitch.analyzeIDR(0.2)
+
+				self.writeDomains(PFAM, gene, thisSwitch, pfam_change)
+				self.writeDomains(PROSITE, gene, thisSwitch, prosite_change)
+				self.writeIDR(IDR, gene, thisSwitch, idr_change)
 
 	def writeDomainsHeader(self, OUT):
 		OUT.write("Gene\tNormalTranscript\tTumorTranscript\t")
