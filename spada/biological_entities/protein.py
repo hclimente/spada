@@ -76,7 +76,7 @@ class Protein:
 				gap = (start - end)%3
 
 		if len(self._structure) != len(genomicPositions) - 1:
-			raise Exception('Lengths of protein sequence and CDS do not match ({} vs. {}).'.format(len(self._structure), len(genomicPositions) - 1))
+			raise Exception('Transcript {}: lengths of protein sequence and CDS do not match ({} vs. {}).'.format(self._tx, len(self._structure), len(genomicPositions) - 1))
 
 		for aa, gPos in zip(self._structure, genomicPositions[:-1]): #Remove the stop codon
 			aa.setGenomicPosition(gPos)
@@ -88,14 +88,9 @@ class Protein:
 					if aa.num >= start and aa.num <= end:
 						aa._features.add(feature)
 
-	def getFeatures(self,interproOut):
-		for featInfo in interpro_analysis.InterproAnalysis().readInterpro(interproOut,self):
-			self._pfam.append(featInfo)
-
-	def getSegments(self, segmentType, minLength = 1, gap = 0):
+	def getSegments(self, segmentType, minLength = 1):
 		segments = []
 		segment = []
-		gapped = []
 
 		for aa in self.structure_ordered:
 			flag = False
@@ -103,27 +98,28 @@ class Protein:
 				flag = aa.isoformSpecific
 			elif segmentType == "non-isoform-specific":
 				flag = not aa.isoformSpecific
-			elif segmentType == "idrs":
-				flag = any(aa._features & set(self._idr))
-			else:
-				flag = segmentType in aa._features
 
 			if flag:
-				if gapped:
-					segment.extend(gapped)
-					gapped = []
 				segment.append(aa)
 			elif segment:
-				if len(gapped) < gap:
-					gapped.append(aa)
-				else:
-					if len(segment) >= minLength:
-						segments.append(segment)
-
-					gapped = []
-					segment = []
+				if len(segment) >= minLength:
+					segments.append(segment)
+				segment = []
 
 		if len(segment) >= minLength:
 			segments.append(segment)
 
 		return segments
+
+	def getFeature(self, featureType, f):
+
+		if featureType == "Pfam": 		regions = self._pfam
+		elif featureType == "Prosite": 	regions = self._prosite
+		elif featureType == "IDR": 		regions = self._idr
+		feature = []
+
+		if f in regions:
+			for start, end in regions[f]:
+				feature.append([ x for x in self.structure_ordered ][(start - 1):end])
+
+		return feature

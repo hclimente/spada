@@ -19,18 +19,21 @@ def test_createNetworks():
 
 	assert len(c._genes.nodes()) == 14
 	assert len(c._txs.nodes()) == 21
-	assert len(c._txs.nodes()["ENST00000450305.2"]["exonStructure"]) == 6
-	assert c._txs.nodes()["ENST00000450305.2"]["strand"] == "+"
-	assert c._txs.nodes()["ENST00000450305.2"]["chr"] == "chr1"
-	assert not c._txs.nodes()["ENST00000450305.2"]["cdsCoords"]
-	assert len(c._txs.nodes()["ENST00000494149.2"]["exonStructure"]) == 1
-	assert c._txs.nodes()["ENST00000494149.2"]["strand"] == "-"
-	assert c._txs.nodes()["ENST00000494149.2"]["chr"] == "chr1"
-	assert not c._txs.nodes()["ENST00000494149.2"]["cdsCoords"]
-	assert len(c._txs.nodes()["ENST00000335137.3"]["exonStructure"]) == 1
-	assert c._txs.nodes()["ENST00000335137.3"]["strand"] == "+"
-	assert c._txs.nodes()["ENST00000335137.3"]["chr"] == "chr1"
-	assert c._txs.nodes()["ENST00000335137.3"]["cdsCoords"] == [69091,70005]
+	assert len(c._txs.nodes()["ENST02.2"]["exonStructure"]) == 6
+	assert c._txs.nodes()["ENST02.2"]["strand"] == "+"
+	assert c._txs.nodes()["ENST02.2"]["chr"] == "chr1"
+	assert c._txs.nodes()["ENST02.2"]["cdsCoords"] == [13000, 13027]
+	assert len(c._txs.nodes()["ENST19.2"]["exonStructure"]) == 1
+	assert c._txs.nodes()["ENST19.2"]["strand"] == "-"
+	assert c._txs.nodes()["ENST19.2"]["chr"] == "chr1"
+	assert not c._txs.nodes()["ENST19.2"]["cdsCoords"]
+	assert len(c._txs.nodes()["ENST12.3"]["exonStructure"]) == 1
+	assert c._txs.nodes()["ENST12.3"]["strand"] == "+"
+	assert c._txs.nodes()["ENST12.3"]["chr"] == "chr1"
+	assert c._txs.nodes()["ENST12.3"]["cdsCoords"] == [69091,70021]
+
+	assert os.stat("genes.pkl").st_size > 0
+	assert os.stat("transcripts.pkl").st_size > 0
 	os.remove("genes.pkl")
 	os.remove("transcripts.pkl")
 
@@ -144,53 +147,53 @@ def test_readDrivers():
 def test_getIsoformSequences():
 
 	c = create_network.CreateNetwork("test", "gencode")
-	c._txs.add_node("ENST00000335137.3", "1")
-	c._txs.add_node("ENST00000417324.1", "1")
-	c._txs.add_node("ENST00000442987.3", "2")
-	c._txs.add_node("ENST00000450305.2", "2")
-	c._txs.add_node("ENST00000453576.2", "3")
-	c._txs.add_node("ENST00000456328.2", "3")
-	c._txs.add_node("ENST00000461467.1", "3")
-	c._txs.add_node("ENST00000466430.5", "4")
+	c._txs.add_node("ENST12.3", "1")
+	c._txs.add_node("ENST08.1", "1")
+	c._txs.add_node("ENST18.3", "2")
+	c._txs.add_node("ENST02.2", "2")
+	c._txs.add_node("ENST16.2", "3")
+	c._txs.add_node("ENST01.2", "3")
+	c._txs.add_node("ENST09.1", "3")
+	c._txs.add_node("ENST13.5", "4")
 
-	assert not c._txs.nodes()["ENST00000335137.3"]["proteinSequence"]
-	assert not c._txs.nodes()["ENST00000417324.1"]["proteinSequence"]
-	assert not c._txs.nodes()["ENST00000442987.3"]["proteinSequence"]
-	assert not c._txs.nodes()["ENST00000450305.2"]["proteinSequence"]
-	assert not c._txs.nodes()["ENST00000453576.2"]["proteinSequence"]
-	assert not c._txs.nodes()["ENST00000456328.2"]["proteinSequence"]
-	assert not c._txs.nodes()["ENST00000461467.1"]["proteinSequence"]
-	assert not c._txs.nodes()["ENST00000466430.5"]["proteinSequence"]
+	assert not c._txs.nodes()["ENST12.3"]["proteinSequence"]
+	assert not c._txs.nodes()["ENST08.1"]["proteinSequence"]
+	assert not c._txs.nodes()["ENST18.3"]["proteinSequence"]
+	assert not c._txs.nodes()["ENST02.2"]["proteinSequence"]
+	assert not c._txs.nodes()["ENST16.2"]["proteinSequence"]
+	assert not c._txs.nodes()["ENST01.2"]["proteinSequence"]
+	assert not c._txs.nodes()["ENST09.1"]["proteinSequence"]
+	assert not c._txs.nodes()["ENST13.5"]["proteinSequence"]
 
 	scriptPath = os.path.realpath(__file__)
 	dataPath = os.path.dirname(scriptPath) + "/../../data"
 	fasta = dataPath + "/fasta"
 	c.getIsoformSequences(fasta)
 
-	assert c._txs.nodes()["ENST00000335137.3"]["proteinSequence"] == "ASDFAFAFA"
-	assert c._txs.nodes()["ENST00000417324.1"]["proteinSequence"] == "ASDASDASD"
-	assert c._txs.nodes()["ENST00000442987.3"]["proteinSequence"] == "ASFASFASF"
-	assert c._txs.nodes()["ENST00000450305.2"]["proteinSequence"] == "ASFASFAS"
-	assert c._txs.nodes()["ENST00000453576.2"]["proteinSequence"] == "ASFASFASF"
-	assert c._txs.nodes()["ENST00000456328.2"]["proteinSequence"] == "ASFSAFASFS"
-	assert c._txs.nodes()["ENST00000461467.1"]["proteinSequence"] == "ASFASFASF"
-	assert c._txs.nodes()["ENST00000466430.5"]["proteinSequence"] == "ASFASFASASFASF"
+	assert c._txs.nodes()["ENST12.3"]["proteinSequence"] == "ASDFAFAFA"
+	assert c._txs.nodes()["ENST08.1"]["proteinSequence"] == "ASDASDASD"
+	assert c._txs.nodes()["ENST18.3"]["proteinSequence"] == "ASFASFASF"
+	assert c._txs.nodes()["ENST02.2"]["proteinSequence"] == "ASFASFAS"
+	assert c._txs.nodes()["ENST16.2"]["proteinSequence"] == "ABCDEFGHI"
+	assert c._txs.nodes()["ENST01.2"]["proteinSequence"] == "ASFSAFASFS"
+	assert c._txs.nodes()["ENST09.1"]["proteinSequence"] == "ASFASFASF"
+	assert c._txs.nodes()["ENST13.5"]["proteinSequence"] == "ASFASFASASFASF"
 
 def test_getIsoformFeatures():
 
 	c = create_network.CreateNetwork("test", "gencode")
-	c._txs.add_node("ENST00000595919.1", "1")
-	c._txs.add_node("ENST00000417324.1", "1")
-	c._txs.add_node("ENST00000442987.3", "2")
+	c._txs.add_node("ENST20.1", "1")
+	c._txs.add_node("ENST08.1", "1")
+	c._txs.add_node("ENST18.3", "2")
 
-	assert not c._txs.nodes()["ENST00000595919.1"]["Pfam"]
-	assert not c._txs.nodes()["ENST00000417324.1"]["IDR"]
-	assert not c._txs.nodes()["ENST00000442987.3"]["Prosite"]
+	assert not c._txs.nodes()["ENST20.1"]["Pfam"]
+	assert not c._txs.nodes()["ENST08.1"]["IDR"]
+	assert not c._txs.nodes()["ENST18.3"]["Prosite"]
 
 	c.getIsoformFeatures(dataPath + "/features")
 
-	assert c._txs.nodes()["ENST00000595919.1"]["Pfam"]["D1"] == {(3,6), (40,93)}
-	assert c._txs.nodes()["ENST00000595919.1"]["Pfam"]["D2"] == {(40,93)}
-	assert len(c._txs.nodes()["ENST00000595919.1"]["Pfam"]) == 2
-	assert c._txs.nodes()["ENST00000417324.1"]["IDR"]["I1"] == {(4,13)}
-	assert c._txs.nodes()["ENST00000442987.3"]["Prosite"]["P1"] == {(23,123)}
+	assert c._txs.nodes()["ENST20.1"]["Pfam"]["D1"] == {(3,6), (40,93)}
+	assert c._txs.nodes()["ENST20.1"]["Pfam"]["D2"] == {(40,93)}
+	assert len(c._txs.nodes()["ENST20.1"]["Pfam"]) == 2
+	assert c._txs.nodes()["ENST08.1"]["IDR"]["I1"] == {(4,13)}
+	assert c._txs.nodes()["ENST18.3"]["Prosite"]["P1"] == {(23,123)}

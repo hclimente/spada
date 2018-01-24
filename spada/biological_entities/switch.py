@@ -20,10 +20,8 @@ class IsoformSwitch:
 		self._noise 				= None
 
 		#Relevance measure
-		self._iloops_change		 	= None
 		self._domain_change 		= None
 		self._disorder_change 		= None
-		self._broken_surfaces 		= None
 		self._ptm_change 			= None
 
 		#Candidate measures
@@ -40,8 +38,6 @@ class IsoformSwitch:
 
 		#Neighborhood analysis
 		self._neighborhood_change 	= None
-		#iLoops analysis
-		self._iloops_change 		= None
 
 	@property
 	def nTx(self): return self._normal_transcript_name
@@ -67,11 +63,6 @@ class IsoformSwitch:
 	def tTranscript(self): return self._tumor_transcript
 
 	@property
-	def iloopsChange(self):
-		if self._iloops_change is None:
-			self.readRelevanceAnalysis()
-		return self._iloops_change
-	@property
 	def domainChange(self):
 		if self._domain_change is None:
 			self.readRelevanceAnalysis()
@@ -81,11 +72,6 @@ class IsoformSwitch:
 		if self._disorder_change is None:
 			self.readRelevanceAnalysis()
 		return self._disorder_change
-	@property
-	def brokenSurfaces(self):
-		if self._broken_surfaces is None:
-			self.readRelevanceAnalysis()
-		return self._broken_surfaces
 	@property
 	def ptmChange(self):
 		if self._ptm_change is None:
@@ -110,7 +96,7 @@ class IsoformSwitch:
 		"""
 		# cds_diff is required if there is any feature
 		# utr_diff only is impossible if a feature change is required
-		if self.disorderChange or self.iloopsChange or self.domainChange or self.ptmChange:
+		if self.disorderChange or self.domainChange or self.ptmChange:
 			if self.tx_overlap:
 				return True
 			elif None in [self.nIsoform,self.tIsoform]:
@@ -256,8 +242,6 @@ class IsoformSwitch:
 
 		for elements in utils.readTable("structural_analysis/structural_summary{}.tsv".format(randomTag)):
 			if elements[2] == self.nTx and elements[3] == self.tTx:
-				if elements[4] == "True": self._iloops_change = True
-				elif elements[4] == "False": self._iloops_change = False
 
 				if elements[5] == "True": self._domain_change = True
 				elif elements[5] == "False": self._domain_change = False
@@ -376,31 +360,28 @@ class IsoformSwitch:
 
 				break
 
-	def analyzeDomains(self, which):
+	def analyzeDomains(self, featureType):
 
 		featureInfo = []
 		features = set()
 
-		if not which in ["Pfam", "Prosite"]:
-			raise Exception(which + ' not recognized. Use Pfam or Prosite.')
+		if not featureType in ["Pfam", "Prosite"]:
+			raise Exception(featureType + ' not recognized. Use Pfam or Prosite.')
 
 		for isoform in [self.nIsoform,self.tIsoform]:
-			if not isoform:
-				continue
-
-			f = isoform._prosite if which == "Prosite" else isoform._pfam
-			[ features.add(x) for x in f ]
+			if isoform:
+				f = isoform._prosite if featureType == "Prosite" else isoform._pfam
+				[ features.add(x) for x in f ]
 
 		for feature in features:
 
 			featInfo = { self.nTx: [], self.tTx: []}
 
 			for isoform in [self.nIsoform, self.tIsoform]:
-
 				if not isoform:
 					continue
 
-				featureRegions = isoform.getSegments(feature, minLength = 1, gap = 0)
+				featureRegions = isoform.getFeature(featureType, feature)
 				specificRegions = isoform.getSegments("isoform-specific")
 
 				for region in featureRegions:
@@ -443,58 +424,63 @@ class IsoformSwitch:
 	def analyzeIDR(self, idr_threshold):
 
 		idrInfo = []
+		features = set()
 
-		for protein,what in zip([self.nIsoform,self.tIsoform], ["Lost_in_tumor","Gained_in_tumor"]):
+		for isoform in [self.nIsoform,self.tIsoform]:
+			if isoform:
+				[ features.add(x) for x in isoform._idr ]
 
-			if not protein:
-				continue
+		for feature in features:
+			for protein,what in zip([self.nIsoform,self.tIsoform], ["Lost_in_tumor","Gained_in_tumor"]):
+				if not protein:
+					continue
 
-			idrs = protein.getSegments("idrs", minLength = 5, gap = 2)
-			isoform = protein.getSegments("isoform-specific")
+				idrs = protein.getFeature("IDR", feature)
+				isoform = protein.getSegments("isoform-specific")
 
-			for idr in idrs:
+				for idr in idrs:
 
-				whatsHappening = what
-				idrSet = set(idr)
+					whatsHappening = what
+					idrSet = set(idr)
 
-				overlappingIsoSpecific = []
-				if None not in [self.nIsoform,self.tIsoform]:
-					[ overlappingIsoSpecific.extend(x) for x in isoform if set(x) & idrSet]
-				else:
-					overlappingIsoSpecific = idrSet
+					overlappingIsoSpecific = []
+					if None not in [self.nIsoform,self.tIsoform]:
+						[ overlappingIsoSpecific.extend(x) for x in isoform if set(x) & idrSet]
+					else:
+						overlappingIsoSpecific = idrSet
 
-				if not overlappingIsoSpecific:
-					jaccard = float("nan")
-					macroScore = float("nan")
-					microScore = float("nan")
-					whatsHappening = "Nothing"
-					significant = 0
+					if not overlappingIsoSpecific:
+						jaccard = float("nan")
+						macroScore = float("nan")
+						microScore = float("nan")
+						whatsHappening = "Nothing"
+						significant = 0
 
-				else:
-					overlappingIsoSpecificSet = set(overlappingIsoSpecific)
+					else:
+						overlappingIsoSpecificSet = set(overlappingIsoSpecific)
 
-					intersection = float(len(overlappingIsoSpecificSet & idrSet))
-					union = float(len(overlappingIsoSpecificSet | idrSet))
+						intersection = float(len(overlappingIsoSpecificSet & idrSet))
+						union = float(len(overlappingIsoSpecificSet | idrSet))
 
-					jaccard = intersection/union
-					microScore = intersection/len(overlappingIsoSpecificSet)
-					macroScore = intersection/len(idrSet)
-					significant = int(max(microScore,macroScore) > idr_threshold)
+						jaccard = intersection/union
+						microScore = intersection/len(overlappingIsoSpecificSet)
+						macroScore = intersection/len(idrSet)
+						significant = int(max(microScore,macroScore) > idr_threshold)
 
-				motifSequence = ""
-				start = float("inf")
-				end = float("-inf")
-				for thisRes in idr:
-					res = thisRes.res.upper() if thisRes.isoformSpecific else thisRes.res.lower()
-					motifSequence += res
-					if thisRes.num > end:
-						end = thisRes.num
-					if thisRes.num < start:
-						start = thisRes.num
+					motifSequence = ""
+					start = float("inf")
+					end = float("-inf")
+					for thisRes in idr:
+						res = thisRes.res.upper() if thisRes.isoformSpecific else thisRes.res.lower()
+						motifSequence += res
+						if thisRes.num > end:
+							end = thisRes.num
+						if thisRes.num < start:
+							start = thisRes.num
 
-				if significant:
-					f = { "feature": motifSequence, "start": start, "end": end, \
-						  "what": what, "M": macroScore, "m": microScore, "J": jaccard }
-					idrInfo.append(f)
+					if significant:
+						f = { "feature": motifSequence, "start": start, "end": end, \
+							  "what": what, "M": macroScore, "m": microScore, "J": jaccard }
+						idrInfo.append(f)
 
 		return idrInfo

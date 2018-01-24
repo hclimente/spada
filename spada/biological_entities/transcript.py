@@ -12,9 +12,6 @@ class Transcript:
 		self._tx_coordinates 	= properties["txCoords"]
 		self._strand 			= properties["strand"]
 
-		self._pfam 				= {}
-		self._ptms 				= {}
-
 		#Create two dicts, clasifying all the nucleotides in CDS and UTR
 		#Value: isoform specific in this switch
 		self._cds = {}
@@ -140,64 +137,3 @@ class Transcript:
 			segments.append(segment)
 
 		return segments
-
-	def readPfamDomains(self):
-		pass
-		"""
-		featFile = "{}data/{}/InterPro/{}.tsv".format(options.Options().wd,options.Options().annotation,self.name)
-
-		if not os.path.exists(featFile):
-			return
-		elif self._pfam:
-			# already read
-			return
-
-		for line in utils.readTable(featFile,header=False):
-
-			if line[3] != "Pfam":
-				continue
-
-			domainId = "{0}|{1}".format(line[4],line[5]).replace(" ","_")
-
-			self._pfam.setdefault(domainId,[])
-			self._pfam[domainId].append((int(line[6]),int(line[7])))
-		"""
-
-	def readProsite(self):
-		pass
-		"""
-		featFile = "{}data/{}/ProSite/{}.out".format(options.Options().wd,options.Options().annotation,self.name)
-
-		if not os.path.exists(featFile) or os.stat(featFile).st_size == 0:
-			return
-		elif self._ptms:
-			# already read
-			return
-
-		for line in utils.readTable(featFile,header=False):
-
-			prositeId = line[-1].replace(" ","_")
-
-			self._ptms.setdefault(prositeId,[])
-			self._ptms[prositeId].append((int(line[-3].replace(" -","")),int(line[-2])))
-		"""
-
-
-	def readIupred(self):
-		pass
-		"""
-		featFile = "{}data/{}/ProSite/{}.out".format(options.Options().wd,options.Options().annotation,self.name)
-
-		if not os.path.exists(featFile) or os.stat(featFile).st_size == 0:
-			return
-		elif self._ptms:
-			# already read
-			return
-
-		for line in utils.readTable(featFile,header=False):
-
-			prositeId = line[-1].replace(" ","_")
-
-			self._ptms.setdefault(prositeId,[])
-			self._ptms[prositeId].append((int(line[-3].replace(" -","")),int(line[-2])))
-		"""

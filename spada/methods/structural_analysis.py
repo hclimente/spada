@@ -29,6 +29,7 @@ class StructuralAnalysis(method.Method):
 		self.logger.info("Structural analysis.")
 
 		for gene,info,thisSwitch in self._genes.iterate_switches_byPatientNumber(self._txs, removeNoise = False):
+			#if gene == "ENSG00.5": import pdb; pdb.set_trace()
 			pfam_change		= thisSwitch.analyzeDomains("Pfam")
 			prosite_change	= thisSwitch.analyzeDomains("Prosite")
 			idr_change   	= thisSwitch.analyzeIDR(0.2)

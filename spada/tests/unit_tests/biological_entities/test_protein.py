@@ -66,11 +66,28 @@ def test_init():
 	assert "P1" in structure[7]._features
 	assert "P1" in structure[8]._features
 
-def test_getSegments():
+def test_getFeature():
 
 	p = protein.Protein("X", info)
 
-	idrs = p.getSegments("idrs")
+	pfam1 = p.getFeature("Pfam", "D1")
+	assert len(pfam1) == 1
+	assert len(pfam1[0]) == 3
+	assert "".join([ x.res for x in pfam1[0] ]) == "EFG"
+
+	pfam2 = p.getFeature("Pfam", "D2")
+	assert len(pfam2) == 1
+	assert len(pfam2[0]) == 3
+	assert "".join([ x.res for x in pfam2[0] ]) == "KAB"
+
+	prosite = p.getFeature("Prosite", "P1")
+	assert len(prosite) == 2
+	assert len(prosite[0]) == 3
+	assert len(prosite[1]) == 3
+	assert "".join([ x.res for x in prosite[0] ]) == "HIJ"
+	assert "".join([ x.res for x in prosite[1] ]) == "KAB"
+
+	idrs = p.getFeature("IDR", "ABCDEFG")
 	assert len(idrs) == 1
 	assert len(idrs[0]) == 7
 	assert "".join([ x.res for x in idrs[0] ]) == "ABCDEFG"
