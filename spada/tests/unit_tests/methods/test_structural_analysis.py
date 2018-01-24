@@ -9,11 +9,11 @@ import pytest
 scriptPath = os.path.realpath(__file__)
 dataPath = os.path.dirname(scriptPath) + "/../../data/"
 
-def test_run():
+def test_featureAnalysis():
 
 	s = structural_analysis.StructuralAnalysis(dataPath + "genes.pkl",
 								 			   dataPath + "transcripts.pkl")
-	s.run()
+	s.featureAnalysis()
 
 	# pfams
 	pfam = [ x for x in utils.readTable("pfam_analysis.tsv") ]
@@ -44,3 +44,11 @@ def test_run():
 	os.remove("pfam_analysis.tsv")
 	os.remove("prosite_analysis.tsv")
 	os.remove("idr_analysis.tsv")
+
+def test_ppiAnalysis():
+
+	s = structural_analysis.StructuralAnalysis(dataPath + "genes.pkl",
+								 			   dataPath + "transcripts.pkl")
+	s.ppiAnalysis()
+
+	os.remove("ppi_analysis.tsv")

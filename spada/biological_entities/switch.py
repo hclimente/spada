@@ -484,3 +484,6 @@ class IsoformSwitch:
 						idrInfo.append(f)
 
 		return idrInfo
+
+	def analyzePPIs(self):
+		pass

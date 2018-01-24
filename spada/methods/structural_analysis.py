@@ -8,7 +8,15 @@ class StructuralAnalysis(method.Method):
 		self._tag = "_random" if isRandom else ""
 
 	def run(self):
-		self.logger.info("Structural analysis.")
+
+		self.logger.info("Feature analysis.")
+		self.featureAnalysis()
+
+		self.logger.info("PPI analysis.")
+		self.ppiAnalysis()
+
+
+	def featureAnalysis(self):
 
 		with open("pfam_analysis{}.tsv".format(self._tag), "w") as PFAM, \
 			 open("prosite_analysis{}.tsv".format(self._tag), "w") as PROSITE, \
@@ -26,6 +34,18 @@ class StructuralAnalysis(method.Method):
 				self.writeDomains(PFAM, gene, thisSwitch, pfam_change)
 				self.writeDomains(PROSITE, gene, thisSwitch, prosite_change)
 				self.writeIDR(IDR, gene, thisSwitch, idr_change)
+
+	def ppiAnalysis(self):
+
+		with open("ppi_analysis{}.tsv".format(self._tag), "w") as PPI:
+
+			self.writePPIHeader(PPI)
+
+			for gene,info,thisSwitch in self._genes.iterate_switches_byPatientNumber(self._txs, removeNoise = False):
+
+				ppi_change = thisSwitch.analyzePPIs()
+
+				self.writePPI(PPI, gene, thisSwitch, ppi_change)
 
 	def writeDomainsHeader(self, OUT):
 		OUT.write("Gene\tNormalTranscript\tTumorTranscript\t")
@@ -49,6 +69,13 @@ class StructuralAnalysis(method.Method):
 			OUT.write("{}\t{}\t{}\t".format(gene, thisSwitch.nTx, thisSwitch.tTx))
 			OUT.write("{}\t{}\t{}\t".format(c["what"], c["feature"], c["start"]))
 			OUT.write("{}\t{}\t{}\t{}\n".format(c["end"], c["M"], c["m"], c["J"]))
+
+	def writePPIHeader(self, OUT):
+		OUT.write("Switched_gene\tNormalTranscript\tTumorTranscript\t")
+		OUT.write("Other_gene\tOther_transcript\tWhat\tInvolved_domains\n")
+
+	def writePPI(self, PPI, gene, thisSwitch, ppi_change):
+		pass
 
 if __name__ == '__main__':
 	pass
