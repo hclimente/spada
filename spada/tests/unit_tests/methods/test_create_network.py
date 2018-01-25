@@ -182,6 +182,8 @@ def test_getIsoformSequences():
 def test_getIsoformFeatures():
 
 	c = create_network.CreateNetwork("test", "gencode")
+	c._txs.add_node("ENST01.2", "1")
+	c._txs.add_node("ENST02.2", "1")
 	c._txs.add_node("ENST20.1", "1")
 	c._txs.add_node("ENST08.1", "1")
 	c._txs.add_node("ENST18.3", "2")
@@ -192,8 +194,13 @@ def test_getIsoformFeatures():
 
 	c.getIsoformFeatures(dataPath + "/features")
 
-	assert c._txs.nodes()["ENST20.1"]["Pfam"]["D1"] == {(3,6), (40,93)}
-	assert c._txs.nodes()["ENST20.1"]["Pfam"]["D2"] == {(40,93)}
-	assert len(c._txs.nodes()["ENST20.1"]["Pfam"]) == 2
+	assert c._txs.nodes()["ENST01.2"]["Pfam"]["D1"] == {(1,2), (3,4)}
+	assert len(c._txs.nodes()["ENST01.2"]["Pfam"]) == 1
+	assert c._txs.nodes()["ENST02.2"]["Pfam"]["D1"] == {(1,2)}
+	assert c._txs.nodes()["ENST02.2"]["Pfam"]["D2"] == {(3,4)}
+	assert c._txs.nodes()["ENST02.2"]["Pfam"]["D4"] == {(5,9)}
+	assert len(c._txs.nodes()["ENST02.2"]["Pfam"]) == 3
+	assert c._txs.nodes()["ENST20.1"]["Pfam"]["D2"] == {(3,6)}
+	assert len(c._txs.nodes()["ENST20.1"]["Pfam"]) == 1
 	assert c._txs.nodes()["ENST08.1"]["IDR"]["I1"] == {(4,13)}
 	assert c._txs.nodes()["ENST18.3"]["Prosite"]["P1"] == {(23,123)}

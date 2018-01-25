@@ -36,13 +36,21 @@ def test_init():
 	assert c._txs.nodes()["ENST12.3"]["cdsCoords"] == [69091,70021]
 
 	# interactions
-	assert len(c._genes._net.edges()) == 1
+	assert c._genes._net.number_of_edges() == 2
+	assert c._genes._net.has_edge("ENSG00.5", "ENSG00.5")
 	assert c._genes._net.has_edge("ENSG13.1", "ENSG00.5")
 
 	# ddis
-	assert len(c._txs._net.edges()) == 1
+	assert c._txs._net.number_of_edges() == 4
+	assert c._txs._net.has_edge("ENST01.2", "ENST01.2")
+	assert c._txs._net.has_edge("ENST01.2", "ENST02.2")
+	assert c._txs._net.has_edge("ENST02.2", "ENST02.2")
 	assert c._txs._net.has_edge("ENST20.1", "ENST02.2")
-	assert c._txs._net["ENST20.1"]["ENST02.2"]["ddi"] == {frozenset({"D2","D4"})}
+	assert not c._txs._net.has_edge("ENST20.1", "ENST01.2")
+	assert c._txs._net["ENST01.2"]["ENST01.2"]["ddi"] == {frozenset({"D1"})}
+	assert c._txs._net["ENST01.2"]["ENST02.2"]["ddi"] == {frozenset({"D1"})}
+	assert c._txs._net["ENST02.2"]["ENST02.2"]["ddi"] == {frozenset({"D1"}), frozenset({"D2"}), frozenset({'D4', 'D2'})}
+	assert c._txs._net["ENST20.1"]["ENST02.2"]["ddi"] == {frozenset({"D2","D4"}), frozenset({"D2"})}
 
 	# driver
 	assert not c._genes.nodes()["ENSG08.4"]["driver"] and not c._genes.nodes()["ENSG08.4"]["specificDriver"]
@@ -62,8 +70,13 @@ def test_init():
 	assert c._txs.nodes()["ENST13.5"]["proteinSequence"] == "ASFASFASASFASF"
 
 	# features
-	assert c._txs.nodes()["ENST20.1"]["Pfam"]["D1"] == {(3,6), (40,93)}
-	assert c._txs.nodes()["ENST20.1"]["Pfam"]["D2"] == {(40,93)}
-	assert len(c._txs.nodes()["ENST20.1"]["Pfam"]) == 2
+	assert c._txs.nodes()["ENST01.2"]["Pfam"]["D1"] == {(1,2), (3,4)}
+	assert len(c._txs.nodes()["ENST01.2"]["Pfam"]) == 1
+	assert c._txs.nodes()["ENST02.2"]["Pfam"]["D1"] == {(1,2)}
+	assert c._txs.nodes()["ENST02.2"]["Pfam"]["D2"] == {(3,4)}
+	assert c._txs.nodes()["ENST02.2"]["Pfam"]["D4"] == {(5,9)}
+	assert len(c._txs.nodes()["ENST02.2"]["Pfam"]) == 3
+	assert c._txs.nodes()["ENST20.1"]["Pfam"]["D2"] == {(3,6)}
+	assert len(c._txs.nodes()["ENST20.1"]["Pfam"]) == 1
 	assert c._txs.nodes()["ENST08.1"]["IDR"]["I1"] == {(4,13)}
 	assert c._txs.nodes()["ENST18.3"]["Prosite"]["P1"] == {(23,123)}

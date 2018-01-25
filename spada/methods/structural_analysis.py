@@ -77,12 +77,13 @@ class StructuralAnalysis(method.Method):
 							  "bothDDIs": nDDI & tDDI,
 							  "what": "Unaffected" }
 
-			if DDIchanges[p]["nDDIs"] and not DDIchanges[p]["tDDIs"]:
+			if DDIchanges[p]["bothDDIs"]:
+				if DDIchanges[p]["nDDIs"] or DDIchanges[p]["tDDIs"]:
+					DDIchanges[p]["what"] = "Affected"
+			elif DDIchanges[p]["nDDIs"] and not DDIchanges[p]["tDDIs"]:
 				DDIchanges[p]["what"] = "Lost_in_tumor"
 			elif not DDIchanges[p]["nDDIs"] and DDIchanges[p]["tDDIs"]:
 				DDIchanges[p]["what"] = "Gained_in_tumor"
-			elif DDIchanges[p]["tDDIs"] and DDIchanges[p]["tDDIs"]:
-				DDIchanges[p]["what"] = "Affected"
 
 		return DDIchanges
 
