@@ -140,9 +140,9 @@ def test_readDrivers():
 
 	assert len(drivers) == 3
 	assert len(specificDrivers) == 2
-	assert "CICP27" in drivers
-	assert "RP11-34P13.3" in specificDrivers
-	assert "WASH7P" in specificDrivers
+	assert "GeneL" in drivers
+	assert "GeneD" in specificDrivers
+	assert "GeneB" in specificDrivers
 
 def test_getIsoformSequences():
 
