@@ -1,13 +1,7 @@
 language: python
-python:
-    - "3.6"
-install:
-    - pip install codecov
-    - pip install pytest-cov
-    - pip install .
-
-script:
-    - pytest --cov --pyargs .
+python: "3.6"
+install: pip install tox-travis
+script: tox
 
 after_success:
     - codecov

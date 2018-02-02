@@ -3,3 +3,7 @@
 .DS_Store
 __pycache__
 .cache
+*.egg-info
+.coverage
+.pytest_cache/
+.tox/
