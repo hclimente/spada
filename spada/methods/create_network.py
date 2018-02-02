@@ -11,20 +11,24 @@ import pickle
 import pandas as pd
 
 class CreateNetwork(method.Method):
-	def __init__(self, tumor, annotation):
+	def __init__(self, tumor, annotation, network = False):
 
-		method.Method.__init__(self, __name__, None, None)
-
-		if annotation == "ucsc":
-			self._genes = ucsc_gene_network.UCSCGeneNetwork()
-			self._txs = ucsc_isoform_network.UCSCIsoformNetwork()
-		elif annotation == "gencode":
-			self._genes = gencode_gene_network.GENCODEGeneNetwork()
-			self._txs = gencode_isoform_network.GENCODEIsoformNetwork()
+		if network:
+			method.Method.__init__(self, __name__, True, True)
 		else:
-			self.logger.error("Unrecognized annotation: {}.".format(annotation))
-			exit()
+			method.Method.__init__(self, __name__, None, None)
 
+			if annotation == "ucsc":
+				self._genes = ucsc_gene_network.UCSCGeneNetwork()
+				self._txs = ucsc_isoform_network.UCSCIsoformNetwork()
+			elif annotation == "gencode":
+				self._genes = gencode_gene_network.GENCODEGeneNetwork()
+				self._txs = gencode_isoform_network.GENCODEIsoformNetwork()
+			else:
+				self.logger.error("Unrecognized annotation: {}.".format(annotation))
+				exit()
+
+		self._recycle = network
 		self._genes.tumor = tumor
 		self._txs.tumor = tumor
 
@@ -34,15 +38,8 @@ class CreateNetwork(method.Method):
 		self.createNetworks(gtf)
 
 		self.logger.info("Reading expression and calculating PSI.")
-		for exprFile,origin in zip([normalExpression, tumorExpression], ["N", "T"]):
-			expression = pd.read_csv(exprFile, sep='\t', index_col=0)
-			medianExpression = self.readExpression(expression)
-			medianPSI = self.calculatePSI(expression)
-			expressed = self.isExpressed(medianExpression, minExpression)
-
-			self._txs.update_nodes("median_TPM_" + origin, medianExpression)
-			self._txs.update_nodes("median_PSI_" + origin, medianPSI)
-			self._genes.update_nodes("expressedTxs" + origin, expressed)
+		for expression,origin in zip([normalExpression, tumorExpression], ["N", "T"]):
+			self.measureExpression(expression, minExpression, origin)
 
 		self.logger.info("Reading protein sequences.")
 		self.getIsoformSequences(sequences)
@@ -65,6 +62,9 @@ class CreateNetwork(method.Method):
 
 	def createNetworks(self, gtf):
 
+		if self._recycle:
+			self.logger.exception("gtf provided when previous network is to be used.")
+
 		for line in utils.readGTF(gtf):
 
 			if line["feature"] == "gene":
@@ -80,6 +80,23 @@ class CreateNetwork(method.Method):
 				self._txs.update_node(line["transcript_id"], "cdsCoords", [int(line["start"]), int(line["end"]) ])
 			else:
 				pass
+
+	def measureExpression(self, expression, minExpression, origin):
+
+		if not self._recycle and not expression:
+			self.logger.exception("An expression file must be provided.")
+		elif not expression:
+			self.logger.info("Expression from the provided network will be used.")
+			return()
+
+		expression = pd.read_csv(expression, sep='\t', index_col=0)
+		medianExpression = self.readExpression(expression)
+		medianPSI = self.calculatePSI(expression)
+		expressed = self.isExpressed(medianExpression, minExpression)
+
+		self._txs.update_nodes("median_TPM_" + origin, medianExpression)
+		self._txs.update_nodes("median_PSI_" + origin, medianPSI)
+		self._genes.update_nodes("expressedTxs" + origin, expressed)
 
 	def readExpression(self, expression):
 
@@ -115,6 +132,12 @@ class CreateNetwork(method.Method):
 
 	def getInteractions(self, ppi):
 
+		if not self._recycle and not ppi:
+			self.logger.exception("A file containing the protein-protein interactions must be provided.")
+		elif not ppi:
+			self.logger.info("Protein-protein interactions from the provided network will be used.")
+			return()
+
 		symbols = [ y["symbol"] for x,y in self._genes.nodes(data=True) ]
 
 		for line in utils.readPSIMITAB(ppi):
@@ -133,6 +156,12 @@ class CreateNetwork(method.Method):
 
 	def getDomainInteractions(self, ddi):
 
+		if not self._recycle and not ddi:
+			self.logger.exception("A file containing the domain-domain interactions must be provided.")
+		elif not ddi:
+			self.logger.info("Domain-domain interactions from the provided network will be used.")
+			return()
+
 		allDDIs = { frozenset([d1,d2]) for d1,d2 in utils.readTable(ddi) }
 
 		for gene1, gene2 in self._genes._net.edges():
@@ -148,6 +177,12 @@ class CreateNetwork(method.Method):
 						self._txs.add_edge(tx1, tx2, ddi = matches)
 
 	def readDrivers(self, drivers):
+
+		if not self._recycle and not drivers:
+			self.logger.exception("A file containing the tumor drivers must be provided.")
+		elif not drivers:
+			self.logger.info("Drivers from the provided network will be used.")
+			return()
 
 		allDrivers = {}
 		specificDrivers = {}
@@ -165,10 +200,22 @@ class CreateNetwork(method.Method):
 
 	def getIsoformSequences(self, proteins):
 
+		if not self._recycle and not proteins:
+			self.logger.exception("A FASTA file with protein sequences file must be provided.")
+		elif not proteins:
+			self.logger.info("Protein sequences from the provided network will be used.")
+			return()
+
 		for tx, sequence in utils.readFasta(proteins):
 			self._txs.update_node(tx, "proteinSequence", sequence)
 
 	def getIsoformFeatures(self, features):
+
+		if not self._recycle and not features:
+			self.logger.exception("A file with the protein features must be provided.")
+		elif not features:
+			self.logger.info("Protein features from the provided network will be used.")
+			return()
 
 		for line in utils.readTable(features):
 
