@@ -1,8 +1,7 @@
-from biological_entities import protein
-from biological_entities import transcript
-from spada import options
+from spada.biological_entities import protein
+from spada.biological_entities import transcript
+from spada.methods import method
 from spada import utils
-from methods import method
 
 import math
 
@@ -56,7 +55,7 @@ class WESMutationsFeatureOverlap(method.Method):
 			asEvidence = bool(info["isoformSwitches"]) | (len(allTxs) >= 2)
 			expressed = bool(allTxs)
 
-			## CALCULATE DOMAIN ALTERATION FREQUENCY IN GENERAL FOR 
+			## CALCULATE DOMAIN ALTERATION FREQUENCY IN GENERAL FOR
 			# get affection of prosite/pfams by mutations and their frequency
 			# in the proteome (only most expressed iso per gene)
 			if expressed:
@@ -81,9 +80,9 @@ class WESMutationsFeatureOverlap(method.Method):
 						continue
 
 					protein = self._transcript_network._net.node[tx.name]["proteinSequence"]
-					if protein: 
+					if protein:
 						proteinLength = len(protein)
-					else: 
+					else:
 						proteinLength = 0
 					tpm = self._transcript_network._net.node[tx.name]["median_TPM_N"]
 
@@ -105,7 +104,7 @@ class WESMutationsFeatureOverlap(method.Method):
 	def readFunctionalMutations(self):
 
 		mutFile = "{}data/{}/rawdata/{}_exon_mutation-functional-count_full.txt".format(options.Options().wd,options.Options().annotation,options.Options().tag)
-		
+
 		mutations = {}
 		allMuts = []
 
@@ -176,12 +175,12 @@ class WESMutationsFeatureOverlap(method.Method):
 		else:
 			geneMutations = []
 
-		# if there is an overlap between mutation and any transcript 
+		# if there is an overlap between mutation and any transcript
 		# CDS, include those mutations
 		cds = [ x for x in tx.cds_ordered ]
 		for m in geneMutations:
 			mutationRegion = set(range(m[0],m[1]))
-				
+
 			affectedRegionTx = set(cds) & mutationRegion
 			affectedRegionProt = set([ math.floor((cds.index(x)/3)+1) for x in affectedRegionTx ])
 
@@ -214,7 +213,7 @@ class WESMutationsFeatureOverlap(method.Method):
 		# iterate features and find mutations affecting them
 		for f in features:
 			for start,end in features[f]:
-				
+
 				featureMutation.setdefault(f,[])
 				featureProteinRange = set(range(start, end+1 ))
 				affectingMuts = []
@@ -235,7 +234,7 @@ class WESMutationsFeatureOverlap(method.Method):
 							for t in thoseMutations:
 								if t[1] in ["Frame_Shift_Del","Frame_Shift_Ins","Nonsense_Mutation"]:
 									affectingMuts.append((t[0],t[1]+"_out"))
-						
+
 				if affectingMuts:
 					featureMutation[f].append(affectingMuts)
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from spada.methods import create_network
+from spada.methods import *
 from spada import utils
 from spada.interface import out_network
 
@@ -54,11 +54,6 @@ def summarizeResults():
 	s.clean()
 	s.run()
 
-def createRandomSwitches():
-
-	r = get_random_switches.GetRandomSwitches(True,True)
-	r.run()
-
 def studyWESMutationsFeatureOverlap():
 
 	m = wes_mutations_feature_overlap.WESMutationsFeatureOverlap(True,True)
@@ -81,7 +76,6 @@ subparsers = parser.add_subparsers(help='sub-command help')
 ################################################
 ###   INITIALIZE THE NETWORKS               ####
 ################################################
-
 def createNetwork(o):
 	if not newNetwork:
 		c = create_network.CreateNetwork(o.tumor, o.annotation)
@@ -141,11 +135,12 @@ subparser_init.set_defaults(func=createNetwork)
 ################################################
 ###   STRUCTURAL ANALYSIS                   ####
 ################################################
-def functionalAnalysis():
-	g = get_switches.GetSwitches()
+def functionalAnalysis(o):
+	g = get_switches.GetSwitches(True, True)
 	g.run(o.switchesFile)
 	s = structural_analysis.StructuralAnalysis(g._genes, g._txs)
 	s.run()
+	out_network.outCandidateList(s._genes, s._txs)
 
 subparser_functional = subparsers.add_parser('function', help='Functional analysis help')
 subparser_functional.add_argument('-s', '--switches', dest='switchesFile', action='store', required=True,
@@ -154,9 +149,31 @@ subparser_functional.set_defaults(task="functionalAnalysis")
 subparser_functional.set_defaults(func=functionalAnalysis)
 
 ################################################
+###   GET RANDOM SWITCHES                   ####
+################################################
+def simulateSwitches():
+	r = simulate_switches.SimulateSwitches(True,True)
+	r.run()
+
+subparser_sim = subparsers.add_parser('simulate', help='Simulate random switches help')
+subparser_sim.set_defaults(task="simulateSwitches")
+subparser_sim.set_defaults(func=simulateSwitches)
+
+################################################
+###   STRUCTURAL ANALYSIS                   ####
+################################################
+def summarize():
+	s = result_summary.ResultSummary(True,True)
+	s.clean()
+	s.run()
+
+subparser_summary = subparsers.add_parser('summary', help='Summary statistics help')
+subparser_summary.set_defaults(task="summarize")
+subparser_summary.set_defaults(func=summarize)
+
+################################################
 ###   MAIN                                  ####
 ################################################
-
 options = parser.parse_args()
 
 if "task" not in options:

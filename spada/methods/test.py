@@ -1,5 +1,3 @@
-from spada import options
-from spada import utils
 from spada.methods import method
 
 class Test(method.Method):

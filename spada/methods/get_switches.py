@@ -1,4 +1,3 @@
-from spada.interface import out_network
 from spada.methods import method
 
 class GetSwitches(method.Method):
@@ -11,8 +10,6 @@ class GetSwitches(method.Method):
 		self._genes.readSwitches(switchesFile, self._txs)
 		self._genes.calculateCompatibilityTable()
 		self._genes.saveNetwork("genes.pkl")
-
-		#out_network.outCandidateList(self._genes, self._txs)
 
 if __name__ == '__main__':
 	pass
