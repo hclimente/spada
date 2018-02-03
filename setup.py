@@ -10,7 +10,7 @@ setup(
   license='MIT',
   url='https://github.com/hclimente/spada',
   package_data={'spada': ['data/*.pkl']},
-  download_url='https://github.com/hclimente/spada/archive/v1.9.tar.gz',
+  download_url='https://github.com/hclimente/spada/archive/v1.9.1.tar.gz',
   keywords=['alternative', 'splicing', 'analysis', 'transcriptomics', 'networks'],
   classifiers=[
         'Development Status :: 5 - Production/Stable',
