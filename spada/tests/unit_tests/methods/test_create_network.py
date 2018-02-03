@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from spada.methods import create_network
-from spada import utils
+from spada.utils import SpadaError
 
 import networkx as nx
 import os
@@ -9,13 +9,12 @@ import pandas as pd
 import pytest
 
 scriptPath = os.path.realpath(__file__)
-dataPath = os.path.dirname(scriptPath) + "/../../data"
-
+dataPath = os.path.dirname(scriptPath) + "/../../data/"
 
 def test_createNetworks():
 
 	c = create_network.CreateNetwork("test", "gencode")
-	c.createNetworks(dataPath + "/gtf")
+	c.createNetworks(dataPath + "gtf")
 
 	assert len(c._genes.nodes()) == 14
 	assert len(c._txs.nodes()) == 21
@@ -36,6 +35,16 @@ def test_createNetworks():
 	assert os.stat("transcripts.pkl").st_size > 0
 	os.remove("genes.pkl")
 	os.remove("transcripts.pkl")
+
+	with pytest.raises(SpadaError):
+		c = create_network.CreateNetwork("test", "gencode", new = False)
+		c.createNetworks(dataPath + "gtf")
+
+def test_measureExpression():
+
+	with pytest.raises(SpadaError):
+		c = create_network.CreateNetwork("test", "gencode")
+		c.measureExpression(None, -3.3, "N")
 
 def test_readExpression():
 
@@ -94,13 +103,17 @@ def test_getInteractions():
 	c._genes.add_node(gene_id = "G", gene_symbol = "TPM1")
 	c._genes.add_node(gene_id = "H", gene_symbol = "KXD1")
 
-	c.getInteractions(dataPath + "/ppis")
+	c.getInteractions(dataPath + "ppis")
 
 	assert c._genes._net.has_edge("A", "B")
 	assert c._genes._net.has_edge("C", "D")
 	assert c._genes._net.has_edge("E", "F")
 	assert c._genes._net.has_edge("G", "H")
 	assert len(c._genes._net.edges()) == 4
+
+	with pytest.raises(SpadaError):
+		c = create_network.CreateNetwork("test", "gencode")
+		c.getInteractions(None)
 
 def test_getDomainInteractions():
 
@@ -124,7 +137,7 @@ def test_getDomainInteractions():
 	c._txs.add_node("C1", "C")
 	c._txs.update_node("C1", "Pfam", (0,0), "D5")
 
-	c.getDomainInteractions(dataPath + "/ddis")
+	c.getDomainInteractions(dataPath + "ddis")
 
 	assert c._txs._net.has_edge("A1", "B1")
 	assert c._txs._net["A1"]["B1"]["ddi"] == {frozenset({"D2","D4"}), frozenset({"D6","D4"})}
@@ -133,10 +146,14 @@ def test_getDomainInteractions():
 	assert not c._txs._net.has_edge("A1", "A2")
 	assert not c._txs._net.has_edge("B1", "C1")
 
+	with pytest.raises(SpadaError):
+		c = create_network.CreateNetwork("test", "gencode")
+		c.getDomainInteractions(None)
+
 def test_readDrivers():
 
 	c = create_network.CreateNetwork("test", "gencode")
-	drivers, specificDrivers = c.readDrivers(dataPath + "/drivers")
+	drivers, specificDrivers = c.readDrivers(dataPath + "drivers")
 
 	assert len(drivers) == 3
 	assert len(specificDrivers) == 2
@@ -165,10 +182,7 @@ def test_getIsoformSequences():
 	assert not c._txs.nodes()["ENST09.1"]["proteinSequence"]
 	assert not c._txs.nodes()["ENST13.5"]["proteinSequence"]
 
-	scriptPath = os.path.realpath(__file__)
-	dataPath = os.path.dirname(scriptPath) + "/../../data"
-	fasta = dataPath + "/fasta"
-	c.getIsoformSequences(fasta)
+	c.getIsoformSequences(dataPath + "fasta")
 
 	assert c._txs.nodes()["ENST12.3"]["proteinSequence"] == "ASDFAFAFA"
 	assert c._txs.nodes()["ENST08.1"]["proteinSequence"] == "ASDASDASD"
@@ -178,6 +192,10 @@ def test_getIsoformSequences():
 	assert c._txs.nodes()["ENST01.2"]["proteinSequence"] == "ASFSAFASFS"
 	assert c._txs.nodes()["ENST09.1"]["proteinSequence"] == "ASFASFASF"
 	assert c._txs.nodes()["ENST13.5"]["proteinSequence"] == "ASFASFASASFASF"
+
+	with pytest.raises(SpadaError):
+		c = create_network.CreateNetwork("test", "gencode")
+		c.getIsoformSequences(None)
 
 def test_getIsoformFeatures():
 
@@ -192,7 +210,7 @@ def test_getIsoformFeatures():
 	assert not c._txs.nodes()["ENST08.1"]["IDR"]
 	assert not c._txs.nodes()["ENST18.3"]["Prosite"]
 
-	c.getIsoformFeatures(dataPath + "/features")
+	c.getIsoformFeatures(dataPath + "features")
 
 	assert c._txs.nodes()["ENST01.2"]["Pfam"]["D1"] == {(1,2), (3,4)}
 	assert len(c._txs.nodes()["ENST01.2"]["Pfam"]) == 1
@@ -204,3 +222,12 @@ def test_getIsoformFeatures():
 	assert len(c._txs.nodes()["ENST20.1"]["Pfam"]) == 1
 	assert c._txs.nodes()["ENST08.1"]["IDR"]["I1"] == {(4,13)}
 	assert c._txs.nodes()["ENST18.3"]["Prosite"]["P1"] == {(23,123)}
+
+	with pytest.raises(SpadaError):
+		c = create_network.CreateNetwork("test", "gencode")
+		c.getIsoformFeatures(None)
+
+def test_CreateNetwork():
+
+	with pytest.raises(SpadaError):
+		c = create_network.CreateNetwork("test", "madeup")

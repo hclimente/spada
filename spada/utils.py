@@ -1,25 +1,10 @@
-import subprocess
-import logging
-
-logger = logging.getLogger("utils")
-
-def cmd(base, *args):
-	command = base
-	for arg in args:
-		command += " " + str(arg)
-
-	logger.debug(command)
-	subprocess.call(command, shell=True)
-
-def cmdOut(*args):
-	command = [ str(x) for x in args ]
-
-	strCommand = ''
-	for arg in command:
-		strCommand += " " + arg
-
-	logger.debug(strCommand)
-	return subprocess.Popen(command, stdout=subprocess.PIPE)
+class SpadaError(Exception):
+	def __init__(self, value, logger):
+		self.logger = logger
+		self.value = value
+	def __str__(self):
+		logger.exception(value)
+		return repr(self.value)
 
 def readTable(path, sep = "\t", header = True, skipCommented = True):
 	"""Read a table in a file, and generate a list of strings per row.
@@ -116,14 +101,6 @@ def readFasta(fasta):
 				sequence += line.strip()
 
 		yield protein, sequence
-
-def geneclusterLaunch(tag,base,*args):
-	command = base
-	for argument in args:
-		command += " " + argument
-
-	cmd("qsub","-b y","-V","-N {}".format(tag),"-q short-low","-cwd","-e /data/users/hector/e-{}.log".format(tag),
-		"-o /data/users/hector/o-{}.log".format(tag),command)
 
 def readGeneset(sSetFile):
 

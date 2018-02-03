@@ -1,5 +1,6 @@
 from spada.interface import out_network
 from spada import utils
+from spada.utils import SpadaError
 from spada.methods import method
 from spada.network import ucsc_gene_network, ucsc_isoform_network
 from spada.network import gencode_gene_network, gencode_isoform_network
@@ -10,12 +11,12 @@ from numpy import exp2
 import pickle
 import pandas as pd
 
-class CreateNetwork(method.Method):
-	def __init__(self, tumor, annotation, network = False):
+import pkg_resources
 
-		if network:
-			method.Method.__init__(self, __name__, True, True)
-		else:
+class CreateNetwork(method.Method):
+	def __init__(self, tumor, annotation, new = True):
+
+		if new:
 			method.Method.__init__(self, __name__, None, None)
 
 			if annotation == "ucsc":
@@ -25,10 +26,16 @@ class CreateNetwork(method.Method):
 				self._genes = gencode_gene_network.GENCODEGeneNetwork()
 				self._txs = gencode_isoform_network.GENCODEIsoformNetwork()
 			else:
-				self.logger.error("Unrecognized annotation: {}.".format(annotation))
-				exit()
+				raise SpadaError("Unrecognized annotation: {}.".format(annotation), self.logger)
+		else:
+			if annotation in ["ucsc", "gencode"]:
+				genes = pkg_resources.resource_filename('spada', 'data/{}_genes.pkl'.format(annotation))
+				txs = pkg_resources.resource_filename('spada', 'data/{}_transcripts.pkl'.format(annotation))
+				method.Method.__init__(self, __name__, genes, txs)
+			else:
+				method.Method.__init__(self, __name__, True, True)
 
-		self._recycle = network
+		self._new = new
 		self._genes.tumor = tumor
 		self._txs.tumor = tumor
 
@@ -62,8 +69,8 @@ class CreateNetwork(method.Method):
 
 	def createNetworks(self, gtf):
 
-		if self._recycle:
-			self.logger.exception("gtf provided when previous network is to be used.")
+		if not self._new:
+			raise SpadaError("gtf provided when previous network is to be used.", self.logger)
 
 		for line in utils.readGTF(gtf):
 
@@ -83,8 +90,8 @@ class CreateNetwork(method.Method):
 
 	def measureExpression(self, expression, minExpression, origin):
 
-		if not self._recycle and not expression:
-			self.logger.exception("An expression file must be provided.")
+		if self._new and not expression:
+			raise SpadaError("An expression file must be provided.", self.logger)
 		elif not expression:
 			self.logger.info("Expression from the provided network will be used.")
 			return()
@@ -132,8 +139,8 @@ class CreateNetwork(method.Method):
 
 	def getInteractions(self, ppi):
 
-		if not self._recycle and not ppi:
-			self.logger.exception("A file containing the protein-protein interactions must be provided.")
+		if self._new and not ppi:
+			raise SpadaError("A file containing the protein-protein interactions must be provided.", self.logger)
 		elif not ppi:
 			self.logger.info("Protein-protein interactions from the provided network will be used.")
 			return()
@@ -156,8 +163,8 @@ class CreateNetwork(method.Method):
 
 	def getDomainInteractions(self, ddi):
 
-		if not self._recycle and not ddi:
-			self.logger.exception("A file containing the domain-domain interactions must be provided.")
+		if self._new and not ddi:
+			raise SpadaError("A file containing the domain-domain interactions must be provided.", self.logger)
 		elif not ddi:
 			self.logger.info("Domain-domain interactions from the provided network will be used.")
 			return()
@@ -178,8 +185,8 @@ class CreateNetwork(method.Method):
 
 	def readDrivers(self, drivers):
 
-		if not self._recycle and not drivers:
-			self.logger.exception("A file containing the tumor drivers must be provided.")
+		if self._new and not drivers:
+			raise SpadaError("A file containing the tumor drivers must be provided.", self.logger)
 		elif not drivers:
 			self.logger.info("Drivers from the provided network will be used.")
 			return()
@@ -200,8 +207,8 @@ class CreateNetwork(method.Method):
 
 	def getIsoformSequences(self, proteins):
 
-		if not self._recycle and not proteins:
-			self.logger.exception("A FASTA file with protein sequences file must be provided.")
+		if self._new and not proteins:
+			raise SpadaError("A FASTA file with protein sequences file must be provided.", self.logger)
 		elif not proteins:
 			self.logger.info("Protein sequences from the provided network will be used.")
 			return()
@@ -211,8 +218,8 @@ class CreateNetwork(method.Method):
 
 	def getIsoformFeatures(self, features):
 
-		if not self._recycle and not features:
-			self.logger.exception("A file with the protein features must be provided.")
+		if self._new and not features:
+			raise SpadaError("A file with the protein features must be provided.", self.logger)
 		elif not features:
 			self.logger.info("Protein features from the provided network will be used.")
 			return()

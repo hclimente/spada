@@ -73,9 +73,6 @@ def testing():
 parser = argparse.ArgumentParser(prog = "spada.py",
 				description = "Find significant alternative splicing switches. Analyze their functional impact.")
 
-parser.add_argument('-wd', '--working-directory', dest='wd', action='store',
-					default='.',
-					help='Root file of spada folder in the current machine.')
 parser.add_argument('-a', '--all-switches', dest='onlyModels', action='store_false',
 					help='Only use the model switches.')
 
@@ -86,7 +83,7 @@ subparsers = parser.add_subparsers(help='sub-command help')
 ################################################
 
 def createNetwork(o):
-	if not o.network:
+	if not newNetwork:
 		c = create_network.CreateNetwork(o.tumor, o.annotation)
 		c.run(o.gtf, o.normalExpression, o.tumorExpression, log2(o.minExpression), o.seq, o.ppi, o.ddi, o.drivers, o.features)
 	else:
@@ -97,7 +94,7 @@ subparser_init = subparsers.add_parser('init', help='Initialize help')
 
 subparser_init.add_argument('-T', '--tumor', dest='tumor', action='store',
 							help='Identifier of the analysis e.g. the tumor type.')
-subparser_init.add_argument('-N', '--recycle-net', dest='network', action='store_true',
+subparser_init.add_argument('-N', '--new-net', dest='newNetwork', action='store_true',
 							help='Use previous networks.')
 subparser_init.add_argument('-a', '--annotation', dest='annotation', action='store',
 							choices=['ucsc', 'gencode'], default=None,
@@ -142,24 +139,17 @@ subparser_init.set_defaults(task="createNetwork")
 subparser_init.set_defaults(func=createNetwork)
 
 ################################################
-###   IMPORT SWITCHES                       ####
+###   STRUCTURAL ANALYSIS                   ####
 ################################################
-
-def readSwitches():
+def functionalAnalysis():
 	g = get_switches.GetSwitches()
 	g.run(o.switchesFile)
-
-subparser_switches = subparsers.add_parser('switches', help='Read switches help')
-subparser_switches.add_argument('-s', '--switches', dest='switchesFile', action='store', required=True,
-								default=None, type=str, help='File containing switches as TSV.')
-subparser_switches.set_defaults(task="readSwitches")
-subparser_switches.set_defaults(func=readSwitches)
-
-def functionalAnalysis():
-	s = structural_analysis.StructuralAnalysis(True,True)
+	s = structural_analysis.StructuralAnalysis(g._genes, g._txs)
 	s.run()
 
 subparser_functional = subparsers.add_parser('function', help='Functional analysis help')
+subparser_functional.add_argument('-s', '--switches', dest='switchesFile', action='store', required=True,
+								  default=None, type=str, help='File containing switches as TSV.')
 subparser_functional.set_defaults(task="functionalAnalysis")
 subparser_functional.set_defaults(func=functionalAnalysis)
 
