@@ -9,13 +9,13 @@ SPADA (Splicing-led Protein Alterations Discovered Agilely) is a tool to study t
 
 To start using SPADA, simply install it with
 
-``` python
+``` bash
 pip install spada
 ```
 
 and run it in a toy dataset with
 
-``` python
+``` bash
 spada.py function --annotation gencode --switches spada.example
 ```
 
