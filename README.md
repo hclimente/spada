@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.org/hclimente/spada.svg?branch=master)](https://travis-ci.org/hclimente/spada)
 [![codecov](https://codecov.io/gh/hclimente/spada/branch/master/graph/badge.svg)](https://codecov.io/gh/hclimente/spada)
+[![PyPI version](https://badge.fury.io/py/spada.svg)](https://badge.fury.io/py/spada)
 
 **WARNING:** *SPADA is still a work-in-progress. Take this README as a statement of intent.*
 
