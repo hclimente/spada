@@ -77,19 +77,15 @@ subparsers = parser.add_subparsers(help='sub-command help')
 ###   INITIALIZE THE NETWORKS               ####
 ################################################
 def createNetwork(o):
-	if not newNetwork:
-		c = create_network.CreateNetwork(o.tumor, o.annotation)
-		c.run(o.gtf, o.normalExpression, o.tumorExpression, log2(o.minExpression), o.seq, o.ppi, o.ddi, o.drivers, o.features)
-	else:
-		c = create_network.CreateNetwork(o.tumor, o.annotation)
-		c.run(o.gtf, o.normalExpression, o.tumorExpression, log2(o.minExpression), o.seq, o.ppi, o.ddi, o.drivers, o.features)
+	c = create_network.CreateNetwork(o.tumor, o.annotation, o.newNetwork)
+	c.run(o.gtf, o.normalExpression, o.tumorExpression, log2(o.minExpression), o.seq, o.ppi, o.ddi, o.drivers, o.features)
 
 subparser_init = subparsers.add_parser('init', help='Initialize help')
 
 subparser_init.add_argument('-T', '--tumor', dest='tumor', action='store',
 							help='Identifier of the analysis e.g. the tumor type.')
 subparser_init.add_argument('-N', '--new-net', dest='newNetwork', action='store_true',
-							help='Use previous networks.')
+							help='Use previous networks.', default=False)
 subparser_init.add_argument('-a', '--annotation', dest='annotation', action='store',
 							choices=['ucsc', 'gencode'], default=None,
 							help='Used annotation. Required for newly generated networks.')
