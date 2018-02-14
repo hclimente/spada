@@ -2,10 +2,10 @@ from setuptools import setup, find_packages
 
 setup(
 	name = 'spada',
-	packages = {'spada': 'spada'},
+	packages = find_packages(), 
 	package_dir = {'spada': 'spada'},
 	package_data = {'spada': ['data/*.pkl']},
-	version = '1.9.1b1',
+	version = '1.9.1b2',
 	description = 'Find splicing-led, functional changes of the proteome. ',
 	author = 'Héctor Climente-González',
 	author_email = 'eduardo.eyras@upf.edu',
