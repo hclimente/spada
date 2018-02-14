@@ -2,13 +2,13 @@ from setuptools import setup, find_packages
 
 setup(
 	name = 'spada',
-	packages = find_packages(), 
+	packages = find_packages(),
 	package_dir = {'spada': 'spada'},
 	package_data = {'spada': ['data/*.pkl']},
 	version = '1.9.1b2',
 	description = 'Find splicing-led, functional changes of the proteome. ',
 	author = 'Héctor Climente-González',
-	author_email = 'eduardo.eyras@upf.edu',
+	author_email = 'hector.climente@curie.fr',
 	license = 'MIT',
 	url = 'https://github.com/hclimente/spada',
 	download_url = 'https://github.com/hclimente/spada/archive/v1.9.1.tar.gz',
