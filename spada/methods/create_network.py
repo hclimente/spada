@@ -159,7 +159,11 @@ class CreateNetwork(method.Method):
 
 			for A in symbolA:
 				for B in symbolB:
-					self._genes.add_edge(symbol1 = A, symbol2 = B)
+					if not self._genes.add_edge(symbol1 = A, symbol2 = B):
+						line["symbolA"].extend(line["aliasA"])
+						line["symbolB"].extend(line["aliasB"])
+						self.logger.warning("Interactor 1 was {} from {}; interactor 2 was {} from".format(
+											A, line["symbolA"], B, line["symbolB"]))
 
 	def getDomainInteractions(self, ddi):
 
