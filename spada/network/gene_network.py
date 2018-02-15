@@ -96,12 +96,18 @@ class GeneNetwork(network.Network):
 		"""Adds an edge to the network. Return True if succesful; else, return False.
 		The value of the attributes are the default, specified in GeneNetwork documentation."""
 
+		id1 = [ x for x in [full_name1, gene_id1, symbol1] if x ]
+		id2 = [ x for x in [full_name2, gene_id2, symbol2] if x ]
+
+		if not id1 or not id2:
+			self.logger.warning("Tried to add edge, but no node-information \
+								 provided (Node 1[{}] and Node 2[{}]).".format(id1, id2))
+
 		node_id1 = self.nameFilter(full_name=full_name1, gene_id=gene_id1, gene_symbol=symbol1)[0]
 		node_id2 = self.nameFilter(full_name=full_name2, gene_id=gene_id2, gene_symbol=symbol2)[0]
 
 		if (node_id1 is None or node_id1 is "") or (node_id2 is None or node_id2 is ""):
-			self.logger.warning( "Cannot add edge {} - {} ({} - {}).".format(
-									full_name1, gene_id1, full_name2, gene_id2) )
+			self.logger.warning( "Cannot add edge {} - {}.".format(id1[0], id2[0]))
 			return False
 		elif node_id1 not in self.nodes():
 			self.logger.warning("Node {} does not exist.".format(node_id1))
