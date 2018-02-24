@@ -26,5 +26,6 @@ setup(
 	install_requires = [
 		'networkx >= 1.11',
 		'pandas >= 0.20.3',
-		'numpy >= 1.13.1']
+		'numpy >= 1.13.1'],
+	scripts=['scripts/spada']
 )
