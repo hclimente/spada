@@ -78,7 +78,7 @@ subparsers = parser.add_subparsers(help='sub-command help')
 ################################################
 def createNetwork(o):
 	c = create_network.CreateNetwork(o.tumor, o.annotation, o.newNetwork)
-	c.run(o.gtf, o.normalExpression, o.tumorExpression, log2(o.minExpression), o.seq, o.ppi, o.ddi, o.drivers, o.features)
+	c.run(o.gtf, o.normalExpression, o.tumorExpression, o.minExpression, o.seq, o.ppi, o.ddi, o.drivers, o.features)
 
 subparser_init = subparsers.add_parser('init', help='Initialize help')
 
