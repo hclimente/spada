@@ -39,10 +39,12 @@ class CreateNetwork(method.Method):
 		self._genes.tumor = tumor
 		self._txs.tumor = tumor
 
-	def run(self, gtf, normalExpression, tumorExpression, minExpression, sequences, ppi, ddi, drivers, features):
+	def run(self, gtf, normalExpression, tumorExpression, minExpression, sequences, ppi, ddi, drivers, features, aberrant):
 
 		self.logger.info("Importing genes and transcripts from GTF.")
 		self.createNetworks(gtf)
+		self.logger.info("Import aberrant isoforms absent in GTF.")
+		self.addAberrant(aberrant)
 
 		self.logger.info("Reading expression and calculating PSI.")
 		for expression,origin in zip([normalExpression, tumorExpression], ["N", "T"]):
@@ -238,6 +240,18 @@ class CreateNetwork(method.Method):
 			end = int(line[4])
 
 			self._txs.update_node(tx, featureType, (start,end), feature)
+
+	def addAberrant(self, aberrant):
+
+		if not aberrant:
+			return()
+
+		for line in utils.readTable(aberrant):
+
+			gene = line[0]
+			tx = line[1]
+
+			self._txs.add_node(tx, gene)
 
 	def symbol2ids(self, symbols):
 

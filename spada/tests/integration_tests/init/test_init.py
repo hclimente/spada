@@ -17,11 +17,12 @@ def test_init():
 		  dataPath + "mitab",
 		  dataPath + "ddis",
 		  dataPath + "drivers",
-		  dataPath + "features")
+		  dataPath + "features",
+		  dataPath + "aberrant")
 
 	# gtf
 	assert len(c._genes.nodes()) == 14
-	assert len(c._txs.nodes()) == 21
+	assert len(c._txs.nodes()) == 24 # 21 txs + 3 aberrant
 	assert len(c._txs.nodes()["ENST02.2"]["exonStructure"]) == 6
 	assert c._txs.nodes()["ENST02.2"]["strand"] == "+"
 	assert c._txs.nodes()["ENST02.2"]["chr"] == "chr1"
@@ -34,6 +35,11 @@ def test_init():
 	assert c._txs.nodes()["ENST12.3"]["strand"] == "+"
 	assert c._txs.nodes()["ENST12.3"]["chr"] == "chr1"
 	assert c._txs.nodes()["ENST12.3"]["cdsCoords"] == [69091,70021]
+
+	# aberrant
+	assert c._txs.nodes()["ABC.1"]["gene_id"] == "ENSG08.4"
+	assert c._txs.nodes()["DE_FG_HI.2"]["gene_id"] == "ENSG00.5"
+	assert c._txs.nodes()["JKLM-.3"]["gene_id"] == "ENSG00.5"
 
 	# interactions
 	assert c._genes._net.number_of_edges() == 2

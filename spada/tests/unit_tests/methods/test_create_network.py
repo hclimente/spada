@@ -227,6 +227,15 @@ def test_getIsoformFeatures():
 		c = create_network.CreateNetwork("test", "gencode")
 		c.getIsoformFeatures(None)
 
+def test_addAberrant():
+
+	c = create_network.CreateNetwork("test", "gencode")
+	c.addAberrant(dataPath + 'aberrant')
+
+	assert c._txs.nodes()["ABC.1"]["gene_id"] == "ENSG08.4"
+	assert c._txs.nodes()["DE_FG_HI.2"]["gene_id"] == "ENSG00.5"
+	assert c._txs.nodes()["JKLM-.3"]["gene_id"] == "ENSG00.5"
+
 def test_CreateNetwork():
 
 	with pytest.raises(SpadaError):
