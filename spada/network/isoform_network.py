@@ -69,6 +69,14 @@ class IsoformNetwork(network.Network):
 		return True
 
 	def update_node(self, tx, key, value, secondKey=""):
+
+		if key in ['CDS','UTR'] and self.nodes(data=True)[tx][key]:
+			i = self.nodes(data=True)[tx]['strand'] == '-'
+			if self.nodes(data=True)[tx][key][i] < value[i]:
+				value[i] = self.nodes(data=True)[tx][key][i]
+			if self.nodes(data=True)[tx][key][not i] < value[not i]:
+				value[not i] = self.nodes(data=True)[tx][key][not i]
+
 		return self._update_node(tx, key, value, secondKey)
 
 	def update_nodes(self, key, values):
