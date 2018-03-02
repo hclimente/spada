@@ -5,28 +5,28 @@ import pandas as pd
 import numpy as np
 import abc
 
-class IsoformNetwork(network.Network):
-	"""docstring for IsoformNetwork
-	IsoformNetwork contains a network of isoforms.
+class TranscriptNetwork(network.Network):
+	"""docstring for TranscriptNetwork
+	TranscriptNetwork contains a network of isoforms.
 
 	Node information:
-		id(str) 					Transcript Id
-		gene_id(str) 				Gene Id of the parent gene.
+		id(str)					Transcript Id
+		gene_id(str)				Gene Id of the parent gene.
 		exonStructure(list,None)	List of lists, each of them containing the limits of an exon.
-		txCoords(list,None) 		List with the starting and the ending genome positions
+		txCoords(list,None)		List with the starting and the ending genome positions
 									of the trancript.
-		cdsCoords(list,None) 		List with the starting and the ending genome positions of the CDS.
+		cdsCoords(list,None)		List with the starting and the ending genome positions of the CDS.
 		strand(str,None)			Strand.
 		chr(str,None)				Chromosome.
-		median_TPM_N(float,None) 	Median TPM of the isoform in the normal patients.
-		median_PSI_N(float,None) 	Median PSI of the isoform in the normal patients.
-		median_TPM_T(float,None) 	Median TPM of the isoform in the tumor patients.
-		median_PSI_T(float,None) 	Median PSI of the isoform in the tumor patients.
+		median_TPM_N(float,None)	Median TPM of the isoform in the normal patients.
+		median_PSI_N(float,None)	Median PSI of the isoform in the normal patients.
+		median_TPM_T(float,None)	Median TPM of the isoform in the tumor patients.
+		median_PSI_T(float,None)	Median PSI of the isoform in the tumor patients.
 		proteinSequence(str,None)	Protein sequence.
 
 	Edge information:
-		Id1(str) 					Transcript id of interactor 1.
-		Id2(str) 					Transcript id of interactor 2.
+		Id1(str)					Transcript id of interactor 1.
+		Id2(str)					Transcript id of interactor 2.
 	"""
 
 	__metaclass__ = abc.ABCMeta
@@ -55,8 +55,8 @@ class IsoformNetwork(network.Network):
 							exonStructure	= [],
 							txCoords		= None,
 							cdsCoords		= None,
-							strand 			= None,
-							chr 			= None,
+							strand			= None,
+							chr				= None,
 							median_TPM_N	= None,
 							median_PSI_N	= None,
 							median_TPM_T	= None,
@@ -64,20 +64,21 @@ class IsoformNetwork(network.Network):
 							proteinSequence	= None,
 							Pfam			= {},
 							Prosite			= {},
-							IDR 			= {})
+							IDR				= {})
 
 		return True
 
-	def update_node(self, tx, key, value, secondKey=""):
+	def update_node(self, tx, key, value, secondKey = ""):
 
-		if key in ['CDS','UTR'] and self.nodes(data=True)[tx][key]:
-			i = self.nodes(data=True)[tx]['strand'] == '-'
-			if self.nodes(data=True)[tx][key][i] < value[i]:
-				value[i] = self.nodes(data=True)[tx][key][i]
-			if self.nodes(data=True)[tx][key][not i] < value[not i]:
-				value[not i] = self.nodes(data=True)[tx][key][not i]
+		override = False
 
-		return self._update_node(tx, key, value, secondKey)
+		# CDS
+		if key == 'cdsCoords' and self.nodes(data=True)[tx][key]:
+			override = True
+			i = self._net.node[tx]['strand'] == '-'
+			value[i] = self._net.node[tx][key][i]
+
+		return self._update_node(tx, key, value, secondKey, override)
 
 	def update_nodes(self, key, values):
 		for tx, value in values.items():

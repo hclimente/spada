@@ -2,8 +2,8 @@ from spada.interface import out_network
 from spada import utils
 from spada.utils import SpadaError
 from spada.methods import method
-from spada.network import ucsc_gene_network, ucsc_isoform_network
-from spada.network import gencode_gene_network, gencode_isoform_network
+from spada.network import ucsc_gene_network, ucsc_transcript_network
+from spada.network import gencode_gene_network, gencode_transcript_network
 
 from itertools import product
 from networkx import get_node_attributes
@@ -21,10 +21,10 @@ class CreateNetwork(method.Method):
 
 			if annotation == "ucsc":
 				self._genes = ucsc_gene_network.UCSCGeneNetwork()
-				self._txs = ucsc_isoform_network.UCSCIsoformNetwork()
+				self._txs = ucsc_transcript_network.UCSCTranscriptNetwork()
 			elif annotation == "gencode":
 				self._genes = gencode_gene_network.GENCODEGeneNetwork()
-				self._txs = gencode_isoform_network.GENCODEIsoformNetwork()
+				self._txs = gencode_transcript_network.GENCODETranscriptNetwork()
 			else:
 				raise SpadaError("Unrecognized annotation: {}.".format(annotation), self.logger)
 		else:

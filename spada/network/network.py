@@ -21,25 +21,25 @@ class Network:
 	def nodes(self, **kwds): 	return self._net.nodes(**kwds)
 	def edges(self, **kwds):	return self._net.edges(**kwds)
 
-	def _update_node(self, nodeId, key, value, secondKey=""):
+	def _update_node(self, node, key, value, secondKey = "", override = False):
 
-		if nodeId not in self.nodes():
-			self.logger.warning("Tried to update node {}, but does not exist.".format(nodeId))
+		if node not in self.nodes():
+			self.logger.warning("Tried to update node {}, but does not exist.".format(node))
 			return False
 
-		if isinstance( self._net.node[nodeId][key], list):
-			self._net.node[nodeId][key].append( value )
-		elif isinstance( self._net.node[nodeId][key], set):
-			self._net.node[nodeId][key].add( value )
-		elif isinstance( self._net.node[nodeId][key], dict):
-			if secondKey not in self._net.node[nodeId][key]:
-				self._net.node[nodeId][key].setdefault(secondKey,set())
-			self._net.node[nodeId][key][secondKey].add(value)
+		if not override and isinstance(self._net.node[node][key], list):
+			self._net.node[node][key].append( value )
+		elif not override and isinstance(self._net.node[node][key], set):
+			self._net.node[node][key].add( value )
+		elif not override and isinstance(self._net.node[node][key], dict):
+			if secondKey not in self._net.node[node][key]:
+				self._net.node[node][key].setdefault(secondKey,set())
+			self._net.node[node][key][secondKey].add(value)
 		else:
-			if self._net.node[nodeId] is not None and self._net.node[nodeId] != value:
+			if self._net.node[node] is not None and self._net.node[node] != value:
 				self.logger.debug("Node {}, {} had a value of {}. Updated to {}.".format(
-									nodeId, key, self._net.node[nodeId][key], value) )
-			self._net.node[nodeId][key] = value
+									node, key, self._net.node[node][key], value) )
+			self._net.node[node][key] = value
 
 		return True
 

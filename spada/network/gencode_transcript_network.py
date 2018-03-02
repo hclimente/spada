@@ -1,8 +1,8 @@
-from spada.network import isoform_network
+from spada.network import transcript_network
 
-class GENCODEIsoformNetwork(isoform_network.IsoformNetwork):
+class GENCODETranscriptNetwork(transcript_network.TranscriptNetwork):
 	def __init__(self):
-		isoform_network.IsoformNetwork.__init__(self, __name__)
+		transcript_network.TranscriptNetwork.__init__(self, __name__)
 
 	def genenameFilter(self, full_name="", gene_id="", gene_symbol=""):
 		geneSymbol 	= None
