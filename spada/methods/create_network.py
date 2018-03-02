@@ -60,8 +60,10 @@ class CreateNetwork(method.Method):
 
 		self.logger.info("Reading known driver genes.")
 		drivers, specificDrivers = self.readDrivers(drivers)
-		self._genes.update_nodes("driver", self.symbol2ids(drivers))
-		self._genes.update_nodes("specificDriver", self.symbol2ids(specificDrivers))
+		if drivers:
+			self._genes.update_nodes("driver", self.symbol2ids(drivers))
+		if specificDrivers:
+			self._genes.update_nodes("specificDriver", self.symbol2ids(specificDrivers))
 
 		self.logger.info("Saving networks.")
 		self._genes.saveNetwork("genes.pkl")
@@ -70,7 +72,10 @@ class CreateNetwork(method.Method):
 	def createNetworks(self, gtf):
 
 		if not self._new:
-			raise SpadaError("gtf provided when previous network is to be used.", self.logger)
+			if gtf:
+				raise SpadaError("gtf provided when previous network is to be used.", self.logger)
+			else:
+				return()
 
 		for line in utils.readGTF(gtf):
 
@@ -189,7 +194,7 @@ class CreateNetwork(method.Method):
 			raise SpadaError("A file containing the tumor drivers must be provided.", self.logger)
 		elif not drivers:
 			self.logger.info("Drivers from the provided network will be used.")
-			return()
+			return(None,None)
 
 		allDrivers = {}
 		specificDrivers = {}
