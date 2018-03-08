@@ -1,5 +1,5 @@
 from spada.biological_entities import aminoacid
-from spada import utils
+from spada.utils import SpadaError
 
 import logging
 import os
@@ -42,7 +42,7 @@ class Protein:
 		genomicPositions = []
 		gap  = 0
 
-		#Generate a list with the genomic position of all codons of the CDS.
+		# generate a list with the genomic position of all codons of the CDS.
 		if strand == "+":
 			cdsStart = cds[0]
 			cdsEnd	 = cds[1]
@@ -50,35 +50,35 @@ class Protein:
 			for exonStart,exonEnd in exons:
 				if exonEnd < cdsStart or exonStart > cdsEnd: continue
 
-				start = exonStart if exonStart >= cdsStart else cdsStart
-				if gap != 0: start += 3 - gap
+				start = exonStart + gap if exonStart >= cdsStart else cdsStart
 				end = exonEnd if exonEnd <= cdsEnd else cdsEnd
 
-				for gPos in range(start, end, 3):
+				for gPos in range(start, end + 1, 3):
 					genomicPositions.append(gPos)
 
-				gap = (end - start)%3
+				gap = 2 - (end - start) % 3
 
 		elif strand == "-":
 			cdsStart = cds[1]
 			cdsEnd	 = cds[0]
 
-			for exonEnd,exonStart in [ (x-1,y-1) for x,y in reversed(exons) ]:
+			for exonEnd,exonStart in reversed(exons):
 				if exonEnd > cdsStart or exonStart < cdsEnd: continue
 
-				start = exonStart if exonStart <= cdsStart else cdsStart
-				if gap != 0: start -= 3 - gap
+				start = exonStart - gap if exonStart <= cdsStart else cdsStart
 				end = exonEnd if exonEnd >= cdsEnd else cdsEnd
 
-				for gPos in range(start, end, -3):
+				for gPos in range(start, end - 1, -3):
 					genomicPositions.append(gPos)
 
-				gap = (start - end)%3
+				gap = 2 - (start - end)%3
 
-		if len(self._structure) != len(genomicPositions) - 1:
-			raise Exception('Transcript {}: lengths of protein sequence and CDS do not match ({} vs. {}).'.format(self._tx, len(self._structure), len(genomicPositions) - 1))
+		if len(self._structure) != len(genomicPositions):
+			raise SpadaError('Transcript {}: lengths of protein sequence and CDS do not match ({} vs. {}).'.format(self._tx, len(self._structure), len(genomicPositions)))
+		if gap:
+			raise SpadaError('Transcript {}: # nucleotices in the CDS must be multiple of 3.'.format(self._tx))
 
-		for aa, gPos in zip(self._structure, genomicPositions[:-1]): #Remove the stop codon
+		for aa, gPos in zip(self._structure, genomicPositions):
 			aa.setGenomicPosition(gPos)
 
 	def annotateFeaturesToResidues(self, featureType, features):

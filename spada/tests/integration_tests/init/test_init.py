@@ -26,7 +26,7 @@ def test_init():
 	assert len(c._txs.nodes()["ENST02.2"]["exonStructure"]) == 6
 	assert c._txs.nodes()["ENST02.2"]["strand"] == "+"
 	assert c._txs.nodes()["ENST02.2"]["chr"] == "chr1"
-	assert c._txs.nodes()["ENST02.2"]["cdsCoords"] == [13000, 13027]
+	assert c._txs.nodes()["ENST02.2"]["cdsCoords"] == [13000, 13023]
 	assert len(c._txs.nodes()["ENST19.2"]["exonStructure"]) == 1
 	assert c._txs.nodes()["ENST19.2"]["strand"] == "-"
 	assert c._txs.nodes()["ENST19.2"]["chr"] == "chr1"
@@ -34,7 +34,7 @@ def test_init():
 	assert len(c._txs.nodes()["ENST12.3"]["exonStructure"]) == 1
 	assert c._txs.nodes()["ENST12.3"]["strand"] == "+"
 	assert c._txs.nodes()["ENST12.3"]["chr"] == "chr1"
-	assert c._txs.nodes()["ENST12.3"]["cdsCoords"] == [69091,70021]
+	assert c._txs.nodes()["ENST12.3"]["cdsCoords"] == [69978, 70004]
 
 	# aberrant
 	assert c._txs.nodes()["ABC.1"]["gene_id"] == "ENSG08.4"

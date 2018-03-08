@@ -5,9 +5,9 @@ from spada.biological_entities import switch
 import pytest
 
 a1Info = {	"gene_id":			"A",
-			"exonStructure": 	[[1,31],[40,61],[70,101]],
+			"exonStructure": 	[[1,31],[40,60],[70,101]],
 		  	"txCoords": 		[1,100],
-		  	"cdsCoords":		[21,87],
+		  	"cdsCoords":		[21,82],
 		  	"strand":			"+",
 		  	"chr":				1,
 			"proteinSequence":	"ABCDEFGHIJNOPQR",
@@ -17,7 +17,7 @@ a1Info = {	"gene_id":			"A",
 a2Info = {	"gene_id":			"A",
 			"exonStructure": 	[[1,31],[49,101],[120,151]],
 		  	"txCoords": 		[1,150],
-		  	"cdsCoords":		[21,130],
+		  	"cdsCoords":		[21,124],
 		  	"strand":			"+",
 		  	"chr":				1,
 			"proteinSequence":	"ABCDGHIJKLMNOPKRSTUVWXY",
@@ -55,15 +55,15 @@ def test_addTxInfo():
 	# properties of transcripts are kept
 	assert s.nTranscript != None
 	assert s.nTranscript.name == "A"
-	assert len(s.nTranscript.cds) == 3 * (len(a1Info["proteinSequence"]) + 1)
+	assert len(s.nTranscript.cds) == 3 * len(a1Info["proteinSequence"])
 	assert min(s.nTranscript.cds) == a1Info["cdsCoords"][0]
-	assert max(s.nTranscript.cds) == a1Info["cdsCoords"][1] - 1
+	assert max(s.nTranscript.cds) == a1Info["cdsCoords"][1]
 
 	assert s.tTranscript != None
 	assert s.tTranscript.name == "B"
-	assert len(s.tTranscript.cds) == 3 * (len(a2Info["proteinSequence"]) + 1)
+	assert len(s.tTranscript.cds) == 3 * len(a2Info["proteinSequence"])
 	assert min(s.tTranscript.cds) == a2Info["cdsCoords"][0]
-	assert max(s.tTranscript.cds) == a2Info["cdsCoords"][1] - 1
+	assert max(s.tTranscript.cds) == a2Info["cdsCoords"][1]
 
 	# properties of proteins are kept
 	assert s.nIsoform != None
@@ -96,7 +96,6 @@ def test_analyzeDomains():
 	assert len(prosites) == 3
 	assert len([ x for x in prosites if x["feature"] == "P1"]) == 2
 	assert len([ x for x in prosites if x["feature"] == "P2"]) == 1
-
 
 def test_analyzeIDR():
 

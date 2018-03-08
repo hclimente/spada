@@ -4,16 +4,16 @@ import logging
 import os
 
 class Transcript:
-	def __init__(self, name, properties):
+	def __init__(self, tx, txInfo):
 
-		self._name  			= name
-		self._exons 			= properties["exonStructure"]
-		self._cds_coordinates 	= properties["cdsCoords"]
-		self._tx_coordinates 	= properties["txCoords"]
-		self._strand 			= properties["strand"]
+		self._name  			= tx
+		self._exons 			= txInfo["exonStructure"]
+		self._cds_coordinates 	= txInfo["cdsCoords"]
+		self._tx_coordinates 	= txInfo["txCoords"]
+		self._strand 			= txInfo["strand"]
 
-		#Create two dicts, clasifying all the nucleotides in CDS and UTR
-		#Value: isoform specific in this switch
+		# dictionaries clasifying every the nucleotide as either CDS or UTR
+		# key: genomic positon; value: is it isoform specific in the switch?
 		self._cds = {}
 		self._utr = {}
 		self._exon = {}
@@ -28,18 +28,17 @@ class Transcript:
 
 			exon = 1
 			for exonStart,exonEnd in self._exons:
-				for gPos in range(exonStart, exonEnd):
+				for gPos in range(exonStart, exonEnd + 1):
 					if self._cds_coordinates:
-						# notation in ucsc format: first pos included and last excluded
-						if gPos >= cdsStart and gPos < cdsEnd:
+						if gPos >= cdsStart and gPos <= cdsEnd:
 							self._cds.setdefault(gPos, None)
 						else:
 							self._utr.setdefault(gPos, None)
 					else:
 						self._utr.setdefault(gPos, None)
 
-					self._exon[gPos]=exon
-				exon +=1
+					self._exon[gPos] = exon
+				exon += 1
 
 		elif self._strand == "-":
 			if self._cds_coordinates is None:
@@ -49,20 +48,19 @@ class Transcript:
 				cdsStart = self._cds_coordinates[1]
 				cdsEnd 	 = self._cds_coordinates[0]
 
-			#In strand -, iterate in reverse genomic order, still 5'->3'.
-			#Subtract 1 from the exon coordinates to convert the UCSC format to the reverse direction.
+			# iterate in reverse genomic order, still 5'->3' in the - strand
 			exon = 1
-			for exonEnd,exonStart in [ (x-1,y-1) for x,y in reversed(self._exons) ]:
-				for gPos in range(exonStart, exonEnd,-1):
+			for exonEnd,exonStart in reversed(self._exons):
+				for gPos in range(exonStart, exonEnd - 1, -1):
 					if self._cds_coordinates:
-						if gPos < cdsStart and gPos >= cdsEnd:
+						if gPos <= cdsStart and gPos >= cdsEnd:
 							self._cds.setdefault(gPos, None)
 						else:
 							self._utr.setdefault(gPos, None)
 					else:
 						self._utr.setdefault(gPos, None)
-				self._exon[gPos]=exon
-				exon +=1
+				self._exon[gPos] = exon
+				exon += 1
 
 	@property
 	def name(self): return self._name
@@ -70,7 +68,7 @@ class Transcript:
 	def utr(self): return self._utr
 	@property
 	def cds(self):
-		if len(self._cds)==1:
+		if len(self._cds) == 1:
 			return {}
 		else:
 			return self._cds

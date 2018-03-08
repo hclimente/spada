@@ -94,17 +94,10 @@ class TranscriptNetwork(network.Network):
 	def update_edge(self, tx1, tx2, key, value):
 		return self._update_edge(tx1, tx2, key, value)
 
-	def iterate_transcripts(self):
+	def transcripts(self):
 		'''
 		Iterate transcripts.
 		'''
 
-		txsByGene = {}
-
 		for tx,info in self.nodes(data=True):
-			txsByGene.setdefault(info["gene_id"],[])
-
-			txsByGene[info["gene_id"]].append(tx)
-
-		for gene in txsByGene:
-			yield gene,txsByGene[gene]
+			yield tx, info

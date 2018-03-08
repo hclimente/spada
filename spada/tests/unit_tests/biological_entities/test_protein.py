@@ -7,7 +7,7 @@ import pytest
 info = {	"gene_id":			"A",
 			"exonStructure": 	[[1,30],[70,100],[120,150],[170,190]],
 			"txCoords": 		[1,190],
-			"cdsCoords":		[21,178],
+			"cdsCoords":		[21,172],
 		  	"strand":			"+",
 		  	"chr":				1,
 			"proteinSequence":	"EFGHIJKABCDEFGHIJKLMNOPKR",
@@ -31,7 +31,7 @@ def test_init():
 	structure = [ x for x in p.structure_ordered ]
 	assert len(structure) == len(info["proteinSequence"])
 	assert structure[0].genomicPosition == 21
-	assert structure[24].genomicPosition == 173
+	assert structure[24].genomicPosition == 170
 	assert "".join([ x.res for x in structure ]) == info["proteinSequence"]
 	assert all( (y.num - x.num) == 1 for x,y in zip(structure,structure[1:]) )
 	assert all( y.genomicPosition > x.genomicPosition for x,y in zip(structure,structure[1:]) )
@@ -43,8 +43,8 @@ def test_init():
 	# explore structure if strand is minus
 	structureminus = [ x for x in pminus.structure_ordered ]
 	assert len(structureminus) == len(info["proteinSequence"])
-	assert structureminus[0].genomicPosition == 178
-	assert structureminus[24].genomicPosition == 26
+	assert structureminus[0].genomicPosition == 172
+	assert structureminus[24].genomicPosition == 23
 	assert "".join([ x.res for x in structureminus ]) == info["proteinSequence"]
 	assert all( (y.num - x.num) == 1 for x,y in zip(structureminus,structureminus[1:]) )
 	assert all( y.genomicPosition < x.genomicPosition for x,y in zip(structureminus,structureminus[1:]) )

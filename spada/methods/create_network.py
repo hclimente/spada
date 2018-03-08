@@ -1,9 +1,11 @@
 from spada.interface import out_network
+from spada.biological_entities import transcript
+from spada.biological_entities import protein
 from spada import utils
-from spada.utils import SpadaError
 from spada.methods import method
 from spada.network import ucsc_gene_network, ucsc_transcript_network
 from spada.network import gencode_gene_network, gencode_transcript_network
+from spada.utils import SpadaError
 
 from itertools import product
 from networkx import get_node_attributes
@@ -66,6 +68,8 @@ class CreateNetwork(method.Method):
 			self._genes.update_nodes("driver", self.symbol2ids(drivers))
 		if specificDrivers:
 			self._genes.update_nodes("specificDriver", self.symbol2ids(specificDrivers))
+
+		self.check()
 
 		self.logger.info("Saving networks.")
 		self._genes.saveNetwork("genes.pkl")
@@ -252,6 +256,14 @@ class CreateNetwork(method.Method):
 			tx = line[1]
 
 			self._txs.add_node(tx, gene)
+
+	def check(self):
+
+		for tx, info in self._txs.transcripts():
+			transcript.Transcript(tx, info)
+
+			if info['cdsCoords']:
+				protein.Protein(tx, info)
 
 	def symbol2ids(self, symbols):
 
