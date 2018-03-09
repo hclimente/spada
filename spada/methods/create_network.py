@@ -1,4 +1,3 @@
-from spada.interface import out_network
 from spada.biological_entities import transcript
 from spada.biological_entities import protein
 from spada import utils
@@ -43,37 +42,29 @@ class CreateNetwork(method.Method):
 
 	def run(self, gtf, normalExpression, tumorExpression, minExpression, sequences, ppi, ddi, drivers, features, aberrant):
 
-		self.logger.info("Importing genes and transcripts from GTF.")
+		# read annotation
 		self.createNetworks(gtf)
-		self.logger.info("Import aberrant isoforms absent in GTF.")
 		self.addAberrant(aberrant)
 
-		self.logger.info("Reading expression and calculating PSI.")
-		for expression,origin in zip([normalExpression, tumorExpression], ["N", "T"]):
-			self.measureExpression(expression, minExpression, origin)
-
-		self.logger.info("Reading protein sequences.")
-		self.getIsoformSequences(sequences)
-
-		self.logger.info("Reading isoform features.")
-		self.getIsoformFeatures(features)
-
-		self.logger.info("Building protein-protein interaction network.")
+		# gene data
 		self.getInteractions(ppi)
-		self.getDomainInteractions(ddi)
 
-		self.logger.info("Reading known driver genes.")
 		drivers, specificDrivers = self.readDrivers(drivers)
 		if drivers:
 			self._genes.update_nodes("driver", self.symbol2ids(drivers))
 		if specificDrivers:
 			self._genes.update_nodes("specificDriver", self.symbol2ids(specificDrivers))
 
-		self.check()
+		# isoform data
+		for expression,origin in zip([normalExpression, tumorExpression], ["N", "T"]):
+			self.measureExpression(expression, minExpression, origin)
 
-		self.logger.info("Saving networks.")
-		self._genes.saveNetwork("genes.pkl")
-		self._txs.saveNetwork("transcripts.pkl")
+		self.getIsoformSequences(sequences)
+		self.getIsoformFeatures(features)
+		self.getDomainInteractions(ddi)
+
+		# QC and save
+		self.check()
 
 	def createNetworks(self, gtf):
 
@@ -82,6 +73,8 @@ class CreateNetwork(method.Method):
 				raise SpadaError("gtf provided when previous network is to be used.", self.logger)
 			else:
 				return()
+
+		self.logger.info("Importing genes and transcripts from GTF.")
 
 		for line in utils.readGTF(gtf):
 
@@ -106,6 +99,7 @@ class CreateNetwork(method.Method):
 			self.logger.info("Expression from the provided network will be used.")
 			return()
 
+		self.logger.info("Reading {} expression and calculating PSI.".format(origin))
 		expression = pd.read_csv(expression, sep = '\t', index_col = 0)
 
 		# filter out readings on excluded transcripts
@@ -160,6 +154,7 @@ class CreateNetwork(method.Method):
 			self.logger.info("Protein-protein interactions from the provided network will be used.")
 			return()
 
+		self.logger.info("Building protein-protein interaction network.")
 		symbols = [ y["symbol"] for x,y in self._genes.nodes(data=True) ]
 
 		for line in utils.readPSIMITAB(ppi):
@@ -184,6 +179,7 @@ class CreateNetwork(method.Method):
 			self.logger.info("Domain-domain interactions from the provided network will be used.")
 			return()
 
+		self.logger.info("Building isoform-isoform interaction network.")
 		allDDIs = { frozenset([d1,d2]) for d1,d2 in utils.readTable(ddi) }
 
 		for gene1, gene2 in self._genes._net.edges():
@@ -205,6 +201,8 @@ class CreateNetwork(method.Method):
 		elif not drivers:
 			self.logger.info("Drivers from the provided network will be used.")
 			return(None,None)
+
+		self.logger.info("Reading known driver genes.")
 
 		allDrivers = {}
 		specificDrivers = {}
@@ -228,6 +226,8 @@ class CreateNetwork(method.Method):
 			self.logger.info("Protein sequences from the provided network will be used.")
 			return()
 
+		self.logger.info("Reading protein sequences.")
+
 		for tx, sequence in utils.readFasta(proteins):
 			self._txs.update_node(tx, "proteinSequence", sequence)
 
@@ -238,6 +238,8 @@ class CreateNetwork(method.Method):
 		elif not features:
 			self.logger.info("Protein features from the provided network will be used.")
 			return()
+
+		self.logger.info("Reading isoform features.")
 
 		for line in utils.readTable(features):
 
@@ -251,23 +253,24 @@ class CreateNetwork(method.Method):
 
 	def addAberrant(self, aberrant):
 
-		if not aberrant:
-			return()
+		if aberrant:
 
-		for line in utils.readTable(aberrant):
+			self.logger.info("Import aberrant isoforms absent in GTF.")
 
-			gene = line[0]
-			tx = line[1]
-
-			self._txs.add_node(tx, gene)
+			for gene, tx in utils.readTable(aberrant):
+				self._txs.add_node(tx, gene)
 
 	def check(self):
 
+		self.logger.info("Quality checks and save networks.")
 		for tx, info in self._txs.transcripts():
 			transcript.Transcript(tx, info)
 
 			if info['CDS']:
 				protein.Protein(tx, info)
+
+		self._genes.saveNetwork("genes.pkl")
+		self._txs.saveNetwork("transcripts.pkl")
 
 	def symbol2ids(self, symbols):
 
