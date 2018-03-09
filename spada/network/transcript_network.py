@@ -10,12 +10,12 @@ class TranscriptNetwork(network.Network):
 	TranscriptNetwork contains a network of isoforms.
 
 	Node information:
-		id(str)					Transcript Id
+		id(str)						Transcript Id
 		gene_id(str)				Gene Id of the parent gene.
-		exonStructure(list,None)	List of lists, each of them containing the limits of an exon.
-		txCoords(list,None)		List with the starting and the ending genome positions
+		exons(list,None)			List of lists, each of them containing the limits of an exon.
+		txCoords(list,None)			List with the starting and the ending genome positions
 									of the trancript.
-		cdsCoords(list,None)		List with the starting and the ending genome positions of the CDS.
+		CDS(list,None)				Starting and the ending genome positions of the CDS.
 		strand(str,None)			Strand.
 		chr(str,None)				Chromosome.
 		median_TPM_N(float,None)	Median TPM of the isoform in the normal patients.
@@ -35,6 +35,10 @@ class TranscriptNetwork(network.Network):
 		network.Network.__init__(self, name)
 
 	@abc.abstractmethod
+	def acceptCDS(self, **kwds):
+		raise NotImplementedError()
+
+	@abc.abstractmethod
 	def genenameFilter(self, **kwds):
 		raise NotImplementedError()
 
@@ -52,9 +56,9 @@ class TranscriptNetwork(network.Network):
 
 		self._net.add_node( tx,
 							gene_id			= gene,
-							exonStructure	= [],
+							exons	= [],
 							txCoords		= None,
-							cdsCoords		= None,
+							CDS		= None,
 							strand			= None,
 							chr				= None,
 							median_TPM_N	= None,
@@ -73,7 +77,7 @@ class TranscriptNetwork(network.Network):
 		override = False
 
 		# CDS
-		if key == 'cdsCoords' and self.nodes(data=True)[tx][key]:
+		if key == 'CDS' and self.nodes(data=True)[tx][key]:
 			override = True
 			i = self._net.node[tx]['strand'] == '-'
 			value[i] = self._net.node[tx][key][i]

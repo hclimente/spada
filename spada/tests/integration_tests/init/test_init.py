@@ -21,20 +21,29 @@ def test_init():
 		  dataPath + "aberrant")
 
 	# gtf
-	assert len(c._genes.nodes()) == 14
+	assert len(c._genes.nodes()) == 15
 	assert len(c._txs.nodes()) == 24 # 21 txs + 3 aberrant
-	assert len(c._txs.nodes()["ENST02.2"]["exonStructure"]) == 6
+	assert len(c._txs.nodes()["ENST02.2"]["exons"]) == 6
 	assert c._txs.nodes()["ENST02.2"]["strand"] == "+"
 	assert c._txs.nodes()["ENST02.2"]["chr"] == "chr1"
-	assert c._txs.nodes()["ENST02.2"]["cdsCoords"] == [13000, 13023]
-	assert len(c._txs.nodes()["ENST19.2"]["exonStructure"]) == 1
+	assert c._txs.nodes()["ENST02.2"]["CDS"] == [13000, 13023]
+	assert len(c._txs.nodes()["ENST19.2"]["exons"]) == 1
 	assert c._txs.nodes()["ENST19.2"]["strand"] == "-"
 	assert c._txs.nodes()["ENST19.2"]["chr"] == "chr1"
-	assert not c._txs.nodes()["ENST19.2"]["cdsCoords"]
-	assert len(c._txs.nodes()["ENST12.3"]["exonStructure"]) == 1
+	assert not c._txs.nodes()["ENST19.2"]["CDS"]
+	assert len(c._txs.nodes()["ENST12.3"]["exons"]) == 1
 	assert c._txs.nodes()["ENST12.3"]["strand"] == "+"
 	assert c._txs.nodes()["ENST12.3"]["chr"] == "chr1"
-	assert c._txs.nodes()["ENST12.3"]["cdsCoords"] == [69978, 70004]
+	assert c._txs.nodes()["ENST12.3"]["CDS"] == [69978, 70004]
+
+	# test rejected genes, transcript and CDS
+	assert "bad_status" not in c._genes.nodes()
+	assert "bad_accepted_tag" not in c._txs.nodes()
+	assert "bad_status" not in c._txs.nodes()
+	assert "rejected_status" not in c._txs.nodes()
+	assert "test" in c._genes.nodes()
+	assert "test.1" in c._txs.nodes()
+	assert c._txs.nodes()["test.1"]["CDS"] == None
 
 	# aberrant
 	assert c._txs.nodes()["ABC.1"]["gene_id"] == "ENSG08.4"

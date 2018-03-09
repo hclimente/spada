@@ -85,19 +85,18 @@ class CreateNetwork(method.Method):
 
 		for line in utils.readGTF(gtf):
 
-			if line["feature"] == "gene":
+			if line["feature"] == "gene" and self._genes.accept(line):
 				self._genes.add_node(gene_id = line["gene_id"], gene_symbol = line["gene_name"])
-			elif line["feature"] == "transcript":
-				self._txs.add_node(line["transcript_id"], line["gene_id"])
-				self._txs.update_node(line["transcript_id"], "txCoords", [int(line["start"]), int(line["end"]) ])
-				self._txs.update_node(line["transcript_id"], "strand", line["strand"] )
-				self._txs.update_node(line["transcript_id"], "chr", line["chromosome"] )
-			elif line["feature"] == "exon":
-				self._txs.update_node(line["transcript_id"], "exonStructure", [int(line["start"]), int(line["end"]) ])
-			elif line["feature"] == "CDS":
-				self._txs.update_node(line["transcript_id"], "cdsCoords", [int(line["start"]), int(line["end"]) ])
-			else:
-				pass
+			elif line["feature"] in ['transcript','exon','CDS'] and self._txs.accept(line):
+				if line["feature"] == "transcript":
+					self._txs.add_node(line["transcript_id"], line["gene_id"])
+					self._txs.update_node(line["transcript_id"], "txCoords", [int(line["start"]), int(line["end"]) ])
+					self._txs.update_node(line["transcript_id"], "strand", line["strand"] )
+					self._txs.update_node(line["transcript_id"], "chr", line["chromosome"] )
+				elif line["feature"] == "exon":
+					self._txs.update_node(line["transcript_id"], "exons", [int(line["start"]), int(line["end"]) ])
+				elif line["feature"] == "CDS" and self._txs.acceptCDS(line):
+					self._txs.update_node(line["transcript_id"], "CDS", [int(line["start"]), int(line["end"]) ])
 
 	def measureExpression(self, expression, minExpression, origin):
 
@@ -107,7 +106,12 @@ class CreateNetwork(method.Method):
 			self.logger.info("Expression from the provided network will be used.")
 			return()
 
-		expression = pd.read_csv(expression, sep='\t', index_col=0)
+		expression = pd.read_csv(expression, sep = '\t', index_col = 0)
+
+		# filter out readings on excluded transcripts
+		txs = [ tx for tx, txInfo in self._txs.transcripts() if tx in expression.index ]
+		expression = expression.loc[txs]
+
 		medianExpression = self.readExpression(expression)
 		medianPSI = self.calculatePSI(expression)
 		expressed = self.isExpressed(medianExpression, minExpression)
@@ -262,7 +266,7 @@ class CreateNetwork(method.Method):
 		for tx, info in self._txs.transcripts():
 			transcript.Transcript(tx, info)
 
-			if info['cdsCoords']:
+			if info['CDS']:
 				protein.Protein(tx, info)
 
 	def symbol2ids(self, symbols):

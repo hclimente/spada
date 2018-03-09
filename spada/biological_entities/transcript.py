@@ -7,8 +7,8 @@ class Transcript:
 	def __init__(self, tx, txInfo):
 
 		self._name  			= tx
-		self._exons 			= txInfo["exonStructure"]
-		self._cds_coordinates 	= txInfo["cdsCoords"]
+		self._exons 			= txInfo["exons"]
+		self._cds_coordinates 	= txInfo["CDS"]
 		self._tx_coordinates 	= txInfo["txCoords"]
 		self._strand 			= txInfo["strand"]
 

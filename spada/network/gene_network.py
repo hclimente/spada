@@ -150,18 +150,37 @@ class GeneNetwork(network.Network):
 		self.logger.debug("Retrieving calculated isoform switches.")
 
 		switches = pd.read_csv(switchesFile, sep="\t")
-		switches.columns = ["Gene","nTx","tTx","Samples"]
-		switches.Samples = switches.Samples.str.split(",")
+		switches.columns = ["gene","normal","tumor","samples"]
+		switches.samples = switches.samples.str.split(",")
 
 		for index,row in switches.iterrows():
-			Gene = row["Gene"]
 
-			thisSwitch = switch.IsoformSwitch(row["nTx"], row["tTx"],row["Samples"])
-			nInfo = tx_network.nodes()[thisSwitch.nTx]
-			tInfo = tx_network.nodes()[thisSwitch.tTx]
-			thisSwitch.addTxInfo(nInfo, tInfo)
+			if self.valid_switch(row["gene"], row["normal"], row["tumor"], tx_network):
 
-			self.update_node("switches", thisSwitch, full_name = Gene)
+				thisSwitch = switch.IsoformSwitch(row["normal"], row["tumor"],row["samples"])
+				nInfo = tx_network.nodes()[thisSwitch.nTx]
+				tInfo = tx_network.nodes()[thisSwitch.tTx]
+				thisSwitch.addTxInfo(nInfo, tInfo)
+
+				self.update_node("switches", thisSwitch, full_name = row["gene"])
+
+	def valid_switch(self, gene, nTx, tTx, tx_network):
+
+		msg = ''
+
+		if gene not in self.nodes():
+			msg = "Gene {} not in the network. ".format(gene)
+
+		if nTx not in tx_network.nodes():
+			msg += "Transcript {} not in the network. ".format(nTx)
+		if tTx not in tx_network.nodes():
+			msg += "Transcript {} not in the network.".format(tTx)
+
+		if msg:
+			self.logger.warning('Switch {} - {} will not be analyzed. Reason: {}'.format(nTx, tTx, msg))
+			return False
+		else:
+			return True
 
 	def iterate_genes_byPatientNumber(self, onlySplicedGenes=True, onlyExpressedGenes=True, alwaysSwitchedGenes=False, bottom = 0, top = None):
 		'''

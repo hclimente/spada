@@ -1,5 +1,4 @@
 from spada.biological_entities import aminoacid
-from spada.utils import SpadaError
 
 import logging
 import os
@@ -20,7 +19,7 @@ class Protein:
 			for res in range(0, len(self._sequence) ):
 				self._structure.append( aminoacid.AminoAcid(res+1, self._sequence[res]) )
 
-			self.mapResiduesToGenome(txInfo["exonStructure"], txInfo["cdsCoords"], txInfo["strand"])
+			self.mapResiduesToGenome(txInfo["exons"], txInfo["CDS"], txInfo["strand"])
 			self.annotateFeaturesToResidues("Pfam", self._pfam)
 			self.annotateFeaturesToResidues("Prosite", self._prosite)
 			self.annotateFeaturesToResidues("IDR", self._idr)
@@ -53,7 +52,7 @@ class Protein:
 				start = exonStart + gap if exonStart >= cdsStart else cdsStart
 				end = exonEnd if exonEnd <= cdsEnd else cdsEnd
 
-				for gPos in range(start, end + 1, 3):
+				for gPos in range(start, min(cdsEnd, end + 1), 3):
 					genomicPositions.append(gPos)
 
 				gap = 2 - (end - start) % 3
@@ -68,15 +67,15 @@ class Protein:
 				start = exonStart - gap if exonStart <= cdsStart else cdsStart
 				end = exonEnd if exonEnd >= cdsEnd else cdsEnd
 
-				for gPos in range(start, end - 1, -3):
+				for gPos in range(start, max(cdsEnd, end - 1), -3):
 					genomicPositions.append(gPos)
 
 				gap = 2 - (start - end)%3
 
 		if len(self._structure) != len(genomicPositions):
-			raise SpadaError('Transcript {}: lengths of protein sequence and CDS do not match ({} vs. {}).'.format(self._tx, len(self._structure), len(genomicPositions)))
+			raise Exception('Transcript {}: lengths of protein sequence and CDS do not match ({} vs. {}).'.format(self._tx, len(self._structure), len(genomicPositions)))
 		if gap:
-			raise SpadaError('Transcript {}: # nucleotices in the CDS must be multiple of 3.'.format(self._tx))
+			raise Exception('Transcript {}: # nucleotides in the CDS must be multiple of 3.'.format(self._tx))
 
 		for aa, gPos in zip(self._structure, genomicPositions):
 			aa.setGenomicPosition(gPos)

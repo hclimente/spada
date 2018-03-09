@@ -36,12 +36,17 @@ def readGTF(gtf):
 		parsed["score"] 	 = line[5]
 		parsed["strand"] 	 = line[6]
 		parsed["phase"] 	 = line[7]
+		parsed["tags"] 	 	 = set()
 
 		# read additional fields
 		for field in line[8].strip().split(";"):
 			if len(field):
-				field = field.strip().split(" ")
-				parsed[field[0]] = field[1].strip('"')
+				k,v = field.strip().split(" ")
+				v = v.strip('"')
+				if k == 'tag':
+					parsed['tags'].add(v)
+				else:
+					parsed[k] = v
 
 		yield parsed
 

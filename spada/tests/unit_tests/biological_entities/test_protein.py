@@ -5,9 +5,9 @@ from spada.biological_entities import protein
 import pytest
 
 info = {	"gene_id":			"A",
-			"exonStructure": 	[[1,30],[70,100],[120,150],[170,190]],
+			"exons": 	[[1,30],[70,100],[120,150],[170,190]],
 			"txCoords": 		[1,190],
-			"cdsCoords":		[21,172],
+			"CDS":		[21,172],
 		  	"strand":			"+",
 		  	"chr":				1,
 			"proteinSequence":	"EFGHIJKABCDEFGHIJKLMNOPKR",

@@ -9,10 +9,13 @@ class Network:
 
 	def __init__(self, name):
 
-		self._name			= name
-		self._net 			= nx.Graph()
-		self._rejectedNodes = set()
+		self._name	= name
+		self._net 	= nx.Graph()
 		self.createLogger()
+
+	@abc.abstractmethod
+	def accept(self, **kwds):
+		raise NotImplementedError()
 
 	## Getters ##
 	def n(self): 		return self._net
