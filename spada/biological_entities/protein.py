@@ -52,7 +52,7 @@ class Protein:
 				start = exonStart + gap if exonStart >= cdsStart else cdsStart
 				end = exonEnd if exonEnd <= cdsEnd else cdsEnd
 
-				for gPos in range(start, min(cdsEnd, end + 1), 3):
+				for gPos in range(start, min(cdsEnd, end) + 1, 3):
 					genomicPositions.append(gPos)
 
 				gap = 2 - (end - start) % 3
@@ -61,13 +61,13 @@ class Protein:
 			cdsStart = cds[1]
 			cdsEnd	 = cds[0]
 
-			for exonEnd,exonStart in reversed(exons):
+			for exonEnd,exonStart in exons:
 				if exonEnd > cdsStart or exonStart < cdsEnd: continue
 
 				start = exonStart - gap if exonStart <= cdsStart else cdsStart
 				end = exonEnd if exonEnd >= cdsEnd else cdsEnd
 
-				for gPos in range(start, max(cdsEnd, end - 1), -3):
+				for gPos in range(start, max(cdsEnd, end) - 1, -3):
 					genomicPositions.append(gPos)
 
 				gap = 2 - (start - end)%3
@@ -75,7 +75,7 @@ class Protein:
 		if len(self._structure) != len(genomicPositions):
 			raise Exception('Transcript {}: lengths of protein sequence and CDS do not match ({} vs. {}).'.format(self._tx, len(self._structure), len(genomicPositions)))
 		if gap:
-			raise Exception('Transcript {}: # nucleotides in the CDS must be multiple of 3.'.format(self._tx))
+			raise Exception('Transcript {}: number of nucleotides in the CDS must be multiple of 3.'.format(self._tx))
 
 		for aa, gPos in zip(self._structure, genomicPositions):
 			aa.setGenomicPosition(gPos)

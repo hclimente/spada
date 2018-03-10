@@ -5,9 +5,9 @@ from spada.biological_entities import protein
 import pytest
 
 info = {	"gene_id":			"A",
-			"exons": 	[[1,30],[70,100],[120,150],[170,190]],
+			"exons": 			[[1,30],[70,100],[120,150],[170,190]],
 			"txCoords": 		[1,190],
-			"CDS":		[21,172],
+			"CDS":				[21,172],
 		  	"strand":			"+",
 		  	"chr":				1,
 			"proteinSequence":	"EFGHIJKABCDEFGHIJKLMNOPKR",
@@ -38,6 +38,7 @@ def test_init():
 
 	infominus = info
 	infominus["strand"] = "-"
+	infominus["exons"] = [[170,190],[120,150],[70,100],[1,30]]
 	pminus = protein.Protein("X", infominus)
 
 	# explore structure if strand is minus
