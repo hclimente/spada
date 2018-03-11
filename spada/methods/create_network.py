@@ -86,6 +86,7 @@ class CreateNetwork(method.Method):
 					self._txs.update_node(line["transcript_id"], "txCoords", [int(line["start"]), int(line["end"]) ])
 					self._txs.update_node(line["transcript_id"], "strand", line["strand"] )
 					self._txs.update_node(line["transcript_id"], "chr", line["chromosome"] )
+					self._txs.update_node(line["transcript_id"], "main", self._txs.isMain(line) )
 				elif line["feature"] == "exon":
 					self._txs.update_node(line["transcript_id"], "exons", [int(line["start"]), int(line["end"]) ])
 				elif line["feature"] == "CDS" and self._txs.acceptCDS(line):

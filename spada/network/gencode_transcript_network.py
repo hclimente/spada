@@ -19,6 +19,9 @@ class GENCODETranscriptNetwork(transcript_network.TranscriptNetwork):
 	def acceptCDS(self, line):
 		return line['transcript_type'] != "nonsense_mediated_decay"
 
+	def isMain(self, line):
+		return bool([ x for x in line['tags'] if x in self._main_tx ])
+
 	def genenameFilter(self, full_name="", gene_id="", gene_symbol=""):
 		geneSymbol 	= None
 		geneID 		= None

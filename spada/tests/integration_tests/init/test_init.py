@@ -31,10 +31,12 @@ def test_init():
 	assert c._txs.nodes()["ENST19.2"]["strand"] == "-"
 	assert c._txs.nodes()["ENST19.2"]["chr"] == "chr1"
 	assert not c._txs.nodes()["ENST19.2"]["CDS"]
+	assert not c._txs.nodes()["ENST19.2"]["main"]
 	assert len(c._txs.nodes()["ENST12.3"]["exons"]) == 1
 	assert c._txs.nodes()["ENST12.3"]["strand"] == "+"
 	assert c._txs.nodes()["ENST12.3"]["chr"] == "chr1"
 	assert c._txs.nodes()["ENST12.3"]["CDS"] == [69978, 70004]
+	assert c._txs.nodes()["ENST12.3"]["main"]
 
 	# test rejected genes, transcript and CDS
 	assert "bad_status" not in c._genes.nodes()

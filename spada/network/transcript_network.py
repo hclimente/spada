@@ -18,6 +18,7 @@ class TranscriptNetwork(network.Network):
 		CDS(list,None)				Starting and the ending genome positions of the CDS.
 		strand(str,None)			Strand.
 		chr(str,None)				Chromosome.
+		main(bool,False)			Is it the main transcript of the gene?
 		median_TPM_N(float,None)	Median TPM of the isoform in the normal patients.
 		median_PSI_N(float,None)	Median PSI of the isoform in the normal patients.
 		median_TPM_T(float,None)	Median TPM of the isoform in the tumor patients.
@@ -42,6 +43,10 @@ class TranscriptNetwork(network.Network):
 	def genenameFilter(self, **kwds):
 		raise NotImplementedError()
 
+	@abc.abstractmethod
+	def isMain(self, **kwds):
+		raise NotImplementedError()
+
 	def add_node(self,tx,geneFullname):
 
 		if tx in self.nodes():
@@ -56,11 +61,12 @@ class TranscriptNetwork(network.Network):
 
 		self._net.add_node( tx,
 							gene_id			= gene,
-							exons	= [],
+							exons			= [],
 							txCoords		= None,
-							CDS		= None,
+							CDS				= None,
 							strand			= None,
 							chr				= None,
+							main 			= False,
 							median_TPM_N	= None,
 							median_PSI_N	= None,
 							median_TPM_T	= None,

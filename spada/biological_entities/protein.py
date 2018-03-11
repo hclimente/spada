@@ -74,8 +74,6 @@ class Protein:
 
 		if len(self._structure) != len(genomicPositions):
 			raise Exception('Transcript {}: lengths of protein sequence and CDS do not match ({} vs. {}).'.format(self._tx, len(self._structure), len(genomicPositions)))
-		if gap:
-			raise Exception('Transcript {}: number of nucleotides in the CDS must be multiple of 3.'.format(self._tx))
 
 		for aa, gPos in zip(self._structure, genomicPositions):
 			aa.setGenomicPosition(gPos)
