@@ -10,6 +10,8 @@ info = {	"gene_id":			"A",
 			"CDS":				[21,172],
 		  	"strand":			"+",
 		  	"chr":				1,
+			"start_codon":		21,
+			"stop_codon":		173,
 			"proteinSequence":	"EFGHIJKABCDEFGHIJKLMNOPKR",
 			"Pfam":				{"D1": [[1,3]], "D2": [[7,9]]},
 			"Prosite":			{"P1": [[4,6],[7,9]]},
@@ -28,7 +30,7 @@ def test_init():
 	assert p._idr == info["IDR"]
 
 	# explore structure
-	structure = [ x for x in p.structure_ordered ]
+	structure = [ x for x in p.structure ]
 	assert len(structure) == len(info["proteinSequence"])
 	assert structure[0].genomicPosition == 21
 	assert structure[24].genomicPosition == 170
@@ -39,10 +41,12 @@ def test_init():
 	infominus = info
 	infominus["strand"] = "-"
 	infominus["exons"] = [[170,190],[120,150],[70,100],[1,30]]
+	infominus["start_codon"] = 172
+	infominus["stop_codon"] = 20
 	pminus = protein.Protein("X", infominus)
 
 	# explore structure if strand is minus
-	structureminus = [ x for x in pminus.structure_ordered ]
+	structureminus = [ x for x in pminus.structure ]
 	assert len(structureminus) == len(info["proteinSequence"])
 	assert structureminus[0].genomicPosition == 172
 	assert structureminus[24].genomicPosition == 23

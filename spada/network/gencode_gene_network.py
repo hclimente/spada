@@ -1,13 +1,11 @@
 from spada import utils
-from spada.network import gene_network
+from spada.network.gene_network import GeneNetwork
 
-import abc
-
-class GENCODEGeneNetwork(gene_network.GeneNetwork):
+class GENCODEGeneNetwork(GeneNetwork):
 	def __init__(self):
 
 		self._accepted_status = ['KNOWN','NOVEL','PUTATIVE','KNOWN_BY_PROJECTION']
-		gene_network.GeneNetwork.__init__(self, __name__)
+		GeneNetwork.__init__(self, __name__)
 
 	def accept(self, line):
 		return line['gene_status'] in self._accepted_status

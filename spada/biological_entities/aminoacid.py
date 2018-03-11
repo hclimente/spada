@@ -1,6 +1,6 @@
 from collections import Counter
 
-class AminoAcid:
+class Aminoacid:
 	def __init__(self, resNum, resName):
 		"""
 		pdbMapping: dictionary with the topological information (B, IS or NIS) of that residue (value)

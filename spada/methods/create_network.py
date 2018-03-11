@@ -1,5 +1,5 @@
-from spada.biological_entities import transcript
-from spada.biological_entities import protein
+from spada.biological_entities.transcript import Transcript
+from spada.biological_entities.protein import Protein
 from spada import utils
 from spada.methods import method
 from spada.network import ucsc_gene_network, ucsc_transcript_network
@@ -76,11 +76,13 @@ class CreateNetwork(method.Method):
 
 		self.logger.info("Importing genes and transcripts from GTF.")
 
+		txLines = ['transcript','exon','CDS','start_codon','stop_codon']
+
 		for line in utils.readGTF(gtf):
 
 			if line["feature"] == "gene" and self._genes.accept(line):
 				self._genes.add_node(gene_id = line["gene_id"], gene_symbol = line["gene_name"])
-			elif line["feature"] in ['transcript','exon','CDS'] and self._txs.accept(line):
+			elif line["feature"] in txLines and self._txs.accept(line):
 				if line["feature"] == "transcript":
 					self._txs.add_node(line["transcript_id"], line["gene_id"])
 					self._txs.update_node(line["transcript_id"], "txCoords", [int(line["start"]), int(line["end"]) ])
@@ -89,6 +91,12 @@ class CreateNetwork(method.Method):
 					self._txs.update_node(line["transcript_id"], "main", self._txs.isMain(line) )
 				elif line["feature"] == "exon":
 					self._txs.update_node(line["transcript_id"], "exons", [int(line["start"]), int(line["end"]) ])
+				elif line["feature"] == "start_codon":
+					pos = line["start"] if line['strand'] == '+' else line['end']
+					self._txs.update_node(line["transcript_id"], "start_codon", int(pos))
+				elif line["feature"] == "stop_codon":
+					pos = line["start"] if line['strand'] == '+' else line['end']
+					self._txs.update_node(line["transcript_id"], "stop_codon", int(pos))
 				elif line["feature"] == "CDS" and self._txs.acceptCDS(line):
 					self._txs.update_node(line["transcript_id"], "CDS", [int(line["start"]), int(line["end"]) ])
 
@@ -265,10 +273,10 @@ class CreateNetwork(method.Method):
 
 		self.logger.info("Quality checks and save networks.")
 		for tx, info in self._txs.transcripts():
-			transcript.Transcript(tx, info)
+			Transcript(tx, info)
 
 			if info['CDS']:
-				protein.Protein(tx, info)
+				Protein(tx, info)
 
 		self._genes.saveNetwork("genes.pkl")
 		self._txs.saveNetwork("transcripts.pkl")

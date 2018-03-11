@@ -27,7 +27,7 @@ class Network:
 	def _update_node(self, node, key, value, secondKey = "", override = False):
 
 		if node not in self.nodes():
-			self.logger.warning("Tried to update node {}, but does not exist.".format(node))
+			self.logger.debug("Tried to update node {}, but does not exist.".format(node))
 			return False
 
 		if not override and isinstance(self._net.node[node][key], list):
@@ -49,7 +49,7 @@ class Network:
 	def _update_edge(self, node1, node2, key, value):
 
 		if not [ (x,y) for (x,y) in self.edges() if (node1,node2) == (x,y) or (node1,node2) == (y,x) ]:
-			self.logger.warning("Tried to update edge {} - {}, but it does not exist.".format(node1, node2))
+			self.logger.debug("Tried to update edge {} - {}, but it does not exist.".format(node1, node2))
 			return False
 
 		if isinstance( self._net.edge[node1][node2][key], list):

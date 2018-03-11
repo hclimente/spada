@@ -6,7 +6,6 @@ from spada.interface import out_network
 
 import argparse
 import logging
-from math import log2
 
 # candidates calculation
 def recurrenceAnalysis():
@@ -95,7 +94,7 @@ subparser_init.add_argument('-g', '--gtf', dest='gtf', action='store', default=N
 subparser_init.add_argument('-n', '--expression-normal', dest='normalExpression',
 							action='store', default=None,
 							help='Tab-separated table with transcript-level expression data of the normal samples \
-							in log2(TPM); a row per annotated transcript, indicated in the first column.  Required \
+							in TPM; a row per annotated transcript, indicated in the first column.  Required \
 							for newly generated networks.')
 subparser_init.add_argument('-t', '--expression-tumor', dest='tumorExpression',
 							action='store', default=None,
@@ -178,15 +177,15 @@ if "task" not in options:
 	parser.print_help()
 	exit()
 
-logging.basicConfig(level=logging.DEBUG,
-					format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-					datefmt='%m-%d %H:%M',
-				   	filename='.{}.log'.format(options.task), filemode='w')
+logging.basicConfig(level 		= logging.DEBUG,
+					format 		= '%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+					datefmt 	= '%m-%d %H:%M',
+				   	filename 	= 'spada_{}.log'.format(options.task), filemode='w')
 
 console = logging.StreamHandler()
 console.setLevel(logging.INFO)
 
-formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+formatter = logging.Formatter('%(asctime)s: %(levelname)-8s %(message)s')
 console.setFormatter(formatter)
 logging.getLogger().addHandler(console)
 

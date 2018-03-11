@@ -5,21 +5,25 @@ from spada.biological_entities import switch
 import pytest
 
 a1Info = {	"gene_id":			"A",
-			"exons": 	[[1,31],[40,60],[70,101]],
+			"exons": 			[[1,31],[40,60],[70,101]],
 		  	"txCoords": 		[1,100],
-		  	"CDS":		[21,82],
+		  	"CDS":				[21,82],
 		  	"strand":			"+",
 		  	"chr":				1,
+			"start_codon":		21,
+			"stop_codon":		83,
 			"proteinSequence":	"ABCDEFGHIJNOPQR",
 			"Pfam":				{"D1": [[1,3],[5,7]]},
 			"Prosite":			{"P1": [[7,9]], "P2": [[8,9]]},
 			"IDR": 				{"EFGHIJNOPQ": [[5, 14]]} }
 a2Info = {	"gene_id":			"A",
-			"exons": 	[[1,31],[49,101],[120,151]],
+			"exons": 			[[1,31],[49,101],[120,151]],
 		  	"txCoords": 		[1,150],
-		  	"CDS":		[21,124],
+		  	"CDS":				[21,124],
 		  	"strand":			"+",
 		  	"chr":				1,
+			"start_codon":		21,
+			"stop_codon":		125,
 			"proteinSequence":	"ABCDGHIJKLMNOPKRSTUVWXY",
 			"Pfam":				{"D1": [[1,3]], "D2": [[7,9]]},
 			"Prosite":			{"P1": [[4,6],[8,10]]},
@@ -69,7 +73,7 @@ def test_addTxInfo():
 	assert s.nIsoform != None
 	assert s.nIsoform.tx == "A"
 	assert s.nIsoform.seq == a1Info["proteinSequence"]
-	assert "".join( x.res for x in s.nIsoform.structure_ordered ) == a1Info["proteinSequence"]
+	assert "".join( x.res for x in s.nIsoform.structure ) == a1Info["proteinSequence"]
 	assert s.nIsoform._pfam == a1Info["Pfam"]
 	assert s.nIsoform._prosite == a1Info["Prosite"]
 	assert s.nIsoform._idr == a1Info["IDR"]
@@ -77,7 +81,7 @@ def test_addTxInfo():
 	assert s.tIsoform != None
 	assert s.tIsoform.tx == "B"
 	assert s.tIsoform.seq == a2Info["proteinSequence"]
-	assert "".join( x.res for x in s.tIsoform.structure_ordered ) == a2Info["proteinSequence"]
+	assert "".join( x.res for x in s.tIsoform.structure ) == a2Info["proteinSequence"]
 	assert s.tIsoform._pfam == a2Info["Pfam"]
 	assert s.tIsoform._prosite == a2Info["Prosite"]
 	assert s.tIsoform._idr == a2Info["IDR"]

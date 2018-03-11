@@ -1,6 +1,6 @@
-from spada.network import transcript_network
+from spada.network.transcript_network import TranscriptNetwork
 
-class GENCODETranscriptNetwork(transcript_network.TranscriptNetwork):
+class GENCODETranscriptNetwork(TranscriptNetwork):
 	def __init__(self):
 
 		self._main_tx = ['appris_principal_1', 'appris_principal_2']
@@ -8,7 +8,7 @@ class GENCODETranscriptNetwork(transcript_network.TranscriptNetwork):
 		self._accepted = ['basic', 'CCDS']
 		self._rejected = ['cds_end_NF', 'cds_start_NF']
 
-		transcript_network.TranscriptNetwork.__init__(self, __name__)
+		TranscriptNetwork.__init__(self, __name__)
 
 	def accept(self, line):
 		accept = bool([ t for t in line['tags'] if t in self._accepted ])

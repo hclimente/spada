@@ -1,6 +1,5 @@
-from spada.biological_entities import switch
-from spada import utils
-from spada.network import network
+from spada.biological_entities.switch import IsoformSwitch
+from spada.network.network import Network
 
 import abc
 import numpy as np
@@ -8,7 +7,7 @@ import operator
 import pandas as pd
 import random
 
-class GeneNetwork(network.Network):
+class GeneNetwork(Network):
 	"""docstring for GeneNetwork
 	GeneNetwork contains a network of genes.
 
@@ -34,7 +33,7 @@ class GeneNetwork(network.Network):
 	__metaclass__ = abc.ABCMeta
 
 	def __init__(self, name):
-		network.Network.__init__(self, name)
+		Network.__init__(self, name)
 
 	@abc.abstractmethod
 	def nameFilter(self, **kwds):
@@ -100,20 +99,20 @@ class GeneNetwork(network.Network):
 		id2 = [ x for x in [full_name2, gene_id2, symbol2] if x ]
 
 		if not id1 or not id2:
-			self.logger.warning("Tried to add edge, but no node-information \
+			self.logger.debug("Tried to add edge, but no node-information \
 								 provided (Node 1[{}] and Node 2[{}]).".format(id1, id2))
 
 		node_id1 = self.nameFilter(full_name=full_name1, gene_id=gene_id1, gene_symbol=symbol1)[0]
 		node_id2 = self.nameFilter(full_name=full_name2, gene_id=gene_id2, gene_symbol=symbol2)[0]
 
 		if (node_id1 is None or node_id1 is "") or (node_id2 is None or node_id2 is ""):
-			self.logger.warning( "Cannot add edge {} - {}.".format(id1[0], id2[0]))
+			self.logger.debug( "Cannot add edge {} - {}.".format(id1[0], id2[0]))
 			return False
 		elif node_id1 not in self.nodes():
-			self.logger.warning("Node {} does not exist.".format(node_id1))
+			self.logger.debug("Node {} does not exist.".format(node_id1))
 			return False
 		elif node_id2 not in self.nodes():
-			self.logger.warning("Node {} does not exist.".format(node_id2))
+			self.logger.debug("Node {} does not exist.".format(node_id2))
 			return False
 
 		return self._add_edge(node_id1, node_id2)
@@ -157,7 +156,7 @@ class GeneNetwork(network.Network):
 
 			if self.valid_switch(row["gene"], row["normal"], row["tumor"], tx_network):
 
-				thisSwitch = switch.IsoformSwitch(row["normal"], row["tumor"],row["samples"])
+				thisSwitch = IsoformSwitch(row["normal"], row["tumor"],row["samples"])
 				nInfo = tx_network.nodes()[thisSwitch.nTx]
 				tInfo = tx_network.nodes()[thisSwitch.tTx]
 				thisSwitch.addTxInfo(nInfo, tInfo)
@@ -265,7 +264,7 @@ class GeneNetwork(network.Network):
 			partialCreation(bool): if False, the heavy protein
 				objects are not created.
 		"""
-		thisSwitch = switch.IsoformSwitch(switchDict["nIso"],switchDict["tIso"],switchDict["patients"])
+		thisSwitch = IsoformSwitch(switchDict["nIso"],switchDict["tIso"],switchDict["patients"])
 		nInfo = tx_network._net.node[thisSwitch.nTx]
 		tInfo = tx_network._net.node[thisSwitch.tTx]
 		thisSwitch.addTxs(nInfo,tInfo)

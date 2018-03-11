@@ -1,11 +1,11 @@
 from spada import utils
-from spada.network import network
+from spada.network.network import Network
 
 import pandas as pd
 import numpy as np
 import abc
 
-class TranscriptNetwork(network.Network):
+class TranscriptNetwork(Network):
 	"""docstring for TranscriptNetwork
 	TranscriptNetwork contains a network of isoforms.
 
@@ -19,6 +19,8 @@ class TranscriptNetwork(network.Network):
 		strand(str,None)			Strand.
 		chr(str,None)				Chromosome.
 		main(bool,False)			Is it the main transcript of the gene?
+		start_codon(int,None)		First residue of the start codon.
+		stop_codon(int,None)		First residue of the stop codon.
 		median_TPM_N(float,None)	Median TPM of the isoform in the normal patients.
 		median_PSI_N(float,None)	Median PSI of the isoform in the normal patients.
 		median_TPM_T(float,None)	Median TPM of the isoform in the tumor patients.
@@ -33,7 +35,7 @@ class TranscriptNetwork(network.Network):
 	__metaclass__ = abc.ABCMeta
 
 	def __init__(self, name):
-		network.Network.__init__(self, name)
+		Network.__init__(self, name)
 
 	@abc.abstractmethod
 	def acceptCDS(self, **kwds):
@@ -67,6 +69,8 @@ class TranscriptNetwork(network.Network):
 							strand			= None,
 							chr				= None,
 							main 			= False,
+							start_codon		= None,
+							stop_codon		= None,
 							median_TPM_N	= None,
 							median_PSI_N	= None,
 							median_TPM_T	= None,
@@ -87,6 +91,10 @@ class TranscriptNetwork(network.Network):
 			override = True
 			i = self._net.node[tx]['strand'] == '-'
 			value[i] = self._net.node[tx][key][i]
+		elif key in ['start_codon','stop_codon'] and self.nodes(data=True)[tx][key]:
+			override = True
+			old = self._net.node[tx][key]
+			value = min(old, value) if self._net.node[tx]['strand'] == '+' else max(old, value)
 
 		return self._update_node(tx, key, value, secondKey, override)
 
