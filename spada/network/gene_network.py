@@ -224,7 +224,7 @@ class GeneNetwork(Network):
 			for thisSwitch in switches:
 				if removeNoise and thisSwitch.isNoise:
 					continue
-				elif only_models and not thisSwitch.isCandidate:
+				elif only_models and not thisSwitch.isMain:
 					continue
 				elif relevance is not None and relevance != thisSwitch.is_functional:
 					continue
@@ -313,7 +313,7 @@ class GeneNetwork(Network):
 
 			for s in info["switches"]:
 				s.setNoise( len(s.samples) <= cutoff )
-				s.setCandidate( gene in candidates and s == candidates[gene] )
+				s.setMain( gene in candidates and s == candidates[gene] )
 
 	def sampleSwitches(self,tx_network,partialCreation=True,numIterations=2000):
 
@@ -327,19 +327,14 @@ class GeneNetwork(Network):
 
 			yield gene,info,switchDict,thisSwitch
 
-	def getGeneAnnotation(self,gene,hallmarksDict,biologicalProcessDict):
+	def isDriver(self, gene):
 
-		annotation = "Nothing"
-		driverAnnotation = "Nothing"
-
-		if self._net.node[gene]["driver"]:
-			driverAnnotation = "driver"
+		driver = 'No'
+		if self._net.node[gene]["specificDriver"]:
+			driver = 'tumor-specific_driver'		
+		elif self._net.node[gene]["driver"]:
+			driver = 'driver'
 		elif [ x for x in self._net.neighbors(gene) if self._net.node[x]["driver"] ]:
-			driverAnnotation = "d1"
+			driver = "d1"
 
-		if [ x for x in hallmarksDict if gene in hallmarksDict[x] ]:
-			annotation = ",".join(sorted([ x for x in hallmarksDict if gene in hallmarksDict[x] ]))
-		elif [ x for x in biologicalProcessDict if gene in biologicalProcessDict[x] ]:
-			annotation = ",".join(sorted([ x for x in biologicalProcessDict if gene in biologicalProcessDict[x] ]))
-
-		return (annotation,driverAnnotation)
+		return driver

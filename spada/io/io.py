@@ -114,41 +114,23 @@ def readFasta(fasta):
 def printSwitches(genes, txs, filename = "switches_spada.tsv"):
 
 	logging.info("Writing switch information.")
-	with open(filename, "w") as cList:
-		cList.write("GeneId\tSymbol\tNormal_transcript\tTumor_transcript\t")
-		cList.write("Normal_protein\tTumor_protein\tAnnotation\tDriverAnnotation\t")
-		cList.write("NotNoise\tIsModel\tIsFunctional\tDriver\tSpecificDriver\tDruggable\t")
-		cList.write("CDS_Normal\tCDS_Tumor\tCDS_change\tUTR_change\tPatients_affected\n")
 
-		hallmarksDict = io.readGeneset("h.all.v5.0.entrez.gmt")
-		bpDict = io.readGeneset("c5.bp.v4.0.entrez.gmt")
+	with open(filename, "w") as OUT:
+		OUT.write("GeneId\tSymbol\tNormal_transcript\tTumor_transcript\t")
+		OUT.write("DriverAnnotation\tNotNoise\tisMain\tIsFunctional\t")
+		OUT.write("CDS_Normal\tCDS_Tumor\tCDS_change\tUTR_change\tPatients_affected\n")
 
-		for gene,info,switchDict,switch in genes.iterate_switches_byPatientNumber(txs,partialCreation=True,removeNoise=False):
-			nIso = switch.nTranscript
-			tIso = switch.tTranscript
+		for gene,info,thisSwitch in genes.iterate_switches_byPatientNumber(txs, removeNoise = False):
 
-			nUniprot 	= txs._net.node[switch.nTx]["Uniprot"]
-			tUniprot 	= txs._net.node[switch.tTx]["Uniprot"]
-			cdsChange 	= False
-			utrChange 	= False
+			cdsChange = bool(thisSwitch.cds_diff)
+			utrChange = bool(thisSwitch.utr_diff)
 
-			if switch.cds_diff: 	 	cdsChange 	= True
-			if switch.utr_diff: 		utrChange 	= True
+			driver = genes.isDriver(gene)
 
-			try:
-				relevance = int(switch.is_functional)
-			except Exception:
-				relevance = None
-
-			annotation,driverAnnotation = genes.getGeneAnnotation(gene,hallmarksDict,bpDict)
-
-			cList.write("{}\t{}\t".format( gene, info["symbol"] ))
-			cList.write("{}\t{}\t".format( nIso.name, tIso.name ))
-			cList.write("{}\t{}\t".format( nUniprot, tUniprot ))
-			cList.write("{}\t{}\t".format( annotation,driverAnnotation ))
-			cList.write("{}\t{}\t".format( int(not switchDict["noise"]), int(switchDict["model"]) ))
-			cList.write("{}\t{}\t".format( relevance, int(info["driver"]) ))
-			cList.write("{}\t".format( int(info["specificDriver"]) ))
-			cList.write("{}\t{}\t".format( int(info["druggable"]), int(bool(nIso.cds)) ))
-			cList.write("{}\t{}\t".format( int(bool(tIso.cds)), int(cdsChange), ))
-			cList.write("{}\t{}\n".format( int(utrChange), ",".join(switch.patients) ))
+			OUT.write("{}\t{}\t".format( gene, info["symbol"] ))
+			OUT.write("{}\t{}\t".format( thisSwitch.nTx, thisSwitch.tTx ))
+			OUT.write("%s\t%i\t" % ( driver, not thisSwitch.isNoise ))
+			OUT.write("%i\t%i\t" % ( thisSwitch.isMain, thisSwitch.isFunctional))
+			OUT.write("%i\t%i\t" % ( bool(thisSwitch.nTranscript.cds), bool(thisSwitch.tTranscript.cds) ))
+			OUT.write("%i\t%i\t" % ( cdsChange, utrChange))
+			OUT.write("{}\n".format( ",".join(thisSwitch.samples) ))

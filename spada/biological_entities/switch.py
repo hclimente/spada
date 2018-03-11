@@ -11,13 +11,18 @@ class IsoformSwitch:
 		self._tumor_transcript_name = tTx
 		self._samples 				= samples
 
-		self._normal_transcript 	= None
-		self._tumor_transcript 		= None
-		self._normal_protein 		= None
-		self._tumor_protein 		= None
+		self._normal_transcript = None
+		self._tumor_transcript 	= None
+		self._normal_protein 	= None
+		self._tumor_protein 	= None
 
-		self._candidate 			= None
-		self._noise 				= None
+		self._functional		= None
+		self._main 				= None
+		self._noise 			= None
+
+		self._pfamChange		= None
+		self._prositeChange 	= None
+		self._idrChange			= None
 
 	@property
 	def nTx(self): return self._normal_transcript_name
@@ -27,11 +32,23 @@ class IsoformSwitch:
 	def samples(self): return self._samples
 
 	@property
-	def isCandidate(self): return self._candidate
-	def setCandidate(self, candidate): self._candidate = candidate
+	def isMain(self): return self._main
+	def setMain(self, candidate): self._main = candidate
 	@property
 	def isNoise(self): return self._noise
 	def setNoise(self, noise): self._noise = noise
+	@property
+	def isFunctional(self):
+
+		if self._pfamChange is None:
+			self.analyzeDomains('Pfam')
+		if self._prositeChange is None:
+			self.analyzeDomains('Prosite')
+		if self._idrChange is None:
+			self.analyzeIDR(0.2)
+
+		self._functional = self._pfamChange or self._prositeChange or self._idrChange
+		return self._functional
 
 	@property
 	def nIsoform(self): return self._normal_protein
@@ -236,6 +253,11 @@ class IsoformSwitch:
 				featureInfo. append(f)
 				i += 1
 
+		if featureType == "Prosite":
+			self._prositeChange = bool([ x for x in featureInfo if f["what"] != 'Nothing' ])
+		else:
+			self._pfamChange = bool([ x for x in featureInfo if f["what"] != 'Nothing' ])
+
 		return featureInfo
 
 	def analyzeIDR(self, idr_threshold):
@@ -299,5 +321,7 @@ class IsoformSwitch:
 						f = { "feature": motifSequence, "start": start, "end": end, \
 							  "what": what, "M": macroScore, "m": microScore, "J": jaccard }
 						idrInfo.append(f)
+
+		self._idrChange = bool([ x for x in idrInfo if f["what"] != 'Nothing' ])
 
 		return idrInfo

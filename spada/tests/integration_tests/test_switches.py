@@ -33,18 +33,18 @@ def test_init():
 	assert [ x for x in g._genes.nodes()["ENSG09.6"]["switches"] if x.nTx == "ENST16.2" and x.tTx == "ENST14.5" and x.samples == ["H","I"] ]
 
 	# switches have at most 1 candidate, some have noise
-	assert len([ x for x in g._genes.nodes()["ENSG00.5"]["switches"] if x.isCandidate ]) == 1
+	assert len([ x for x in g._genes.nodes()["ENSG00.5"]["switches"] if x.isMain ]) == 1
 	assert len([ x for x in g._genes.nodes()["ENSG00.5"]["switches"] if x.isNoise ]) == 1
-	assert len([ x for x in g._genes.nodes()["ENSG03.3"]["switches"] if x.isCandidate ]) == 0
+	assert len([ x for x in g._genes.nodes()["ENSG03.3"]["switches"] if x.isMain ]) == 0
 	assert len([ x for x in g._genes.nodes()["ENSG03.3"]["switches"] if x.isNoise ]) == 2
-	assert len([ x for x in g._genes.nodes()["ENSG05.2"]["switches"] if x.isCandidate ]) == 1
-	assert len([ x for x in g._genes.nodes()["ENSG09.6"]["switches"] if x.isCandidate ]) == 1
+	assert len([ x for x in g._genes.nodes()["ENSG05.2"]["switches"] if x.isMain ]) == 1
+	assert len([ x for x in g._genes.nodes()["ENSG09.6"]["switches"] if x.isMain ]) == 1
 	assert len([ x for x in g._genes.nodes()["ENSG09.6"]["switches"] if x.isNoise ]) == 1
 
 	# candidate is the expected switch
-	assert g._genes.getSwitch("ENSG00.5","ENST01.2","ENST02.2").isCandidate
-	assert g._genes.getSwitch("ENSG05.2","ENST08.1","ENST09.1").isCandidate
-	assert g._genes.getSwitch("ENSG09.6","ENST16.2","ENST13.5").isCandidate
+	assert g._genes.getSwitch("ENSG00.5","ENST01.2","ENST02.2").isMain
+	assert g._genes.getSwitch("ENSG05.2","ENST08.1","ENST09.1").isMain
+	assert g._genes.getSwitch("ENSG09.6","ENST16.2","ENST13.5").isMain
 
 	# noise are the expected switch
 	assert g._genes.getSwitch("ENSG00.5","ENST02.2","ENST01.2").isNoise
