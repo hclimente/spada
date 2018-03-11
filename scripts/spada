@@ -8,7 +8,7 @@ import logging
 
 def summarizeResults():
 
-	s = result_summary.ResultSummary(True,True)
+	s = summary.Summary(True,True)
 	s.clean()
 	s.run()
 
@@ -118,7 +118,7 @@ subparser_sim.set_defaults(func=simulateSwitches)
 ###   STRUCTURAL ANALYSIS                   ####
 ################################################
 def summarize():
-	s = result_summary.ResultSummary(True,True)
+	s = summary.Summary(True,True)
 	s.clean()
 	s.run()
 

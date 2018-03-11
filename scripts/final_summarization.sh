@@ -16,25 +16,25 @@ done
 
 echo switches
 echo -e "Tumor\tAnalysis\tBoth\tOnly_nIso\tOnly_tIso\tNone\tRandom_Both\tRandom_Only_nIso\tRandom_Only_tIso\tRandom_None" >~/smartas/notebook/data/switches/CDS_study.tsv
-grep CDS_study ~/smartas/analyses/????/result_summary/switches_onlyModels.tsv | cut -d':' -f2 >>~/smartas/notebook/data/switches/CDS_study.tsv
+grep CDS_study ~/smartas/analyses/????/summary/switches_onlyModels.tsv | cut -d':' -f2 >>~/smartas/notebook/data/switches/CDS_study.tsv
 
 analyses='CDS_change UTR_change'
 for a in $analyses
 do
     echo -e "Tumor\tAnalysis\tYes\tNo\tRandom_Yes\tRandom_No\tp\tOR" >~/smartas/notebook/data/switches/$a.tsv
-    grep $a ~/smartas/analyses/????/result_summary/switches_onlyModels.tsv | cut -d':' -f2 >>~/smartas/notebook/data/switches/$a.tsv
+    grep $a ~/smartas/analyses/????/summary/switches_onlyModels.tsv | cut -d':' -f2 >>~/smartas/notebook/data/switches/$a.tsv
 done
 
 analyses="d0_enrichment d1_enrichment d0_functional_enrichment d1_functional_enrichment"
 for a in $analyses
 do
     echo -e "Tumor\tAnalysis\tFS\tFNS\tNFS\tNFNS\tp.me\tOR" >~/smartas/notebook/data/switches/$a.tsv
-    grep $a ~/smartas/analyses/????/result_summary/switches_onlyModels.tsv | cut -d':' -f2 >~/smartas/notebook/data/switches/$a.tsv
+    grep $a ~/smartas/analyses/????/summary/switches_onlyModels.tsv | cut -d':' -f2 >~/smartas/notebook/data/switches/$a.tsv
 done
 
 echo isoform length
 echo -e "Tumor\tNormal_transcript\tTumor_transcript\tRandom\tnIsoLength\ttIsoLength\tnIsoSpecificLength\ttIsoSpecificLength" >~/smartas/notebook/data/switches/isoform_length.tsv
-ls ~/smartas/analyses/????/result_summary/isoform_length_onlyModels.tsv | xargs -n 1 tail -n +2 >>~/smartas/notebook/data/switches/isoform_length.tsv
+ls ~/smartas/analyses/????/summary/isoform_length_onlyModels.tsv | xargs -n 1 tail -n +2 >>~/smartas/notebook/data/switches/isoform_length.tsv
 
 echo evidence of driverness
 echo -e "Tumor\tGeneId\tSymbol\tNormal_transcript\tTumor_transcript\tRecurrence\tAffects_mutated_feature\tPPI\tPannegative\tCentrality\tME\tCDD\n" >~/smartas/notebook/data/switches/driverEvidence.tsv
@@ -71,7 +71,7 @@ done
 
 echo structural_features
 echo -e "Tumor\tGeneId\tSymbol\tNormal_transcript\tTumor_transcript\tRandom\tAnalysis\tWhatsHappenning\tFeature\tDriver\tASDriver\tDriverType" >~/smartas/notebook/data/structural_analysis/structural_features.onlyModels.tsv
-grep -v ^Cancer ~/smartas/analyses/????/result_summary/structural_features_onlyModels.tsv | cut -d':' -f2- >>~/smartas/notebook/data/structural_analysis/structural_features.onlyModels.tsv
+grep -v ^Cancer ~/smartas/analyses/????/summary/structural_features_onlyModels.tsv | cut -d':' -f2- >>~/smartas/notebook/data/structural_analysis/structural_features.onlyModels.tsv
 
 echo interpro_analysis
 echo -e "GeneId\tSymbol\tNormal_transcript\tTumor_transcript\tWhat\tFeature\tnormalReps\ttumorReps\tnMacroScore\tnMicroScore\tnJaccard\ttMacroScore\ttMicroScore\ttJaccard" >~/smartas/notebook/data/structural_analysis/interpro_analysis.tsv

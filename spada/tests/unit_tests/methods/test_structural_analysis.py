@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 from spada.methods import structural_analysis
 from spada.io import io
 

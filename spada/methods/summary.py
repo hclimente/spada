@@ -1,14 +1,11 @@
 from spada.io import io
 from spada.methods import method
-from spada.io import io
 
-from scipy.stats import fisher_exact
 from itertools import groupby
 import numpy as np
 from operator import itemgetter
-from scipy import stats
 
-class ResultSummary(method.Method):
+class Summary(method.Method):
 	def __init__(self,gn_network,tx_network):
 		method.Method.__init__(self, __name__,gn_network,tx_network)
 
@@ -19,22 +16,22 @@ class ResultSummary(method.Method):
 		self.featuresTable = []
 
 	def run(self):
-		self.logger.info("Summarizing results.")
 
+		self.logger.info("Summarizing results.")
 		txDict = self._txs.nodes(data=True)
 
-		io.printSwitches(self._genes,self._txs)
+		io.printSwitches(self._genes, self._txs)
 
 		self.logger.info("Taking measures on switches.")
 		for gene,info,thisSwitch in self._genes.iterate_switches_byPatientNumber(self._txs, only_models=True, removeNoise=True):
-			self.logger.debug("Getting statistics for switch {}_{}_{}.".format(gene,thisSwitch.nTx,thisSwitch.tTx))
+			self.logger.debug("Getting statistics for switch {} - {}.".format(thisSwitch.nTx,thisSwitch.tTx))
 
 			# general protein, switch and gene info
 			self.exonOverview(gene, info, thisSwitch)
-			self.proteinOverview(txDict,thisSwitch)
+			self.proteinOverview(txDict, thisSwitch)
 
 			# structural info
-			self.changedStructuralFeatures(gene,info,thisSwitch)
+			self.changedStructuralFeatures(gene, info, thisSwitch)
 
 		self.printSplicingInfo()
 		self.printStructutalInfo()
@@ -145,31 +142,31 @@ class ResultSummary(method.Method):
 
 	def printSplicingInfo(self):
 
-		with open("result_summary/isoform_length.tsv".format(), "w" ) as F:
+		with open("isoform_length.tsv".format(), "w" ) as F:
 			F.write("Cancer\tNormal_transcript\tTumor_transcript\tnIsoLength")
 			F.write("\ttIsoLength\tnIsoSpecificLength\ttIsoSpecificLength\n")
 			for switch,nlen,tlen,nsplen,tsplen in self.proteinStats:
 				switchIsoforms = switch.split("_")
 				nIso = switchIsoforms[0]
 				tIso = switchIsoforms[1]
-				F.write("{}\t{}\t{}\t".format(options.Options().tag,nIso,tIso))
+				F.write("{}\t{}\t{}\t".format(self._genes._name,nIso,tIso))
 				F.write("{}\t{}\t{}\t{}\n".format(nlen,tlen,nsplen,tsplen))
 
-		with open("result_summary/exons.tsv", "w" ) as F:
+		with open("exons.tsv", "w" ) as F:
 			F.write("Cancer\tSwitch\tOrigin\tType\tLength\tCDSLength\t")
 			F.write("CDSRelativeSize\tPosition\tKeepOrf\n")
 			for exon in self.exonStats:
-				F.write("{}\t".format(options.Options().tag))
+				F.write("{}\t".format(self._genes._name))
 				F.write("{}\t{}\t".format(exon["switch"],exon["role"]))
 				F.write("{}\t".format(exon["origin"]))
 				F.write("{}\t{}\t".format(exon["length"],exon["cdsLength"]))
 				F.write("{}\t{}\t".format(exon["relativeSize"],exon["position"]))
 				F.write("{}\n".format(exon["keepORF"]))
 
-		with open("result_summary/exons_new.tsv", "w" ) as F:
+		with open("exons_new.tsv", "w" ) as F:
 			F.write("Cancer\tGene\tSymbol\tnTranscript\ttTranscript\tTag\tOrfChange\tnormalSegment\ttumorSegment\n");
 			for exon in self.alternativeSplicingStats:
-				F.write("{}\t".format(options.Options().tag))
+				F.write("{}\t".format(self._genes._name))
 				F.write("{}\t{}\t".format(exon["gene"],exon["symbol"]))
 				F.write("{}\t{}\t".format(exon["nTranscript"],exon["tTranscript"]))
 				F.write("{}\t{}\t".format(exon["tag"],exon["orfChange"]))
@@ -177,7 +174,7 @@ class ResultSummary(method.Method):
 
 	def printStructutalInfo(self):
 
-		with open("result_summary/structural_features.tsv", "w" ) as F:
+		with open("structural_features.tsv", "w" ) as F:
 			F.write("Cancer\tGene\tSymbol\tnTx\ttTx\tAnalysis\tWhatsHappenning\t")
 			F.write("Feature\tDriver\tASDriver\tDriverType\n")
 
@@ -188,59 +185,44 @@ class ResultSummary(method.Method):
 				nTx = switchElements[2]
 				tTx = switchElements[3]
 
-				for analysis in ["Pfam","iupred","anchor","prosite"]:
+				for analysis in ["Pfam","idr","Prosite"]:
 					for data in featureDict[analysis]:
-						F.write("{}\t{}\t".format(options.Options().tag,gene))
+						F.write("{}\t{}\t".format(self._genes._name, gene))
 						F.write("{}\t{}\t".format(symbol,nTx))
 						F.write("{}\t{}\t".format(tTx,analysis))
 						F.write("{}\t{}\t".format(data[1],data[0].replace(" ","_")))
-						F.write("{}\t{}\t".format(featureDict["driver"],featureDict["asDriver"]))
-						F.write("{}\n".format(featureDict["driverType"]))
+						F.write("{}\n".format(featureDict["driver"]))
 
-	def changedStructuralFeatures(self,gene,info,switchDict,thisSwitch):
+	def changedStructuralFeatures(self, gene, info, thisSwitch):
 
-		tag = "{}_{}_{}_{3}".format(gene,info["symbol"],thisSwitch.nTx,thisSwitch.tTx)
+		tag = "{}_{}_{}_{}".format(gene,info["symbol"],thisSwitch.nTx,thisSwitch.tTx)
 
 		switchFeatures = {}
 
 		pfam = []
 		prosite = []
-		disorder = []
-		anchor = []
+		idr = []
 
-		if switchDict["functional"]:
-			if thisSwitch.domainChange:
-				for element in io.readTable("{}structural_analysis/interpro_analysis.tsv".format()):
-					if element[2]==thisSwitch.nTx and element[3]==thisSwitch.tTx:
-						pfam.append((element[5],element[4]))
+		if thisSwitch.isFunctional:
+			if thisSwitch._pfamChange:
+				for x in thisSwitch.analyzeDomains('Pfam'):
+					pfam.append((x['what'], x['feature']))
 
-			if thisSwitch.disorderChange:
-				for element in io.readTable("{}structural_analysis/iupred_analysis.tsv".format()):
-					if element[2]==thisSwitch.nTx and element[3]==thisSwitch.tTx:
-						if float(element[-1]):
-							disorder.append((element[5],element[4]))
+			if thisSwitch._idrChange:
+				for x in thisSwitch.analyzeIDR(0.2):
+					idr.append((x['what'], x['feature']))
 
-			if thisSwitch.anchorChange:
-				for element in io.readTable("{}structural_analysis/anchor_analysis.tsv".format()):
-					if element[2]==thisSwitch.nTx and element[3]==thisSwitch.tTx:
-						if float(element[-1]):
-							anchor.append((element[5],element[4]))
-
-			if thisSwitch.ptmChange:
-				for element in io.readTable("{}structural_analysis/prosite_analysis.tsv".format()):
-					if element[2]==thisSwitch.nTx and element[3]==thisSwitch.tTx:
-						prosite.append((element[5],element[4]))
+			if thisSwitch._prositeChange:
+				for x in thisSwitch.analyzeDomains('Prosite'):
+					prosite.append((x['what'], x['feature']))
 
 		switchFeatures["Pfam"] = pfam
-		switchFeatures["iupred"] = disorder
-		switchFeatures["anchor"] = anchor
-		switchFeatures["prosite"] = prosite
+		switchFeatures["idr"] = idr
+		switchFeatures["Prosite"] = prosite
 
-		switchFeatures["driver"] = int(info["driver"])
-		switchFeatures["asDriver"] = int(info["asDriver"])
-		switchFeatures["driverType"] = info["driverType"]
-		switchFeatures["Functional"] = int(thisSwitch.is_functional)
-		switchFeatures["Model"] = int(switchDict["model"])
-		switchFeatures["Noise"] = int(switchDict["noise"])
+		switchFeatures["driver"] = self._genes.isDriver(gene)
+		switchFeatures["Functional"] = int(thisSwitch.isFunctional)
+		switchFeatures["Model"] = int(thisSwitch.isMain)
+		switchFeatures["Noise"] = int(thisSwitch.isNoise)
 
 		self.featuresTable.append((tag,switchFeatures))
