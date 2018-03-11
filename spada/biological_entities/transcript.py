@@ -1,4 +1,4 @@
-from spada import utils
+from spada.io import io
 
 import logging
 import os

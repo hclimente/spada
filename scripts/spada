@@ -1,51 +1,10 @@
 #!/usr/bin/env python
 
 from spada.methods import *
-from spada import utils
-from spada.interface import out_network
+from spada.io import io
 
 import argparse
 import logging
-
-# candidates calculation
-def recurrenceAnalysis():
-
-	utils.cmd('Rscript',
-		"pipeline/meta/recurrence_analysis.R",
-		"{}candidateList_info.tsv".format(options.qout),
-		"{}candidateList_recurrence.tsv".format(options.qout))
-
-def neighborhoodAnalysis():
-
-	n = neighborhood_analysis.NeighborhoodAnalysis(True,True)
-	n.run()
-
-def studyMutualExclusion():
-
-	m = me_analysis.MEAnalysis(True,True)
-	m.clean()
-	m.run()
-
-def studyGenesetMutualExclusion():
-	m = me_geneset_analysis.MEGenesetAnalysis(True,True)
-	m.clean()
-	m.run()
-
-def annotateSwitches():
-	a = annotate_switches.AnnotateSwitches(True,True)
-	a.run()
-
-# validation
-def explorePannegative():
-
-	p = explore_pannegative.ExplorePannegative(True,True)
-	p.clean()
-	p.run()
-
-def candidatesPathways():
-
-	c = candidates_pathways.CandidatesPathways(True,True)
-	c.run()
 
 def summarizeResults():
 
@@ -136,7 +95,7 @@ def functionalAnalysis(o):
 	g.run(o.switchesFile)
 	s = structural_analysis.StructuralAnalysis(g._genes, g._txs)
 	s.run()
-	out_network.outCandidateList(s._genes, s._txs)
+	io.printSwitches(s._genes, s._txs)
 
 subparser_functional = subparsers.add_parser('function', help='Functional analysis help')
 subparser_functional.add_argument('-s', '--switches', dest='switchesFile', action='store', required=True,

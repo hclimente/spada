@@ -1,4 +1,4 @@
-from spada import utils
+from spada.io import io
 from spada.biological_entities import protein, transcript
 
 from itertools import zip_longest

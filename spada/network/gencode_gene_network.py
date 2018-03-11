@@ -1,4 +1,4 @@
-from spada import utils
+from spada.io import io
 from spada.network.gene_network import GeneNetwork
 
 class GENCODEGeneNetwork(GeneNetwork):

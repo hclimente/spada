@@ -1,6 +1,6 @@
-from spada.interface import out_network
+from spada.io import io
 from spada.methods import method
-from spada import utils
+from spada.io import io
 
 from scipy.stats import fisher_exact
 from itertools import groupby
@@ -23,7 +23,7 @@ class ResultSummary(method.Method):
 
 		txDict = self._txs.nodes(data=True)
 
-		out_network.outCandidateList(self._genes,self._txs)
+		io.printSwitches(self._genes,self._txs)
 
 		self.logger.info("Taking measures on switches.")
 		for gene,info,thisSwitch in self._genes.iterate_switches_byPatientNumber(self._txs, only_models=True, removeNoise=True):
@@ -210,24 +210,24 @@ class ResultSummary(method.Method):
 
 		if switchDict["functional"]:
 			if thisSwitch.domainChange:
-				for element in utils.readTable("{}structural_analysis/interpro_analysis.tsv".format()):
+				for element in io.readTable("{}structural_analysis/interpro_analysis.tsv".format()):
 					if element[2]==thisSwitch.nTx and element[3]==thisSwitch.tTx:
 						pfam.append((element[5],element[4]))
 
 			if thisSwitch.disorderChange:
-				for element in utils.readTable("{}structural_analysis/iupred_analysis.tsv".format()):
+				for element in io.readTable("{}structural_analysis/iupred_analysis.tsv".format()):
 					if element[2]==thisSwitch.nTx and element[3]==thisSwitch.tTx:
 						if float(element[-1]):
 							disorder.append((element[5],element[4]))
 
 			if thisSwitch.anchorChange:
-				for element in utils.readTable("{}structural_analysis/anchor_analysis.tsv".format()):
+				for element in io.readTable("{}structural_analysis/anchor_analysis.tsv".format()):
 					if element[2]==thisSwitch.nTx and element[3]==thisSwitch.tTx:
 						if float(element[-1]):
 							anchor.append((element[5],element[4]))
 
 			if thisSwitch.ptmChange:
-				for element in utils.readTable("{}structural_analysis/prosite_analysis.tsv".format()):
+				for element in io.readTable("{}structural_analysis/prosite_analysis.tsv".format()):
 					if element[2]==thisSwitch.nTx and element[3]==thisSwitch.tTx:
 						prosite.append((element[5],element[4]))
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from spada.methods import create_network
-from spada.utils import SpadaError
+from spada.io.io import SpadaError
 
 import networkx as nx
 import os

@@ -1,7 +1,7 @@
 from spada.biological_entities import protein
 from spada.biological_entities import transcript
 from spada.methods import method
-from spada import utils
+from spada.io import io
 
 import math
 
@@ -20,7 +20,7 @@ class WESMutationsFeatureOverlap(method.Method):
 		# import pdb
 		# pdb.set_trace()
 
-		utils.cmd("mkdir","{}mutations".format(options.Options().qout))
+		io.cmd("mkdir","{}mutations".format(options.Options().qout))
 
 		self.TXS_ALL = open("{}mutations/proteome_information.txt".format(options.Options().qout),"w")
 		self.TXS_ALL.write("Cancer\tGene\tSymbol\tTranscript\tTPM\tProteinLength\tasEvidence\n")
@@ -45,7 +45,7 @@ class WESMutationsFeatureOverlap(method.Method):
 		self.FT_SWT.write("Feature\tn\tFeatureLength\tStart\tEnd\n")
 
 	def clean(self):
-		utils.cmd("mkdir","-p","{}mutations".format(options.Options().qout))
+		io.cmd("mkdir","-p","{}mutations".format(options.Options().qout))
 
 	def run(self):
 
@@ -99,7 +99,7 @@ class WESMutationsFeatureOverlap(method.Method):
 		self.MUT_SWT.close()
 		self.FT_SWT.close()
 
-		utils.cmd('Rscript', 'pipeline/methods/mutated_features_analysis.R', options.Options().qout)
+		io.cmd('Rscript', 'pipeline/methods/mutated_features_analysis.R', options.Options().qout)
 
 	def readFunctionalMutations(self):
 
@@ -108,7 +108,7 @@ class WESMutationsFeatureOverlap(method.Method):
 		mutations = {}
 		allMuts = []
 
-		for line in utils.readTable(mutFile,header=False):
+		for line in io.readTable(mutFile,header=False):
 
 			mutInfo = line[9]
 			tx = line[3].split(";")[1]

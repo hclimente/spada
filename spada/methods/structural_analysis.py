@@ -9,13 +9,14 @@ class StructuralAnalysis(method.Method):
 
 	def run(self):
 
-		self.logger.info("Feature analysis.")
 		self.featureAnalysis()
-
-		self.logger.info("PPI analysis.")
 		self.ppiAnalysis()
 
+		self.proteomeStatistics()
+
 	def featureAnalysis(self):
+
+		self.logger.info("Feature analysis.")
 
 		with open("pfam_analysis{}.tsv".format(self._tag), "w") as PFAM, \
 			 open("prosite_analysis{}.tsv".format(self._tag), "w") as PROSITE, \
@@ -36,6 +37,8 @@ class StructuralAnalysis(method.Method):
 
 	def ppiAnalysis(self):
 
+		self.logger.info("PPI analysis.")
+
 		with open("ppi_analysis{}.tsv".format(self._tag), "w") as PPI:
 
 			self.writePPIHeader(PPI)
@@ -44,6 +47,11 @@ class StructuralAnalysis(method.Method):
 
 				DDIchanges = self.analyzeDDIs(thisSwitch)
 				self.writePPI(PPI, gene, thisSwitch, DDIchanges)
+
+	def proteomeStatistics(self):
+
+		for tx,txInfo in self._txs.transcripts(onlyMain = True):
+			pass
 
 	def analyzeDDIs(self, thisSwitch):
 

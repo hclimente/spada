@@ -1,4 +1,4 @@
-from spada import utils
+from spada.io import io
 from spada.network.network import Network
 
 import pandas as pd
@@ -112,10 +112,12 @@ class TranscriptNetwork(Network):
 	def update_edge(self, tx1, tx2, key, value):
 		return self._update_edge(tx1, tx2, key, value)
 
-	def transcripts(self):
+	def transcripts(self, onlyMain = False):
 		'''
 		Iterate transcripts.
 		'''
 
 		for tx,info in self.nodes(data=True):
+			if onlyMain and not info['main']:
+				continue
 			yield tx, info

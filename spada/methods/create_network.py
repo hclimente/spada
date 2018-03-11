@@ -1,10 +1,10 @@
 from spada.biological_entities.transcript import Transcript
 from spada.biological_entities.protein import Protein
-from spada import utils
+from spada.io import io
 from spada.methods import method
 from spada.network import ucsc_gene_network, ucsc_transcript_network
 from spada.network import gencode_gene_network, gencode_transcript_network
-from spada.utils import SpadaError
+from spada.io.io import SpadaError
 
 from itertools import product
 from networkx import get_node_attributes
@@ -78,7 +78,7 @@ class CreateNetwork(method.Method):
 
 		txLines = ['transcript','exon','CDS','start_codon','stop_codon']
 
-		for line in utils.readGTF(gtf):
+		for line in io.readGTF(gtf):
 
 			if line["feature"] == "gene" and self._genes.accept(line):
 				self._genes.add_node(gene_id = line["gene_id"], gene_symbol = line["gene_name"])
@@ -166,7 +166,7 @@ class CreateNetwork(method.Method):
 		self.logger.info("Building protein-protein interaction network.")
 		symbols = [ y["symbol"] for x,y in self._genes.nodes(data=True) ]
 
-		for line in utils.readPSIMITAB(ppi):
+		for line in io.readPSIMITAB(ppi):
 
 			if line["organismA"][0]["id"] != "9606" or line["organismB"][0]["id"] != "9606":
 				next
@@ -189,7 +189,7 @@ class CreateNetwork(method.Method):
 			return()
 
 		self.logger.info("Building isoform-isoform interaction network.")
-		allDDIs = { frozenset([d1,d2]) for d1,d2 in utils.readTable(ddi) }
+		allDDIs = { frozenset([d1,d2]) for d1,d2 in io.readTable(ddi) }
 
 		for gene1, gene2 in self._genes._net.edges():
 			txs1 = [ (t,i["Pfam"]) for t,i in self._txs.nodes(data=True) if i["gene_id"] == gene1 and i["Pfam"] ]
@@ -216,7 +216,7 @@ class CreateNetwork(method.Method):
 		allDrivers = {}
 		specificDrivers = {}
 
-		for line in utils.readTable(drivers):
+		for line in io.readTable(drivers):
 			gene_id = line[0]
 			tumor   = line[1]
 
@@ -237,7 +237,7 @@ class CreateNetwork(method.Method):
 
 		self.logger.info("Reading protein sequences.")
 
-		for tx, sequence in utils.readFasta(proteins):
+		for tx, sequence in io.readFasta(proteins):
 			self._txs.update_node(tx, "proteinSequence", sequence)
 
 	def getIsoformFeatures(self, features):
@@ -250,7 +250,7 @@ class CreateNetwork(method.Method):
 
 		self.logger.info("Reading isoform features.")
 
-		for line in utils.readTable(features):
+		for line in io.readTable(features):
 
 			tx = line[0]
 			featureType = line[1]
@@ -266,7 +266,7 @@ class CreateNetwork(method.Method):
 
 			self.logger.info("Import aberrant isoforms absent in GTF.")
 
-			for gene, tx in utils.readTable(aberrant):
+			for gene, tx in io.readTable(aberrant):
 				self._txs.add_node(tx, gene)
 
 	def check(self):

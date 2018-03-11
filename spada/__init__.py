@@ -3,4 +3,4 @@ from . import meta
 from . import methods
 from . import network
 
-__all__ = ['methods', 'utils']
+__all__ = ['methods', 'io']

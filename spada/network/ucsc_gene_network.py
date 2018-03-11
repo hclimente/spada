@@ -1,4 +1,4 @@
-from spada import utils
+from spada.io import io
 from spada.network import gene_network
 
 import abc
