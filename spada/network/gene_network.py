@@ -176,7 +176,7 @@ class GeneNetwork(Network):
 			msg += "Transcript {} not in the network.".format(tTx)
 
 		if msg:
-			self.logger.warning('Switch {} - {} will not be analyzed. Reason: {}'.format(nTx, tTx, msg))
+			self.logger.warning('Switch {} - {} will not be analyzed. Reason(s): {}'.format(nTx, tTx, msg))
 			return False
 		else:
 			return True
@@ -306,7 +306,7 @@ class GeneNetwork(Network):
 			else:
 				noise.extend([ len(x.samples) for x in info["switches"] if x.nTx == candidates[gene].tTx or x.tTx == candidates[gene].nTx ])
 
-		cutoff = np.percentile(noise, 99)
+		cutoff = 0 if not noise else np.percentile(noise, 99)
 
 		for gene,info in self.nodes(data=True):
 			if not info["switches"]: continue
@@ -331,7 +331,7 @@ class GeneNetwork(Network):
 
 		driver = 'No'
 		if self._net.node[gene]["specificDriver"]:
-			driver = 'tumor-specific_driver'		
+			driver = 'tumor-specific_driver'
 		elif self._net.node[gene]["driver"]:
 			driver = 'driver'
 		elif [ x for x in self._net.neighbors(gene) if self._net.node[x]["driver"] ]:

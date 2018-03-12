@@ -12,12 +12,6 @@ def summarizeResults():
 	s.clean()
 	s.run()
 
-def studyWESMutationsFeatureOverlap():
-
-	m = wes_mutations_feature_overlap.WESMutationsFeatureOverlap(True,True)
-	m.clean()
-	m.run()
-
 def testing():
 
 	t = methods.test.Test(True,True)
@@ -138,13 +132,13 @@ if "task" not in options:
 
 logging.basicConfig(level 		= logging.DEBUG,
 					format 		= '%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-					datefmt 	= '%m-%d %H:%M',
 				   	filename 	= 'spada_{}.log'.format(options.task), filemode='w')
 
 console = logging.StreamHandler()
 console.setLevel(logging.INFO)
 
-formatter = logging.Formatter('%(asctime)s: %(levelname)-8s %(message)s')
+formatter = logging.Formatter('%(asctime)s: %(levelname)-8s %(message)s',
+							  datefmt = '%X',)
 console.setFormatter(formatter)
 logging.getLogger().addHandler(console)
 
