@@ -2,19 +2,12 @@ from collections import Counter
 
 class Aminoacid:
 	def __init__(self, resNum, resName):
-		"""
-		pdbMapping: dictionary with the topological information (B, IS or NIS) of that residue (value)
-		in a particular PDB (key).
-		"""
 
 		self._num 				= resNum
 		self._res 				= resName
-		self._tag 				= []
 		self._isoformSpecific 	= False
-		self._pdbMapping 		= {}
 		self._genomicPosition 	= None
 		self._disordered 		= False
-		self._kinases 	 		= set()
 		self._features			= set()
 
 	@property
@@ -27,16 +20,6 @@ class Aminoacid:
 	@property
 	def disordered(self): return self._disordered
 	def setDisordered(self, disordered): self._disordered = disordered
-
-	@property
-	def tag(self):
-		"""Returns the mode from the list of tags."""
-		frequency = Counter(self._tag).most_common(1)
-		if frequency:
-			return frequency[0][0]
-		else:
-			return None
-	def setTag(self,tag): self._tag.append(tag)
 
 	@property
 	def isoformSpecific(self): 	return self._isoformSpecific
