@@ -99,10 +99,10 @@ class IsoformSwitch:
 		self.computeCdsDiff()
 		self.computeUtrDiff()
 
-		if nInfo["proteinSequence"] and nInfo["CDS"]:
+		if nInfo["proteinSequence"]:
 			self._normal_protein = protein.Protein( self._normal_transcript_name, nInfo)
 
-		if tInfo["proteinSequence"] and tInfo["CDS"]:
+		if tInfo["proteinSequence"]:
 			self._tumor_protein  = protein.Protein( self._tumor_transcript_name, tInfo)
 
 		if self._normal_protein and self._tumor_protein:

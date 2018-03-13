@@ -46,8 +46,12 @@ class Protein:
 	def expandCDS(self, txInfo):
 		"""Assign the position of the first nucleotide of the codon to each Aminoacid."""
 
-		cdsStart,cdsEnd = txInfo["CDS"]
-		cds = [ x for x in self.expandExons(txInfo) if x >= cdsStart and x <= cdsEnd ][::3]
+		cds = []
+
+		if txInfo["CDS"]:
+			cdsStart,cdsEnd = txInfo["CDS"]
+			cds = [ x for x in self.expandExons(txInfo) if x >= cdsStart and x <= cdsEnd ][::3]
+
 		return(cds)
 
 	def mapCDStoProtein(self, cds, txInfo):
@@ -56,25 +60,22 @@ class Protein:
 			aa = Aminoacid(i+1, self._sequence[i])
 			self._structure.append(aa)
 
-		if txInfo['start_codon'] and txInfo['stop_codon']:
-			if txInfo['stop_codon']:
-				if len(self._sequence) != len(cds):
-					raise Exception('Transcript {}: lengths of protein sequence and CDS do not match ({} vs. {}).'.format(self._tx, len(self._structure), len(cds)))
+		if cds:
+			if txInfo['start_codon'] and txInfo['stop_codon']:
+				if txInfo['stop_codon']:
+					if len(self._sequence) != len(cds):
+						raise Exception('Transcript {}: lengths of protein sequence and CDS do not match ({} vs. {}).'.format(self._tx, len(self._structure), len(cds)))
 
-				mrna = [ x for x in self.expandExons(txInfo) ]
-				if mrna.index(cds[-1]) + 3 != mrna.index(txInfo['stop_codon']):
-					import pdb; pdb.set_trace()
-					raise Exception('Transcript {}: number of nucleotides in the CDS must be multiple of 3.'.format(self._tx))
+					mrna = [ x for x in self.expandExons(txInfo) ]
+					if mrna.index(cds[-1]) + 3 != mrna.index(txInfo['stop_codon']):
+						raise Exception('Transcript {}: number of nucleotides in the CDS must be multiple of 3.'.format(self._tx))
 
-			for aa,pos in zip(self._structure, cds):
-				aa.setGenomicPosition(pos)
-
-		elif txInfo['stop_codon']:
-			for aa,pos in zip(reversed(self._structure), reversed(cds)):
-				try:
+				for aa,pos in zip(self._structure, cds):
 					aa.setGenomicPosition(pos)
-				except Exception as e:
-					import pdb; pdb.set_trace()
+
+			elif txInfo['stop_codon']:
+				for aa,pos in zip(reversed(self._structure), reversed(cds)):
+					aa.setGenomicPosition(pos)
 
 	def annotateFeaturesToResidues(self, featureType, features):
 		for feature,region in features.items():
