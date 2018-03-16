@@ -116,9 +116,9 @@ def printSwitches(genes, txs, filename = "switches_spada.tsv"):
 	logging.info("Writing switch information.")
 
 	with open(filename, "w") as OUT:
-		OUT.write("GeneId\tSymbol\tNormal_transcript\tTumor_transcript\t")
-		OUT.write("DriverAnnotation\tNotNoise\tisMain\tIsFunctional\t")
-		OUT.write("CDS_Normal\tCDS_Tumor\tCDS_change\tUTR_change\tPatients_affected\n")
+		OUT.write("Experiment\tGeneId\tSymbol\tNormal_transcript\t")
+		OUT.write("Tumor_transcript\tDriver\tIs_main\tNot_noise\tIs_functional\t")
+		OUT.write("CDS_normal\tCDS_tumor\tCDS_change\tUTR_change\tSamples\n")
 
 		for gene,info,thisSwitch in genes.iterate_switches_byPatientNumber(txs, removeNoise = False):
 
@@ -127,6 +127,7 @@ def printSwitches(genes, txs, filename = "switches_spada.tsv"):
 
 			driver = genes.isDriver(gene)
 
+			OUT.write("{}\t".format( genes._name ))
 			OUT.write("{}\t{}\t".format( gene, info["symbol"] ))
 			OUT.write("{}\t{}\t".format( thisSwitch.nTx, thisSwitch.tTx ))
 			OUT.write("%s\t%i\t" % ( driver, not thisSwitch.isNoise ))

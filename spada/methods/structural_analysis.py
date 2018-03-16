@@ -96,36 +96,39 @@ class StructuralAnalysis(method.Method):
 		return DDIchanges
 
 	def writeDomainsHeader(self, OUT):
-		OUT.write("Gene\tNormalTranscript\tTumorTranscript\t")
+		OUT.write("Experiment\tGeneId\tNormal_transcript\tTumor_transcript\t")
 		OUT.write("What\tFeature\tIndex\tnMacroScore\t")
 		OUT.write("nMicroScore\tnJaccard\ttMacroScore\ttMicroScore\ttJaccard\n")
 
 	def writeDomains(self, OUT, gene, thisSwitch, changes):
 		for c in changes:
+			OUT.write("{}\t".format( self._genes._name ))
 			OUT.write("{}\t{}\t{}\t".format(gene, thisSwitch.nTx, thisSwitch.tTx))
 			OUT.write("{}\t{}\t{}\t".format(c["what"], c["feature"], c["index"]))
 			OUT.write("{}\t{}\t{}\t".format(c["nM"], c["nm"], c["nJ"]))
 			OUT.write("{}\t{}\t{}\n".format(c["tM"], c["tm"], c["tJ"]))
 
 	def writeIDRHeader(self, OUT):
-		OUT.write("Gene\tNormalTranscript\tTumorTranscript\t")
+		OUT.write("Experiment\tGeneId\tNormal_transcript\tTumor_transcript\t")
 		OUT.write("What\tSequence\tStartPos\tEndPos\t")
 		OUT.write("microScore\tmacroScore\tJaccard\n")
 
 	def writeIDR(self, OUT, gene, thisSwitch, changes):
 		for c in changes:
+			OUT.write("{}\t".format( self._genes._name ))
 			OUT.write("{}\t{}\t{}\t".format(gene, thisSwitch.nTx, thisSwitch.tTx))
 			OUT.write("{}\t{}\t{}\t".format(c["what"], c["feature"], c["start"]))
 			OUT.write("{}\t{}\t{}\t{}\n".format(c["end"], c["M"], c["m"], c["J"]))
 
 	def writePPIHeader(self, OUT):
-		OUT.write("Switched_gene\tNormalTranscript\tTumorTranscript\t")
+		OUT.write("Experiment\tGeneId\tNormal_transcript\tTumor_transcript\t")
 		OUT.write("Other_gene\tOther_transcript\tWhat\t")
 		OUT.write("#nDDIs\t#tDDIs\t#BothDDIs\n")
 		OUT.write("nDDIs\ttDDIs\tBothDDIs\n")
 
 	def writePPI(self, OUT, gene, thisSwitch, DDIchanges):
 		for tx, ddis in DDIchanges.items():
+			OUT.write("{}\t".format( self._genes._name ))
 			OUT.write("{}\t{}\t{}\t".format(gene, thisSwitch.nTx, thisSwitch.tTx))
 			OUT.write("{}\t{}\t".format(self._txs._net.node[tx]["gene_id"], tx))
 			OUT.write("{}\t".format(ddis["what"]))

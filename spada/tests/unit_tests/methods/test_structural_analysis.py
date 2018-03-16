@@ -16,28 +16,28 @@ def test_featureAnalysis():
 	# pfams
 	pfam = [ x for x in io.readTable("pfam_analysis.tsv") ]
 	assert len(pfam) == 8
-	assert [ x for x in pfam if x[1] == "ENST01.2" and x[2] == "ENST02.2" and x[3] == "Nothing" and x[4] == "D1" ]
-	assert [ x for x in pfam if x[1] == "ENST01.2" and x[2] == "ENST02.2" and x[3] == "Lost_in_tumor" and x[4] == "D1" ]
-	assert [ x for x in pfam if x[1] == "ENST01.2" and x[2] == "ENST02.2" and x[3] == "Gained_in_tumor" and x[4] == "D4" ]
-	assert [ x for x in pfam if x[1] == "ENST01.2" and x[2] == "ENST02.2" and x[3] == "Gained_in_tumor" and x[4] == "D2" ]
+	assert [ x for x in pfam if x[2] == "ENST01.2" and x[3] == "ENST02.2" and x[4] == "Nothing" and x[5] == "D1" ]
+	assert [ x for x in pfam if x[2] == "ENST01.2" and x[3] == "ENST02.2" and x[4] == "Lost_in_tumor" and x[5] == "D1" ]
+	assert [ x for x in pfam if x[2] == "ENST01.2" and x[3] == "ENST02.2" and x[4] == "Gained_in_tumor" and x[5] == "D4" ]
+	assert [ x for x in pfam if x[2] == "ENST01.2" and x[3] == "ENST02.2" and x[4] == "Gained_in_tumor" and x[5] == "D2" ]
 
-	assert [ x for x in pfam if x[1] == "ENST02.2" and x[2] == "ENST01.2" and x[3] == "Nothing" and x[4] == "D1" ]
-	assert [ x for x in pfam if x[1] == "ENST02.2" and x[2] == "ENST01.2" and x[3] == "Gained_in_tumor" and x[4] == "D1" ]
-	assert [ x for x in pfam if x[1] == "ENST02.2" and x[2] == "ENST01.2" and x[3] == "Lost_in_tumor" and x[4] == "D4" ]
-	assert [ x for x in pfam if x[1] == "ENST02.2" and x[2] == "ENST01.2" and x[3] == "Lost_in_tumor" and x[4] == "D2" ]
+	assert [ x for x in pfam if x[2] == "ENST02.2" and x[3] == "ENST01.2" and x[4] == "Nothing" and x[5] == "D1" ]
+	assert [ x for x in pfam if x[2] == "ENST02.2" and x[3] == "ENST01.2" and x[4] == "Gained_in_tumor" and x[5] == "D1" ]
+	assert [ x for x in pfam if x[2] == "ENST02.2" and x[3] == "ENST01.2" and x[4] == "Lost_in_tumor" and x[5] == "D4" ]
+	assert [ x for x in pfam if x[2] == "ENST02.2" and x[3] == "ENST01.2" and x[4] == "Lost_in_tumor" and x[5] == "D2" ]
 
 	# prosite
 	prosite = [ x for x in io.readTable("prosite_analysis.tsv") ]
 	assert len(prosite) == 3
-	assert [ x for x in prosite if x[1] == "ENST08.1" and x[2] == "ENST09.1" and x[3] == "Nothing" and x[4] == "P1" ]
-	assert [ x for x in prosite if x[1] == "ENST08.1" and x[2] == "ENST09.1" and x[3] == "Lost_in_tumor" and x[4] == "P1" ]
-	assert [ x for x in prosite if x[1] == "ENST08.1" and x[2] == "ENST09.1" and x[3] == "Gained_in_tumor" and x[4] == "P2" ]
+	assert [ x for x in prosite if x[2] == "ENST08.1" and x[3] == "ENST09.1" and x[4] == "Nothing" and x[5] == "P1" ]
+	assert [ x for x in prosite if x[2] == "ENST08.1" and x[3] == "ENST09.1" and x[4] == "Lost_in_tumor" and x[5] == "P1" ]
+	assert [ x for x in prosite if x[2] == "ENST08.1" and x[3] == "ENST09.1" and x[4] == "Gained_in_tumor" and x[5] == "P2" ]
 
 	# idr
 	idr = [ x for x in io.readTable("idr_analysis.tsv") ]
 	assert len(idr) == 6
-	assert [ x for x in idr if x[1] == "ENST16.2" and x[2] == "ENST14.5" and x[3] == "Lost_in_tumor" and x[4] == "ABcd" ]
-	assert len([ x for x in idr if x[1] == "ENST16.2" and x[2] == "ENST14.5"]) == 1
+	assert [ x for x in idr if x[2] == "ENST16.2" and x[3] == "ENST14.5" and x[4] == "Lost_in_tumor" and x[5] == "ABcd" ]
+	assert len([ x for x in idr if x[2] == "ENST16.2" and x[3] == "ENST14.5"]) == 1
 
 	os.remove("pfam_analysis.tsv")
 	os.remove("prosite_analysis.tsv")
@@ -51,10 +51,10 @@ def test_ppiAnalysis():
 
 	ddi = [ x for x in io.readTable("ppi_analysis.tsv") ]
 	assert len(ddi) == 6
-	assert len([ x for x in ddi if x[5] == "Unaffected" ]) == 2
-	assert len([ x for x in ddi if x[5] == "Affected" ]) == 2
-	assert len([ x for x in ddi if x[5] == "Lost_in_tumor" ]) == 1
-	assert len([ x for x in ddi if x[5] == "Gained_in_tumor" ]) == 1
+	assert len([ x for x in ddi if x[6] == "Unaffected" ]) == 2
+	assert len([ x for x in ddi if x[6] == "Affected" ]) == 2
+	assert len([ x for x in ddi if x[6] == "Lost_in_tumor" ]) == 1
+	assert len([ x for x in ddi if x[6] == "Gained_in_tumor" ]) == 1
 
 	os.remove("ppi_analysis.tsv")
 

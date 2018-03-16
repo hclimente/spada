@@ -143,7 +143,7 @@ class Summary(method.Method):
 	def printSplicingInfo(self):
 
 		with open("isoform_length.tsv".format(), "w" ) as F:
-			F.write("Cancer\tNormal_transcript\tTumor_transcript\tnIsoLength")
+			F.write("Experiment\tNormal_transcript\tTumor_transcript\tnIsoLength")
 			F.write("\ttIsoLength\tnIsoSpecificLength\ttIsoSpecificLength\n")
 			for switch,nlen,tlen,nsplen,tsplen in self.proteinStats:
 				switchIsoforms = switch.split("_")
@@ -153,7 +153,7 @@ class Summary(method.Method):
 				F.write("{}\t{}\t{}\t{}\n".format(nlen,tlen,nsplen,tsplen))
 
 		with open("exons.tsv", "w" ) as F:
-			F.write("Cancer\tSwitch\tOrigin\tType\tLength\tCDSLength\t")
+			F.write("Experiment\tSwitch\tOrigin\tType\tLength\tCDSLength\t")
 			F.write("CDSRelativeSize\tPosition\tKeepOrf\n")
 			for exon in self.exonStats:
 				F.write("{}\t".format(self._genes._name))
@@ -164,7 +164,8 @@ class Summary(method.Method):
 				F.write("{}\n".format(exon["keepORF"]))
 
 		with open("exons_new.tsv", "w" ) as F:
-			F.write("Cancer\tGene\tSymbol\tnTranscript\ttTranscript\tTag\tOrfChange\tnormalSegment\ttumorSegment\n");
+			F.write("Experiment\tGeneId\tSymbol\tNormal_transcript\tTumor_transcript\t")
+			F.write("Tag\tOrfChange\tnormalSegment\ttumorSegment\n")
 			for exon in self.alternativeSplicingStats:
 				F.write("{}\t".format(self._genes._name))
 				F.write("{}\t{}\t".format(exon["gene"],exon["symbol"]))
@@ -175,8 +176,8 @@ class Summary(method.Method):
 	def printStructutalInfo(self):
 
 		with open("structural_features.tsv", "w" ) as F:
-			F.write("Cancer\tGene\tSymbol\tnTx\ttTx\tAnalysis\tWhatsHappenning\t")
-			F.write("Feature\tDriver\tASDriver\tDriverType\n")
+			F.write("Experiment\tGeneId\tSymbol\tNormal_transcript\tTumor_transcript\t")
+			F.write("Analysis\tWhatsHappenning\tFeature\tDriver\tASDriver\tDriverType\n")
 
 			for tag,featureDict in self.featuresTable:
 				switchElements = tag.split("_")

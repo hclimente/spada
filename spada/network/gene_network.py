@@ -331,10 +331,10 @@ class GeneNetwork(Network):
 
 		driver = 'No'
 		if self._net.node[gene]["specificDriver"]:
-			driver = 'tumor-specific_driver'
+			driver = 'Tumor-specific_driver'
 		elif self._net.node[gene]["driver"]:
-			driver = 'driver'
+			driver = 'Driver'
 		elif [ x for x in self._net.neighbors(gene) if self._net.node[x]["driver"] ]:
-			driver = "d1"
+			driver = 'Driver_interactior'
 
 		return driver
