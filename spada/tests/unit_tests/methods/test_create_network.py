@@ -32,6 +32,7 @@ def test_createNetworks():
 	assert c._txs.nodes()["ENST12.3"]["chr"] == "chr1"
 	assert c._txs.nodes()["ENST12.3"]["CDS"] == [69978, 70004]
 	assert c._txs.nodes()["ENST12.3"]["main"]
+	assert len([ x for x,i in c._txs.nodes(data=True) if i['main'] ]) == 3
 
 	# test rejected genes, transcript and CDS
 	assert "bad_status" not in c._genes.nodes()

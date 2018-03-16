@@ -189,8 +189,8 @@ class CreateNetwork(method.Method):
 			return()
 
 		self.logger.info("Building isoform-isoform interaction network.")
-		allDDIs = { frozenset([d1,d2]) for d1,d2 in io.readTable(ddi) }
-
+		allDDIs = { frozenset([x['Pfam1'],x['Pfam2']]) for x in io.readTable(ddi, keys = ['Pfam1','Pfam2']) }
+		
 		for gene1, gene2 in self._genes._net.edges():
 			txs1 = [ (t,i["Pfam"]) for t,i in self._txs.nodes(data=True) if i["gene_id"] == gene1 and i["Pfam"] ]
 			txs2 = [ (t,i["Pfam"]) for t,i in self._txs.nodes(data=True) if i["gene_id"] == gene2 and i["Pfam"] ]
@@ -216,14 +216,12 @@ class CreateNetwork(method.Method):
 		allDrivers = {}
 		specificDrivers = {}
 
-		for line in io.readTable(drivers):
-			gene_id = line[0]
-			tumor   = line[1]
+		for line in io.readTable(drivers, keys = ['gene_id','tumor']):
 
-			allDrivers[gene_id] = True
+			allDrivers[line['gene_id']] = True
 
-			if tumor == self._genes.tumor:
-				specificDrivers[gene_id] = True
+			if line['tumor'] == self._genes.tumor:
+				specificDrivers[line['gene_id']] = True
 
 		return allDrivers, specificDrivers
 
@@ -250,13 +248,14 @@ class CreateNetwork(method.Method):
 
 		self.logger.info("Reading isoform features.")
 
-		for line in io.readTable(features):
+		featureFields = ['tx','featureType', 'feature', 'start', 'end']
+		for line in io.readTable(features, keys = featureFields):
 
-			tx = line[0]
-			featureType = line[1]
-			feature = line[2]
-			start = int(line[3])
-			end = int(line[4])
+			tx = line['tx']
+			featureType = line['featureType']
+			feature = line['feature']
+			start = int(line['start'])
+			end = int(line['end'])
 
 			self._txs.update_node(tx, featureType, (start,end), feature)
 
@@ -266,8 +265,8 @@ class CreateNetwork(method.Method):
 
 			self.logger.info("Import aberrant isoforms absent in GTF.")
 
-			for gene, tx in io.readTable(aberrant):
-				self._txs.add_node(tx, gene)
+			for line in io.readTable(aberrant, keys = ['gene','tx']):
+				self._txs.add_node(line['tx'], line['gene'])
 
 	def check(self):
 

@@ -149,14 +149,14 @@ class Summary(method.Method):
 				switchIsoforms = switch.split("_")
 				nIso = switchIsoforms[0]
 				tIso = switchIsoforms[1]
-				F.write("{}\t{}\t{}\t".format(self._genes._name,nIso,tIso))
+				F.write("{}\t{}\t{}\t".format(self._genes.tumor,nIso,tIso))
 				F.write("{}\t{}\t{}\t{}\n".format(nlen,tlen,nsplen,tsplen))
 
 		with open("exons.tsv", "w" ) as F:
 			F.write("Experiment\tSwitch\tOrigin\tType\tLength\tCDSLength\t")
 			F.write("CDSRelativeSize\tPosition\tKeepOrf\n")
 			for exon in self.exonStats:
-				F.write("{}\t".format(self._genes._name))
+				F.write("{}\t".format(self._genes.tumor))
 				F.write("{}\t{}\t".format(exon["switch"],exon["role"]))
 				F.write("{}\t".format(exon["origin"]))
 				F.write("{}\t{}\t".format(exon["length"],exon["cdsLength"]))
@@ -167,7 +167,7 @@ class Summary(method.Method):
 			F.write("Experiment\tGeneId\tSymbol\tNormal_transcript\tTumor_transcript\t")
 			F.write("Tag\tOrfChange\tnormalSegment\ttumorSegment\n")
 			for exon in self.alternativeSplicingStats:
-				F.write("{}\t".format(self._genes._name))
+				F.write("{}\t".format(self._genes.tumor))
 				F.write("{}\t{}\t".format(exon["gene"],exon["symbol"]))
 				F.write("{}\t{}\t".format(exon["nTranscript"],exon["tTranscript"]))
 				F.write("{}\t{}\t".format(exon["tag"],exon["orfChange"]))
@@ -188,7 +188,7 @@ class Summary(method.Method):
 
 				for analysis in ["Pfam","idr","Prosite"]:
 					for data in featureDict[analysis]:
-						F.write("{}\t{}\t".format(self._genes._name, gene))
+						F.write("{}\t{}\t".format(self._genes.tumor, gene))
 						F.write("{}\t{}\t".format(symbol,nTx))
 						F.write("{}\t{}\t".format(tTx,analysis))
 						F.write("{}\t{}\t".format(data[1],data[0].replace(" ","_")))

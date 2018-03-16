@@ -10,49 +10,51 @@ class SpadaError(Exception):
 		logger.exception(value)
 		return repr(self.value)
 
-def readTable(path, sep = "\t", header = True, skipCommented = True):
+def readTable(path, sep = "\t", header = True, skipCommented = True, keys = []):
 	"""Read a table in a file, and generate a list of strings per row.
 	Skips rows starting with "#".
 
 	sep (str): field separator.
 	header (bool): presence of a header, to discard the first row.
 	"""
-	counter = 0
+	headerRead = False
 	with open(path) as FILE:
 		for line in FILE:
-			if line[0]=="#" and skipCommented:
+			if line[0] == "#" and skipCommented:
 				continue
-			elif header and counter is 0:
-				counter = 1
+			elif header and not headerRead:
+				if not keys:
+					keys = line.strip().split(sep)
+				headerRead = True
 				continue
 
-			yield line.strip().split(sep)
+			values = line.strip('\n').split(sep)
+
+			if keys:
+				if len(values) < len(keys):
+					raise Exception("Parsing error in file {}, line {}.".format(path, line))
+				yield dict(zip(keys, values))
+			else:
+				yield values
 
 def readGTF(gtf):
-	for line in readTable(gtf, header=False):
-		# read common fields
-		parsed = {}
-		parsed["chromosome"] = line[0]
-		parsed["source"] 	 = line[1]
-		parsed["feature"] 	 = line[2]
-		parsed["start"] 	 = line[3]
-		parsed["end"] 		 = line[4]
-		parsed["score"] 	 = line[5]
-		parsed["strand"] 	 = line[6]
-		parsed["phase"] 	 = line[7]
-		parsed["tags"] 	 	 = set()
+	fields = ["chromosome","source","feature","start",
+			  "end", "score", "strand", "phase", "tags"]
+	for line in readTable(gtf, header = False, keys = fields):
 
 		# read additional fields
-		for field in line[8].strip().split(";"):
+		tags = set()
+		for field in line['tags'].strip().split(";"):
 			if len(field):
 				k,v = field.strip().split(" ")
 				v = v.strip('"')
 				if k == 'tag':
-					parsed['tags'].add(v)
+					tags.add(v)
 				else:
-					parsed[k] = v
+					line[k] = v
+		line['tags'] = tags
 
-		yield parsed
+		yield line
 
 
 def readPSIMITAB(psimitab):
@@ -73,24 +75,19 @@ def readPSIMITAB(psimitab):
 
 		return(parsed)
 
-	for line in readTable(psimitab, skipCommented = False):
+	fields = ["geneA","geneB","symbolA","symbolB","aliasA","aliasB","method",
+			  "author","publication","organismA","organismB","interaction",
+			  "source","interactionId","score"]
+
+	for line in readTable(psimitab, skipCommented = False, keys = fields):
 
 		parsed = {}
-		parsed["geneA"] 		= [ parseField(x) for x in line[0].split("|") ]
-		parsed["geneB"] 		= [ parseField(x) for x in line[1].split("|") ]
-		parsed["symbolA"] 		= [ parseField(x) for x in line[2].split("|") ]
-		parsed["symbolB"] 		= [ parseField(x) for x in line[3].split("|") ]
-		parsed["aliasA"] 		= [ parseField(x) for x in line[4].split("|") ]
-		parsed["aliasB"] 		= [ parseField(x) for x in line[5].split("|") ]
-		parsed["method"] 		= [ parseField(x) for x in line[6].split("|") ]
-		parsed["author"] 		= line[7]
-		parsed["publication"] 	= [ parseField(x) for x in line[8].split("|") ]
-		parsed["organismA"] 	= [ parseField(x) for x in line[9].split("|") ]
-		parsed["organismB"] 	= [ parseField(x) for x in line[10].split("|") ]
-		parsed["interaction"] 	= [ parseField(x) for x in line[11].split("|") ]
-		parsed["source"] 		= [ parseField(x) for x in line[12].split("|") ]
-		parsed["interactionId"] = [ parseField(x) for x in line[13].split("|") ]
-		parsed["score"] 		= [ parseField(x) for x in line[14].split("|") ]
+
+		for field in fields:
+			if field == 'author':
+				parsed[field] = line[field]
+			else:
+				parsed[field] = [ parseField(x) for x in line[field].split("|") ]
 
 		yield parsed
 
@@ -127,7 +124,7 @@ def printSwitches(genes, txs, filename = "switches_spada.tsv"):
 
 			driver = genes.isDriver(gene)
 
-			OUT.write("{}\t".format( genes._name ))
+			OUT.write("{}\t".format( genes.tumor ))
 			OUT.write("{}\t{}\t".format( gene, info["symbol"] ))
 			OUT.write("{}\t{}\t".format( thisSwitch.nTx, thisSwitch.tTx ))
 			OUT.write("%s\t%i\t" % ( driver, not thisSwitch.isNoise ))
