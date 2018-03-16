@@ -115,4 +115,4 @@ def test_analyzeDDIs():
 	assert len([ x for x in proteome if x['Feature_type'] == 'Prosite' ]) == 5
 	assert len([ x for x in proteome if x['Transcript'] == 'ENST18.3' ]) == 1
 
-	# os.remove('proteome_features.tsv')
+	os.remove('proteome_features.tsv')
