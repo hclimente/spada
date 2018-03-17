@@ -54,7 +54,18 @@ class StructuralAnalysis(method.Method):
 
 			self.writeProteomeHeader(OUT)
 
-			for tx,txInfo in self._txs.transcripts(onlyMain = False):
+			genes = [ (x,i['expressedTxsN']) for x,i in self._genes.nodes(data=True) ]
+
+			for gene, txs in genes:
+
+				if not txs:
+					continue
+
+				expression = [ (tx,self._txs._net.node[tx]['median_TPM_N']) for tx in txs ]
+				expression = sorted(expression, key = lambda t: -t[1])
+				tx = expression[0][0]
+				txInfo = self._txs._net.node[tx]
+
 				for featureType in ['Pfam','Prosite']:
 					for feature in txInfo[featureType]:
 						i = 1
@@ -65,7 +76,7 @@ class StructuralAnalysis(method.Method):
 							OUT.write("{}\t{}\t".format(i, end - start))
 							OUT.write("{}\t{}\n".format(start, end))
 
-							i += 1
+						i += 1
 
 	def analyzeDDIs(self, thisSwitch):
 

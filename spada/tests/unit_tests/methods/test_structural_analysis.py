@@ -108,11 +108,12 @@ def test_analyzeDDIs():
 	s.proteomeStatistics()
 	proteome = [ x for x in io.readTable("proteome_features.tsv") ]
 
-	assert len(proteome) == 11
-	assert len([ x for x in proteome if x['Feature_type'] == 'Pfam' ]) == 6
+	assert len(proteome) == 6
+	assert len([ x for x in proteome if x['Feature_type'] == 'Pfam' ]) == 3
 	assert len([ x for x in proteome if x['Transcript'] == 'ENST01.2' ]) == 2
+	assert len([ x for x in proteome if x['Transcript'] == 'ENST02.2' ]) == 0
 
-	assert len([ x for x in proteome if x['Feature_type'] == 'Prosite' ]) == 5
+	assert len([ x for x in proteome if x['Feature_type'] == 'Prosite' ]) == 3
 	assert len([ x for x in proteome if x['Transcript'] == 'ENST18.3' ]) == 1
 
 	os.remove('proteome_features.tsv')
