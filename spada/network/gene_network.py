@@ -335,6 +335,6 @@ class GeneNetwork(Network):
 		elif self._net.node[gene]["driver"]:
 			driver = 'Driver'
 		elif [ x for x in self._net.neighbors(gene) if self._net.node[x]["driver"] ]:
-			driver = 'Driver_interactior'
+			driver = 'Driver_interactor'
 
 		return driver

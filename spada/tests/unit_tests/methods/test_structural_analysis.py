@@ -101,7 +101,7 @@ def test_analyzeDDIs():
 	assert ddiChanges['ENST02.2']['tDDIs'] == set()
 	assert ddiChanges['ENST02.2']['bothDDIs'] == {'D1@D1'}
 
-def test_analyzeDDIs():
+def test_proteomeStatistics():
 
 	s = structural_analysis.StructuralAnalysis(dataPath + "genes.pkl",
 								 			   dataPath + "transcripts.pkl")
