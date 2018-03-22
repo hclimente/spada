@@ -2,6 +2,7 @@
 
 from spada.biological_entities import switch
 
+import math
 import pytest
 
 a1Info = {	"gene_id":			"A",
@@ -95,11 +96,17 @@ def test_analyzeDomains():
 	assert len(pfams) == 3
 	assert len([ x for x in pfams if x["feature"] == "D1"]) == 2
 	assert len([ x for x in pfams if x["feature"] == "D2"]) == 1
+	assert math.isnan([ x['nStart'] for x in pfams if x["feature"] == "D2"][0])
+	assert math.isnan([ x['nEnd'] for x in pfams if x["feature"] == "D2"][0])
+	assert [ (x['tStart'],x['tEnd']) for x in pfams if x["feature"] == "D2"][0] == (7,9)
 
 	prosites = thisSwitch.analyzeDomains("Prosite")
 	assert len(prosites) == 3
 	assert len([ x for x in prosites if x["feature"] == "P1"]) == 2
 	assert len([ x for x in prosites if x["feature"] == "P2"]) == 1
+	assert math.isnan([ x['tStart'] for x in prosites if x["feature"] == "P2"][0])
+	assert math.isnan([ x['tEnd'] for x in prosites if x["feature"] == "P2"][0])
+	assert [ (x['nStart'],x['nEnd']) for x in prosites if x["feature"] == "P2"][0] == (8,9)
 
 def test_analyzeIDR():
 

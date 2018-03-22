@@ -233,12 +233,18 @@ class IsoformSwitch:
 					microScore =  float("nan") if specificLength == 0 else intersection/specificLength
 					jaccard = intersection/len(set(region) | set(thisIsosp))
 
-					featInfo[isoform.tx].append({"macro": macroScore,"micro": microScore, "jaccard": jaccard})
+					start = min([ x.num for x in region ])
+					end = max([ x.num for x in region ])
+
+					featInfo[isoform.tx].append({'macro': macroScore,'micro': microScore,
+												 'jaccard': jaccard, 'start': start, 'end': end})
 
 				featInfo[isoform.tx] = sorted(featInfo[isoform.tx], key=operator.itemgetter("macro"))
 
 			i = 1
-			emptyDict = {"macro": float("nan"), "micro": float("nan"), "jaccard": float("nan")}
+			emptyDict = {'macro': float('nan'), 'micro': float('nan'),
+						 'jaccard': float('nan'), 'start': float('nan'),
+						 'end': float('nan')}
 			for nDict,tDict in zip_longest(featInfo[self.nTx], featInfo[self.tTx], fillvalue = emptyDict):
 
 				what = "Nothing"
@@ -248,6 +254,8 @@ class IsoformSwitch:
 					what = "Gained_in_tumor"
 
 				f = { "feature": feature, "index": i, "what": what, \
+					  "nStart": nDict["start"], "nEnd": nDict["end"], \
+					  "tStart": tDict["start"], "tEnd": tDict["end"], \
 					  "nM": nDict["macro"], "nm": nDict["micro"], "nJ": nDict["jaccard"], \
 					  "tM": tDict["macro"], "tm": tDict["micro"], "tJ": tDict["jaccard"] }
 				featureInfo. append(f)

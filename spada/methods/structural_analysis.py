@@ -31,8 +31,8 @@ class StructuralAnalysis(method.Method):
 				prosite_change	= thisSwitch.analyzeDomains("Prosite")
 				idr_change   	= thisSwitch.analyzeIDR(0.2)
 
-				self.writeDomains(PFAM, gene, thisSwitch, pfam_change)
-				self.writeDomains(PROSITE, gene, thisSwitch, prosite_change)
+				self.writeDomains(PFAM, 'Pfam', gene, thisSwitch, pfam_change)
+				self.writeDomains(PROSITE, 'Prosite', gene, thisSwitch, prosite_change)
 				self.writeIDR(IDR, gene, thisSwitch, idr_change)
 
 	def ppiAnalysis(self):
@@ -122,14 +122,16 @@ class StructuralAnalysis(method.Method):
 
 	def writeDomainsHeader(self, OUT):
 		OUT.write("Experiment\tGeneId\tNormal_transcript\tTumor_transcript\t")
-		OUT.write("What\tFeature\tIndex\tnMacroScore\t")
-		OUT.write("nMicroScore\tnJaccard\ttMacroScore\ttMicroScore\ttJaccard\n")
+		OUT.write("Feature_type\tFeature\tWhat\tIndex\tNormal_start\tNormal_end\t")
+		OUT.write("Tumor_start\tTumor_endNormal_MacroScore\tNormal_MicroScore\t")
+		OUT.write("Normal_Jaccard\tTumor_MacroScore\tTumor_MicroScore\tTumor_Jaccard\n")
 
-	def writeDomains(self, OUT, gene, thisSwitch, changes):
+	def writeDomains(self, OUT, featureType, gene, thisSwitch, changes):
 		for c in changes:
-			OUT.write("{}\t".format( self._genes.tumor ))
-			OUT.write("{}\t{}\t{}\t".format(gene, thisSwitch.nTx, thisSwitch.tTx))
-			OUT.write("{}\t{}\t{}\t".format(c["what"], c["feature"], c["index"]))
+			OUT.write("{}\t{}\t{}\t".format(self._genes.tumor, gene, thisSwitch.nTx))
+			OUT.write("{}\t{}\t{}\t".format(thisSwitch.tTx, featureType, c["feature"]))
+			OUT.write("{}\t{}\t{}\t".format(c["what"], c["index"], c['nStart']))
+			OUT.write("{}\t{}\t{}\t".format(c["nEnd"], c["tStart"], c['tEnd']))
 			OUT.write("{}\t{}\t{}\t".format(c["nM"], c["nm"], c["nJ"]))
 			OUT.write("{}\t{}\t{}\n".format(c["tM"], c["tm"], c["tJ"]))
 
