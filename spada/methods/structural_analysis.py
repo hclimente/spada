@@ -123,7 +123,7 @@ class StructuralAnalysis(method.Method):
 	def writeDomainsHeader(self, OUT):
 		OUT.write("Experiment\tGeneId\tNormal_transcript\tTumor_transcript\t")
 		OUT.write("Feature_type\tFeature\tWhat\tIndex\tNormal_start\tNormal_end\t")
-		OUT.write("Tumor_start\tTumor_endNormal_MacroScore\tNormal_MicroScore\t")
+		OUT.write("Tumor_start\tTumor_end\tNormal_MacroScore\tNormal_MicroScore\t")
 		OUT.write("Normal_Jaccard\tTumor_MacroScore\tTumor_MicroScore\tTumor_Jaccard\n")
 
 	def writeDomains(self, OUT, featureType, gene, thisSwitch, changes):
