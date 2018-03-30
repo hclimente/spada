@@ -5,7 +5,7 @@ setup(
 	packages = find_packages(),
 	package_dir = {'spada': 'spada'},
 	package_data = {'spada': ['data/*.pkl']},
-	version = '1.13',
+	version = '1.14',
 	description = 'Find splicing-led, functional changes of the proteome. ',
 	author = 'Héctor Climente-González',
 	author_email = 'hector.climente@curie.fr',
