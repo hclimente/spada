@@ -149,20 +149,21 @@ class StructuralAnalysis(method.Method):
 
 	def writePPIHeader(self, OUT):
 		OUT.write("Experiment\tGeneId\tNormal_transcript\tTumor_transcript\t")
-		OUT.write("Other_gene\tOther_transcript\tWhat\t")
-		OUT.write("#nDDIs\t#tDDIs\t#BothDDIs\t")
-		OUT.write("nDDIs\ttDDIs\tBothDDIs\n")
+		OUT.write("Other_gene\tOther_symbol\tOther_transcript\tWhat\t")
+		OUT.write("#nDDIs\t#tDDIs\t#BothDDIs\tnDDIs\ttDDIs\tBothDDIs\n")
 
 	def writePPI(self, OUT, gene, thisSwitch, DDIchanges):
 		for tx, ddis in DDIchanges.items():
-			OUT.write("{}\t".format( self._genes.tumor ))
-			OUT.write("{}\t{}\t{}\t".format(gene, thisSwitch.nTx, thisSwitch.tTx))
-			OUT.write("{}\t{}\t".format(self._txs._net.node[tx]["gene_id"], tx))
-			OUT.write("{}\t".format(ddis["what"]))
-			OUT.write("{}\t{}\t".format(len(ddis["nDDIs"]), len(ddis["tDDIs"])))
-			OUT.write("{}\t".format(len(ddis["bothDDIs"])))
-			OUT.write("{}\t{}\t".format(";".join(ddis["nDDIs"]), ";".join(ddis["tDDIs"]) ))
-			OUT.write("{}\n".format(";".join(ddis["bothDDIs"]) ))
+
+			other_gene = self._txs._net.node[tx]["gene_id"]
+
+			OUT.write("{}\t{}\t".format( self._genes.tumor, gene ))
+			OUT.write("{}\t{}\t".format( thisSwitch.nTx, thisSwitch.tTx ))
+			OUT.write("{}\t{}\t".format( other_gene, self._genes._net.node[other_gene]["symbol"] ))
+			OUT.write("{}\t{}\t".format( tx, ddis["what"] ))
+			OUT.write("{}\t{}\t".format( len(ddis["nDDIs"]), len(ddis["tDDIs"]) ))
+			OUT.write("{}\t{}\t".format( len(ddis["bothDDIs"]), ";".join(ddis["nDDIs"]) ))
+			OUT.write("{}\t{}\n".format( ";".join(ddis["tDDIs"]), ";".join(ddis["bothDDIs"]) ))
 
 	def writeProteomeHeader(self, OUT):
 		OUT.write("Experiment\tGeneId\tTranscript\tExpression\t")
