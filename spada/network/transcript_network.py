@@ -1,7 +1,6 @@
 from spada.io import io
 from spada.network.network import Network
 
-import pandas as pd
 import numpy as np
 import abc
 

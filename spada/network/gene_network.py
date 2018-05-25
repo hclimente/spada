@@ -1,10 +1,10 @@
 from spada.biological_entities.switch import IsoformSwitch
+from spada.io import io
 from spada.network.network import Network
 
 import abc
 import numpy as np
 import operator
-import pandas as pd
 import random
 
 class GeneNetwork(Network):
@@ -74,13 +74,12 @@ class GeneNetwork(Network):
 		Returns True if succesful; else, returns False."""
 
 		geneID, geneSymbol = self.nameFilter(full_name=full_name, gene_id=gene_id)
-		finalValue = value
 
 		if geneID is None:
 			self.logger.error("Unable to get gene id from {} {}".format(full_name, geneID))
 			return False
 
-		return self._update_node(geneID,key,finalValue,secondKey)
+		return self._update_node(geneID,key,value,secondKey)
 
 	def update_nodes(self, key, values):
 		for gene, value in values.items():
@@ -148,20 +147,20 @@ class GeneNetwork(Network):
 		"""
 		self.logger.debug("Retrieving calculated isoform switches.")
 
-		switches = pd.read_csv(switchesFile, sep="\t")
-		switches.columns = ["gene","normal","tumor","samples"]
-		switches.samples = switches.samples.str.split(",")
+		for line in io.readTable(switchesFile):
+			gene = line['Gene']
+			nTx = line['NormalTranscript']
+			tTx = line['TumorTranscript']
+			samples = set(line['Samples'].split(','))
 
-		for index,row in switches.iterrows():
+			if self.valid_switch(gene, nTx, tTx, tx_network):
 
-			if self.valid_switch(row["gene"], row["normal"], row["tumor"], tx_network):
-
-				thisSwitch = IsoformSwitch(row["normal"], row["tumor"],row["samples"])
+				thisSwitch = IsoformSwitch(nTx, tTx, samples)
 				nInfo = tx_network.nodes()[thisSwitch.nTx]
 				tInfo = tx_network.nodes()[thisSwitch.tTx]
 				thisSwitch.addTxInfo(nInfo, tInfo)
 
-				self.update_node("switches", thisSwitch, full_name = row["gene"])
+				self.update_node("switches", thisSwitch, full_name = gene)
 
 	def valid_switch(self, gene, nTx, tTx, tx_network):
 
