@@ -8,9 +8,8 @@ from spada.io.io import SpadaError
 
 from itertools import product
 from networkx import get_node_attributes
-from numpy import exp2
 import pickle
-import pandas as pd
+import numpy as np
 
 import pkg_resources
 
@@ -109,51 +108,19 @@ class CreateNetwork(method.Method):
 			return()
 
 		self.logger.info("Reading {} expression and calculating PSI.".format(origin))
-		expression = pd.read_csv(expression, sep = '\t', index_col = 0)
+		with open(expression, "r") as EXPR:
+			for tx,xpr in io.parseExpression(EXPR, header = True):
 
-		# filter out readings on excluded transcripts
-		txs = [ tx for tx, txInfo in self._txs.transcripts() if tx in expression.index ]
-		expression = expression.loc[txs]
+				# filter out readings on excluded transcripts
+				if tx not in self._txs.nodes():
+					continue
 
-		medianExpression = self.readExpression(expression)
-		medianPSI = self.calculatePSI(expression)
-		expressed = self.isExpressed(medianExpression, minExpression)
+				medianExpression = np.median(xpr)
+				medianExpression = np.asscalar(medianExpression)
+				expressed = medianExpression >= minExpression
 
-		self._txs.update_nodes("median_TPM_" + origin, medianExpression)
-		self._txs.update_nodes("median_PSI_" + origin, medianPSI)
-		self._genes.update_nodes("expressedTxs" + origin, expressed)
-
-	def readExpression(self, expression):
-
-		medians = expression.median(axis = 1)
-		medians = medians.to_dict()
-
-		return(medians)
-
-	def calculatePSI(self, expression):
-
-		tx2gene = get_node_attributes(self._txs._net, 'gene_id')
-
-		psi = lambda x: exp2(x) / exp2(x).sum()
-
-		psis = expression.groupby(tx2gene).transform(psi)
-		medians = psis.median(axis = 1)
-		medians = medians.to_dict()
-
-		return(medians)
-
-	def isExpressed(self, expression, threshold):
-
-		expressed = {}
-
-		for tx, median in expression.items():
-			if median > threshold:
-				gene = self._txs._net.node[tx]["gene_id"]
-
-				expressed.setdefault(gene, set())
-				expressed[gene].add(tx)
-
-		return(expressed)
+				self._txs.update_node(tx, "median_TPM_" + origin, medianExpression)
+				self._genes.update_node(tx, "expressedTxs" + origin, expressed)
 
 	def getInteractions(self, ppi):
 

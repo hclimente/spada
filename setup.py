@@ -5,7 +5,7 @@ setup(
 	packages = find_packages(),
 	package_dir = {'spada': 'spada'},
 	package_data = {'spada': ['data/*.pkl']},
-	version = '1.14',
+	version = '1.15',
 	description = 'Find splicing-led, functional changes of the proteome. ',
 	author = 'Héctor Climente-González',
 	author_email = 'hector.climente@curie.fr',
@@ -25,7 +25,6 @@ setup(
 		'Programming Language :: Python :: 3 :: Only'],
 	install_requires = [
 		'networkx >= 1.11',
-		'pandas >= 0.20.3',
 		'numpy >= 1.13.1'],
 	scripts=['scripts/spada']
 )

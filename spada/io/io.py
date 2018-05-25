@@ -134,9 +134,13 @@ def printSwitches(genes, txs, filename = "switches_spada.tsv"):
 			OUT.write("%i\t%i\t" % ( cdsChange, utrChange))
 			OUT.write("{}\n".format( ",".join(thisSwitch.samples) ))
 
-def parseExpression(FILE):
+def parseExpression(FILE, header = False):
 
 	for line in FILE:
+
+		if not header:
+			header = True
+			continue
 
 		xpr = line.strip().split('\t')
 		tx = xpr.pop(0)

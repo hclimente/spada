@@ -22,9 +22,7 @@ class TranscriptNetwork(Network):
 		start_codon(int,None)		First residue of the start codon.
 		stop_codon(int,None)		First residue of the stop codon.
 		median_TPM_N(float,None)	Median TPM of the isoform in the normal patients.
-		median_PSI_N(float,None)	Median PSI of the isoform in the normal patients.
 		median_TPM_T(float,None)	Median TPM of the isoform in the tumor patients.
-		median_PSI_T(float,None)	Median PSI of the isoform in the tumor patients.
 		proteinSequence(str,None)	Protein sequence.
 
 	Edge information:
@@ -72,9 +70,7 @@ class TranscriptNetwork(Network):
 							start_codon		= None,
 							stop_codon		= None,
 							median_TPM_N	= None,
-							median_PSI_N	= None,
 							median_TPM_T	= None,
-							median_PSI_T	= None,
 							proteinSequence	= None,
 							Pfam			= {},
 							Prosite			= {},
