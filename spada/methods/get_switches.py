@@ -3,7 +3,7 @@ from spada.methods import method
 class GetSwitches(method.Method):
 	def __init__(self, gn_network, tx_network):
 		method.Method.__init__(self, __name__, gn_network, tx_network)
-		self._genes.clean()
+		self._genes.flushSwitches()
 
 	def run(self, switchesFile):
 

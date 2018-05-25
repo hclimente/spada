@@ -142,5 +142,6 @@ def parseExpression(FILE):
 		tx = xpr.pop(0)
 		xpr = np.array([xpr])
 		xpr = xpr.astype(np.float)
+		xpr = np.exp2(xpr) - .001
 
-		yield (tx,xpr)
+		yield tx,xpr

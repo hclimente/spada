@@ -86,14 +86,14 @@ class GeneExpression:
 
 		return cutoff
 
-	def detectSwitches(self):
+	def detectSwitches(self, minExpression = 0.1):
 
 		switches = {}
 
 		if self.isComplete:
 			bigChange = abs(self._dPSI) > self.cutoff(self._wtdPSI, 95)
-			ctrlExpression = (self._expressionCtrl >= 0.1) & (self._dPSI < 0)
-			caseExpression = (self._expressionCase >= 0.1) & (self._dPSI > 0)
+			ctrlExpression = (self._expressionCtrl >= minExpression) & (self._dPSI < 0)
+			caseExpression = (self._expressionCase >= minExpression) & (self._dPSI > 0)
 			unchanged = np.logical_not(bigChange & (ctrlExpression | caseExpression))
 
 			# discarded txs by nan

@@ -13,7 +13,7 @@ def test_readSwitches():
 	gn.createLogger()
 	txs = pickle.load(open(dataPath + "/transcripts.pkl", "rb"))
 	txs.createLogger()
-	gn.clean()
+	gn.flushSwitches()
 	gn.readSwitches(dataPath + "/switches", txs)
 
 	# number of switches is correct

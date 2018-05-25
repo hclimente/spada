@@ -13,7 +13,7 @@ def test_init():
 
 	g = get_switches.GetSwitches(dataPath + "genes.pkl",
 								 dataPath + "transcripts.pkl")
-	g._genes.clean()
+	g._genes.flushSwitches()
 	g.run(dataPath + "switches")
 
 	# number of switches is correct

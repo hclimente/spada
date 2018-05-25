@@ -135,7 +135,7 @@ class GeneNetwork(Network):
 
 		return self._update_edge(node_id1, node_id2, key, value)
 
-	def clean(self):
+	def flushSwitches(self):
 
 		self.logger.debug("Cleaning imported network.")
 

@@ -9,7 +9,7 @@ import logging
 def summarizeResults():
 
 	s = summary.Summary(True,True)
-	s.clean()
+	s.flushSwitches()
 	s.run()
 
 def testing():
@@ -82,6 +82,30 @@ subparser_init.set_defaults(task="createNetwork")
 subparser_init.set_defaults(func=createNetwork)
 
 ################################################
+###   COMPUTE SWITCHES                      ####
+################################################
+def computeSwitches(o):
+	c = compute_switches.ComputeSwitches(True, True, o.normalExpression, o.tumorExpression)
+	c.run(o.minExpression)
+
+subparser_switches = subparsers.add_parser('switches', help='Switch detection help')
+subparser_switches.add_argument('-n', '--expression-normal', dest='normalExpression',
+								action='store', default=None,
+								help='Tab-separated table with transcript-level expression data of the normal samples \
+								in TPM; a row per annotated transcript, indicated in the first column.  Required \
+								for newly generated networks.')
+subparser_switches.add_argument('-t', '--expression-tumor', dest='tumorExpression',
+								action='store', default=None,
+								help='Equivalent to --expression-normal for the tumor samples. Required for newly \
+								generated networks.')
+subparser_switches.add_argument('-m', '--minimum-expression', dest='minExpression',
+								action='store', default=None, type=float,
+					 			help='Minimum expression value, in TPM, to consider a transcript expressed. Required \
+								for newly generated networks.')
+subparser_switches.set_defaults(task="computeSwitches")
+subparser_switches.set_defaults(func=computeSwitches)
+
+################################################
 ###   STRUCTURAL ANALYSIS                   ####
 ################################################
 def functionalAnalysis(o):
@@ -113,7 +137,7 @@ subparser_sim.set_defaults(func=simulateSwitches)
 ################################################
 def summarize():
 	s = summary.Summary(True,True)
-	s.clean()
+	s.flushSwitches()
 	s.run()
 
 subparser_summary = subparsers.add_parser('summary', help='Summary statistics help')
