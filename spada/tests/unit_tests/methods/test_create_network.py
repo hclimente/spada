@@ -5,7 +5,6 @@ from spada.io.io import SpadaError
 
 import networkx as nx
 import os
-import pandas as pd
 import pytest
 
 scriptPath = os.path.realpath(__file__)
