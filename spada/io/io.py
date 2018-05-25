@@ -1,13 +1,14 @@
 from spada.io import io
 
 import logging
+import numpy as np
 
 class SpadaError(Exception):
-	def __init__(self, value, logger):
-		self.logger = logger
+	def __init__(self, value):
+		self.logger = logging.getLogger('spada error')
 		self.value = value
 	def __str__(self):
-		logger.exception(value)
+		self.logger.exception(value)
 		return repr(self.value)
 
 def readTable(path, sep = "\t", header = True, skipCommented = True, keys = []):
@@ -132,3 +133,14 @@ def printSwitches(genes, txs, filename = "switches_spada.tsv"):
 			OUT.write("%i\t%i\t" % ( bool(thisSwitch.nTranscript.cds), bool(thisSwitch.tTranscript.cds) ))
 			OUT.write("%i\t%i\t" % ( cdsChange, utrChange))
 			OUT.write("{}\n".format( ",".join(thisSwitch.samples) ))
+
+def parseExpression(FILE):
+
+	for line in FILE:
+
+		xpr = line.strip().split('\t')
+		tx = xpr.pop(0)
+		xpr = np.array([xpr])
+		xpr = xpr.astype(np.float)
+
+		yield (tx,xpr)

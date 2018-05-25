@@ -14,7 +14,7 @@ class GeneNetwork(Network):
 	Node information:
 		id(str) 						Gene Id
 		symbol(str) 					Gene Symbol
-		switches(list,[]) 		List of detected isoform switches [[isoN, isoT], [isoN, isoT]]
+		switches(list,[]) 				List of detected isoform switches.
 		driver(bool,False) 				Gene described as a driver.
 		specificDriver(bool,False) 		Gene described as driver in this cancer type.
 		driverType(str,"") 				Role that plays the gene in tumorigenesis.

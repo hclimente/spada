@@ -27,7 +27,7 @@ class CreateNetwork(method.Method):
 				self._genes = gencode_gene_network.GENCODEGeneNetwork()
 				self._txs = gencode_transcript_network.GENCODETranscriptNetwork()
 			else:
-				raise SpadaError("Unrecognized annotation: {}.".format(annotation), self.logger)
+				raise SpadaError("Unrecognized annotation: {}.".format(annotation))
 		else:
 			if annotation in ["ucsc", "gencode"]:
 				genes = pkg_resources.resource_filename('spada', 'data/{}_genes.pkl'.format(annotation))
@@ -70,7 +70,7 @@ class CreateNetwork(method.Method):
 
 		if not self._new:
 			if gtf:
-				raise SpadaError("gtf provided when previous network is to be used.", self.logger)
+				raise SpadaError("gtf provided when previous network is to be used.")
 			else:
 				return()
 
@@ -103,7 +103,7 @@ class CreateNetwork(method.Method):
 	def measureExpression(self, expression, minExpression, origin):
 
 		if self._new and not expression:
-			raise SpadaError("An expression file must be provided.", self.logger)
+			raise SpadaError("An expression file must be provided.")
 		elif not expression:
 			self.logger.info("Expression from the provided network will be used.")
 			return()
@@ -158,7 +158,7 @@ class CreateNetwork(method.Method):
 	def getInteractions(self, ppi):
 
 		if self._new and not ppi:
-			raise SpadaError("A file containing the protein-protein interactions must be provided.", self.logger)
+			raise SpadaError("A file containing the protein-protein interactions must be provided.")
 		elif not ppi:
 			self.logger.info("Protein-protein interactions from the provided network will be used.")
 			return()
@@ -183,14 +183,14 @@ class CreateNetwork(method.Method):
 	def getDomainInteractions(self, ddi):
 
 		if self._new and not ddi:
-			raise SpadaError("A file containing the domain-domain interactions must be provided.", self.logger)
+			raise SpadaError("A file containing the domain-domain interactions must be provided.")
 		elif not ddi:
 			self.logger.info("Domain-domain interactions from the provided network will be used.")
 			return()
 
 		self.logger.info("Building isoform-isoform interaction network.")
 		allDDIs = { frozenset([x['Pfam1'],x['Pfam2']]) for x in io.readTable(ddi, keys = ['Pfam1','Pfam2']) }
-		
+
 		for gene1, gene2 in self._genes._net.edges():
 			txs1 = [ (t,i["Pfam"]) for t,i in self._txs.nodes(data=True) if i["gene_id"] == gene1 and i["Pfam"] ]
 			txs2 = [ (t,i["Pfam"]) for t,i in self._txs.nodes(data=True) if i["gene_id"] == gene2 and i["Pfam"] ]
@@ -206,7 +206,7 @@ class CreateNetwork(method.Method):
 	def readDrivers(self, drivers):
 
 		if self._new and not drivers:
-			raise SpadaError("A file containing the tumor drivers must be provided.", self.logger)
+			raise SpadaError("A file containing the tumor drivers must be provided.")
 		elif not drivers:
 			self.logger.info("Drivers from the provided network will be used.")
 			return(None,None)
@@ -228,7 +228,7 @@ class CreateNetwork(method.Method):
 	def getIsoformSequences(self, proteins):
 
 		if self._new and not proteins:
-			raise SpadaError("A FASTA file with protein sequences file must be provided.", self.logger)
+			raise SpadaError("A FASTA file with protein sequences file must be provided.")
 		elif not proteins:
 			self.logger.info("Protein sequences from the provided network will be used.")
 			return()
@@ -241,7 +241,7 @@ class CreateNetwork(method.Method):
 	def getIsoformFeatures(self, features):
 
 		if self._new and not features:
-			raise SpadaError("A file with the protein features must be provided.", self.logger)
+			raise SpadaError("A file with the protein features must be provided.")
 		elif not features:
 			self.logger.info("Protein features from the provided network will be used.")
 			return()
