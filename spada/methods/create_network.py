@@ -46,8 +46,6 @@ class CreateNetwork(method.Method):
 		self.addAberrant(aberrant)
 
 		# gene data
-		self.getInteractions(ppi)
-
 		drivers, specificDrivers = self.readDrivers(drivers)
 		if drivers:
 			self._genes.update_nodes("driver", self.symbol2ids(drivers))
@@ -60,6 +58,7 @@ class CreateNetwork(method.Method):
 
 		self.getIsoformSequences(sequences)
 		self.getIsoformFeatures(features)
+		self.getInteractions(ppi)
 		self.getDomainInteractions(ddi)
 
 		# QC and save
@@ -136,7 +135,7 @@ class CreateNetwork(method.Method):
 		for line in io.readPSIMITAB(ppi):
 
 			if line["organismA"][0]["id"] != "9606" or line["organismB"][0]["id"] != "9606":
-				next
+				continue
 
 			symbolA = [ x["id"] for x in line["symbolA"] if x["type"] == 'entrez gene/locuslink' ]
 			symbolA.extend([ x["id"] for x in line["aliasA"] if x.get("extra", None) in ["gene name", "gene name synonym"] and x["id"] in symbols ])
