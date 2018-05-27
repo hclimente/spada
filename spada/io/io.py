@@ -138,8 +138,8 @@ def parseExpression(FILE, header = False):
 
 	for line in FILE:
 
-		if not header:
-			header = True
+		if header:
+			header = False
 			continue
 
 		xpr = line.strip().split('\t')

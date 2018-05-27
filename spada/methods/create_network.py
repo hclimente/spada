@@ -106,7 +106,7 @@ class CreateNetwork(method.Method):
 			self.logger.info("Expression from the provided network will be used.")
 			return()
 
-		self.logger.info("Reading {} expression and calculating PSI.".format(origin))
+		self.logger.info("Reading {} samples transcript expression.".format('normal' if origin == 'N' else 'tumor'))
 		with open(expression, "r") as EXPR:
 			for tx,xpr in io.parseExpression(EXPR, header = True):
 
@@ -114,12 +114,13 @@ class CreateNetwork(method.Method):
 				if tx not in self._txs.nodes():
 					continue
 
+				gene = tInfo = self._txs.nodes()[tx]['gene_id']
 				medianExpression = np.median(xpr)
 				medianExpression = np.asscalar(medianExpression)
 				expressed = medianExpression >= minExpression
 
 				self._txs.update_node(tx, "median_TPM_" + origin, medianExpression)
-				self._genes.update_node(tx, "expressedTxs" + origin, expressed)
+				self._genes.update_node("expressedTxs" + origin, expressed, gene)
 
 	def getInteractions(self, ppi):
 
