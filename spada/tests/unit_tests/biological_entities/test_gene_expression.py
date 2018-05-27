@@ -69,7 +69,7 @@ def test_computePSI():
 								   [.2, .3, .4, .5],
 								   [.6, .4, .2, 0]]))
 
-def test_computeDeltaPSI():
+def test_matchExpressions():
 
 	expr1 = np.array([[2, 3, 4, 5]])
 	expr2 = np.array([[6, 4, 2, 0]])
@@ -78,7 +78,9 @@ def test_computeDeltaPSI():
 	g1.addTx('tx1', expr1, expr2)
 	g1.addTx('tx2', expr1, expr2)
 	g1.addTx('tx3', expr2, expr1)
-	psiCtrl, psiCase, dpsi = g1.computeDeltaPSI(g1._expressionCtrl, g1._expressionCase)
+	psiCtrl = g1.computePSI(g1.matchExpressions(g1._expressionCtrl))
+	psiCase = g1.computePSI(g1._expressionCase)
+	dpsi = psiCase - psiCtrl
 
 	assert dpsi.shape == (3, 4)
 	assert np.all(dpsi[:,0] == [3/7  - .2, 3/7  - .2, 1/7  - .6])
@@ -90,7 +92,9 @@ def test_computeDeltaPSI():
 	g2.addTx('tx1', expr1, expr2)
 	g2.addTx('tx2', expr1, expr2)
 	g2.addTx('tx3', expr2, expr1)
-	psiCtrl, psiCase, dpsi = g2.computeDeltaPSI(g2._expressionCtrl, g2._expressionCase)
+	psiCtrl = g2.computePSI(g2.matchExpressions(g2._expressionCtrl))
+	psiCase = g2.computePSI(g2._expressionCase)
+	dpsi = psiCase - psiCtrl
 
 	assert dpsi.shape == (3, 4)
 	assert np.all(dpsi[:,0] == [3/7  - .5,  3/7  - .5,  1/7  - .0])
@@ -141,7 +145,7 @@ def test_detectSwitches():
 	g = GeneExpression(txs, ctrl_ids, case_ids)
 	g._storedTxs = ['tx1', 'tx2', 'tx3']
 	g._complete = True
-	g._expressionCtrl = expression
+	g._matchedExpressionCtrl = expression
 	g._expressionCase = expression
 	g._wtdPSI = wtdpsi
 	g._dPSI = dpsi

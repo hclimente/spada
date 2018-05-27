@@ -11,9 +11,7 @@ class GeneExpression:
 
 		self._expressionCtrl = np.array([])
 		self._expressionCase = np.array([])
-
-		self._psiCtrl = np.array([])
-		self._psiCase = np.array([])
+		self._matchedExpressionCtrl = np.array([])
 
 		self._dPSI = np.array([])
 		self._wtdPSI = np.array([])
@@ -39,8 +37,11 @@ class GeneExpression:
 	def isComplete(self):
 
 		if not self._complete and not self._allTxs.difference(self._storedTxs):
-			self._psiCtrl, self._psiCase, self._dPSI = self.computeDeltaPSI(self._expressionCtrl, self._expressionCase)
-			self._wtdPSI = self.computeWTDeltaPSI(self._expressionCtrl, self._psiCtrl)
+			self._matchedExpressionCtrl = self.matchExpressions(self._expressionCtrl)
+			psiCtrl = self.computePSI(self._matchedExpressionCtrl)
+			psiCase = self.computePSI(self._expressionCase)
+			self._dPSI = psiCase - psiCtrl
+			self._wtdPSI = self.computeWTDeltaPSI(self._expressionCtrl, psiCtrl)
 
 			self._complete = True
 
@@ -54,17 +55,10 @@ class GeneExpression:
 
 	def computeDeltaPSI(self, expressionCtrl, expressionCase):
 
-		mask_case = [ i in self._idsCtrl for i in self._idsCase ]
-		mask_ctrl = [ self._idsCtrl.index(i) for i in self._idsCase if i in self._idsCtrl ]
-
 		psiCtrl = self.computePSI(expressionCtrl)
 		psiCase = self.computePSI(expressionCase)
 
-		median_psi_ctrl = np.median(psiCtrl, axis=1)
-		median_psi_ctrl = median_psi_ctrl.reshape(len(median_psi_ctrl), 1)
-
 		dpsi = psiCase - median_psi_ctrl
-		dpsi[:,mask_case] = psiCase[:,mask_case] - psiCtrl[:,mask_ctrl]
 
 		return (psiCtrl, psiCase, dpsi)
 
@@ -79,6 +73,17 @@ class GeneExpression:
 
 		return wt_dpsi
 
+	def matchExpressions(self, expressionCtrl):
+
+		mask_case = [ i in self._idsCtrl for i in self._idsCase ]
+		mask_ctrl = [ self._idsCtrl.index(i) for i in self._idsCase if i in self._idsCtrl ]
+
+		median = np.median(expressionCtrl, axis=1)
+		matched = np.tile(median, (len(self._idsCase),1)).T
+		matched[:,mask_case] = expressionCtrl[:,mask_ctrl]
+
+		return matched
+
 	def cutoff(self, wtdPSI, percent):
 
 		cutoff = np.percentile(wtdPSI, percent, axis = 1)
@@ -92,7 +97,7 @@ class GeneExpression:
 
 		if self.isComplete:
 			bigChange = abs(self._dPSI) > self.cutoff(self._wtdPSI, 95)
-			ctrlExpression = (self._expressionCtrl >= minExpression) & (self._dPSI < 0)
+			ctrlExpression = (self._matchedExpressionCtrl >= minExpression) & (self._dPSI < 0)
 			caseExpression = (self._expressionCase >= minExpression) & (self._dPSI > 0)
 			unchanged = np.logical_not(bigChange & (ctrlExpression | caseExpression))
 
