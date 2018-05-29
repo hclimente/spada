@@ -15,6 +15,8 @@ class GeneExpression:
 
 		self._dPSI = np.array([])
 		self._wtdPSI = np.array([])
+		self._dExp = np.array([])
+		self._wtdExp = np.array([])
 
 		self._idsCase = case_ids
 		self._idsCtrl = ctrl_ids
@@ -41,7 +43,13 @@ class GeneExpression:
 			psiCtrl = self.computePSI(self._matchedExpressionCtrl)
 			psiCase = self.computePSI(self._expressionCase)
 			self._dPSI = psiCase - psiCtrl
-			self._wtdPSI = self.computeWTDeltaPSI(self._expressionCtrl, psiCtrl)
+			self._wtdPSI = self.computeExpectedDelta(self._expressionCtrl, psiCtrl)
+
+			geneExpressionCtrl = self._matchedExpressionCtrl.sum(axis = 0)
+			geneExpressionCase = self._expressionCase.sum(axis = 0)
+
+			self._dExp = geneExpressionCase - geneExpressionCtrl
+			self._wtdExp = self.computeExpectedDelta(psi = geneExpressionCtrl)
 
 			self._complete = True
 
@@ -53,25 +61,16 @@ class GeneExpression:
 		psi = expression / expression.sum(axis = 0)
 		return psi
 
-	def computeDeltaPSI(self, expressionCtrl, expressionCase):
-
-		psiCtrl = self.computePSI(expressionCtrl)
-		psiCase = self.computePSI(expressionCase)
-
-		dpsi = psiCase - median_psi_ctrl
-
-		return (psiCtrl, psiCase, dpsi)
-
-	def computeWTDeltaPSI(self, expression = None, psi = np.array([])):
+	def computeExpectedDelta(self, expression = None, psi = np.array([])):
 
 		if not psi.shape:
 			psi = self.computePSI(expression)
 
-		wt_dpsi = [ abs(a - b) for a, b in combinations(psi.T, 2) ]
-		wt_dpsi = np.array(wt_dpsi)
-		wt_dpsi = wt_dpsi.T
+		expectedDelta = [ abs(a - b) for a, b in combinations(psi.T, 2) ]
+		expectedDelta = np.array(expectedDelta)
+		expectedDelta = expectedDelta.T
 
-		return wt_dpsi
+		return expectedDelta
 
 	def matchExpressions(self, expressionCtrl):
 
@@ -97,9 +96,10 @@ class GeneExpression:
 
 		if self.isComplete:
 			bigChange = abs(self._dPSI) > self.cutoff(self._wtdPSI, 95)
+			notDE = abs(self._dExp) < self.cutoff([self._wtdExp], 95)
 			ctrlExpression = (self._matchedExpressionCtrl >= minExpression) & (self._dPSI < 0)
 			caseExpression = (self._expressionCase >= minExpression) & (self._dPSI > 0)
-			unchanged = np.logical_not(bigChange & (ctrlExpression | caseExpression))
+			unchanged = np.logical_not(bigChange & notDE & (ctrlExpression | caseExpression))
 
 			# discarded txs by nan
 			dpsi = np.copy(self._dPSI)
@@ -111,6 +111,7 @@ class GeneExpression:
 			# nans will go to the bottom. Take the last valid index
 			# i.e. #rows - #nans - 1
 			lastValid = dpsi.shape[0] - np.isnan(dpsi).sum(axis = 0) - 1
+			lastValid[lastValid < 0] = 0
 			txsCase = rank[lastValid, np.arange(rank.shape[1])]
 
 			for i in range(len(self._idsCase)):

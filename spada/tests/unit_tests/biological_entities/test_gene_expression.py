@@ -102,7 +102,7 @@ def test_matchExpressions():
 	assert np.all(dpsi[:,2] == pytest.approx([1/4 - .35, 1/4 - .35, 1/2 - .3], .0001))
 	assert np.all(dpsi[:,3] == pytest.approx([0	  - .35, 0   - .35, 1   - .3], .0001))
 
-def test_computeWTDeltaPSI():
+def test_computeExpectedDelta():
 
 	g = GeneExpression(txs, ctrl_ids, case_ids)
 
@@ -115,7 +115,7 @@ def test_computeWTDeltaPSI():
 
 	psi_ctrl = np.array([[.5, .3, .4],
 						 [.3, .5, .15]])
-	wt_dpsi = g.computeWTDeltaPSI(psi = psi_ctrl)
+	wt_dpsi = g.computeExpectedDelta(psi = psi_ctrl)
 	assert wt_dpsi.shape == (2, 3)
 	assert np.all(wt_dpsi == pytest.approx(np.array([[.2, .1, .1],
 													 [.2, .15, .35]]), .0001))
@@ -149,8 +149,10 @@ def test_detectSwitches():
 	g._expressionCase = expression
 	g._wtdPSI = wtdpsi
 	g._dPSI = dpsi
+	g._wtdExp = np.array([0, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1])
+	g._dExp = np.array([ .94, .94, .96, .94])
 
 	switches = g.detectSwitches()
 
-	assert switches[('tx3','tx2')] == set(['A','B'])
+	assert switches[('tx3','tx2')] == set('A')
 	assert switches[('tx1','tx3')] == set('Z')

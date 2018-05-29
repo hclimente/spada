@@ -9,7 +9,7 @@ dataPath = os.path.dirname(scriptPath) + "/../../data/"
 c = compute_switches.ComputeSwitches(dataPath + "genes.pkl",
 									 dataPath + "transcripts.pkl",
 									 dataPath + 'expression',
-									 dataPath + 'expression')
+									 dataPath + 'expression_case')
 
 def test_run():
 
