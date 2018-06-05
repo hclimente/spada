@@ -44,7 +44,8 @@ class ComputeSwitches(method.Method):
 			expression.setdefault(gene, GeneExpression(gene2tx[gene], idsCtrl, idsCase))
 			expression[gene].addTx(tx, ctrl, case)
 
-			if expression[gene].isComplete:
+			if expression[gene].isComplete and len(expression[gene]._allTxs) > 1:
+				
 				switches = expression[gene].detectSwitches(minExpression)
 
 				for (nTx,tTx),samples in switches.items():

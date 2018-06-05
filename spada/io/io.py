@@ -144,8 +144,10 @@ def parseExpression(FILE, header = False):
 
 		xpr = line.strip().split('\t')
 		tx = xpr.pop(0)
+
 		xpr = np.array([xpr])
 		xpr = xpr.astype(np.float)
 		xpr = np.exp2(xpr) - .001
+		xpr[xpr < 0] = 0
 
 		yield tx,xpr

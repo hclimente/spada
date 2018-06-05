@@ -43,28 +43,35 @@ class GeneExpression:
 			psiCtrl = self.computePSI(self._matchedExpressionCtrl)
 			psiCase = self.computePSI(self._expressionCase)
 			self._dPSI = psiCase - psiCtrl
-			self._wtdPSI = self.computeExpectedDelta(self._expressionCtrl, psiCtrl)
+			self._wtdPSI = self.computeExpectedDelta(expression = self._expressionCtrl)
 
-			geneExpressionCtrl = self._matchedExpressionCtrl.sum(axis = 0)
+			geneMatchedExpressionCtrl = self._matchedExpressionCtrl.sum(axis = 0)
+			geneExpressionCtrl = self._expressionCtrl.sum(axis = 0)
 			geneExpressionCase = self._expressionCase.sum(axis = 0)
 
-			self._dExp = geneExpressionCase - geneExpressionCtrl
+			self._dExp = geneExpressionCase - geneMatchedExpressionCtrl
 			self._wtdExp = self.computeExpectedDelta(psi = geneExpressionCtrl)
 
 			self._complete = True
 
 		return self._complete
 
-	def computePSI(self, expression):
-		if not expression.shape:
+	def computePSI(self, expression, nan_rm = False):
+
+		if expression.shape == (0,):
 			raise SpadaError("Expression empty.")
 		psi = expression / expression.sum(axis = 0)
+
+		if nan_rm:
+			nancols = np.where(np.isnan(psi))[1]
+			psi = np.delete(psi, nancols, axis = 1)
+
 		return psi
 
-	def computeExpectedDelta(self, expression = None, psi = np.array([])):
+	def computeExpectedDelta(self, expression = None, psi = np.array([]), nan_rm = True):
 
-		if not psi.shape:
-			psi = self.computePSI(expression)
+		if psi.shape == (0,):
+			psi = self.computePSI(expression, nan_rm)
 
 		expectedDelta = [ abs(a - b) for a, b in combinations(psi.T, 2) ]
 		expectedDelta = np.array(expectedDelta)
