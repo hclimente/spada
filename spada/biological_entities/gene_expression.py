@@ -90,10 +90,13 @@ class GeneExpression:
 
 		return matched
 
-	def cutoff(self, wtdPSI, percent):
+	def cutoff(self, wt, percent):
 
-		cutoff = np.percentile(wtdPSI, percent, axis = 1)
-		cutoff = cutoff.reshape(cutoff.shape[0],1)
+		if wt.shape == (0,):
+			cutoff = np.inf
+		else:
+			cutoff = np.percentile(wt, percent, axis = 1)
+			cutoff = cutoff.reshape(cutoff.shape[0], 1)
 
 		return cutoff
 
@@ -102,8 +105,9 @@ class GeneExpression:
 		switches = {}
 
 		if self.isComplete:
+
 			bigChange = abs(self._dPSI) > self.cutoff(self._wtdPSI, 95)
-			notDE = abs(self._dExp) < self.cutoff([self._wtdExp], 95)
+			notDE = abs(self._dExp) < self.cutoff(np.expand_dims(self._wtdExp, 0), 95)
 			ctrlExpression = (self._matchedExpressionCtrl >= minExpression) & (self._dPSI < 0)
 			caseExpression = (self._expressionCase >= minExpression) & (self._dPSI > 0)
 			unchanged = np.logical_not(bigChange & notDE & (ctrlExpression | caseExpression))
