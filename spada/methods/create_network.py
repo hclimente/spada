@@ -117,10 +117,11 @@ class CreateNetwork(method.Method):
 				gene = tInfo = self._txs.nodes()[tx]['gene_id']
 				medianExpression = np.median(xpr)
 				medianExpression = np.asscalar(medianExpression)
-				expressed = medianExpression >= minExpression
 
 				self._txs.update_node(tx, "median_TPM_" + origin, medianExpression)
-				self._genes.update_node("expressedTxs" + origin, expressed, gene)
+
+				if medianExpression >= minExpression:
+					self._genes.update_node("expressedTxs" + origin, tx, gene)
 
 	def getInteractions(self, ppi):
 

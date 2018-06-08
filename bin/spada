@@ -27,7 +27,7 @@ def createNetwork(o):
 	c.run(o.gtf, o.normalExpression, o.tumorExpression, o.minExpression, o.seq,
 		  o.ppi, o.ddi, o.drivers, o.features, o.aberrant)
 
-subparser_init = subparsers.add_parser('init', help='Initialize help')
+subparser_init = subparsers.add_parser('init', help='Create network.')
 
 subparser_init.add_argument('-T', '--tumor', dest='tumor', action='store',
 							help='Identifier of the analysis e.g. the tumor type.')
@@ -72,7 +72,6 @@ subparser_init.add_argument('-A', '--aberrant', dest='aberrant', action='store',
 							exon structure or CDS. They can, however, present other features (protein sequence, \
 							expression, etc.).')
 
-subparser_init.set_defaults(task="createNetwork")
 subparser_init.set_defaults(func=createNetwork)
 
 ################################################
@@ -82,7 +81,7 @@ def computeSwitches(o):
 	c = compute_switches.ComputeSwitches(True, True, o.normalExpression, o.tumorExpression)
 	c.run(o.minExpression)
 
-subparser_switches = subparsers.add_parser('switches', help='Switch detection help')
+subparser_switches = subparsers.add_parser('switches', help='Detect switches.')
 subparser_switches.add_argument('-n', '--expression-normal', dest='normalExpression',
 								action='store', default=None,
 								help='Tab-separated table with transcript-level expression data of the normal samples \
@@ -96,7 +95,6 @@ subparser_switches.add_argument('-m', '--minimum-expression', dest='minExpressio
 								action='store', default=None, type=float,
 					 			help='Minimum expression value, in TPM, to consider a transcript expressed. Required \
 								for newly generated networks.')
-subparser_switches.set_defaults(task="computeSwitches")
 subparser_switches.set_defaults(func=computeSwitches)
 
 ################################################
@@ -109,10 +107,9 @@ def functionalAnalysis(o):
 	s.run()
 	io.printSwitches(s._genes, s._txs)
 
-subparser_functional = subparsers.add_parser('function', help='Functional analysis help')
+subparser_functional = subparsers.add_parser('function', help='Functional analysis of the switches.')
 subparser_functional.add_argument('-s', '--switches', dest='switchesFile', action='store', required=True,
 								  default=None, type=str, help='File containing switches as TSV.')
-subparser_functional.set_defaults(task="functionalAnalysis")
 subparser_functional.set_defaults(func=functionalAnalysis)
 
 ################################################
@@ -122,8 +119,7 @@ def simulateSwitches():
 	r = simulate_switches.SimulateSwitches(True,True)
 	r.run()
 
-subparser_sim = subparsers.add_parser('simulate', help='Simulate random switches help')
-subparser_sim.set_defaults(task="simulateSwitches")
+subparser_sim = subparsers.add_parser('simulate', help='Simulate random switches.')
 subparser_sim.set_defaults(func=simulateSwitches)
 
 ################################################
@@ -134,8 +130,7 @@ def summarize():
 	s.flushSwitches()
 	s.run()
 
-subparser_summary = subparsers.add_parser('summary', help='Summary statistics help')
-subparser_summary.set_defaults(task="summarize")
+subparser_summary = subparsers.add_parser('summary', help='Summary statistics of the switches.')
 subparser_summary.set_defaults(func=summarize)
 
 ################################################
@@ -143,7 +138,7 @@ subparser_summary.set_defaults(func=summarize)
 ################################################
 options = parser.parse_args()
 
-if "task" not in options:
+if "func" not in options:
 	print("No sub-command selected.")
 	parser.print_help()
 	exit()
