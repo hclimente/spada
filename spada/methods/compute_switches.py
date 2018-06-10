@@ -44,17 +44,19 @@ class ComputeSwitches(method.Method):
 			expression.setdefault(gene, GeneExpression(gene2tx[gene], idsCtrl, idsCase))
 			expression[gene].addTx(tx, ctrl, case)
 
-			if expression[gene].isComplete and len(expression[gene]._allTxs) > 1:
-				
-				switches = expression[gene].detectSwitches(minExpression)
+			if expression[gene].isComplete:
 
-				for (nTx,tTx),samples in switches.items():
-					thisSwitch = IsoformSwitch(nTx, tTx, samples)
-					nInfo = self._txs.nodes()[nTx]
-					tInfo = self._txs.nodes()[tTx]
-					thisSwitch.addTxInfo(nInfo, tInfo)
+				if len(expression[gene]._allTxs) > 1:
 
-					self._genes.update_node("switches", thisSwitch, full_name = gene)
+					switches = expression[gene].detectSwitches(minExpression)
+
+					for (nTx,tTx),samples in switches.items():
+						thisSwitch = IsoformSwitch(nTx, tTx, samples)
+						nInfo = self._txs.nodes()[nTx]
+						tInfo = self._txs.nodes()[tTx]
+						thisSwitch.addTxInfo(nInfo, tInfo)
+
+						self._genes.update_node("switches", thisSwitch, full_name = gene)
 
 				expression.pop(gene)
 
