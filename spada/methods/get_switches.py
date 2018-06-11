@@ -8,7 +8,6 @@ class GetSwitches(method.Method):
 	def run(self, switchesFile):
 
 		self._genes.readSwitches(switchesFile, self._txs)
-		self._genes.calculateCompatibilityTable()
 		self._genes.saveNetwork("genes.pkl")
 
 if __name__ == '__main__':

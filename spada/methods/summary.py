@@ -23,7 +23,7 @@ class Summary(method.Method):
 		io.printSwitches(self._genes, self._txs)
 
 		self.logger.info("Taking measures on switches.")
-		for gene,info,thisSwitch in self._genes.iterate_switches_byPatientNumber(self._txs, only_models=True, removeNoise=True):
+		for gene,info,thisSwitch in self._genes.switches(self._txs):
 			self.logger.debug("Getting statistics for switch {} - {}.".format(thisSwitch.nTx,thisSwitch.tTx))
 
 			# general protein, switch and gene info
@@ -223,7 +223,5 @@ class Summary(method.Method):
 
 		switchFeatures["driver"] = self._genes.isDriver(gene)
 		switchFeatures["Functional"] = int(thisSwitch.isFunctional)
-		switchFeatures["Model"] = int(thisSwitch.isMain)
-		switchFeatures["Noise"] = int(thisSwitch.isNoise)
 
 		self.featuresTable.append((tag,switchFeatures))

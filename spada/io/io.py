@@ -115,10 +115,10 @@ def printSwitches(genes, txs, filename = "switches_spada.tsv"):
 
 	with open(filename, "w") as OUT:
 		OUT.write("Experiment\tGeneId\tSymbol\tNormal_transcript\t")
-		OUT.write("Tumor_transcript\tDriver\tIs_main\tNot_noise\tIs_functional\t")
+		OUT.write("Tumor_transcript\tDriver\tIs_functional\t")
 		OUT.write("CDS_normal\tCDS_tumor\tCDS_change\tUTR_change\tSamples\n")
 
-		for gene,info,thisSwitch in genes.iterate_switches_byPatientNumber(txs, removeNoise = False):
+		for gene,info,thisSwitch in genes.switches(txs):
 
 			cdsChange = bool(thisSwitch.cds_diff)
 			utrChange = bool(thisSwitch.utr_diff)
@@ -128,8 +128,7 @@ def printSwitches(genes, txs, filename = "switches_spada.tsv"):
 			OUT.write("{}\t".format( genes.tumor ))
 			OUT.write("{}\t{}\t".format( gene, info["symbol"] ))
 			OUT.write("{}\t{}\t".format( thisSwitch.nTx, thisSwitch.tTx ))
-			OUT.write("%s\t%i\t" % ( driver, not thisSwitch.isNoise ))
-			OUT.write("%i\t%i\t" % ( thisSwitch.isMain, thisSwitch.isFunctional))
+			OUT.write("%s\t%i\t" % ( driver, thisSwitch.isFunctional ))
 			OUT.write("%i\t%i\t" % ( bool(thisSwitch.nTranscript.cds), bool(thisSwitch.tTranscript.cds) ))
 			OUT.write("%i\t%i\t" % ( cdsChange, utrChange))
 			OUT.write("{}\n".format( ",".join(thisSwitch.samples) ))

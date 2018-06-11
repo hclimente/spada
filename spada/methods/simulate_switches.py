@@ -23,7 +23,7 @@ class SimulateSwitches(method.Method):
 
 		switches = []
 
-		for gene,info in self._genes.iterate_genes_byPatientNumber():
+		for gene,info in self._genes.genes():
 
 			if len(set(info["expressedTxsN"]) & set(info["expressedTxsT"])) < 2:
 				next
@@ -58,7 +58,7 @@ class SimulateSwitches(method.Method):
 
 		switches = []
 
-		for gene,info in self._genes.iterate_genes_byPatientNumber():
+		for gene,info in self._genes.genes():
 
 			allExpressedTxs = set(info["expressedTxsN"]) & set(info["expressedTxsT"])
 			if len(allExpressedTxs) < 2:

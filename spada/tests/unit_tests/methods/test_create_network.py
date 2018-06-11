@@ -44,8 +44,8 @@ def test_createNetworks():
 
 	assert os.stat("genes.pkl").st_size > 0
 	assert os.stat("transcripts.pkl").st_size > 0
-	os.remove("genes.pkl")
-	os.remove("transcripts.pkl")
+	#os.remove("genes.pkl")
+	#os.remove("transcripts.pkl")
 
 	with pytest.raises(SpadaError):
 		c = create_network.CreateNetwork("test", "gencode", new = False)

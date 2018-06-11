@@ -26,7 +26,7 @@ class StructuralAnalysis(method.Method):
 			self.writeDomainsHeader(PROSITE)
 			self.writeIDRHeader(IDR)
 
-			for gene,info,thisSwitch in self._genes.iterate_switches_byPatientNumber(self._txs, removeNoise = False):
+			for gene,info,thisSwitch in self._genes.switches(self._txs):
 				pfam_change		= thisSwitch.analyzeDomains("Pfam")
 				prosite_change	= thisSwitch.analyzeDomains("Prosite")
 				idr_change   	= thisSwitch.analyzeIDR(0.2)
@@ -43,7 +43,7 @@ class StructuralAnalysis(method.Method):
 
 			self.writePPIHeader(PPI)
 
-			for gene,info,thisSwitch in self._genes.iterate_switches_byPatientNumber(self._txs, removeNoise = False):
+			for gene,info,thisSwitch in self._genes.switches(self._txs):
 
 				DDIchanges = self.analyzeDDIs(thisSwitch)
 				self.writePPI(PPI, gene, thisSwitch, DDIchanges)

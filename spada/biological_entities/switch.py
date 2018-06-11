@@ -1,9 +1,12 @@
 from spada.io import io
 from spada.biological_entities import protein, transcript
 
+from collections import namedtuple
 from itertools import zip_longest
 import os
 import operator
+
+LiteSwitch = namedtuple('LiteSwitch', ['nTx', 'tTx', 'samples'])
 
 class IsoformSwitch:
 	def __init__(self, nTx, tTx, samples):
@@ -17,8 +20,6 @@ class IsoformSwitch:
 		self._tumor_protein 	= None
 
 		self._functional		= None
-		self._main 				= None
-		self._noise 			= None
 
 		self._pfamChange		= None
 		self._prositeChange 	= None
@@ -31,12 +32,6 @@ class IsoformSwitch:
 	@property
 	def samples(self): return self._samples
 
-	@property
-	def isMain(self): return self._main
-	def setMain(self, candidate): self._main = candidate
-	@property
-	def isNoise(self): return self._noise
-	def setNoise(self, noise): self._noise = noise
 	@property
 	def isFunctional(self):
 

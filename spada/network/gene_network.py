@@ -139,7 +139,7 @@ class GeneNetwork(Network):
 		self.logger.debug("Cleaning imported network.")
 
 		# removing isoform switches
-		for gene,info in self.iterate_genes_byPatientNumber(alwaysSwitchedGenes=True):
+		for gene,info in self.genes(alwaysSwitchedGenes=True):
 			self._net.node[gene]["switches"] = []
 
 	def readSwitches(self, switchesFile, tx_network):
@@ -180,21 +180,18 @@ class GeneNetwork(Network):
 		else:
 			return True
 
-	def iterate_genes_byPatientNumber(self, onlySplicedGenes=True, onlyExpressedGenes=True, alwaysSwitchedGenes=False, bottom = 0, top = None):
+	def genes(self, onlySplicedGenes=True, onlyExpressedGenes=True, alwaysSwitchedGenes=False):
 		'''
 		Iterate genes that have alternative splicing and more than one transcript expressed.
 		'''
 
-		if top == None:
-			top = len(self.nodes()) - 1
-
-		geneAndPatients = [ (g,sum([ len(s.samples) for s in self._net.node[g]["switches"] ])) for g in self.nodes() ][bottom:top]
+		geneAndPatients = [ (g,sum([ len(s.samples) for s in self._net.node[g]["switches"] ])) for g in self.nodes() ]
 		genes = [ g for g,n in sorted(geneAndPatients, key=operator.itemgetter(1), reverse=True) ]
 
 		for gene in genes:
 			info = self._net.node[gene]
 			allExpressedTxs = set(info["expressedTxsN"]) | set(info["expressedTxsT"])
-			self.logger.debug("Iterating gene {0}.".format(gene))
+			self.logger.debug("Iterating gene {}.".format(gene))
 			if alwaysSwitchedGenes and info["switches"]:
 				yield gene,info
 			else:
@@ -204,7 +201,7 @@ class GeneNetwork(Network):
 					continue
 				yield gene,info
 
-	def iterate_switches_byPatientNumber(self, tx_network, only_models=False, relevance=None, removeNoise=True):
+	def switches(self, txs, functional = None):
 		"""Iterate through the isoform switches of a gene network, and
 			generate a list of (gene,geneInformation,isoformSwitch).
 			Only return those switches with an overlap between the CDS
@@ -214,115 +211,39 @@ class GeneNetwork(Network):
 				common) will be returned for each gene.
 		"""
 
-		counter = 1
-		for gene,info in self.iterate_genes_byPatientNumber(alwaysSwitchedGenes=True):
+		for gene,info in self.genes(alwaysSwitchedGenes=True):
 			if not info["switches"]: continue
 
-			switches = sorted(info["switches"], key = lambda a: len(a.samples),reverse=True)
+			switches = sorted(info["switches"], key = lambda a: len(a.samples), reverse = True)
 
-			for thisSwitch in switches:
-				if removeNoise and thisSwitch.isNoise:
-					continue
-				elif only_models and not thisSwitch.isMain:
-					continue
-				elif relevance is not None and relevance != thisSwitch.is_functional:
+			for switch in switches:
+				if functional is not None and functional != thisSwitch.is_functional:
 					continue
 
-				self.logger.debug("Iterating switch number {}.".format(counter))
-				counter += 1
+				yield gene, info, self.__createSwitch(switch, txs)
 
-				yield gene,info,thisSwitch
-
-	def iterate_functionalSwitches_byPatientNumber(self, tx_network, only_models=False, removeNoise=True):
-		"""Iterate through the isoform switches of a gene network, and
-			generate a list of (gene,geneInformation,isoformSwitch).
-			Only return those switches with an overlap between the CDS
-			of the transcripts and that have different features.
-
-			only_models(bool): if True, only the first switch (the most
-				common) will be returned for each gene.
-		"""
-
-		self.iterate_switches_byPatientNumber(tx_network, only_models, True, removeNoise)
-
-	def iterate_nonFunctionalSwitches_byPatientNumber(self, tx_network, only_models=False, removeNoise=True):
-		"""Iterate through the isoform switches of a gene network, and
-			generate a list of (gene,geneInformation,isoformSwitch).
-			Only return those switches with an overlap between the CDS
-			of the transcripts and that have different features.
-
-			only_models(bool): if True, only the first switch (the most
-				common) will be returned for each gene.
-		"""
-
-		self.iterate_switches_byPatientNumber(tx_network, only_models, False, removeNoise)
-
-	def createSwitch(self,switchDict,tx_network,partialCreation):
+	def __createSwitch(self, switch, tx_network):
 		"""Create a switch object from the switch dictionary.
 
 			partialCreation(bool): if False, the heavy protein
 				objects are not created.
 		"""
-		thisSwitch = IsoformSwitch(switchDict["nIso"],switchDict["tIso"],switchDict["patients"])
+		thisSwitch = IsoformSwitch(switch.nTx, switch.tTx, switch.samples)
 		nInfo = tx_network._net.node[thisSwitch.nTx]
 		tInfo = tx_network._net.node[thisSwitch.tTx]
-		thisSwitch.addTxs(nInfo,tInfo)
-		thisSwitch.addIsos(nInfo,tInfo,partialCreation)
+		thisSwitch.addTxInfo(nInfo,tInfo)
 
 		return thisSwitch
 
-	def calculateCompatibilityTable(self):
-		noise = []
-		candidates = {}
+	def sampleSwitches(self, tx_network, numIterations = 2000):
 
-		for gene,info in self.nodes(data=True):
-
-			if not info["switches"]:
-				continue
-
-			nTxs = {}
-			tTxs = {}
-			for thisSwitch in info["switches"]:
-				nTxs[thisSwitch.nTx] = nTxs.get(thisSwitch.nTx, 0) + len(thisSwitch.samples)
-				tTxs[thisSwitch.tTx] = tTxs.get(thisSwitch.tTx, 0) + len(thisSwitch.samples)
-
-			txs = set(nTxs.keys()) | set(tTxs.keys())
-
-			scores = dict( (x, nTxs.get(x, 0) - tTxs.get(x, 0)) for x in txs )
-			nTop = set([ x for x,s in scores.items() if max(scores.values()) == s ])
-			tTop = set([ x for x,s in scores.items() if min(scores.values()) == s ])
-
-			sortedSwitches = sorted(info["switches"], key=lambda a:len(a.samples), reverse=True)
-			for thisSwitch in sortedSwitches:
-				# only consider as top isoforms not present in the other condition
-				if thisSwitch.nTx in (nTop - tTop) and thisSwitch.tTx in (tTop - nTop):
-					candidates[gene] = thisSwitch
-					break
-
-			# no good switch could be found
-			if not gene in candidates:
-				noise.extend([ len(x.samples) for x in info["switches"] ])
-			else:
-				noise.extend([ len(x.samples) for x in info["switches"] if x.nTx == candidates[gene].tTx or x.tTx == candidates[gene].nTx ])
-
-		cutoff = 0 if not noise else np.percentile(noise, 99)
-
-		for gene,info in self.nodes(data=True):
-			if not info["switches"]: continue
-
-			for s in info["switches"]:
-				s.setNoise( len(s.samples) <= cutoff )
-				s.setMain( gene in candidates and s == candidates[gene] )
-
-	def sampleSwitches(self,tx_network,partialCreation=True,numIterations=2000):
-
-		genesWithSwitches = [ gene for gene,info in self.iterate_genes_byPatientNumber(alwaysSwitchedGenes=True) if info["switches"] ]
+		genesWithSwitches = [ gene for gene,info in self.genes(alwaysSwitchedGenes=True) if info["switches"] ]
 		genes = random.sample(genesWithSwitches,numIterations)
 
 		for gene in genes:
 			info = self._net.node[gene]
 			switchDict = random.choice(info["switches"])
-			thisSwitch = self.createSwitch(switchDict,tx_network,partialCreation)
+			thisSwitch = self.__createSwitch(switchDict, tx_network)
 
 			yield gene,info,switchDict,thisSwitch
 

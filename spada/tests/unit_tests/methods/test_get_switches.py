@@ -15,4 +15,4 @@ def test_run():
 	g.run(dataPath + "switches")
 
 	assert os.stat("genes.pkl").st_size > 0
-	os.remove("genes.pkl")
+	#os.remove("genes.pkl")

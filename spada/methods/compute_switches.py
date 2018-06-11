@@ -1,5 +1,5 @@
-from spada.biological_entities.switch import IsoformSwitch
 from spada.biological_entities.gene_expression import GeneExpression
+from spada.biological_entities.switch import LiteSwitch
 from spada.io import io
 from spada.methods import method
 
@@ -17,7 +17,6 @@ class ComputeSwitches(method.Method):
 	def run(self, minExpression):
 
 		self.findSwitches(minExpression)
-		self._genes.calculateCompatibilityTable()
 		io.printSwitches(self._genes, self._txs)
 		self._genes.saveNetwork("genes.pkl")
 
@@ -51,11 +50,7 @@ class ComputeSwitches(method.Method):
 					switches = expression[gene].detectSwitches(minExpression)
 
 					for (nTx,tTx),samples in switches.items():
-						thisSwitch = IsoformSwitch(nTx, tTx, samples)
-						nInfo = self._txs.nodes()[nTx]
-						tInfo = self._txs.nodes()[tTx]
-						thisSwitch.addTxInfo(nInfo, tInfo)
-
+						thisSwitch = LiteSwitch(nTx, tTx, samples)
 						self._genes.update_node("switches", thisSwitch, full_name = gene)
 
 				expression.pop(gene)
