@@ -75,6 +75,3 @@ class SimulateSwitches(method.Method):
 				switches.append((gene, nTx, tTx))
 
 		return(switches)
-
-if __name__ == '__main__':
-	pass

@@ -6,11 +6,6 @@ from spada.io import io
 import argparse
 import logging
 
-def testing():
-
-	t = methods.test.Test(True,True)
-	t.run()
-
 parser = argparse.ArgumentParser(prog = "spada",
 				description = "Find significant alternative splicing switches. Analyze their functional impact.")
 
