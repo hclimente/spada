@@ -40,7 +40,7 @@ class GeneNetwork(Network):
 		"""Receive a gene identifier and convert it to the consensus identifier for the network."""
 		raise NotImplementedError()
 
-	def add_node(self, full_name="", gene_id="?", gene_symbol="?"):
+	def add_node(self, full_name = "", gene_id = "", gene_symbol = ""):
 		"""Adds a node to the network. Return True if succesful; else, return False.
 		The value of the attributes are the default, specified in GeneNetwork documentation."""
 
@@ -83,29 +83,18 @@ class GeneNetwork(Network):
 
 	def update_nodes(self, key, values):
 		for gene, value in values.items():
-			if isinstance(value, set):
-				for v in value:
-					self.update_node(key, v, gene_id = gene)
-			else:
-				self.update_node(key, value, gene_id = gene)
+			self.update_node(key, value, gene_id = gene)
 
 	def add_edge(self, full_name1 = "", gene_id1 = "", symbol1 = "",
 					   full_name2 = "", gene_id2 = "", symbol2 = ""):
 		"""Adds an edge to the network. Return True if succesful; else, return False.
 		The value of the attributes are the default, specified in GeneNetwork documentation."""
 
-		id1 = [ x for x in [full_name1, gene_id1, symbol1] if x ]
-		id2 = [ x for x in [full_name2, gene_id2, symbol2] if x ]
-
-		if not id1 or not id2:
-			self.logger.debug("Tried to add edge, but no node-information \
-								 provided (Node 1[{}] and Node 2[{}]).".format(id1, id2))
-
 		node_id1 = self.nameFilter(full_name=full_name1, gene_id=gene_id1, gene_symbol=symbol1)[0]
 		node_id2 = self.nameFilter(full_name=full_name2, gene_id=gene_id2, gene_symbol=symbol2)[0]
 
 		if (node_id1 is None or node_id1 is "") or (node_id2 is None or node_id2 is ""):
-			self.logger.debug( "Cannot add edge {} - {}.".format(id1[0], id2[0]))
+			self.logger.debug( "Cannot add edge {} - {}.".format(full_name1, full_name2))
 			return False
 		elif node_id1 not in self.nodes():
 			self.logger.debug("Node {} does not exist.".format(node_id1))
@@ -115,24 +104,6 @@ class GeneNetwork(Network):
 			return False
 
 		return self._add_edge(node_id1, node_id2)
-
-	def getSwitch(self, gene, nTx, tTx):
-
-		thisSwitch = [ x for x in self.nodes()[gene]["switches"] if x.nTx == nTx and x.tTx == tTx ]
-
-		if thisSwitch:
-			return(thisSwitch[0])
-		else:
-		 	return(None)
-
-	def update_edge(self, key, value, full_name1 = "", gene_id1 = "", full_name2 = "", gene_id2 = ""):
-		"""Changes the value of an edge attribute, specified by the key argument.
-		Returns True if succesful; else, returns False."""
-
-		node_id1 = self.nameFilter(full_name=full_name1, gene_id=gene_id1)[0]
-		node_id2 = self.nameFilter(full_name=full_name2, gene_id=gene_id2)[0]
-
-		return self._update_edge(node_id1, node_id2, key, value)
 
 	def flushSwitches(self):
 
@@ -201,7 +172,7 @@ class GeneNetwork(Network):
 					continue
 				yield gene,info
 
-	def switches(self, txs, functional = None):
+	def switches(self, txs):
 		"""Iterate through the isoform switches of a gene network, and
 			generate a list of (gene,geneInformation,isoformSwitch).
 			Only return those switches with an overlap between the CDS
@@ -217,10 +188,9 @@ class GeneNetwork(Network):
 			switches = sorted(info["switches"], key = lambda a: len(a.samples), reverse = True)
 
 			for switch in switches:
-				if functional is not None and functional != thisSwitch.is_functional:
-					continue
 
-				yield gene, info, self.__createSwitch(switch, txs)
+				thisSwitch = self.__createSwitch(switch, txs)
+				yield gene, info, thisSwitch
 
 	def __createSwitch(self, switch, tx_network):
 		"""Create a switch object from the switch dictionary.

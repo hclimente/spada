@@ -70,7 +70,7 @@ class CreateNetwork(method.Method):
 			if gtf:
 				raise SpadaError("gtf provided when previous network is to be used.")
 			else:
-				return()
+				return 
 
 		self.logger.info("Importing genes and transcripts from GTF.")
 
@@ -104,7 +104,7 @@ class CreateNetwork(method.Method):
 			raise SpadaError("An expression file must be provided.")
 		elif not expression:
 			self.logger.info("Expression from the provided network will be used.")
-			return()
+			return 
 
 		self.logger.info("Reading {} samples transcript expression.".format('normal' if origin == 'N' else 'tumor'))
 		with open(expression, "r") as EXPR:
@@ -129,7 +129,7 @@ class CreateNetwork(method.Method):
 			raise SpadaError("A file containing the protein-protein interactions must be provided.")
 		elif not ppi:
 			self.logger.info("Protein-protein interactions from the provided network will be used.")
-			return()
+			return 
 
 		self.logger.info("Building protein-protein interaction network.")
 		symbols = [ y["symbol"] for x,y in self._genes.nodes(data=True) ]
@@ -154,7 +154,7 @@ class CreateNetwork(method.Method):
 			raise SpadaError("A file containing the domain-domain interactions must be provided.")
 		elif not ddi:
 			self.logger.info("Domain-domain interactions from the provided network will be used.")
-			return()
+			return 
 
 		self.logger.info("Building isoform-isoform interaction network.")
 		allDDIs = { frozenset([x['Pfam1'],x['Pfam2']]) for x in io.readTable(ddi, keys = ['Pfam1','Pfam2']) }
@@ -199,7 +199,7 @@ class CreateNetwork(method.Method):
 			raise SpadaError("A FASTA file with protein sequences file must be provided.")
 		elif not proteins:
 			self.logger.info("Protein sequences from the provided network will be used.")
-			return()
+			return 
 
 		self.logger.info("Reading protein sequences.")
 
@@ -212,7 +212,7 @@ class CreateNetwork(method.Method):
 			raise SpadaError("A file with the protein features must be provided.")
 		elif not features:
 			self.logger.info("Protein features from the provided network will be used.")
-			return()
+			return 
 
 		self.logger.info("Reading isoform features.")
 

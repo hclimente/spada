@@ -73,35 +73,6 @@ class Transcript:
 		else:
 			return self._cds
 
-	@property
-	def cds_ordered(self):
-		if len(self._cds) > 1:
-			reverseOrder = False if self._strand=='+' else True
-
-			for nt in sorted(self._cds,reverse=reverseOrder):
-				yield nt
-
-	@property
-	def cds_exclusive(self):
-		exclusive = float(sum([ 1 for x in self._cds if self._cds[x] ]))
-		nonExclusive = float(sum([ 1 for x in self._cds if not self._cds[x] ]))
-		try:
-			return exclusive/(exclusive+nonExclusive)
-		except ZeroDivisionError:
-			return None
-
-	@property
-	def tx_exclusive(self):
-		tx = self._cds.copy()
-		tx.update(self._utr)
-
-		exclusive = float(sum([ 1 for x in tx if tx[x] ]))
-		nonExclusive = float(sum([ 1 for x in tx if not tx[x] ]))
-		try:
-			return exclusive/(exclusive+nonExclusive)
-		except ZeroDivisionError:
-			return None
-
 	def getSegments(self,thing,minLength=1,gap=0):
 		segments = []
 		segment = []

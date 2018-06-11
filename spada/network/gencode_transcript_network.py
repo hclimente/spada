@@ -27,6 +27,6 @@ class GENCODETranscriptNetwork(TranscriptNetwork):
 		geneID 		= None
 
 		if full_name:
-			geneID 		= full_name
+			geneID 	= full_name
 
 		return (geneID, geneSymbol)

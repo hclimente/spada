@@ -46,25 +46,6 @@ class Network:
 
 		return True
 
-	def _update_edge(self, node1, node2, key, value):
-
-		if not [ (x,y) for (x,y) in self.edges() if (node1,node2) == (x,y) or (node1,node2) == (y,x) ]:
-			self.logger.debug("Tried to update edge {} - {}, but it does not exist.".format(node1, node2))
-			return False
-
-		if isinstance( self._net.edge[node1][node2][key], list):
-			self._net.edge[node1][node2][key].append( value )
-		elif isinstance( self._net.edge[node1][node2][key], set):
-			self._net.edge[node1][node2][key].add( value )
-		else:
-			if self._net.edge[node1][node2][key] is not None and self._net.edge[node1][node2][key] != value:
-				self.logger.debug("Edge {} - {}, {} had a value of {}. Updated to {} .".format(
-								node1, node2, key, self._net.edge[node1][node2][key], value) )
-
-			self._net.edge[node1][node2][key] = value
-
-		return True
-
 	def _add_edge(self, node1, node2, **kwds):
 
 		if [ (x,y) for (x,y) in self.edges() if (node1,node2) == (x,y) or (node1,node2) == (y,x) ]:

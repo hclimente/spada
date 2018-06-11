@@ -55,23 +55,6 @@ class IsoformSwitch:
 	def tTranscript(self): return self._tumor_transcript
 
 	@property
-	def cds_overlap(self):
-		"""Returns True if there is an overlap between the transcripts coding sequence."""
-		#Check that is not None and thad the exclusive region is not the whole CDS.
-		if self._normal_transcript.cds_exclusive and self._normal_transcript.cds_exclusive < 1:
-			return True
-		elif self._tumor_transcript.cds_exclusive and self._tumor_transcript.cds_exclusive < 1:
-			return True
-		else:
-			return False
-
-	@property
-	def tx_overlap(self):
-		nTx = set(self._normal_transcript._cds) | set(self._normal_transcript._utr)
-		tTx = set(self._tumor_transcript._cds) | set(self._tumor_transcript._utr)
-		return bool(nTx & tTx)
-
-	@property
 	def cds_diff(self):
 		"""Returns a list with the differencen between the transcripts coding sequences."""
 		cdsDiff = [ x for x in self._normal_transcript.cds if x not in self._tumor_transcript.cds ]
