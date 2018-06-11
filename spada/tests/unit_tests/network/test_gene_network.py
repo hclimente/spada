@@ -58,3 +58,11 @@ def test_NotImplementedError():
 
 	with pytest.raises(NotImplementedError):
 		bad_network.nameFilter()
+
+def test_sampleSwitches():
+
+	with pytest.raises(ValueError):
+		[ x for x in gn.sampleSwitches(txs) ]
+
+	assert len([ x for x in gn.sampleSwitches(txs, 3) ]) == 3
+	assert len([ x for x in gn.sampleSwitches(txs, 4) ]) == 4

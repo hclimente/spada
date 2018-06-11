@@ -27,5 +27,9 @@ def test_NotImplementedError():
 
 	with pytest.raises(NotImplementedError):
 		bad_network.acceptCDS()
+
+	with pytest.raises(NotImplementedError):
 		bad_network.genenameFilter()
+
+	with pytest.raises(NotImplementedError):
 		bad_network.isMain()

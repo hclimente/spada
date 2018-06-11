@@ -2,10 +2,10 @@ from spada.io import io
 from spada.network.gene_network import GeneNetwork
 
 class GENCODEGeneNetwork(GeneNetwork):
-	def __init__(self):
+	def __init__(self, name):
 
 		self._accepted_status = ['KNOWN','NOVEL','PUTATIVE','KNOWN_BY_PROJECTION']
-		GeneNetwork.__init__(self, __name__)
+		GeneNetwork.__init__(self, name)
 
 	def accept(self, line):
 		return line['gene_status'] in self._accepted_status

@@ -1,8 +1,8 @@
 from spada.network import transcript_network
 
 class UCSCTranscriptNetwork(transcript_network.TranscriptNetwork):
-	def __init__(self):
-		transcript_network.TranscriptNetwork.__init__(self, __name__)
+	def __init__(self, name):
+		transcript_network.TranscriptNetwork.__init__(self, name)
 
 	def genenameFilter(self, full_name="", gene_id="", gene_symbol=""):
 		geneSymbol 	= None

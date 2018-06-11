@@ -10,6 +10,20 @@ import pytest
 scriptPath = os.path.realpath(__file__)
 dataPath = os.path.dirname(scriptPath) + "/../../data/"
 
+def test_init():
+
+	c = create_network.CreateNetwork("test", "gencode")
+
+	assert type(c._genes).__name__ == 'GENCODEGeneNetwork'
+	assert type(c._txs).__name__ == 'GENCODETranscriptNetwork'
+
+	c = create_network.CreateNetwork("test", "ucsc")
+	assert type(c._genes).__name__ == 'UCSCGeneNetwork'
+	assert type(c._txs).__name__ == 'UCSCTranscriptNetwork'
+
+	with pytest.raises(SpadaError):
+		create_network.CreateNetwork("test", "Unexistant")
+
 def test_createNetworks():
 
 	c = create_network.CreateNetwork("test", "gencode")
@@ -126,6 +140,9 @@ def test_readDrivers():
 	assert "GeneL" in drivers
 	assert "GeneD" in specificDrivers
 	assert "GeneB" in specificDrivers
+
+	with pytest.raises(SpadaError):
+		c.readDrivers(None)
 
 def test_getIsoformSequences():
 
