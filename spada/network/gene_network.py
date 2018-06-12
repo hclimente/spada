@@ -119,9 +119,9 @@ class GeneNetwork(Network):
 		self.logger.debug("Retrieving calculated isoform switches.")
 
 		for line in io.readTable(switchesFile):
-			gene = line['Gene']
-			nTx = line['NormalTranscript']
-			tTx = line['TumorTranscript']
+			gene = line['GeneId']
+			nTx = line['Normal_transcript']
+			tTx = line['Tumor_transcript']
 			samples = set(line['Samples'].split(','))
 
 			if self.valid_switch(gene, nTx, tTx, tx_network):

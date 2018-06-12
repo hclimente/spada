@@ -1,4 +1,4 @@
-Gene	NormalTranscript	TumorTranscript	Samples
+GeneId	Normal_transcript	Tumor_transcript	Samples
 ENSG00.5	ENST01.2	ENST02.2	A,B,C
 ENSG00.5	ENST02.2	ENST01.2	D
 ENSG03.3	ENST06.1	ENST05.1	A,B
