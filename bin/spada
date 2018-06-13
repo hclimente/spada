@@ -7,10 +7,8 @@ import argparse
 import logging
 
 parser = argparse.ArgumentParser(prog = "spada",
-				description = "Find significant alternative splicing switches. Analyze their functional impact.")
-
-parser.add_argument('-a', '--all-switches', dest='onlyModels', action='store_false',
-					help='Only use the model switches.')
+				description = "Find significant alternative splicing switches. \
+							   Analyze their functional impact.")
 
 subparsers = parser.add_subparsers(help='sub-command help')
 
@@ -36,7 +34,7 @@ subparser_init.add_argument('-g', '--gtf', dest='gtf', action='store', default=N
 subparser_init.add_argument('-n', '--expression-normal', dest='normalExpression',
 							action='store', default=None,
 							help='Tab-separated table with transcript-level expression data of the normal samples \
-							in TPM; a row per annotated transcript, indicated in the first column.  Required \
+							in TPM; a row per annotated transcript, indicated in the first column. Required \
 							for newly generated networks.')
 subparser_init.add_argument('-t', '--expression-tumor', dest='tumorExpression',
 							action='store', default=None,
@@ -81,8 +79,9 @@ subparser_switches = subparsers.add_parser('switches', help='Detect switches.')
 subparser_switches.add_argument('-n', '--expression-normal', dest='normalExpression',
 								action='store', default=None,
 								help='Tab-separated table with transcript-level expression data of the normal samples \
-								in TPM; a row per annotated transcript, indicated in the first column.  Required \
-								for newly generated networks.')
+								in TPM; a row per annotated transcript, indicated in the first column. Sorting \
+								by gene (i.e. transcripts from the same gene are consecutive) will drastically \
+								optimize memory usage.')
 subparser_switches.add_argument('-t', '--expression-tumor', dest='tumorExpression',
 								action='store', default=None,
 								help='Equivalent to --expression-normal for the tumor samples. Required for newly \
@@ -122,11 +121,10 @@ subparser_sim.set_defaults(task="simulateSwitches")
 subparser_sim.set_defaults(func=simulateSwitches)
 
 ################################################
-###   STRUCTURAL ANALYSIS                   ####
+###   SWITCH SUMMARY	                    ####
 ################################################
 def summarize():
 	s = summary.Summary(True,True)
-	s.flushSwitches()
 	s.run()
 
 subparser_summary = subparsers.add_parser('summary', help='Summary statistics of the switches.')
@@ -136,16 +134,16 @@ subparser_summary.set_defaults(func=summarize)
 ################################################
 ###   MAIN                                  ####
 ################################################
-options = parser.parse_args()
+params = parser.parse_args()
 
-if "task" not in options:
+if "task" not in params:
 	print("No sub-command selected.")
 	parser.print_help()
 	exit()
 
-logging.basicConfig(level 		= logging.DEBUG,
-					format 		= '%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-				   	filename 	= 'spada_{}.log'.format(options.task), filemode='w')
+logging.basicConfig(level 	 = logging.DEBUG,
+					format 	 = '%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+				   	filename = 'spada_{}.log'.format(params.task), filemode='w')
 
 console = logging.StreamHandler()
 console.setLevel(logging.INFO)
@@ -156,6 +154,6 @@ console.setFormatter(formatter)
 logging.getLogger().addHandler(console)
 
 logger = logging.getLogger()
-logger.info("SPADA - Finding significant splicing changes.")
-options.func(options)
-logger.info("SPADA will close.")
+logger.info("SPADA " + params.task)
+params.func(params)
+logger.info("All operations completed.")
