@@ -125,7 +125,7 @@ def printSwitches(genes, txs, filename = "switches_spada.tsv"):
 
 			driver = genes.isDriver(gene)
 
-			OUT.write("{}\t".format( genes.tumor ))
+			OUT.write("{}\t".format( genes._name ))
 			OUT.write("{}\t{}\t".format( gene, info["symbol"] ))
 			OUT.write("{}\t{}\t".format( thisSwitch.nTx, thisSwitch.tTx ))
 			OUT.write("%s\t%i\t" % ( driver, thisSwitch.isFunctional ))
