@@ -1,4 +1,4 @@
-from spada.biological_entities.switch import IsoformSwitch
+from spada.biological_entities.switch import IsoformSwitch, LiteSwitch
 from spada.io import io
 from spada.network.network import Network
 
@@ -126,11 +126,7 @@ class GeneNetwork(Network):
 
 			if self.valid_switch(gene, nTx, tTx, tx_network):
 
-				thisSwitch = IsoformSwitch(nTx, tTx, samples)
-				nInfo = tx_network.nodes()[thisSwitch.nTx]
-				tInfo = tx_network.nodes()[thisSwitch.tTx]
-				thisSwitch.addTxInfo(nInfo, tInfo)
-
+				thisSwitch = LiteSwitch(nTx, tTx, samples)
 				self.update_node("switches", thisSwitch, full_name = gene)
 
 	def valid_switch(self, gene, nTx, tTx, tx_network):
