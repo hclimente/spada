@@ -70,7 +70,7 @@ class StructuralAnalysis(method.Method):
 					for feature in txInfo[featureType]:
 						i = 1
 						for start,end in txInfo[featureType][feature]:
-							OUT.write("{}\t{}\t".format(self._genes.tumor, txInfo['gene_id']))
+							OUT.write("{}\t{}\t".format(self._genes._name, txInfo['gene_id']))
 							OUT.write("{}\t{}\t".format(tx, txInfo['median_TPM_N']))
 							OUT.write("{}\t{}\t".format(featureType, feature))
 							OUT.write("{}\t{}\t".format(i, end - start))
@@ -128,7 +128,7 @@ class StructuralAnalysis(method.Method):
 
 	def writeDomains(self, OUT, featureType, gene, thisSwitch, changes):
 		for c in changes:
-			OUT.write("{}\t{}\t{}\t".format(self._genes.tumor, gene, thisSwitch.nTx))
+			OUT.write("{}\t{}\t{}\t".format(self._genes._name, gene, thisSwitch.nTx))
 			OUT.write("{}\t{}\t{}\t".format(thisSwitch.tTx, featureType, c["feature"]))
 			OUT.write("{}\t{}\t{}\t".format(c["what"], c["index"], c['nStart']))
 			OUT.write("{}\t{}\t{}\t".format(c["nEnd"], c["tStart"], c['tEnd']))
@@ -142,7 +142,7 @@ class StructuralAnalysis(method.Method):
 
 	def writeIDR(self, OUT, gene, thisSwitch, changes):
 		for c in changes:
-			OUT.write("{}\t".format( self._genes.tumor ))
+			OUT.write("{}\t".format( self._genes._name ))
 			OUT.write("{}\t{}\t{}\t".format(gene, thisSwitch.nTx, thisSwitch.tTx))
 			OUT.write("{}\t{}\t{}\t".format(c["what"], c["feature"], c["start"]))
 			OUT.write("{}\t{}\t{}\t{}\n".format(c["end"], c["M"], c["m"], c["J"]))
@@ -157,7 +157,7 @@ class StructuralAnalysis(method.Method):
 
 			other_gene = self._txs._net.node[tx]["gene_id"]
 
-			OUT.write("{}\t{}\t".format( self._genes.tumor, gene ))
+			OUT.write("{}\t{}\t".format( self._genes._name, gene ))
 			OUT.write("{}\t{}\t".format( thisSwitch.nTx, thisSwitch.tTx ))
 			OUT.write("{}\t{}\t".format( other_gene, self._genes._net.node[other_gene]["symbol"] ))
 			OUT.write("{}\t{}\t".format( tx, ddis["what"] ))
