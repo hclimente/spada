@@ -65,7 +65,7 @@ subparser_init.add_argument('-A', '--aberrant', dest='aberrant', action='store',
 							exon structure or CDS. They can, however, present other features (protein sequence, \
 							expression, etc.).')
 
-subparser_init.set_defaults(task="createNetwork")
+subparser_init.set_defaults(task="Create network")
 subparser_init.set_defaults(func=createNetwork)
 
 ################################################
@@ -90,7 +90,7 @@ subparser_switches.add_argument('-m', '--minimum-expression', dest='minExpressio
 								action='store', default=None, type=float,
 					 			help='Minimum expression value, in TPM, to consider a transcript expressed. Required \
 								for newly generated networks.')
-subparser_switches.set_defaults(task="computeSwitches")
+subparser_switches.set_defaults(task="Compute switches")
 subparser_switches.set_defaults(func=computeSwitches)
 
 ################################################
@@ -101,12 +101,11 @@ def functionalAnalysis(o):
 	g.run(o.switchesFile)
 	s = structural_analysis.StructuralAnalysis(g._genes, g._txs)
 	s.run()
-	io.printSwitches(s._genes, s._txs)
 
 subparser_functional = subparsers.add_parser('function', help='Functional analysis of the switches.')
 subparser_functional.add_argument('-s', '--switches', dest='switchesFile', action='store', required=True,
 								  default=None, type=str, help='File containing switches as TSV.')
-subparser_functional.set_defaults(task="functionalAnalysis")
+subparser_functional.set_defaults(task="Functional analysis")
 subparser_functional.set_defaults(func=functionalAnalysis)
 
 ################################################
@@ -117,7 +116,7 @@ def simulateSwitches():
 	r.run()
 
 subparser_sim = subparsers.add_parser('simulate', help='Simulate random switches.')
-subparser_sim.set_defaults(task="simulateSwitches")
+subparser_sim.set_defaults(task="Simulate switches")
 subparser_sim.set_defaults(func=simulateSwitches)
 
 ################################################
@@ -128,7 +127,7 @@ def summarize():
 	s.run()
 
 subparser_summary = subparsers.add_parser('summary', help='Summary statistics of the switches.')
-subparser_summary.set_defaults(task="summarize")
+subparser_summary.set_defaults(task="Summarize results")
 subparser_summary.set_defaults(func=summarize)
 
 ################################################

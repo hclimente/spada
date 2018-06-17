@@ -115,7 +115,7 @@ def printSwitches(genes, txs, filename = "switches_spada.tsv"):
 
 	with open(filename, "w") as OUT:
 		OUT.write("Experiment\tGeneId\tSymbol\tNormal_transcript\t")
-		OUT.write("Tumor_transcript\tDriver\tIs_functional\t")
+		OUT.write("Tumor_transcript\tDriver\t")
 		OUT.write("CDS_normal\tCDS_tumor\tCDS_change\tUTR_change\tSamples\n")
 
 		for gene,info,thisSwitch in genes.switches(txs):
@@ -125,10 +125,9 @@ def printSwitches(genes, txs, filename = "switches_spada.tsv"):
 
 			driver = genes.isDriver(gene)
 
-			OUT.write("{}\t".format( genes._name ))
-			OUT.write("{}\t{}\t".format( gene, info["symbol"] ))
-			OUT.write("{}\t{}\t".format( thisSwitch.nTx, thisSwitch.tTx ))
-			OUT.write("%s\t%i\t" % ( driver, thisSwitch.isFunctional ))
+			OUT.write("{}\t{}\t".format( genes._name, gene ))
+			OUT.write("{}\t{}\t".format( thisSwitch.nTx, info["symbol"] ))
+			OUT.write("{}\t%s\t".format( thisSwitch.tTx, driver ))
 			OUT.write("%i\t%i\t" % ( bool(thisSwitch.nTranscript.cds), bool(thisSwitch.tTranscript.cds) ))
 			OUT.write("%i\t%i\t" % ( cdsChange, utrChange))
 			OUT.write("{}\n".format( ",".join(thisSwitch.samples) ))
