@@ -4,7 +4,7 @@ from spada.io import io
 from spada.methods import method
 from spada.network import ucsc_gene_network, ucsc_transcript_network
 from spada.network import gencode_gene_network, gencode_transcript_network
-from spada.io.io import SpadaError
+from spada.io.error import SpadaError
 
 from itertools import product
 from networkx import get_node_attributes
@@ -99,7 +99,7 @@ class CreateNetwork(method.Method):
 
 		self.logger.info("Reading {} samples transcript expression.".format('control' if origin == 'N' else 'case'))
 		with open(expression, "r") as EXPR:
-			for tx,xpr in io.parseExpression(EXPR, header = True):
+			for tx,xpr in io.parseExpressionLine(EXPR, header = True):
 
 				# filter out readings on excluded transcripts
 				if tx not in self._txs.nodes():

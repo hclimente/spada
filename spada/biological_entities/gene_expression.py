@@ -1,4 +1,4 @@
-from spada.io.io import SpadaError
+from spada.io.error import SpadaError
 
 from itertools import combinations
 import numpy as np
@@ -8,6 +8,9 @@ class GeneExpression:
 	def __init__(self, txs, ctrl_ids, case_ids):
 		self._allTxs = txs
 		self._storedTxs = []
+
+		self._top_ctrl = (None, 0)
+		self._top_case = (None, 0)
 
 		self._expressionCtrl = np.array([])
 		self._expressionCase = np.array([])
@@ -29,9 +32,17 @@ class GeneExpression:
 			self._expressionCtrl = np.empty(shape = (0, expressionCtrl.shape[1]))
 		self._expressionCtrl = np.vstack((self._expressionCtrl, expressionCtrl))
 
+		medianCtrl = np.median(expressionCtrl)
+		if medianCtrl > self._top_ctrl[1]:
+			self._top_ctrl = (tx, medianCtrl)
+
 		if self._expressionCase.size == 0:
 			self._expressionCase = np.empty(shape = (0, expressionCase.shape[1]))
 		self._expressionCase = np.vstack((self._expressionCase, expressionCase))
+
+		medianCase = np.median(expressionCase)
+		if medianCase > self._top_case[1]:
+			self._top_case = (tx, medianCase)
 
 		self._storedTxs.append(tx)
 

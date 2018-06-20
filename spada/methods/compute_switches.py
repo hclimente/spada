@@ -1,75 +1,29 @@
-from spada.biological_entities.gene_expression import GeneExpression
 from spada.biological_entities.switch import LiteSwitch
 from spada.io import io
 from spada.methods import method
 
 class ComputeSwitches(method.Method):
 
-	def __init__(self, gn_network, tx_network, ctrlFile, caseFile):
+	def __init__(self, gn_network, tx_network):
 
 		method.Method.__init__(self, __name__,gn_network,tx_network)
 
-		self._CTRL = open(ctrlFile, "r")
-		self._CASE = open(caseFile, "r")
-
 		self._genes.flushSwitches()
 
-	def run(self, minExpression):
+	def run(self, ctrlFile, caseFile, minExpression):
 
-		self.findSwitches(minExpression)
+		self.findSwitches(ctrlFile, caseFile, minExpression)
 		io.printSwitches(self._genes, self._txs)
 		self._genes.saveNetwork("genes.pkl")
 
-	def findSwitches(self, minExpression):
+	def findSwitches(self, ctrlFile, caseFile, minExpression):
 
-		gene2tx = self.getGene2Tx()
-		idsCtrl = self.readSamples(self._CTRL)
-		idsCase = self.readSamples(self._CASE)
+		for gene, geneExpression in io.parseExpression(ctrlFile, caseFile, self._genes, self._txs):
 
-		# gene -> xpr
-		expression = { }
+			if len(geneExpression._allTxs) > 1:
 
-		for (tx,ctrl),(tx2,case) in zip(io.parseExpression(self._CTRL), io.parseExpression(self._CASE)):
+				switches = geneExpression.detectSwitches(minExpression)
 
-			if tx != tx2:
-				raise SpadaError("Case and control expresion files mismatch: {} vs. {}.".format(tx, tx2))
-
-			try:
-				gene = self._txs._net.node[tx]["gene_id"]
-			except KeyError:
-				self.logger.debug('Transcript {} not in network'.format(tx))
-				continue
-
-			expression.setdefault(gene, GeneExpression(gene2tx[gene], idsCtrl, idsCase))
-			expression[gene].addTx(tx, ctrl, case)
-
-			if expression[gene].isComplete:
-
-				if len(expression[gene]._allTxs) > 1:
-
-					switches = expression[gene].detectSwitches(minExpression)
-
-					for (ctrl,case),samples in switches.items():
-						thisSwitch = LiteSwitch(ctrl, case, samples)
-						self._genes.update_node("switches", thisSwitch, full_name = gene)
-
-				expression.pop(gene)
-
-	def readSamples(self, FILE):
-
-		ids = FILE.readline().strip().split('\t')
-		ids.pop(0)
-
-		return ids
-
-	def getGene2Tx(self):
-
-		gene2tx = {}
-
-		pairs = [ (t,i["gene_id"]) for t,i in self._txs.nodes(data=True) ]
-
-		for tx,gene in pairs:
-			gene2tx.setdefault(gene, set())
-			gene2tx[gene].add(tx)
-
-		return(gene2tx)
+				for (ctrl,case),samples in switches.items():
+					thisSwitch = LiteSwitch(ctrl, case, samples)
+					self._genes.update_node("switches", thisSwitch, full_name = gene)

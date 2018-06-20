@@ -1,15 +1,8 @@
-from spada.io import io
+from spada.io.error import SpadaError
+from spada.biological_entities.gene_expression import GeneExpression
 
 import logging
 import numpy as np
-
-class SpadaError(Exception):
-	def __init__(self, value):
-		self.logger = logging.getLogger('spada error')
-		self.value = value
-	def __str__(self):
-		self.logger.exception(value)
-		return repr(self.value)
 
 def readTable(path, sep = "\t", header = True, skipCommented = True, keys = []):
 	"""Read a table in a file, and generate a list of strings per row.
@@ -129,7 +122,35 @@ def printSwitches(genes, txs, filename = "switches_spada.tsv"):
 			OUT.write("%i\t%i\t" % ( cdsChange, utrChange))
 			OUT.write("{}\n".format( ",".join(thisSwitch.samples) ))
 
-def parseExpression(FILE, header = False):
+def parseExpression(ctrlFile, caseFile, genes, txs):
+
+	gene2tx = getGene2Tx(txs)
+
+	with open(ctrlFile, "r") as CTRL, open(caseFile, "r") as CASE:
+
+		idsCtrl = readSamples(CTRL)
+		idsCase = readSamples(CASE)
+
+		# gene -> xpr
+		expression = { }
+
+		for (tx,ctrl),(tx2,case) in zip(parseExpressionLine(CTRL), parseExpressionLine(CASE)):
+
+			if tx != tx2:
+				raise SpadaError("Case and control expresion files mismatch: {} vs. {}.".format(tx, tx2))
+
+			try:
+				gene = txs._net.node[tx]["gene_id"]
+			except KeyError:
+				continue
+
+			expression.setdefault(gene, GeneExpression(gene2tx[gene], idsCtrl, idsCase))
+			expression[gene].addTx(tx, ctrl, case)
+
+			if expression[gene].isComplete:
+				yield gene, expression.pop(gene)
+
+def parseExpressionLine(FILE, header = False):
 
 	for line in FILE:
 
@@ -146,3 +167,22 @@ def parseExpression(FILE, header = False):
 		xpr[xpr < 0] = 0
 
 		yield tx,xpr
+
+def readSamples(FILE):
+
+	ids = FILE.readline().strip().split('\t')
+	ids.pop(0)
+
+	return ids
+
+def getGene2Tx(txs):
+
+	gene2tx = {}
+
+	pairs = [ (t,i["gene_id"]) for t,i in txs.nodes(data=True) ]
+
+	for tx,gene in pairs:
+		gene2tx.setdefault(gene, set())
+		gene2tx[gene].add(tx)
+
+	return(gene2tx)
