@@ -122,12 +122,16 @@ subparser_sim.set_defaults(func=simulateSwitches)
 ################################################
 ###   SWITCH SUMMARY	                    ####
 ################################################
-def summarize():
-	s = summary.Summary(True,True)
+def summarize(o):
+	g = get_switches.GetSwitches(True, True)
+	g.run(o.switchesFile)
+	s = summary.Summary(g._genes, g._txs)
 	s.run()
 
 subparser_summary = subparsers.add_parser('summary', help='Summary statistics of the switches.')
 subparser_summary.set_defaults(task="Summarize results")
+subparser_summary.add_argument('-s', '--switches', dest='switchesFile', action='store', required=True,
+								  default=None, type=str, help='File containing switches as TSV.')
 subparser_summary.set_defaults(func=summarize)
 
 ################################################

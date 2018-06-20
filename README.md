@@ -1,23 +1,25 @@
-# SPADA
-
 [![Build Status](https://travis-ci.org/hclimente/spada.svg?branch=master)](https://travis-ci.org/hclimente/spada)
 [![codecov](https://codecov.io/gh/hclimente/spada/branch/master/graph/badge.svg)](https://codecov.io/gh/hclimente/spada)
 [![PyPI version](https://badge.fury.io/py/spada.svg)](https://badge.fury.io/py/spada)
 
-**WARNING:** *SPADA is still a work-in-progress. Take this README as a statement of intent.*
+## spada
 
-SPADA (Splicing-led Protein Alterations Discovered Agilely) is a tool to study the functional impact of alternative splicing changes between two conditions. The alterations have to be represented as isoform switches i.e. when one condition is best represented by one isoform, and the second condition by another one. Then, SPADA is able to predict which protein features are changing between both isoforms, and their impact on the protein-protein interaction network. A SPADA-based analysis of isoform switches found in the TCGA dataset was published in [Climente-González *et al.* (2017)](http://www.cell.com/cell-reports/abstract/S2211-1247(17)31104-X).
+`spada` (Splicing-led Protein Alterations Discovered Agilely) is a tool to study the functional impact of alternative splicing changes between two conditions. The alterations have to be represented as isoform switches i.e. when one condition is best represented by one isoform, and the second condition by another one. Then, `spada` is able to predict which protein features are changing between both isoforms, and their impact on the protein-protein interaction network.
 
-To start using SPADA, simply install it with
+To start using `spada`, simply install it with
 
 ``` bash
 pip install spada
 ```
 
-and run it in a toy dataset with
+### Documentation
 
-``` bash
-spada.py function --annotation gencode --switches spada.example
-```
+#### Citation
 
-For information about how to run SPADA on your dataset, please read the [documentation](docs/index.md).
+If you use spada in a scientific publication, we would appreciate citations:
+
+Climente-González, H., Porta-Pardo, E., Godzik, A., and Eyras, E. (2017). [The Functional Impact of Alternative Splicing in Cancer.]((http://www.cell.com/cell-reports/abstract/S2211-1247(17)31104-X)) Cell Rep. 20, 2215–2226.
+
+#### Related projects
+
+* [smartas](https://github.com/hclimente/smartas): Analysis of `spada` applied results applied to TCGA data.

@@ -1,12 +1,17 @@
 from setuptools import setup, find_packages
 
+with open("README.md", "r") as file:
+	readme = file.read()
+
 setup(
 	name = 'spada',
 	packages = find_packages(),
 	package_dir = {'spada': 'spada'},
 	package_data = {'spada': ['data/*.pkl']},
-	version = '1.21.7',
-	description = 'Find splicing-led, functional changes of the proteome. ',
+	version = '1.21.17',
+	description = 'Find splicing-led, functional changes of the proteome.',
+	long_description=readme,
+	long_description_content_type='text/markdown',
 	author = 'Héctor Climente-González',
 	author_email = 'hector.climente@curie.fr',
 	license = 'MIT',
@@ -19,9 +24,7 @@ setup(
 		'Intended Audience :: Science/Research',
 		'Intended Audience :: Healthcare Industry',
 		'License :: OSI Approved :: MIT License',
-		'Operating System :: POSIX :: Linux',
-		'Operating System :: MacOS',
-		'Operating System :: Microsoft :: Windows',
+		'Operating System :: OS Independent',
 		'Programming Language :: Python :: 3 :: Only'],
 	install_requires = [
 		'networkx >= 1.11',
