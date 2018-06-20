@@ -14,17 +14,17 @@ import numpy as np
 import pkg_resources
 
 class CreateNetwork(method.Method):
-	def __init__(self, tumor, annotation, new = True):
+	def __init__(self, case, annotation, new = True):
 
 		if new:
 			method.Method.__init__(self, __name__, None, None)
 
 			if annotation == "ucsc":
-				self._genes = ucsc_gene_network.UCSCGeneNetwork(tumor)
-				self._txs = ucsc_transcript_network.UCSCTranscriptNetwork(tumor)
+				self._genes = ucsc_gene_network.UCSCGeneNetwork(case)
+				self._txs = ucsc_transcript_network.UCSCTranscriptNetwork(case)
 			elif annotation == "gencode":
-				self._genes = gencode_gene_network.GENCODEGeneNetwork(tumor)
-				self._txs = gencode_transcript_network.GENCODETranscriptNetwork(tumor)
+				self._genes = gencode_gene_network.GENCODEGeneNetwork(case)
+				self._txs = gencode_transcript_network.GENCODETranscriptNetwork(case)
 			else:
 				raise SpadaError("Unrecognized annotation: {}.".format(annotation))
 		else:
@@ -37,25 +37,18 @@ class CreateNetwork(method.Method):
 
 		self._new = new
 
-	def run(self, gtf, normalExpression, tumorExpression, minExpression, sequences, ppi, ddi, drivers, features, aberrant):
+	def run(self, gtf, controlExpression, caseExpression, minExpression, sequences, ppi, ddi, features, aberrant):
 
 		# read annotation
 		self.createNetworks(gtf)
 		self.addAberrant(aberrant)
 
-		# gene data
-		drivers, specificDrivers = self.readDrivers(drivers)
-		if drivers:
-			self._genes.update_nodes("driver", self.symbol2ids(drivers))
-		if specificDrivers:
-			self._genes.update_nodes("specificDriver", self.symbol2ids(specificDrivers))
-
 		# isoform data
-		for expression,origin in zip([normalExpression, tumorExpression], ["N", "T"]):
+		for expression,origin in zip([controlExpression, caseExpression], ["N", "T"]):
 			self.measureExpression(expression, minExpression, origin)
 
-		self.getIsoformSequences(sequences)
-		self.getIsoformFeatures(features)
+		self.gecaseIsoformSequences(sequences)
+		self.gecaseIsoformFeatures(features)
 		self.getInteractions(ppi)
 		self.getDomainInteractions(ddi)
 
@@ -104,7 +97,7 @@ class CreateNetwork(method.Method):
 			self.logger.info("Expression from the provided network will be used.")
 			return
 
-		self.logger.info("Reading {} samples transcript expression.".format('normal' if origin == 'N' else 'tumor'))
+		self.logger.info("Reading {} samples transcript expression.".format('control' if origin == 'N' else 'case'))
 		with open(expression, "r") as EXPR:
 			for tx,xpr in io.parseExpression(EXPR, header = True):
 
@@ -169,29 +162,7 @@ class CreateNetwork(method.Method):
 					if matches:
 						self._txs.add_edge(tx1, tx2, ddi = matches)
 
-	def readDrivers(self, drivers):
-
-		if self._new and not drivers:
-			raise SpadaError("A file containing the tumor drivers must be provided.")
-		elif not drivers:
-			self.logger.info("Drivers from the provided network will be used.")
-			return(None,None)
-
-		self.logger.info("Reading known driver genes.")
-
-		allDrivers = {}
-		specificDrivers = {}
-
-		for line in io.readTable(drivers, keys = ['gene_id','tumor']):
-
-			allDrivers[line['gene_id']] = True
-
-			if line['tumor'] == self._genes._name:
-				specificDrivers[line['gene_id']] = True
-
-		return allDrivers, specificDrivers
-
-	def getIsoformSequences(self, proteins):
+	def gecaseIsoformSequences(self, proteins):
 
 		if self._new and not proteins:
 			raise SpadaError("A FASTA file with protein sequences file must be provided.")
@@ -204,7 +175,7 @@ class CreateNetwork(method.Method):
 		for tx, sequence in io.readFasta(proteins):
 			self._txs.update_node(tx, "proteinSequence", sequence)
 
-	def getIsoformFeatures(self, features):
+	def gecaseIsoformFeatures(self, features):
 
 		if self._new and not features:
 			raise SpadaError("A file with the protein features must be provided.")

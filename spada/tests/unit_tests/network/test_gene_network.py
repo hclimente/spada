@@ -23,14 +23,14 @@ def test_readSwitches():
 	assert len(gn.nodes()["ENSG09.6"]["switches"]) == 3
 
 	# check the switches are the right ones
-	assert [ x for x in gn.nodes()["ENSG00.5"]["switches"] if x.nTx == "ENST01.2" and x.tTx == "ENST02.2" and x.samples == {"A","B","C"} ]
-	assert [ x for x in gn.nodes()["ENSG00.5"]["switches"] if x.nTx == "ENST02.2" and x.tTx == "ENST01.2" and x.samples == {"D"} ]
-	assert [ x for x in gn.nodes()["ENSG03.3"]["switches"] if x.nTx == "ENST06.1" and x.tTx == "ENST05.1" and x.samples == {"A","B"} ]
-	assert [ x for x in gn.nodes()["ENSG03.3"]["switches"] if x.nTx == "ENST05.1" and x.tTx == "ENST06.1" and x.samples == {"C","D"} ]
-	assert [ x for x in gn.nodes()["ENSG05.2"]["switches"] if x.nTx == "ENST08.1" and x.tTx == "ENST09.1" and x.samples == {"A","B"} ]
-	assert [ x for x in gn.nodes()["ENSG09.6"]["switches"] if x.nTx == "ENST15.1" and x.tTx == "ENST13.5" and x.samples == {"A","B","C","D"} ]
-	assert [ x for x in gn.nodes()["ENSG09.6"]["switches"] if x.nTx == "ENST16.2" and x.tTx == "ENST13.5" and x.samples == {"E","F","G"} ]
-	assert [ x for x in gn.nodes()["ENSG09.6"]["switches"] if x.nTx == "ENST16.2" and x.tTx == "ENST14.5" and x.samples == {"H","I"} ]
+	assert [ x for x in gn.nodes()["ENSG00.5"]["switches"] if x.ctrl == "ENST01.2" and x.case == "ENST02.2" and x.samples == {"A","B","C"} ]
+	assert [ x for x in gn.nodes()["ENSG00.5"]["switches"] if x.ctrl == "ENST02.2" and x.case == "ENST01.2" and x.samples == {"D"} ]
+	assert [ x for x in gn.nodes()["ENSG03.3"]["switches"] if x.ctrl == "ENST06.1" and x.case == "ENST05.1" and x.samples == {"A","B"} ]
+	assert [ x for x in gn.nodes()["ENSG03.3"]["switches"] if x.ctrl == "ENST05.1" and x.case == "ENST06.1" and x.samples == {"C","D"} ]
+	assert [ x for x in gn.nodes()["ENSG05.2"]["switches"] if x.ctrl == "ENST08.1" and x.case == "ENST09.1" and x.samples == {"A","B"} ]
+	assert [ x for x in gn.nodes()["ENSG09.6"]["switches"] if x.ctrl == "ENST15.1" and x.case == "ENST13.5" and x.samples == {"A","B","C","D"} ]
+	assert [ x for x in gn.nodes()["ENSG09.6"]["switches"] if x.ctrl == "ENST16.2" and x.case == "ENST13.5" and x.samples == {"E","F","G"} ]
+	assert [ x for x in gn.nodes()["ENSG09.6"]["switches"] if x.ctrl == "ENST16.2" and x.case == "ENST14.5" and x.samples == {"H","I"} ]
 
 def test_add_node():
 

@@ -13,13 +13,13 @@ class SimulateSwitches(method.Method):
 	def run(self):
 		self.logger.info("Generating random switches.")
 
-		# random: two random transcripts among those expressed in tumor or normal
+		# random: two random transcripts among those expressed in case or control
 		self.sampleTranscripts_random()
 
-		# random: most expressed isoform is normal
-		self.sampleTranscripts_fixNormal()
+		# random: most expressed isoform is control
+		self.sampleTranscripts_fixControl()
 
-	def sampleTranscripts_fixNormal(self):
+	def sampleTranscripts_fixControl(self):
 
 		switches = []
 
@@ -28,19 +28,19 @@ class SimulateSwitches(method.Method):
 			if len(set(info["expressedTxsN"]) & set(info["expressedTxsT"])) < 2:
 				next
 
-			# set normal isoform as the most expressed in normal, shuffle the rest for tumor
+			# set control isoform as the most expressed in control, shuffle the rest for case
 			txExpression = [ (x,self._txs._net.node[x]["median_TPM_N"]) for x in info["expressedTxsN"] ]
-			nTx = max(txExpression, key=operator.itemgetter(1))[0]
-			nTxExpression = max(txExpression, key=operator.itemgetter(1))[1]
+			ctrl = max(txExpression, key=operator.itemgetter(1))[0]
+			ctrlExpression = max(txExpression, key=operator.itemgetter(1))[1]
 
-			if nTx not in info["expressedTxsN"]:
+			if ctrl not in info["expressedTxsN"]:
 				self.logger.warning("Median most expressed transcript from gene {} is not considered expressed. \
 					Probably due to the threshold applied. TPM={}. Will be skipped. ".format(gene,txExpression))
 				continue
 
 			txs = list(info["expressedTxsT"])
-			if nTx in txs:
-				txs.remove(nTx)
+			if ctrl in txs:
+				txs.remove(ctrl)
 
 			numSwitches = self.MAX_SWITCHES
 			if len(txs) < self.MAX_SWITCHES:
@@ -49,8 +49,8 @@ class SimulateSwitches(method.Method):
 			random.shuffle(txs)
 
 			for i in range(numSwitches):
-				tTx = txs[i]
-				switches.append((gene, nTx, tTx))
+				case = txs[i]
+				switches.append((gene, ctrl, case))
 
 		return(switches)
 
@@ -70,8 +70,8 @@ class SimulateSwitches(method.Method):
 			allSwitches = allSwitches[0:self.MAX_SWITCHES]
 
 			for oneSwitch in allSwitches:
-				nTx = oneSwitch[0]
-				tTx = oneSwitch[1]
-				switches.append((gene, nTx, tTx))
+				ctrl = oneSwitch[0]
+				case = oneSwitch[1]
+				switches.append((gene, ctrl, case))
 
 		return(switches)

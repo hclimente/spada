@@ -4,7 +4,7 @@ import os
 import pytest
 
 scriptPath = os.path.realpath(__file__)
-dataPath = os.path.dirname(scriptPath) + "/../../data/"
+dataPath = os.path.dirname(scriptPath) + "/../data/"
 
 def test_init():
 
@@ -16,7 +16,6 @@ def test_init():
 		  dataPath + "fasta",
 		  dataPath + "mitab",
 		  dataPath + "ddis",
-		  dataPath + "drivers",
 		  dataPath + "features",
 		  dataPath + "aberrant")
 
@@ -73,13 +72,6 @@ def test_init():
 	assert c._txs._net["ENST01.2"]["ENST02.2"]["ddi"] == {frozenset({"D1"})}
 	assert c._txs._net["ENST02.2"]["ENST02.2"]["ddi"] == {frozenset({"D1"}), frozenset({"D2"}), frozenset({'D4', 'D2'})}
 	assert c._txs._net["ENST20.1"]["ENST02.2"]["ddi"] == {frozenset({"D2","D4"}), frozenset({"D2"})}
-
-	# driver
-	assert not c._genes.nodes()["ENSG08.4"]["driver"] and not c._genes.nodes()["ENSG08.4"]["specificDriver"]
-	assert not c._genes.nodes()["ENSG09.6"]["driver"] and not c._genes.nodes()["ENSG09.6"]["specificDriver"]
-	assert c._genes.nodes()["ENSG11.3"]["driver"] and not c._genes.nodes()["ENSG11.3"]["specificDriver"]
-	assert c._genes.nodes()["ENSG03.3"]["driver"] and c._genes.nodes()["ENSG03.3"]["specificDriver"]
-	assert c._genes.nodes()["ENSG01.1"]["driver"] and c._genes.nodes()["ENSG01.1"]["specificDriver"]
 
 	# fasta
 	assert c._txs.nodes()["ENST12.3"]["proteinSequence"] == "ASDFAFAFA"

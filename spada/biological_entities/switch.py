@@ -6,18 +6,18 @@ from itertools import zip_longest
 import os
 import operator
 
-LiteSwitch = namedtuple('LiteSwitch', ['nTx', 'tTx', 'samples'])
+LiteSwitch = namedtuple('LiteSwitch', ['ctrl', 'case', 'samples'])
 
 class IsoformSwitch:
-	def __init__(self, nTx, tTx, samples):
-		self._normal_transcript_name= nTx
-		self._tumor_transcript_name = tTx
-		self._samples 				= samples
+	def __init__(self, ctrl, case, samples):
+		self._ctrl_transcript_name = ctrl
+		self._case_transcript_name 	  = case
+		self._samples 				  = samples
 
-		self._normal_transcript = None
-		self._tumor_transcript 	= None
-		self._normal_protein 	= None
-		self._tumor_protein 	= None
+		self._ctrl_transcript = None
+		self._case_transcript 	 = None
+		self._ctrl_protein 	 = None
+		self._case_protein 	     = None
 
 		self._functional		= None
 
@@ -26,9 +26,9 @@ class IsoformSwitch:
 		self._idrChange			= None
 
 	@property
-	def nTx(self): return self._normal_transcript_name
+	def ctrl(self): return self._ctrl_transcript_name
 	@property
-	def tTx(self): return self._tumor_transcript_name
+	def case(self): return self._case_transcript_name
 	@property
 	def samples(self): return self._samples
 
@@ -46,92 +46,92 @@ class IsoformSwitch:
 		return self._functional
 
 	@property
-	def nIsoform(self): return self._normal_protein
+	def ctrlIsoform(self): return self._ctrl_protein
 	@property
-	def tIsoform(self): return self._tumor_protein
+	def caseIsoform(self): return self._case_protein
 	@property
-	def nTranscript(self): return self._normal_transcript
+	def nTranscript(self): return self._ctrl_transcript
 	@property
-	def tTranscript(self): return self._tumor_transcript
+	def tTranscript(self): return self._case_transcript
 
 	@property
 	def cds_diff(self):
 		"""Returns a list with the differencen between the transcripts coding sequences."""
-		cdsDiff = [ x for x in self._normal_transcript.cds if x not in self._tumor_transcript.cds ]
-		cdsDiff.extend( [ x for x in self._tumor_transcript.cds if x not in self._normal_transcript.cds ])
+		cdsDiff = [ x for x in self._ctrl_transcript.cds if x not in self._case_transcript.cds ]
+		cdsDiff.extend( [ x for x in self._case_transcript.cds if x not in self._ctrl_transcript.cds ])
 		return cdsDiff
 
 	@property
 	def utr_diff(self):
 		"""Returns True if there is a difference between the transcripts utr sequences."""
-		utrDiff = [ x for x in self._normal_transcript.utr if x not in self._tumor_transcript.utr ]
-		utrDiff.extend( [ x for x in self._tumor_transcript.utr if x not in self._normal_transcript.utr ])
+		utrDiff = [ x for x in self._ctrl_transcript.utr if x not in self._case_transcript.utr ]
+		utrDiff.extend( [ x for x in self._case_transcript.utr if x not in self._ctrl_transcript.utr ])
 		return utrDiff
 
 	def addTxInfo(self,nInfo,tInfo):
 		"""Creates the transcript objects for the transcripts involved
 		in the switch and calculates UTR and CDS differences."""
-		self._normal_transcript = transcript.Transcript( self._normal_transcript_name, nInfo )
-		self._tumor_transcript 	= transcript.Transcript( self._tumor_transcript_name, tInfo )
+		self._ctrl_transcript = transcript.Transcript( self._ctrl_transcript_name, nInfo )
+		self._case_transcript 	= transcript.Transcript( self._case_transcript_name, tInfo )
 
 		self.computeCdsDiff()
 		self.computeUtrDiff()
 
 		if nInfo["proteinSequence"]:
-			self._normal_protein = protein.Protein( self._normal_transcript_name, nInfo)
+			self._ctrl_protein = protein.Protein( self._ctrl_transcript_name, nInfo)
 
 		if tInfo["proteinSequence"]:
-			self._tumor_protein  = protein.Protein( self._tumor_transcript_name, tInfo)
+			self._case_protein  = protein.Protein( self._case_transcript_name, tInfo)
 
-		if self._normal_protein and self._tumor_protein:
+		if self._ctrl_protein and self._case_protein:
 			self.getAlteredRegions()
 
 	def computeCdsDiff(self):
 		"""Changes the values of the CDS dictionary of the transcripts to
 			a bool, indicating if they are transcript specific or not."""
-		for gPos in self._normal_transcript.cds:
-			if gPos not in self._tumor_transcript.cds:
-				self._normal_transcript._cds[gPos] = True
+		for gPos in self._ctrl_transcript.cds:
+			if gPos not in self._case_transcript.cds:
+				self._ctrl_transcript._cds[gPos] = True
 			else:
-				self._normal_transcript._cds[gPos] = False
+				self._ctrl_transcript._cds[gPos] = False
 
-		for gPos in self._tumor_transcript.cds:
-			if gPos not in self._normal_transcript.cds:
-				self._tumor_transcript._cds[gPos] = True
+		for gPos in self._case_transcript.cds:
+			if gPos not in self._ctrl_transcript.cds:
+				self._case_transcript._cds[gPos] = True
 			else:
-				self._tumor_transcript._cds[gPos] = False
+				self._case_transcript._cds[gPos] = False
 
 	def computeUtrDiff(self):
 		"""Changes the values of the UTR dictionary of the transcripts to
 			a bool, indicating if they are transcript specific or not."""
-		for gPos in self._normal_transcript.utr:
-			if gPos not in self._tumor_transcript.utr:
-				self._normal_transcript._utr[gPos] = True
+		for gPos in self._ctrl_transcript.utr:
+			if gPos not in self._case_transcript.utr:
+				self._ctrl_transcript._utr[gPos] = True
 			else:
-				self._normal_transcript._utr[gPos] = False
+				self._ctrl_transcript._utr[gPos] = False
 
-		for gPos in self._tumor_transcript.utr:
-			if gPos not in self._normal_transcript.utr:
-				self._tumor_transcript._utr[gPos] = True
+		for gPos in self._case_transcript.utr:
+			if gPos not in self._ctrl_transcript.utr:
+				self._case_transcript._utr[gPos] = True
 			else:
-				self._tumor_transcript._utr[gPos] = False
+				self._case_transcript._utr[gPos] = False
 
 	def getAlteredRegions(self):
 		"""Calculates the specific and non-specific residues of the isoforms
 		involved in an isoform switch."""
 
-		for res in self._normal_protein._structure:
-			if res.genomicPosition not in [ y.genomicPosition for y in self._tumor_protein._structure ]:
-				res.setIsoformSpecific(True)
+		for res in self._ctrl_protein._structure:
+			if res.genomicPosition not in [ y.genomicPosition for y in self._case_protein._structure ]:
+				res.secaseIsoformSpecific(True)
 
-		for res in self._tumor_protein._structure:
-			if res.genomicPosition not in [ y.genomicPosition for y in self._normal_protein._structure ]:
-				res.setIsoformSpecific(True)
+		for res in self._case_protein._structure:
+			if res.genomicPosition not in [ y.genomicPosition for y in self._ctrl_protein._structure ]:
+				res.secaseIsoformSpecific(True)
 
 	def analyzeSplicing(self):
 
 		# if one of the transcripts doesn't have an isoform described, there is no use
-		if not self.nIsoform or not self.tIsoform:
+		if not self.ctrlIsoform or not self.caseIsoform:
 			return []
 
 		allN = sorted(self.nTranscript.getSegments("isoform-specific") + self.nTranscript.getSegments("non-isoform-specific"),key=operator.itemgetter(0))
@@ -180,16 +180,16 @@ class IsoformSwitch:
 		if not featureType in ["Pfam", "Prosite"]:
 			raise Exception(featureType + ' not recognized. Use Pfam or Prosite.')
 
-		for isoform in [self.nIsoform,self.tIsoform]:
+		for isoform in [self.ctrlIsoform,self.caseIsoform]:
 			if isoform:
 				f = isoform._prosite if featureType == "Prosite" else isoform._pfam
 				[ features.add(x) for x in f ]
 
 		for feature in features:
 
-			featInfo = { self.nTx: [], self.tTx: []}
+			featInfo = { self.ctrl: [], self.case: []}
 
-			for isoform in [self.nIsoform, self.tIsoform]:
+			for isoform in [self.ctrlIsoform, self.caseIsoform]:
 				if not isoform:
 					continue
 
@@ -199,7 +199,7 @@ class IsoformSwitch:
 				for region in featureRegions:
 
 					thisIsosp = []
-					if None not in [self.nIsoform,self.tIsoform]:
+					if None not in [self.ctrlIsoform,self.caseIsoform]:
 						[ thisIsosp.extend(x) for x in specificRegions if set(x) & set(region) ]
 					else:
 						thisIsosp = set(region)
@@ -223,13 +223,13 @@ class IsoformSwitch:
 			emptyDict = {'macro': float('nan'), 'micro': float('nan'),
 						 'jaccard': float('nan'), 'start': float('nan'),
 						 'end': float('nan')}
-			for nDict,tDict in zip_longest(featInfo[self.nTx], featInfo[self.tTx], fillvalue = emptyDict):
+			for nDict,tDict in zip_longest(featInfo[self.ctrl], featInfo[self.case], fillvalue = emptyDict):
 
 				what = "Nothing"
 				if nDict["macro"] > 0 and tDict == emptyDict:
-					what = "Lost_in_tumor"
+					what = "Lost_in_case"
 				elif tDict["macro"] > 0 and nDict == emptyDict:
-					what = "Gained_in_tumor"
+					what = "Gained_in_case"
 
 				f = { "feature": feature, "index": i, "what": what, \
 					  "nStart": nDict["start"], "nEnd": nDict["end"], \
@@ -251,12 +251,12 @@ class IsoformSwitch:
 		idrInfo = []
 		features = set()
 
-		for isoform in [self.nIsoform,self.tIsoform]:
+		for isoform in [self.ctrlIsoform,self.caseIsoform]:
 			if isoform:
 				[ features.add(x) for x in isoform._idr ]
 
 		for feature in features:
-			for protein,what in zip([self.nIsoform,self.tIsoform], ["Lost_in_tumor","Gained_in_tumor"]):
+			for protein,what in zip([self.ctrlIsoform,self.caseIsoform], ["Lost_in_case","Gained_in_case"]):
 				if not protein:
 					continue
 
@@ -269,7 +269,7 @@ class IsoformSwitch:
 					idrSet = set(idr)
 
 					overlappingIsoSpecific = []
-					if None not in [self.nIsoform,self.tIsoform]:
+					if None not in [self.ctrlIsoform,self.caseIsoform]:
 						[ overlappingIsoSpecific.extend(x) for x in isoform if set(x) & idrSet]
 					else:
 						overlappingIsoSpecific = idrSet

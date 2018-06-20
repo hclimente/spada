@@ -15,14 +15,10 @@ class GeneNetwork(Network):
 		id(str) 						Gene Id
 		symbol(str) 					Gene Symbol
 		switches(list,[]) 				List of detected isoform switches.
-		driver(bool,False) 				Gene described as a driver.
-		specificDriver(bool,False) 		Gene described as driver in this cancer type.
-		driverType(str,"") 				Role that plays the gene in tumorigenesis.
 		expressedTxsN(set,()) 			Set with transcripts with a median expression > 0.1
-										in normal samples.
+										in control samples.
 		expressedTxsT(set,()) 			Set with transcripts with a median expression > 0.1
-										in tumor samples.
-		neighborhoods(dictionary,{})	Adjusted p-value of differential expression.
+										in case samples.
 
 	Edge information:
 		id1(str) 						Gene id of interactor 1.
@@ -60,12 +56,8 @@ class GeneNetwork(Network):
 			self._net.add_node( geneID,
 								symbol 				= geneSymbol,
 								switches 			= [],
-								specificDriver 		= False,
-								driver 				= False,
-								driverType 			= None,
 								expressedTxsN		= set(),
-								expressedTxsT		= set(),
-								neighborhoods		= {} )
+								expressedTxsT		= set() )
 
 			return True
 
@@ -120,29 +112,29 @@ class GeneNetwork(Network):
 
 		for line in io.readTable(switchesFile):
 			gene = line['GeneId']
-			nTx = line['Normal_transcript']
-			tTx = line['Tumor_transcript']
+			ctrl = line['Control_transcript']
+			case = line['Case_transcript']
 			samples = set(line['Samples'].split(','))
 
-			if self.valid_switch(gene, nTx, tTx, tx_network):
+			if self.valid_switch(gene, ctrl, case, tx_network):
 
-				thisSwitch = LiteSwitch(nTx, tTx, samples)
+				thisSwitch = LiteSwitch(ctrl, case, samples)
 				self.update_node("switches", thisSwitch, full_name = gene)
 
-	def valid_switch(self, gene, nTx, tTx, tx_network):
+	def valid_switch(self, gene, ctrl, case, tx_network):
 
 		msg = ''
 
 		if gene not in self.nodes():
 			msg = "Gene {} not in the network. ".format(gene)
 
-		if nTx not in tx_network.nodes():
-			msg += "Transcript {} not in the network. ".format(nTx)
-		if tTx not in tx_network.nodes():
-			msg += "Transcript {} not in the network.".format(tTx)
+		if ctrl not in tx_network.nodes():
+			msg += "Transcript {} not in the network. ".format(ctrl)
+		if case not in tx_network.nodes():
+			msg += "Transcript {} not in the network.".format(case)
 
 		if msg:
-			self.logger.warning('Switch {} - {} will not be analyzed. Reason(s): {}'.format(nTx, tTx, msg))
+			self.logger.warning('Switch {} - {} will not be analyzed. Reason(s): {}'.format(ctrl, case, msg))
 			return False
 		else:
 			return True
@@ -194,9 +186,9 @@ class GeneNetwork(Network):
 			partialCreation(bool): if False, the heavy protein
 				objects are not created.
 		"""
-		thisSwitch = IsoformSwitch(switch.nTx, switch.tTx, switch.samples)
-		nInfo = tx_network._net.node[thisSwitch.nTx]
-		tInfo = tx_network._net.node[thisSwitch.tTx]
+		thisSwitch = IsoformSwitch(switch.ctrl, switch.case, switch.samples)
+		nInfo = tx_network._net.node[thisSwitch.ctrl]
+		tInfo = tx_network._net.node[thisSwitch.case]
 		thisSwitch.addTxInfo(nInfo,tInfo)
 
 		return thisSwitch
@@ -212,15 +204,3 @@ class GeneNetwork(Network):
 			thisSwitch = self.__createSwitch(switchDict, tx_network)
 
 			yield gene,info,switchDict,thisSwitch
-
-	def isDriver(self, gene):
-
-		driver = 'No'
-		if self._net.node[gene]["specificDriver"]:
-			driver = 'Tumor-specific_driver'
-		elif self._net.node[gene]["driver"]:
-			driver = 'Foreign_driver'
-		elif [ x for x in self._net.neighbors(gene) if self._net.node[x]["driver"] ]:
-			driver = 'Driver_interactor'
-
-		return driver

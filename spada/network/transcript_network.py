@@ -20,8 +20,8 @@ class TranscriptNetwork(Network):
 		main(bool,False)			Is it the main transcript of the gene?
 		start_codon(int,None)		First residue of the start codon.
 		stop_codon(int,None)		First residue of the stop codon.
-		median_TPM_N(float,None)	Median TPM of the isoform in the normal patients.
-		median_TPM_T(float,None)	Median TPM of the isoform in the tumor patients.
+		median_TPM_N(float,None)	Median TPM of the isoform in the control patients.
+		median_TPM_T(float,None)	Median TPM of the isoform in the case patients.
 		proteinSequence(str,None)	Protein sequence.
 
 	Edge information:

@@ -34,23 +34,23 @@ def test_init():
 
 	s = switch.IsoformSwitch("A", "B", [1,2,3,4])
 
-	assert s.nTx == "A"
-	assert s.tTx == "B"
+	assert s.ctrl == "A"
+	assert s.case == "B"
 	assert s.samples == [1,2,3,4]
 	assert s.nTranscript == None
 	assert s.tTranscript == None
-	assert s.nIsoform == None
-	assert s.tIsoform == None
+	assert s.ctrlIsoform == None
+	assert s.caseIsoform == None
 
 	s = switch.IsoformSwitch("Y", "Z", ["P1","P2","P3"])
 
-	assert s.nTx == "Y"
-	assert s.tTx == "Z"
+	assert s.ctrl == "Y"
+	assert s.case == "Z"
 	assert s.samples == ["P1","P2","P3"]
 	assert s.nTranscript == None
 	assert s.tTranscript == None
-	assert s.nIsoform == None
-	assert s.tIsoform == None
+	assert s.ctrlIsoform == None
+	assert s.caseIsoform == None
 
 def test_addTxInfo():
 
@@ -71,21 +71,21 @@ def test_addTxInfo():
 	assert max(s.tTranscript.cds) == a2Info["CDS"][1]
 
 	# properties of proteins are kept
-	assert s.nIsoform != None
-	assert s.nIsoform.tx == "A"
-	assert s.nIsoform.seq == a1Info["proteinSequence"]
-	assert "".join( x.res for x in s.nIsoform.structure ) == a1Info["proteinSequence"]
-	assert s.nIsoform._pfam == a1Info["Pfam"]
-	assert s.nIsoform._prosite == a1Info["Prosite"]
-	assert s.nIsoform._idr == a1Info["IDR"]
+	assert s.ctrlIsoform != None
+	assert s.ctrlIsoform.tx == "A"
+	assert s.ctrlIsoform.seq == a1Info["proteinSequence"]
+	assert "".join( x.res for x in s.ctrlIsoform.structure ) == a1Info["proteinSequence"]
+	assert s.ctrlIsoform._pfam == a1Info["Pfam"]
+	assert s.ctrlIsoform._prosite == a1Info["Prosite"]
+	assert s.ctrlIsoform._idr == a1Info["IDR"]
 
-	assert s.tIsoform != None
-	assert s.tIsoform.tx == "B"
-	assert s.tIsoform.seq == a2Info["proteinSequence"]
-	assert "".join( x.res for x in s.tIsoform.structure ) == a2Info["proteinSequence"]
-	assert s.tIsoform._pfam == a2Info["Pfam"]
-	assert s.tIsoform._prosite == a2Info["Prosite"]
-	assert s.tIsoform._idr == a2Info["IDR"]
+	assert s.caseIsoform != None
+	assert s.caseIsoform.tx == "B"
+	assert s.caseIsoform.seq == a2Info["proteinSequence"]
+	assert "".join( x.res for x in s.caseIsoform.structure ) == a2Info["proteinSequence"]
+	assert s.caseIsoform._pfam == a2Info["Pfam"]
+	assert s.caseIsoform._prosite == a2Info["Prosite"]
+	assert s.caseIsoform._idr == a2Info["IDR"]
 
 def test_analyzeDomains():
 

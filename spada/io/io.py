@@ -114,20 +114,17 @@ def printSwitches(genes, txs, filename = "switches_spada.tsv"):
 	logging.info("Writing switch information.")
 
 	with open(filename, "w") as OUT:
-		OUT.write("Experiment\tGeneId\tSymbol\tNormal_transcript\t")
-		OUT.write("Tumor_transcript\tDriver\t")
-		OUT.write("CDS_normal\tCDS_tumor\tCDS_change\tUTR_change\tSamples\n")
+		OUT.write("Experiment\tGeneId\tSymbol\tControl_transcript\t")
+		OUT.write("Case_transcript\t")
+		OUT.write("CDS_control\tCDS_case\tCDS_change\tUTR_change\tSamples\n")
 
 		for gene,info,thisSwitch in genes.switches(txs):
 
 			cdsChange = bool(thisSwitch.cds_diff)
 			utrChange = bool(thisSwitch.utr_diff)
 
-			driver = genes.isDriver(gene)
-
-			OUT.write("{}\t{}\t".format( genes._name, gene ))
-			OUT.write("{}\t{}\t".format( thisSwitch.nTx, info["symbol"] ))
-			OUT.write("{}\t%s\t".format( thisSwitch.tTx, driver ))
+			OUT.write("{}\t{}\t{}\t".format( genes._name, gene, info["symbol"] ))
+			OUT.write("{}\t{}\t".format( thisSwitch.ctrl, thisSwitch.case ))
 			OUT.write("%i\t%i\t" % ( bool(thisSwitch.nTranscript.cds), bool(thisSwitch.tTranscript.cds) ))
 			OUT.write("%i\t%i\t" % ( cdsChange, utrChange))
 			OUT.write("{}\n".format( ",".join(thisSwitch.samples) ))

@@ -16,14 +16,14 @@ subparsers = parser.add_subparsers(help='sub-command help')
 ###   INITIALIZE THE NETWORKS               ####
 ################################################
 def createNetwork(o):
-	c = create_network.CreateNetwork(o.tumor, o.annotation, o.newNetwork)
-	c.run(o.gtf, o.normalExpression, o.tumorExpression, o.minExpression, o.seq,
-		  o.ppi, o.ddi, o.drivers, o.features, o.aberrant)
+	c = create_network.CreateNetwork(o.case, o.annotation, o.newNetwork)
+	c.run(o.gtf, o.controlExpression, o.caseExpression, o.minExpression, o.seq,
+		  o.ppi, o.ddi, o.features, o.aberrant)
 
 subparser_init = subparsers.add_parser('init', help='Create network.')
 
-subparser_init.add_argument('-T', '--tumor', dest='tumor', action='store',
-							help='Identifier of the analysis e.g. the tumor type.')
+subparser_init.add_argument('-T', '--name', dest='case', action='store',
+							help='Identifier of the analysis e.g. the case type.')
 subparser_init.add_argument('-N', '--new-net', dest='newNetwork', action='store_true',
 							help='Use previous networks.', default=False)
 subparser_init.add_argument('-a', '--annotation', dest='annotation', action='store',
@@ -31,14 +31,14 @@ subparser_init.add_argument('-a', '--annotation', dest='annotation', action='sto
 							help='Used annotation. Required for newly generated networks.')
 subparser_init.add_argument('-g', '--gtf', dest='gtf', action='store', default=None,
 							help='GTF with the gene, transcript, exon and CDS annotation.')
-subparser_init.add_argument('-n', '--expression-normal', dest='normalExpression',
+subparser_init.add_argument('-n', '--expression-control', dest='controlExpression',
 							action='store', default=None,
-							help='Tab-separated table with transcript-level expression data of the normal samples \
+							help='Tab-separated table with transcript-level expression data of the control samples \
 							in TPM; a row per annotated transcript, indicated in the first column. Required \
 							for newly generated networks.')
-subparser_init.add_argument('-t', '--expression-tumor', dest='tumorExpression',
+subparser_init.add_argument('-t', '--expression-case', dest='caseExpression',
 							action='store', default=None,
-							help='Equivalent to --expression-normal for the tumor samples. Required for newly \
+							help='Equivalent to --expression-control for the case samples. Required for newly \
 							generated networks.')
 subparser_init.add_argument('-m', '--minimum-expression', dest='minExpression',
 							action='store', default=None, type=float,
@@ -55,10 +55,6 @@ subparser_init.add_argument('-s', '--seq', dest='seq', action='store', default=N
 subparser_init.add_argument('-f', '--features', dest='features', action='store', default=None,
 							help='Tab-separated table with transcript-level features. Required for newly \
 							generated networks.')
-subparser_init.add_argument('-D', '--drivers', dest='drivers', action='store', default=None,
-							help='Tab-separated table containing the genes to be considered tumor drivers. The first column \
-							contains the gene symbol, and the second the tumor type where it was detected (which must match \
-							--tumor when required). Required for newly generated networks.')
 subparser_init.add_argument('-A', '--aberrant', dest='aberrant', action='store', default=None,
 							help='Tab-separated table containing gene-aberrant transcript pairs. The genes must be in the \
 							annotation, but not the transcripts. Hence, they do not have known genomic coordinates, \
@@ -72,19 +68,19 @@ subparser_init.set_defaults(func=createNetwork)
 ###   COMPUTE SWITCHES                      ####
 ################################################
 def computeSwitches(o):
-	c = compute_switches.ComputeSwitches(True, True, o.normalExpression, o.tumorExpression)
+	c = compute_switches.ComputeSwitches(True, True, o.controlExpression, o.caseExpression)
 	c.run(o.minExpression)
 
 subparser_switches = subparsers.add_parser('switches', help='Detect switches.')
-subparser_switches.add_argument('-n', '--expression-normal', dest='normalExpression',
+subparser_switches.add_argument('-n', '--expression-control', dest='controlExpression',
 								action='store', default=None,
-								help='Tab-separated table with transcript-level expression data of the normal samples \
+								help='Tab-separated table with transcript-level expression data of the control samples \
 								in TPM; a row per annotated transcript, indicated in the first column. Sorting \
 								by gene (i.e. transcripts from the same gene are consecutive) will drastically \
 								optimize memory usage.')
-subparser_switches.add_argument('-t', '--expression-tumor', dest='tumorExpression',
+subparser_switches.add_argument('-t', '--expression-case', dest='caseExpression',
 								action='store', default=None,
-								help='Equivalent to --expression-normal for the tumor samples. Required for newly \
+								help='Equivalent to --expression-control for the case samples. Required for newly \
 								generated networks.')
 subparser_switches.add_argument('-m', '--minimum-expression', dest='minExpression',
 								action='store', default=None, type=float,

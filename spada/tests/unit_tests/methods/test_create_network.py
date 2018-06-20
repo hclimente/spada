@@ -130,21 +130,7 @@ def test_getDomainInteractions():
 		c = create_network.CreateNetwork("test", "gencode")
 		c.getDomainInteractions(None)
 
-def test_readDrivers():
-
-	c = create_network.CreateNetwork("test", "gencode")
-	drivers, specificDrivers = c.readDrivers(dataPath + "drivers")
-
-	assert len(drivers) == 3
-	assert len(specificDrivers) == 2
-	assert "GeneL" in drivers
-	assert "GeneD" in specificDrivers
-	assert "GeneB" in specificDrivers
-
-	with pytest.raises(SpadaError):
-		c.readDrivers(None)
-
-def test_getIsoformSequences():
+def test_gecaseIsoformSequences():
 
 	c = create_network.CreateNetwork("test", "gencode")
 	c._txs.add_node("ENST12.3", "1")
@@ -165,7 +151,7 @@ def test_getIsoformSequences():
 	assert not c._txs.nodes()["ENST09.1"]["proteinSequence"]
 	assert not c._txs.nodes()["ENST13.5"]["proteinSequence"]
 
-	c.getIsoformSequences(dataPath + "fasta")
+	c.gecaseIsoformSequences(dataPath + "fasta")
 
 	assert c._txs.nodes()["ENST12.3"]["proteinSequence"] == "ASDFAFAFA"
 	assert c._txs.nodes()["ENST08.1"]["proteinSequence"] == "ASDASDASD"
@@ -178,9 +164,9 @@ def test_getIsoformSequences():
 
 	with pytest.raises(SpadaError):
 		c = create_network.CreateNetwork("test", "gencode")
-		c.getIsoformSequences(None)
+		c.gecaseIsoformSequences(None)
 
-def test_getIsoformFeatures():
+def test_gecaseIsoformFeatures():
 
 	c = create_network.CreateNetwork("test", "gencode")
 	c._txs.add_node("ENST01.2", "1")
@@ -193,7 +179,7 @@ def test_getIsoformFeatures():
 	assert not c._txs.nodes()["ENST08.1"]["IDR"]
 	assert not c._txs.nodes()["ENST18.3"]["Prosite"]
 
-	c.getIsoformFeatures(dataPath + "features")
+	c.gecaseIsoformFeatures(dataPath + "features")
 
 	assert c._txs.nodes()["ENST01.2"]["Pfam"]["D1"] == {(1,2), (3,4)}
 	assert len(c._txs.nodes()["ENST01.2"]["Pfam"]) == 1
@@ -208,7 +194,7 @@ def test_getIsoformFeatures():
 
 	with pytest.raises(SpadaError):
 		c = create_network.CreateNetwork("test", "gencode")
-		c.getIsoformFeatures(None)
+		c.gecaseIsoformFeatures(None)
 
 def test_addAberrant():
 

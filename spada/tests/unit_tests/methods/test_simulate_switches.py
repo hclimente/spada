@@ -16,9 +16,9 @@ def test_run():
 
 	sim.run()
 
-def test_sampleTranscripts_fixNormal():
+def test_sampleTranscripts_fixControl():
 
-	switches = sim.sampleTranscripts_fixNormal()
+	switches = sim.sampleTranscripts_fixControl()
 
 def test_sampleTranscripts_random():
 

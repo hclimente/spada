@@ -24,7 +24,7 @@ class Summary(method.Method):
 
 		self.logger.info("Taking measures on switches.")
 		for gene,info,thisSwitch in self._genes.switches(self._txs):
-			self.logger.debug("Getting statistics for switch {} - {}.".format(thisSwitch.nTx,thisSwitch.tTx))
+			self.logger.debug("Getting statistics for switch {} - {}.".format(thisSwitch.ctrl,thisSwitch.case))
 
 			# general protein, switch and gene info
 			self.exonOverview(gene, info, thisSwitch)
@@ -42,19 +42,19 @@ class Summary(method.Method):
 		tIsoLength = 0
 		nIsoSpecificLength = 0
 		tIsoSpecificLength = 0
-		nTxLength = 0
-		tTxLength = 0
-		switch = "{}_{}".format(thisSwitch.nTx, thisSwitch.tTx)
+		ctrlLength = 0
+		caseLength = 0
+		switch = "{}_{}".format(thisSwitch.ctrl, thisSwitch.case)
 
-		if thisSwitch.nIsoform:
-			nIsoLength = len(thisSwitch.nIsoform.seq)
-			nIso = thisSwitch.nIsoform.getSegments('isoform-specific')
+		if thisSwitch.ctrlIsoform:
+			nIsoLength = len(thisSwitch.ctrlIsoform.seq)
+			nIso = thisSwitch.ctrlIsoform.getSegments('isoform-specific')
 			nSp = []
 			[nSp.extend(x) for x in nIso]
 			nIsoSpecificLength = len(nSp)
-		if thisSwitch.tIsoform:
-			tIsoLength = len(thisSwitch.tIsoform.seq)
-			tIso = thisSwitch.tIsoform.getSegments('isoform-specific')
+		if thisSwitch.caseIsoform:
+			tIsoLength = len(thisSwitch.caseIsoform.seq)
+			tIso = thisSwitch.caseIsoform.getSegments('isoform-specific')
 			tSp = []
 			[tSp.extend(x) for x in tIso]
 			tIsoSpecificLength = len(tSp)
@@ -62,15 +62,15 @@ class Summary(method.Method):
 		self.proteinStats.append((switch,nIsoLength,tIsoLength,nIsoSpecificLength,tIsoSpecificLength))
 
 	def exonOverview(self, gene, info, thisSwitch):
-		nTx = thisSwitch.nTranscript
-		tTx = thisSwitch.tTranscript
+		ctrl = thisSwitch.nTranscript
+		case = thisSwitch.tTranscript
 
-		nSpecificCds = set([ x for x in nTx.cds if x not in tTx.cds ])
-		nSpecificUtr = set([ x for x in nTx.utr if x not in tTx.utr ])
-		tSpecificCds = set([ x for x in tTx.cds if x not in nTx.cds ])
-		tSpecificUtr = set([ x for x in tTx.utr if x not in nTx.utr ])
+		nSpecificCds = set([ x for x in ctrl.cds if x not in case.cds ])
+		nSpecificUtr = set([ x for x in ctrl.utr if x not in case.utr ])
+		tSpecificCds = set([ x for x in case.cds if x not in ctrl.cds ])
+		tSpecificUtr = set([ x for x in case.utr if x not in ctrl.utr ])
 
-		for specificCds,specificUtr,cds,origin in zip([nSpecificCds,tSpecificCds],[nSpecificUtr,tSpecificUtr],[nTx.cds,tTx.cds],["nIso","tIso"]):
+		for specificCds,specificUtr,cds,origin in zip([nSpecificCds,tSpecificCds],[nSpecificUtr,tSpecificUtr],[ctrl.cds,case.cds],["nIso","tIso"]):
 
 			specificRegions = sorted(list(specificUtr | specificCds))
 			exons = [ set(map(itemgetter(1),g)) for k,g in groupby(enumerate(specificRegions), lambda x: x[0]-x[1]) ]
@@ -78,7 +78,7 @@ class Summary(method.Method):
 			for exon in exons:
 
 				exonInfo = {}
-				exonInfo["switch"] = "{}_{}_{}".format(gene, thisSwitch.nTx, thisSwitch.tTx)
+				exonInfo["switch"] = "{}_{}_{}".format(gene, thisSwitch.ctrl, thisSwitch.case)
 				exonInfo["length"] = len(exon)
 				exonInfo["origin"] = origin
 
@@ -127,8 +127,8 @@ class Summary(method.Method):
 
 			exon["gene"] = gene
 			exon["symbol"] = info["symbol"]
-			exon["nTranscript"] = thisSwitch.nTx
-			exon["tTranscript"] = thisSwitch.tTx
+			exon["nTranscript"] = thisSwitch.ctrl
+			exon["tTranscript"] = thisSwitch.case
 			exon["nVersion"] = 0 if nVersion is None else len(nVersion)
 			exon["tVersion"] = 0 if tVersion is None else len(tVersion)
 			exon["tag"] = tag
@@ -143,7 +143,7 @@ class Summary(method.Method):
 	def printSplicingInfo(self):
 
 		with open("isoform_length.tsv".format(), "w" ) as F:
-			F.write("Experiment\tNormal_transcript\tTumor_transcript\tnIsoLength")
+			F.write("Experiment\tControl_transcript\tCase_transcript\tnIsoLength")
 			F.write("\ttIsoLength\tnIsoSpecificLength\ttIsoSpecificLength\n")
 			for switch,nlen,tlen,nsplen,tsplen in self.proteinStats:
 				switchIsoforms = switch.split("_")
@@ -164,8 +164,8 @@ class Summary(method.Method):
 				F.write("{}\n".format(exon["keepORF"]))
 
 		with open("exons_new.tsv", "w" ) as F:
-			F.write("Experiment\tGeneId\tSymbol\tNormal_transcript\tTumor_transcript\t")
-			F.write("Tag\tOrfChange\tnormalSegment\ttumorSegment\n")
+			F.write("Experiment\tGeneId\tSymbol\tControl_transcript\tCase_transcript\t")
+			F.write("Tag\tOrfChange\tcontrolSegment\tcaseSegment\n")
 			for exon in self.alternativeSplicingStats:
 				F.write("{}\t".format(self._genes._name))
 				F.write("{}\t{}\t".format(exon["gene"],exon["symbol"]))
@@ -176,27 +176,26 @@ class Summary(method.Method):
 	def printStructutalInfo(self):
 
 		with open("structural_features.tsv", "w" ) as F:
-			F.write("Experiment\tGeneId\tSymbol\tNormal_transcript\tTumor_transcript\t")
-			F.write("Analysis\tWhatsHappenning\tFeature\tDriver\tASDriver\tDriverType\n")
+			F.write("Experiment\tGeneId\tSymbol\tControl_transcript\tCase_transcript\t")
+			F.write("Analysis\tWhatsHappenning\tFeature\n")
 
 			for tag,featureDict in self.featuresTable:
 				switchElements = tag.split("_")
 				gene = switchElements[0]
 				symbol = switchElements[1]
-				nTx = switchElements[2]
-				tTx = switchElements[3]
+				ctrl = switchElements[2]
+				case = switchElements[3]
 
 				for analysis in ["Pfam","idr","Prosite"]:
 					for data in featureDict[analysis]:
 						F.write("{}\t{}\t".format(self._genes._name, gene))
-						F.write("{}\t{}\t".format(symbol,nTx))
-						F.write("{}\t{}\t".format(tTx,analysis))
-						F.write("{}\t{}\t".format(data[1],data[0].replace(" ","_")))
-						F.write("{}\n".format(featureDict["driver"]))
+						F.write("{}\t{}\t".format(symbol,ctrl))
+						F.write("{}\t{}\t".format(case,analysis))
+						F.write("{}\t{}\n".format(data[1],data[0].replace(" ","_")))
 
 	def changedStructuralFeatures(self, gene, info, thisSwitch):
 
-		tag = "{}_{}_{}_{}".format(gene,info["symbol"],thisSwitch.nTx,thisSwitch.tTx)
+		tag = "{}_{}_{}_{}".format(gene,info["symbol"],thisSwitch.ctrl,thisSwitch.case)
 
 		switchFeatures = {}
 
@@ -221,7 +220,6 @@ class Summary(method.Method):
 		switchFeatures["idr"] = idr
 		switchFeatures["Prosite"] = prosite
 
-		switchFeatures["driver"] = self._genes.isDriver(gene)
 		switchFeatures["Functional"] = int(thisSwitch.isFunctional)
 
 		self.featuresTable.append((tag,switchFeatures))

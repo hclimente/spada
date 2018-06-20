@@ -23,7 +23,7 @@ class Aminoacid:
 
 	@property
 	def isoformSpecific(self): 	return self._isoformSpecific
-	def setIsoformSpecific(self,isoformSpecific): self._isoformSpecific=isoformSpecific
+	def secaseIsoformSpecific(self,isoformSpecific): self._isoformSpecific=isoformSpecific
 
 	def inFeature(self, f):
 		return [ x[1] for x in self._features if f == x[0] ]

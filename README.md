@@ -4,13 +4,24 @@
 
 ## spada
 
-`spada` (Splicing-led Protein Alterations Discovered Agilely) is a tool to study the functional impact of alternative splicing changes between two conditions. The alterations have to be represented as isoform switches i.e. when one condition is best represented by one isoform, and the second condition by another one. Then, `spada` is able to predict which protein features are changing between both isoforms, and their impact on the protein-protein interaction network.
+spada (Splicing-led Protein Alterations Discovered Agilely) is a tool to study the functional impact of alternative splicing changes in case-control studies. The alterations are represented as isoform switches i.e. the situation when cases are best represented by one isoform, while controls are best represented by a different one. Then, spada is able to predict which protein features are changing between both isoforms, and their impact on the protein-protein interaction network.
 
-To start using `spada`, simply install it with
+To start using spada, simply install it with
 
 ``` bash
 pip install spada
 ```
+
+This package has two main functionalities:
+
+```
+# calculate switches from case-control transcript expression data
+spada switches --expression-control expression_ctrl.tsv --expression-case expression_case.tsv --minimum-expression 0.1
+# predict effects of splicing on the protein structure and the interactome of a set of switches
+spada function --switches switches.tsv
+```
+
+For detailed information on how to use spada, please visit the [wiki](https://github.com/hclimente/spada/wiki).
 
 ### Documentation
 
@@ -22,4 +33,4 @@ Climente-González, H., Porta-Pardo, E., Godzik, A., and Eyras, E. (2017). [The 
 
 #### Related projects
 
-* [smartas](https://github.com/hclimente/smartas): Analysis of `spada` applied results applied to TCGA data.
+* [smartas](https://github.com/hclimente/smartas): we applied spada to transcriptomics data from the TCGA. This repository contains the code for the analyses and the main conclusions.

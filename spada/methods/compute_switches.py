@@ -49,8 +49,8 @@ class ComputeSwitches(method.Method):
 
 					switches = expression[gene].detectSwitches(minExpression)
 
-					for (nTx,tTx),samples in switches.items():
-						thisSwitch = LiteSwitch(nTx, tTx, samples)
+					for (ctrl,case),samples in switches.items():
+						thisSwitch = LiteSwitch(ctrl, case, samples)
 						self._genes.update_node("switches", thisSwitch, full_name = gene)
 
 				expression.pop(gene)

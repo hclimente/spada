@@ -81,9 +81,9 @@ class StructuralAnalysis(method.Method):
 	def analyzeDDIs(self, thisSwitch):
 
 		DDIchanges = {}
-		PPIs = { thisSwitch.nTx: {}, thisSwitch.tTx: {} }
+		PPIs = { thisSwitch.ctrl: {}, thisSwitch.case: {} }
 
-		for tx in [thisSwitch.nTx, thisSwitch.tTx]:
+		for tx in [thisSwitch.ctrl, thisSwitch.case]:
 			ppis = self._txs._net.edges(tx, data=True)
 
 			for tx1, tx2, eDict in ppis:
@@ -99,12 +99,12 @@ class StructuralAnalysis(method.Method):
 					if dA in domainsTx2 and dB in domainsTx1:
 						PPIs[tx1][tx2].add(dB + "@" + dA)
 
-		partners = set(PPIs[thisSwitch.nTx].keys()) | set(PPIs[thisSwitch.tTx].keys())
+		partners = set(PPIs[thisSwitch.ctrl].keys()) | set(PPIs[thisSwitch.case].keys())
 
 		for p in partners:
 
-			nDDI = PPIs[thisSwitch.nTx].get(p, set())
-			tDDI = PPIs[thisSwitch.tTx].get(p, set())
+			nDDI = PPIs[thisSwitch.ctrl].get(p, set())
+			tDDI = PPIs[thisSwitch.case].get(p, set())
 			DDIchanges[p] = { "nDDIs": nDDI - tDDI,
 							  "tDDIs": tDDI - nDDI,
 							  "bothDDIs": nDDI & tDDI,
@@ -114,41 +114,41 @@ class StructuralAnalysis(method.Method):
 				if DDIchanges[p]["nDDIs"] or DDIchanges[p]["tDDIs"]:
 					DDIchanges[p]["what"] = "Affected"
 			elif DDIchanges[p]["nDDIs"] and not DDIchanges[p]["tDDIs"]:
-				DDIchanges[p]["what"] = "Lost_in_tumor"
+				DDIchanges[p]["what"] = "Lost_in_case"
 			elif not DDIchanges[p]["nDDIs"] and DDIchanges[p]["tDDIs"]:
-				DDIchanges[p]["what"] = "Gained_in_tumor"
+				DDIchanges[p]["what"] = "Gained_in_case"
 
 		return DDIchanges
 
 	def writeDomainsHeader(self, OUT):
-		OUT.write("Experiment\tGeneId\tNormal_transcript\tTumor_transcript\t")
-		OUT.write("Feature_type\tFeature\tWhat\tIndex\tNormal_start\tNormal_end\t")
-		OUT.write("Tumor_start\tTumor_end\tNormal_MacroScore\tNormal_MicroScore\t")
-		OUT.write("Normal_Jaccard\tTumor_MacroScore\tTumor_MicroScore\tTumor_Jaccard\n")
+		OUT.write("Experiment\tGeneId\tControl_transcript\tCase_transcript\t")
+		OUT.write("Feature_type\tFeature\tWhat\tIndex\tControl_start\tControl_end\t")
+		OUT.write("Case_start\tCase_end\tControl_MacroScore\tControl_MicroScore\t")
+		OUT.write("Control_Jaccard\tCase_MacroScore\tCase_MicroScore\tCase_Jaccard\n")
 
 	def writeDomains(self, OUT, featureType, gene, thisSwitch, changes):
 		for c in changes:
-			OUT.write("{}\t{}\t{}\t".format(self._genes._name, gene, thisSwitch.nTx))
-			OUT.write("{}\t{}\t{}\t".format(thisSwitch.tTx, featureType, c["feature"]))
+			OUT.write("{}\t{}\t{}\t".format(self._genes._name, gene, thisSwitch.ctrl))
+			OUT.write("{}\t{}\t{}\t".format(thisSwitch.case, featureType, c["feature"]))
 			OUT.write("{}\t{}\t{}\t".format(c["what"], c["index"], c['nStart']))
 			OUT.write("{}\t{}\t{}\t".format(c["nEnd"], c["tStart"], c['tEnd']))
 			OUT.write("{}\t{}\t{}\t".format(c["nM"], c["nm"], c["nJ"]))
 			OUT.write("{}\t{}\t{}\n".format(c["tM"], c["tm"], c["tJ"]))
 
 	def writeIDRHeader(self, OUT):
-		OUT.write("Experiment\tGeneId\tNormal_transcript\tTumor_transcript\t")
+		OUT.write("Experiment\tGeneId\tControl_transcript\tCase_transcript\t")
 		OUT.write("What\tSequence\tStartPos\tEndPos\t")
 		OUT.write("microScore\tmacroScore\tJaccard\n")
 
 	def writeIDR(self, OUT, gene, thisSwitch, changes):
 		for c in changes:
 			OUT.write("{}\t".format( self._genes._name ))
-			OUT.write("{}\t{}\t{}\t".format(gene, thisSwitch.nTx, thisSwitch.tTx))
+			OUT.write("{}\t{}\t{}\t".format(gene, thisSwitch.ctrl, thisSwitch.case))
 			OUT.write("{}\t{}\t{}\t".format(c["what"], c["feature"], c["start"]))
 			OUT.write("{}\t{}\t{}\t{}\n".format(c["end"], c["M"], c["m"], c["J"]))
 
 	def writePPIHeader(self, OUT):
-		OUT.write("Experiment\tGeneId\tNormal_transcript\tTumor_transcript\t")
+		OUT.write("Experiment\tGeneId\tControl_transcript\tCase_transcript\t")
 		OUT.write("Other_gene\tOther_symbol\tOther_transcript\tWhat\t")
 		OUT.write("#nDDIs\t#tDDIs\t#BothDDIs\tnDDIs\ttDDIs\tBothDDIs\n")
 
@@ -158,7 +158,7 @@ class StructuralAnalysis(method.Method):
 			other_gene = self._txs._net.node[tx]["gene_id"]
 
 			OUT.write("{}\t{}\t".format( self._genes._name, gene ))
-			OUT.write("{}\t{}\t".format( thisSwitch.nTx, thisSwitch.tTx ))
+			OUT.write("{}\t{}\t".format( thisSwitch.ctrl, thisSwitch.case ))
 			OUT.write("{}\t{}\t".format( other_gene, self._genes._net.node[other_gene]["symbol"] ))
 			OUT.write("{}\t{}\t".format( tx, ddis["what"] ))
 			OUT.write("{}\t{}\t".format( len(ddis["nDDIs"]), len(ddis["tDDIs"]) ))
