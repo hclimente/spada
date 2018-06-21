@@ -12,6 +12,21 @@ parser = argparse.ArgumentParser(prog = "spada",
 
 subparsers = parser.add_subparsers(help='sub-command help')
 
+expression_parser = argparse.ArgumentParser(add_help=False)
+expression_parser.add_argument('-n', '--expression-control', dest='controlExpression',
+							   action='store', default=None,
+							   help='Tab-separated table with transcript-level expression data of the control samples \
+							   in TPM; a row per annotated transcript, indicated in the first column. Sorting \
+							   by gene (i.e. transcripts from the same gene are in consecutive rows) will drastically \
+							   reduce memory usage.')
+expression_parser.add_argument('-t', '--expression-case', dest='caseExpression',
+							   action='store', default=None,
+							   help='Equivalent to --expression-control for the case samples. Required for newly \
+							   generated networks.')
+expression_parser.add_argument('-m', '--minimum-expression', dest='minExpression',
+							   action='store', default=0.1, type=float,
+					 		   help='Minimum expression value, in TPM, to consider a transcript expressed.')
+
 ################################################
 ###   INITIALIZE THE NETWORKS               ####
 ################################################
@@ -57,20 +72,7 @@ def computeSwitches(o):
 	c = compute_switches.ComputeSwitches(True, True, o.controlExpression, o.caseExpression)
 	c.run(o.minExpression)
 
-subparser_switches = subparsers.add_parser('switches', help='Detect switches.')
-subparser_switches.add_argument('-n', '--expression-control', dest='controlExpression',
-								action='store', default=None,
-								help='Tab-separated table with transcript-level expression data of the control samples \
-								in TPM; a row per annotated transcript, indicated in the first column. Sorting \
-								by gene (i.e. transcripts from the same gene are consecutive) will drastically \
-								optimize memory usage.')
-subparser_switches.add_argument('-t', '--expression-case', dest='caseExpression',
-								action='store', default=None,
-								help='Equivalent to --expression-control for the case samples. Required for newly \
-								generated networks.')
-subparser_switches.add_argument('-m', '--minimum-expression', dest='minExpression',
-								action='store', default=0.1, type=float,
-					 			help='Minimum expression value, in TPM, to consider a transcript expressed.')
+subparser_switches = subparsers.add_parser('switches', help='Detect switches.', parents=[expression_parser])
 subparser_switches.set_defaults(task="Compute switches")
 subparser_switches.set_defaults(func=computeSwitches)
 
@@ -96,25 +98,12 @@ def simulateSwitches(o):
 	r = simulate_switches.SimulateSwitches(True,True)
 	r.run(o.controlExpression, o.caseExpression, o.method, o.minExpression)
 
-subparser_sim = subparsers.add_parser('simulate', help='Simulate random switches.')
-subparser_sim.add_argument('-n', '--expression-control', dest='controlExpression',
-						   action='store', default=None,
-						   help='Tab-separated table with transcript-level expression data of the control samples \
-						   in TPM; a row per annotated transcript, indicated in the first column. Sorting \
-						   by gene (i.e. transcripts from the same gene are consecutive) will drastically \
-						   optimize memory usage.')
-subparser_sim.add_argument('-t', '--expression-case', dest='caseExpression',
-						   action='store', default=None,
-						   help='Equivalent to --expression-control for the case samples. Required for newly \
-						   generated networks.')
+subparser_sim = subparsers.add_parser('simulate', help='Simulate random switches.', parents=[expression_parser])
 subparser_sim.add_argument('-M', '--method', dest='method', action='store',
-						   choices=['random','fix_control'], default=None,
+						   choices=['random','fix_expressed','fix_main'], default=None,
 						   help='How to generate the random switches. With \'random\', any pair of isoforms is possible. \
-						   With \'fix_control\', the control isoform will be the median most expressed transcript in \
+						   With \'fix_expressed\', the control isoform will be the median most expressed transcript in \
 						   control cases, and the case isoform will be randomly picked amond the rest.')
-subparser_sim.add_argument('-m', '--minimum-expression', dest='minExpression',
-						   action='store', default=0.1, type=float,
-						   help='Minimum expression value, in TPM, to consider a transcript expressed.')
 subparser_sim.set_defaults(task="Simulate switches")
 subparser_sim.set_defaults(func=simulateSwitches)
 
@@ -125,9 +114,9 @@ def summarize(o):
 	g = get_switches.GetSwitches(True, True)
 	g.run(o.switchesFile)
 	s = summary.Summary(g._genes, g._txs)
-	s.run()
+	s.run(o.controlExpression, o.caseExpression)
 
-subparser_summary = subparsers.add_parser('summary', help='Summary statistics of the switches.')
+subparser_summary = subparsers.add_parser('summary', help='Summary statistics of the switches.', parents=[expression_parser])
 subparser_summary.set_defaults(task="Summarize results")
 subparser_summary.add_argument('-s', '--switches', dest='switchesFile', action='store', required=True,
 								  default=None, type=str, help='File containing switches as TSV.')
