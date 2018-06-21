@@ -100,20 +100,3 @@ def test_analyzeDDIs():
 	assert ddiChanges['ENST02.2']['nDDIs'] == {'D2@D2','D2@D4','D4@D2'}
 	assert ddiChanges['ENST02.2']['tDDIs'] == set()
 	assert ddiChanges['ENST02.2']['bothDDIs'] == {'D1@D1'}
-
-def test_proteomeStatistics():
-
-	s = structural_analysis.StructuralAnalysis(dataPath + "genes.pkl",
-								 			   dataPath + "transcripts.pkl")
-	s.proteomeStatistics()
-	proteome = [ x for x in io.readTable("proteome_features.tsv") ]
-
-	assert len(proteome) == 6
-	assert len([ x for x in proteome if x['Feature_type'] == 'Pfam' ]) == 3
-	assert len([ x for x in proteome if x['Transcript'] == 'ENST01.2' ]) == 2
-	assert len([ x for x in proteome if x['Transcript'] == 'ENST02.2' ]) == 0
-
-	assert len([ x for x in proteome if x['Feature_type'] == 'Prosite' ]) == 3
-	assert len([ x for x in proteome if x['Transcript'] == 'ENST18.3' ]) == 1
-
-	os.remove('proteome_features.tsv')

@@ -15,9 +15,10 @@ class Summary(method.Method):
 
 		self.featuresTable = []
 
-	def run(self):
+	def run(self, ctrlFile, caseFile):
 
 		self.logger.info("Summarizing results.")
+		self.proteomeStatistics(ctrlFile, caseFile)
 		txDict = self._txs.nodes(data=True)
 
 		io.printSwitches(self._genes, self._txs)
@@ -35,6 +36,30 @@ class Summary(method.Method):
 
 		self.printSplicingInfo()
 		self.printStructutalInfo()
+
+	def proteomeStatistics(self, ctrlFile, caseFile):
+
+		with open("proteome_features.tsv", "w") as OUT:
+
+			OUT.write("Experiment\tGeneId\tTranscript\tExpression\t")
+			OUT.write("Feature_type\tFeature\tIndex\tLength\tStart\tEnd\n")
+
+			for gene, geneExpression in io.parseExpression(ctrlFile, caseFile, self._genes, self._txs):
+
+				tx,tpm = geneExpression._top_ctrl
+				txInfo = self._txs._net.node[tx]
+
+				for featureType in ['Pfam','Prosite']:
+					for feature in txInfo[featureType]:
+						i = 1
+						for start,end in txInfo[featureType][feature]:
+							OUT.write("{}\t{}\t".format(self._genes._name, txInfo['gene_id']))
+							OUT.write("{}\t{}\t".format(tx, tpm))
+							OUT.write("{}\t{}\t".format(featureType, feature))
+							OUT.write("{}\t{}\t".format(i, end - start))
+							OUT.write("{}\t{}\n".format(start, end))
+
+						i += 1
 
 	def proteinOverview(self,txDict,thisSwitch):
 

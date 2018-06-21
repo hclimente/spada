@@ -48,36 +48,6 @@ class StructuralAnalysis(method.Method):
 				DDIchanges = self.analyzeDDIs(thisSwitch)
 				self.writePPI(PPI, gene, thisSwitch, DDIchanges)
 
-	def proteomeStatistics(self):
-
-		with open("proteome_features{}.tsv".format(self._tag), "w") as OUT:
-
-			self.writeProteomeHeader(OUT)
-
-			genes = [ (x,i['expressedTxsN']) for x,i in self._genes.nodes(data=True) ]
-
-			for gene, txs in genes:
-
-				if not txs:
-					continue
-
-				expression = [ (tx,self._txs._net.node[tx]['median_TPM_N']) for tx in txs ]
-				expression = sorted(expression, key = lambda t: -t[1])
-				tx = expression[0][0]
-				txInfo = self._txs._net.node[tx]
-
-				for featureType in ['Pfam','Prosite']:
-					for feature in txInfo[featureType]:
-						i = 1
-						for start,end in txInfo[featureType][feature]:
-							OUT.write("{}\t{}\t".format(self._genes._name, txInfo['gene_id']))
-							OUT.write("{}\t{}\t".format(tx, txInfo['median_TPM_N']))
-							OUT.write("{}\t{}\t".format(featureType, feature))
-							OUT.write("{}\t{}\t".format(i, end - start))
-							OUT.write("{}\t{}\n".format(start, end))
-
-						i += 1
-
 	def analyzeDDIs(self, thisSwitch):
 
 		DDIchanges = {}
@@ -164,10 +134,6 @@ class StructuralAnalysis(method.Method):
 			OUT.write("{}\t{}\t".format( len(ddis["nDDIs"]), len(ddis["tDDIs"]) ))
 			OUT.write("{}\t{}\t".format( len(ddis["bothDDIs"]), ";".join(ddis["nDDIs"]) ))
 			OUT.write("{}\t{}\n".format( ";".join(ddis["tDDIs"]), ";".join(ddis["bothDDIs"]) ))
-
-	def writeProteomeHeader(self, OUT):
-		OUT.write("Experiment\tGeneId\tTranscript\tExpression\t")
-		OUT.write("Feature_type\tFeature\tIndex\tLength\tStart\tEnd\n")
 
 if __name__ == '__main__':
 	pass
