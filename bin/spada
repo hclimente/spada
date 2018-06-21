@@ -17,8 +17,7 @@ subparsers = parser.add_subparsers(help='sub-command help')
 ################################################
 def createNetwork(o):
 	c = create_network.CreateNetwork(o.case, o.annotation, o.newNetwork)
-	c.run(o.gtf, o.controlExpression, o.caseExpression, o.minExpression, o.seq,
-		  o.ppi, o.ddi, o.features, o.aberrant)
+	c.run(o.gtf, o.seq, o.ppi, o.ddi, o.features, o.aberrant)
 
 subparser_init = subparsers.add_parser('init', help='Create network.')
 
@@ -31,19 +30,6 @@ subparser_init.add_argument('-a', '--annotation', dest='annotation', action='sto
 							help='Used annotation. Required for newly generated networks.')
 subparser_init.add_argument('-g', '--gtf', dest='gtf', action='store', default=None,
 							help='GTF with the gene, transcript, exon and CDS annotation.')
-subparser_init.add_argument('-n', '--expression-control', dest='controlExpression',
-							action='store', default=None,
-							help='Tab-separated table with transcript-level expression data of the control samples \
-							in TPM; a row per annotated transcript, indicated in the first column. Required \
-							for newly generated networks.')
-subparser_init.add_argument('-t', '--expression-case', dest='caseExpression',
-							action='store', default=None,
-							help='Equivalent to --expression-control for the case samples. Required for newly \
-							generated networks.')
-subparser_init.add_argument('-m', '--minimum-expression', dest='minExpression',
-							action='store', default=None, type=float,
-					 		help='Minimum expression value, in TPM, to consider a transcript expressed. Required \
-							for newly generated networks.')
 subparser_init.add_argument('-p', '--ppi', dest='ppi', action='store', default=None,
 							help='File with protein-protein interactions, in PSI-MI TAB format >= 2.5. Required \
 							for newly generated networks.')

@@ -52,10 +52,6 @@ def test_init():
 	assert c._txs.nodes()["DE_FG_HI.2"]["gene_id"] == "ENSG00.5"
 	assert c._txs.nodes()["JKLM-.3"]["gene_id"] == "ENSG00.5"
 
-	# expression
-	assert c._txs.nodes()["ENST02.2"]["median_TPM_N"] == 1.999
-	assert c._txs.nodes()["ENST01.2"]["median_TPM_N"] == 3.999
-
 	# interactions
 	assert c._genes._net.number_of_edges() == 2
 	assert c._genes._net.has_edge("ENSG00.5", "ENSG00.5")

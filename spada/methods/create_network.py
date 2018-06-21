@@ -44,9 +44,6 @@ class CreateNetwork(method.Method):
 		self.addAberrant(aberrant)
 
 		# isoform data
-		for expression,origin in zip([controlExpression, caseExpression], ["N", "T"]):
-			self.measureExpression(expression, minExpression, origin)
-
 		self.gecaseIsoformSequences(sequences)
 		self.gecaseIsoformFeatures(features)
 		self.getInteractions(ppi)
@@ -88,31 +85,6 @@ class CreateNetwork(method.Method):
 					self._txs.update_node(line["transcript_id"], "stop_codon", int(pos))
 				elif line["feature"] == "CDS" and self._txs.acceptCDS(line):
 					self._txs.update_node(line["transcript_id"], "CDS", [int(line["start"]), int(line["end"]) ])
-
-	def measureExpression(self, expression, minExpression, origin):
-
-		if self._new and not expression:
-			raise SpadaError("An expression file must be provided.")
-		elif not expression:
-			self.logger.info("Expression from the provided network will be used.")
-			return
-
-		self.logger.info("Reading {} samples transcript expression.".format('control' if origin == 'N' else 'case'))
-		with open(expression, "r") as EXPR:
-			for tx,xpr in io.parseExpressionLine(EXPR, header = True):
-
-				# filter out readings on excluded transcripts
-				if tx not in self._txs.nodes():
-					continue
-
-				gene = tInfo = self._txs.nodes()[tx]['gene_id']
-				medianExpression = np.median(xpr)
-				medianExpression = np.asscalar(medianExpression)
-
-				self._txs.update_node(tx, "median_TPM_" + origin, medianExpression)
-
-				if medianExpression >= minExpression:
-					self._genes.update_node("expressedTxs" + origin, tx, gene)
 
 	def getInteractions(self, ppi):
 

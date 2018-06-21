@@ -15,10 +15,6 @@ class GeneNetwork(Network):
 		id(str) 						Gene Id
 		symbol(str) 					Gene Symbol
 		switches(list,[]) 				List of detected isoform switches.
-		expressedTxsN(set,()) 			Set with transcripts with a median expression > 0.1
-										in control samples.
-		expressedTxsT(set,()) 			Set with transcripts with a median expression > 0.1
-										in case samples.
 
 	Edge information:
 		id1(str) 						Gene id of interactor 1.
@@ -55,9 +51,7 @@ class GeneNetwork(Network):
 			self.logger.debug("Node {0} imported.".format(geneID))
 			self._net.add_node( geneID,
 								symbol 				= geneSymbol,
-								switches 			= [],
-								expressedTxsN		= set(),
-								expressedTxsT		= set() )
+								switches 			= [] )
 
 			return True
 
@@ -102,7 +96,7 @@ class GeneNetwork(Network):
 		self.logger.debug("Cleaning imported network.")
 
 		# removing isoform switches
-		for gene,info in self.genes(alwaysSwitchedGenes=True):
+		for gene,info in self.genes():
 			self._net.node[gene]["switches"] = []
 
 	def readSwitches(self, switchesFile, tx_network):
@@ -139,7 +133,7 @@ class GeneNetwork(Network):
 		else:
 			return True
 
-	def genes(self, onlySplicedGenes=True, onlyExpressedGenes=True, alwaysSwitchedGenes=False):
+	def genes(self):
 		'''
 		Iterate genes that have alternative splicing and more than one transcript expressed.
 		'''
@@ -148,17 +142,7 @@ class GeneNetwork(Network):
 		genes = [ g for g,n in sorted(geneAndPatients, key=operator.itemgetter(1), reverse=True) ]
 
 		for gene in genes:
-			info = self._net.node[gene]
-			allExpressedTxs = set(info["expressedTxsN"]) | set(info["expressedTxsT"])
-			self.logger.debug("Iterating gene {}.".format(gene))
-			if alwaysSwitchedGenes and info["switches"]:
-				yield gene,info
-			else:
-				if onlySplicedGenes and len(allExpressedTxs) < 2 and not info["switches"]:
-					continue
-				if onlyExpressedGenes and not bool(allExpressedTxs):
-					continue
-				yield gene,info
+			yield gene,self._net.node[gene]
 
 	def switches(self, txs):
 		"""Iterate through the isoform switches of a gene network, and
@@ -170,7 +154,7 @@ class GeneNetwork(Network):
 				common) will be returned for each gene.
 		"""
 
-		for gene,info in self.genes(alwaysSwitchedGenes=True):
+		for gene,info in self.genes():
 			if not info["switches"]: continue
 
 			switches = sorted(info["switches"], key = lambda a: len(a.samples), reverse = True)
@@ -195,7 +179,7 @@ class GeneNetwork(Network):
 
 	def sampleSwitches(self, tx_network, numIterations = 2000):
 
-		genesWithSwitches = [ gene for gene,info in self.genes(alwaysSwitchedGenes=True) if info["switches"] ]
+		genesWithSwitches = [ gene for gene,info in self.genes() if info["switches"] ]
 		genes = random.sample(genesWithSwitches,numIterations)
 
 		for gene in genes:

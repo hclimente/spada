@@ -65,12 +65,6 @@ def test_createNetworks():
 		c = create_network.CreateNetwork("test", "gencode", new = False)
 		c.createNetworks(dataPath + "gtf")
 
-def test_measureExpression():
-
-	with pytest.raises(SpadaError):
-		c = create_network.CreateNetwork("test", "gencode")
-		c.measureExpression(None, -3.3, "N")
-
 def test_getInteractions():
 
 	c = create_network.CreateNetwork("test", "gencode")
