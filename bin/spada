@@ -83,9 +83,8 @@ subparser_switches.add_argument('-t', '--expression-case', dest='caseExpression'
 								help='Equivalent to --expression-control for the case samples. Required for newly \
 								generated networks.')
 subparser_switches.add_argument('-m', '--minimum-expression', dest='minExpression',
-								action='store', default=None, type=float,
-					 			help='Minimum expression value, in TPM, to consider a transcript expressed. Required \
-								for newly generated networks.')
+								action='store', default=0.1, type=float,
+					 			help='Minimum expression value, in TPM, to consider a transcript expressed.')
 subparser_switches.set_defaults(task="Compute switches")
 subparser_switches.set_defaults(func=computeSwitches)
 
@@ -107,11 +106,29 @@ subparser_functional.set_defaults(func=functionalAnalysis)
 ################################################
 ###   GET RANDOM SWITCHES                   ####
 ################################################
-def simulateSwitches():
+def simulateSwitches(o):
 	r = simulate_switches.SimulateSwitches(True,True)
-	r.run()
+	r.run(o.controlExpression, o.caseExpression, o.method, o.minExpression)
 
 subparser_sim = subparsers.add_parser('simulate', help='Simulate random switches.')
+subparser_sim.add_argument('-n', '--expression-control', dest='controlExpression',
+						   action='store', default=None,
+						   help='Tab-separated table with transcript-level expression data of the control samples \
+						   in TPM; a row per annotated transcript, indicated in the first column. Sorting \
+						   by gene (i.e. transcripts from the same gene are consecutive) will drastically \
+						   optimize memory usage.')
+subparser_sim.add_argument('-t', '--expression-case', dest='caseExpression',
+						   action='store', default=None,
+						   help='Equivalent to --expression-control for the case samples. Required for newly \
+						   generated networks.')
+subparser_sim.add_argument('-M', '--method', dest='method', action='store',
+						   choices=['random','fix_control'], default=None,
+						   help='How to generate the random switches. With \'random\', any pair of isoforms is possible. \
+						   With \'fix_control\', the control isoform will be the median most expressed transcript in \
+						   control cases, and the case isoform will be randomly picked amond the rest.')
+subparser_sim.add_argument('-m', '--minimum-expression', dest='minExpression',
+						   action='store', default=0.1, type=float,
+						   help='Minimum expression value, in TPM, to consider a transcript expressed.')
 subparser_sim.set_defaults(task="Simulate switches")
 subparser_sim.set_defaults(func=simulateSwitches)
 

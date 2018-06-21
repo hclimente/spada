@@ -1,6 +1,9 @@
+from spada.biological_entities.switch import LiteSwitch
+from spada.io import io
 from spada.methods import method
 
 import itertools
+import numpy as np
 import operator
 import random
 
@@ -8,70 +11,51 @@ class SimulateSwitches(method.Method):
 	def __init__(self, gn_network, tx_network):
 
 		method.Method.__init__(self, __name__, gn_network, tx_network)
-		self.MAX_SWITCHES = 5
+		self.max = 5
 
-	def run(self):
+	def run(self, ctrlFile, caseFile, method, threshold):
+
 		self.logger.info("Generating random switches.")
 
-		# random: two random transcripts among those expressed in case or control
-		self.sampleTranscripts_random()
+		for gene,expression in io.parseExpression(ctrlFile, caseFile, self._genes, self._txs):
 
-		# random: most expressed isoform is control
-		self.sampleTranscripts_fixControl()
+			txs = expression._storedTxs
+			expressed = np.median(expression._expressionCtrl, axis = 1) > threshold
+			txs = [ tx for tx,e in zip(txs,expressed) if e ]
 
-	def sampleTranscripts_fixControl(self):
+			if method == 'random':
+				# random: two random transcripts among those expressed in case or control
+				switches = self.sampleTranscripts_random(txs)
+			elif method == 'fix_control':
+				# random: most expressed isoform is control
+				tx,tpm = expression._top_ctrl
+				switches = self.sampleTranscripts_fixControl(tx, txs.remove(tx))
 
-		switches = []
+			for ctrl,case in switches:
+				if self._genes.valid_switch(gene, ctrl, case, self._txs):
+					thisSwitch = LiteSwitch(ctrl, case, [])
+					self._genes.update_node("switches", thisSwitch, full_name = gene)
 
-		for gene,info in self._genes.genes():
+		io.printSwitches(self._genes, self._txs, "switches_simulated_{}.tsv".format(method))
 
-			if len(set(info["expressedTxsN"]) & set(info["expressedTxsT"])) < 2:
-				next
+	def sampleTranscripts_fixControl(self, ctrl, cases):
 
-			# set control isoform as the most expressed in control, shuffle the rest for case
-			txExpression = [ (x,self._txs._net.node[x]["median_TPM_N"]) for x in info["expressedTxsN"] ]
-			ctrl = max(txExpression, key=operator.itemgetter(1))[0]
-			ctrlExpression = max(txExpression, key=operator.itemgetter(1))[1]
-
-			if ctrl not in info["expressedTxsN"]:
-				self.logger.warning("Median most expressed transcript from gene {} is not considered expressed. \
-					Probably due to the threshold applied. TPM={}. Will be skipped. ".format(gene,txExpression))
-				continue
-
-			txs = list(info["expressedTxsT"])
-			if ctrl in txs:
-				txs.remove(ctrl)
-
-			numSwitches = self.MAX_SWITCHES
-			if len(txs) < self.MAX_SWITCHES:
-				numSwitches = len(txs)
-
-			random.shuffle(txs)
-
-			for i in range(numSwitches):
-				case = txs[i]
-				switches.append((gene, ctrl, case))
-
-		return(switches)
-
-	def sampleTranscripts_random(self):
+		if not cases:
+			return []
 
 		switches = []
+		random.shuffle(cases)
 
-		for gene,info in self._genes.genes():
+		for i in range(min(len(cases), self.max)):
+			switches.append((ctrl, cases[i]))
 
-			allExpressedTxs = set(info["expressedTxsN"]) & set(info["expressedTxsT"])
-			if len(allExpressedTxs) < 2:
-				next
+		return switches
 
-			allSwitches = [ x for x in itertools.combinations(allExpressedTxs,2) ]
-			random.shuffle(allSwitches)
+	def sampleTranscripts_random(self, txs):
 
-			allSwitches = allSwitches[0:self.MAX_SWITCHES]
+		switches = [ x for x in itertools.combinations(txs, 2) ]
+		random.shuffle(switches)
 
-			for oneSwitch in allSwitches:
-				ctrl = oneSwitch[0]
-				case = oneSwitch[1]
-				switches.append((gene, ctrl, case))
+		switches = switches[0:self.max]
 
-		return(switches)
+		return switches
