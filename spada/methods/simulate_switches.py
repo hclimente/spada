@@ -19,16 +19,23 @@ class SimulateSwitches(method.Method):
 
 		for gene,expression in io.parseExpression(ctrlFile, caseFile, self._genes, self._txs):
 
-			txs = expression._storedTxs
 			expressed = np.median(expression._expressionCtrl, axis = 1) > threshold
-			txs = [ tx for tx,e in zip(txs,expressed) if e ]
+			txs = [ tx for tx,e in zip(expression._storedTxs, expressed) if e ]
 
 			if method == 'random':
 				# random: two random transcripts among those expressed in case or control
 				switches = self.sampleTranscripts_random(txs)
-			elif method == 'fix_control':
+			elif method == 'fix_expressed':
 				# random: most expressed isoform is control
 				tx,tpm = expression._top_ctrl
+				switches = self.sampleTranscripts_fixControl(tx, txs.remove(tx))
+			elif method == 'fix_main':
+				# random: most expressed isoform is control
+				tx = [ t for t in txs if self._txs._net.node[t]["main"] ]
+				if tx:
+					tx = tx[0]
+				else:
+					continue
 				switches = self.sampleTranscripts_fixControl(tx, txs.remove(tx))
 
 			for ctrl,case in switches:

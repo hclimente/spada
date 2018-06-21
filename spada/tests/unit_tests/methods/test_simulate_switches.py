@@ -18,8 +18,12 @@ def test_run():
 	os.remove("switches_simulated_random.tsv")
 	sim._genes.flushSwitches()
 
-	sim.run(dataPath + "expression", dataPath + "expression_case", 'fix_control', 0.1)
-	os.remove("switches_simulated_fix_control.tsv")
+	sim.run(dataPath + "expression", dataPath + "expression_case", 'fix_expressed', 0.1)
+	os.remove("switches_simulated_fix_expressed.tsv")
+	sim._genes.flushSwitches()
+
+	sim.run(dataPath + "expression", dataPath + "expression_case", 'fix_main', 0.1)
+	os.remove("switches_simulated_fix_main.tsv")
 
 def test_sampleTranscripts_fixControl():
 
