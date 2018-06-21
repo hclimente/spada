@@ -34,7 +34,7 @@ network_parser.add_argument('-a', '--annotation', dest='annotation', action='sto
 							(either "gencode" or "ucsc") when generating your own via the init sub-command.')
 
 switch_parser = argparse.ArgumentParser(add_help=False)
-switch_parser.add_argument('-s', '--switches', dest='switchesFile', action='store', required=True,
+switch_parser.add_argument('-s', '--switches', dest='switchesFile', action='store',
 						   default=None, type=str, help='File containing switches as TSV.')
 
 

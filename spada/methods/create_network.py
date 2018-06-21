@@ -29,6 +29,8 @@ class CreateNetwork(method.Method):
 				raise SpadaError("Unrecognized annotation: {}.".format(annotation))
 		else:
 			method.Method.__init__(self, __name__, annotation)
+			self._genes._name = name
+			self._txs._name = name
 
 		self._new = new
 
