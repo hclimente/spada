@@ -6,8 +6,8 @@ import numpy as np
 from operator import itemgetter
 
 class Summary(method.Method):
-	def __init__(self,gn_network,tx_network):
-		method.Method.__init__(self, __name__,gn_network,tx_network)
+	def __init__(self, annotation = 'annotation.pkl'):
+		method.Method.__init__(self, __name__, annotation)
 
 		self.proteinStats = []
 		self.exonStats  = []

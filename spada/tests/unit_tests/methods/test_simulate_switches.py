@@ -9,8 +9,8 @@ import pytest
 scriptPath = os.path.realpath(__file__)
 dataPath = os.path.dirname(scriptPath) + "/../../data/"
 
-sim = simulate_switches.SimulateSwitches(dataPath + "genes.pkl",
-										 dataPath + "transcripts.pkl")
+sim = simulate_switches.SimulateSwitches(dataPath + 'annotation.pkl')
+										 
 
 def test_run():
 

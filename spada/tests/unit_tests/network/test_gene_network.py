@@ -1,3 +1,4 @@
+from spada.methods import get_switches
 from spada.network import gene_network
 
 import os
@@ -5,14 +6,13 @@ import pickle
 import pytest
 
 scriptPath = os.path.realpath(__file__)
-dataPath = os.path.dirname(scriptPath) + "/../../data"
+dataPath = os.path.dirname(scriptPath) + "/../../data/"
 
-gn = pickle.load(open(dataPath + "/genes.pkl", "rb"))
-gn.createLogger()
-txs = pickle.load(open(dataPath + "/transcripts.pkl", "rb"))
-txs.createLogger()
-gn.flushSwitches()
-gn.readSwitches(dataPath + "/switches", txs)
+g = get_switches.GetSwitches(dataPath + 'annotation.pkl')
+g.run(dataPath + 'switches')
+
+gn = g._genes
+txs = g._txs
 
 def test_readSwitches():
 

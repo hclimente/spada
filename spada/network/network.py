@@ -56,16 +56,6 @@ class Network:
 
 		return True
 
-	def saveNetwork(self,filename):
-
-		self.logger.debug("Saving network at {}.".format(filename))
-		#Unattach logger to save without thread problems
-		self.removeLogger()
-		with open(filename, "wb") as NET_DUMP:
-			pickle.dump(self, NET_DUMP, -1)
-
-		self.createLogger()
-
 	def createLogger(self):
 		self.logger	= logging.getLogger(self._name)
 	def removeLogger(self):

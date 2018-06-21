@@ -5,9 +5,9 @@ import pickle
 import pytest
 
 scriptPath = os.path.realpath(__file__)
-dataPath = os.path.dirname(scriptPath) + "/../../data"
+dataPath = os.path.dirname(scriptPath) + "/../../data/"
 
-txs = pickle.load(open(dataPath + "/transcripts.pkl", "rb"))
+gn,txs = pickle.load(open(dataPath + "annotation.pkl", "rb"))
 txs.createLogger()
 
 def test_add_node():

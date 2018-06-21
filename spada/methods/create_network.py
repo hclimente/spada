@@ -14,26 +14,21 @@ import numpy as np
 import pkg_resources
 
 class CreateNetwork(method.Method):
-	def __init__(self, case, annotation, new = True):
+	def __init__(self, name, annotation = 'annotation.pkl', new = True):
 
 		if new:
-			method.Method.__init__(self, __name__, None, None)
+			method.Method.__init__(self, __name__, None)
 
 			if annotation == "ucsc":
-				self._genes = ucsc_gene_network.UCSCGeneNetwork(case)
-				self._txs = ucsc_transcript_network.UCSCTranscriptNetwork(case)
+				self._genes = ucsc_gene_network.UCSCGeneNetwork(name)
+				self._txs = ucsc_transcript_network.UCSCTranscriptNetwork(name)
 			elif annotation == "gencode":
-				self._genes = gencode_gene_network.GENCODEGeneNetwork(case)
-				self._txs = gencode_transcript_network.GENCODETranscriptNetwork(case)
+				self._genes = gencode_gene_network.GENCODEGeneNetwork(name)
+				self._txs = gencode_transcript_network.GENCODETranscriptNetwork(name)
 			else:
 				raise SpadaError("Unrecognized annotation: {}.".format(annotation))
 		else:
-			if annotation in ["ucsc", "gencode"]:
-				genes = pkg_resources.resource_filename('spada', 'data/{}_genes.pkl'.format(annotation))
-				txs = pkg_resources.resource_filename('spada', 'data/{}_transcripts.pkl'.format(annotation))
-				method.Method.__init__(self, __name__, genes, txs)
-			else:
-				method.Method.__init__(self, __name__, True, True)
+			method.Method.__init__(self, __name__, annotation)
 
 		self._new = new
 
@@ -186,8 +181,7 @@ class CreateNetwork(method.Method):
 			if info['CDS']:
 				Protein(tx, info)
 
-		self._genes.saveNetwork("genes.pkl")
-		self._txs.saveNetwork("transcripts.pkl")
+		self.saveNetworks()
 
 	def symbol2ids(self, symbols):
 

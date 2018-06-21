@@ -8,9 +8,9 @@ import operator
 import random
 
 class SimulateSwitches(method.Method):
-	def __init__(self, gn_network, tx_network):
+	def __init__(self, annotation = 'annotation.pkl'):
 
-		method.Method.__init__(self, __name__, gn_network, tx_network)
+		method.Method.__init__(self, __name__, annotation)
 		self.max = 5
 
 	def run(self, ctrlFile, caseFile, method, threshold):

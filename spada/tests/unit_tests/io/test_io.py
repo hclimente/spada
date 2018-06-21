@@ -1,5 +1,5 @@
 from spada.io import io
-from spada.methods import create_network, get_switches
+from spada.methods import get_switches, method
 
 import pickle
 import pytest
@@ -10,8 +10,7 @@ dataPath = os.path.dirname(scriptPath) + "/../../data/"
 
 def test_printSwitches():
 
-	c = create_network.CreateNetwork("test", "gencode", new = False)
-	g = get_switches.GetSwitches(c._genes, c._txs)
+	g = get_switches.GetSwitches(dataPath + 'annotation.pkl')
 	g.run(dataPath + 'switches')
 
 	io.printSwitches(g._genes, g._txs)
@@ -24,12 +23,11 @@ def test_printSwitches():
 
 def test_getGene2Tx():
 
-	genes = pickle.load(open(dataPath + 'genes.pkl', 'rb'))
-	txs = pickle.load(open(dataPath + 'transcripts.pkl', 'rb'))
-	gene2tx = io.getGene2Tx(txs)
+	m = method.Method('test_getGene2Tx', dataPath + 'annotation.pkl')
+	gene2tx = io.getGene2Tx(m._txs)
 
-	assert len(genes.nodes()) == len(gene2tx)
-	assert len(txs.nodes()) == len([ t for g,T in gene2tx.items() for t in T ])
+	assert len(m._genes.nodes()) == len(gene2tx)
+	assert len(m._txs.nodes()) == len([ t for g,T in gene2tx.items() for t in T ])
 
 def test_readSamples():
 

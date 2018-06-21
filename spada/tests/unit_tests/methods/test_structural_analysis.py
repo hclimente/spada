@@ -9,8 +9,8 @@ dataPath = os.path.dirname(scriptPath) + "/../../data/"
 
 def test_featureAnalysis():
 
-	s = structural_analysis.StructuralAnalysis(dataPath + "genes.pkl",
-								 			   dataPath + "transcripts.pkl")
+	s = structural_analysis.StructuralAnalysis(dataPath + 'annotation.pkl')
+								 			   
 	s.featureAnalysis()
 
 	# pfams
@@ -45,8 +45,8 @@ def test_featureAnalysis():
 
 def test_ppiAnalysis():
 
-	s = structural_analysis.StructuralAnalysis(dataPath + "genes.pkl",
-								 			   dataPath + "transcripts.pkl")
+	s = structural_analysis.StructuralAnalysis(dataPath + 'annotation.pkl')
+								 			   
 	s.ppiAnalysis()
 
 	ddi = [ x for x in io.readTable("ppi_analysis.tsv") ]
@@ -60,8 +60,8 @@ def test_ppiAnalysis():
 
 def test_analyzeDDIs():
 
-	s = structural_analysis.StructuralAnalysis(dataPath + "genes.pkl",
-								 			   dataPath + "transcripts.pkl")
+	s = structural_analysis.StructuralAnalysis(dataPath + 'annotation.pkl')
+								 			   
 
 	thisSwitch = s._genes.nodes()["ENSG00.5"]["switches"][0]
 	ddiChanges = s.analyzeDDIs(thisSwitch)

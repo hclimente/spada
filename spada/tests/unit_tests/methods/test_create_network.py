@@ -4,8 +4,8 @@ from spada.methods import create_network
 from spada.io.error import SpadaError
 
 import networkx as nx
-import os
 import pytest
+import os
 
 scriptPath = os.path.realpath(__file__)
 dataPath = os.path.dirname(scriptPath) + "/../../data/"
@@ -56,13 +56,11 @@ def test_createNetworks():
 	assert "test.1" in c._txs.nodes()
 	assert c._txs.nodes()["test.1"]["CDS"] == None
 
-	assert os.stat("genes.pkl").st_size > 0
-	assert os.stat("transcripts.pkl").st_size > 0
-	os.remove("genes.pkl")
-	os.remove("transcripts.pkl")
+	assert os.stat('annotation.pkl').st_size > 0
+	os.remove('annotation.pkl')
 
 	with pytest.raises(SpadaError):
-		c = create_network.CreateNetwork("test", "gencode", new = False)
+		c = create_network.CreateNetwork("test", dataPath + 'annotation.pkl', new = False)
 		c.createNetworks(dataPath + "gtf")
 
 def test_getInteractions():

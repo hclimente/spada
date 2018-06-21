@@ -6,8 +6,8 @@ import pytest
 scriptPath = os.path.realpath(__file__)
 dataPath = os.path.dirname(scriptPath) + "/../../data/"
 
-c = compute_switches.ComputeSwitches(dataPath + "genes.pkl",
-									 dataPath + "transcripts.pkl")
+c = compute_switches.ComputeSwitches(dataPath + 'annotation.pkl')
+									 
 
 def test_run():
 

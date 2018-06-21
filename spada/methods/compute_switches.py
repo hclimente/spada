@@ -4,9 +4,9 @@ from spada.methods import method
 
 class ComputeSwitches(method.Method):
 
-	def __init__(self, gn_network, tx_network):
+	def __init__(self, annotation = 'annotation.pkl'):
 
-		method.Method.__init__(self, __name__,gn_network,tx_network)
+		method.Method.__init__(self, __name__, annotation)
 
 		self._genes.flushSwitches()
 
@@ -14,7 +14,7 @@ class ComputeSwitches(method.Method):
 
 		self.findSwitches(ctrlFile, caseFile, minExpression)
 		io.printSwitches(self._genes, self._txs)
-		self._genes.saveNetwork("genes.pkl")
+		self.saveNetworks()
 
 	def findSwitches(self, ctrlFile, caseFile, minExpression):
 

@@ -1,11 +1,9 @@
 from spada.methods import method
 
 class StructuralAnalysis(method.Method):
-	def __init__(self, gn_network, tx_network, isRandom = False):
+	def __init__(self, annotation = 'annotation.pkl'):
 
-		method.Method.__init__(self, __name__,gn_network,tx_network)
-
-		self._tag = "_random" if isRandom else ""
+		method.Method.__init__(self, __name__, annotation)
 
 	def run(self):
 
@@ -18,9 +16,9 @@ class StructuralAnalysis(method.Method):
 
 		self.logger.info("Feature analysis.")
 
-		with open("pfam_analysis{}.tsv".format(self._tag), "w") as PFAM, \
-			 open("prosite_analysis{}.tsv".format(self._tag), "w") as PROSITE, \
-			 open("idr_analysis{}.tsv".format(self._tag), "w") as IDR:
+		with open("pfam_analysis.tsv", "w") as PFAM, \
+			 open("prosite_analysis.tsv", "w") as PROSITE, \
+			 open("idr_analysis.tsv", "w") as IDR:
 
 			self.writeDomainsHeader(PFAM)
 			self.writeDomainsHeader(PROSITE)
@@ -39,7 +37,7 @@ class StructuralAnalysis(method.Method):
 
 		self.logger.info("PPI analysis.")
 
-		with open("ppi_analysis{}.tsv".format(self._tag), "w") as PPI:
+		with open("ppi_analysis.tsv", "w") as PPI:
 
 			self.writePPIHeader(PPI)
 
