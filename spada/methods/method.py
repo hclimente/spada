@@ -1,3 +1,4 @@
+import gzip
 import pickle
 import logging
 import os.path
@@ -16,18 +17,17 @@ class Method:
 		else:
 			self._genes,self._txs = None,None
 
-	def saveNetworks(self, filename = 'annotation.pkl'):
+	def saveNetworks(self, filename = 'annotation.pklz'):
 
 		self.logger.debug("Saving annotation at {}.".format(filename))
 		# unattach logger to save without thread problems
 		self._genes.removeLogger()
 		self._txs.removeLogger()
 
-		with open(filename, "wb") as NET_DUMP:
-			pickle.dump((self._genes, self._txs), NET_DUMP, -1)
+		pickle.dump((self._genes, self._txs), gzip.open(filename, "wb"), -1)
 
 		self._genes.createLogger()
 		self._txs.createLogger()
 
 	def loadNetworks(self, annotation):
-		return pickle.load(open(annotation, "rb"))
+		return pickle.load(gzip.open(annotation, "rb"))

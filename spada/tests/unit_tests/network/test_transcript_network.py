@@ -1,13 +1,13 @@
 from spada.network import transcript_network
 
 import os
-import pickle
+import gzip,pickle
 import pytest
 
 scriptPath = os.path.realpath(__file__)
 dataPath = os.path.dirname(scriptPath) + "/../../data/"
 
-gn,txs = pickle.load(open(dataPath + "annotation.pkl", "rb"))
+gn,txs = pickle.load(gzip.open(dataPath + "annotation.pklz", "rb"))
 txs.createLogger()
 
 def test_add_node():

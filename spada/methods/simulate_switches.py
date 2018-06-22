@@ -8,7 +8,7 @@ import operator
 import random
 
 class SimulateSwitches(method.Method):
-	def __init__(self, annotation = 'annotation.pkl'):
+	def __init__(self, annotation = 'annotation.pklz'):
 
 		method.Method.__init__(self, __name__, annotation)
 		self.max = 5

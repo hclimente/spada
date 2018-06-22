@@ -9,7 +9,7 @@ dataPath = os.path.dirname(scriptPath) + "/../../data/"
 
 def test_featureAnalysis():
 
-	s = structural_analysis.StructuralAnalysis(dataPath + 'annotation.pkl')
+	s = structural_analysis.StructuralAnalysis(dataPath + 'annotation.pklz')
 								 			   
 	s.featureAnalysis()
 
@@ -45,7 +45,7 @@ def test_featureAnalysis():
 
 def test_ppiAnalysis():
 
-	s = structural_analysis.StructuralAnalysis(dataPath + 'annotation.pkl')
+	s = structural_analysis.StructuralAnalysis(dataPath + 'annotation.pklz')
 								 			   
 	s.ppiAnalysis()
 
@@ -60,7 +60,7 @@ def test_ppiAnalysis():
 
 def test_analyzeDDIs():
 
-	s = structural_analysis.StructuralAnalysis(dataPath + 'annotation.pkl')
+	s = structural_analysis.StructuralAnalysis(dataPath + 'annotation.pklz')
 								 			   
 
 	thisSwitch = s._genes.nodes()["ENSG00.5"]["switches"][0]

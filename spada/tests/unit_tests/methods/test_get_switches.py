@@ -10,9 +10,8 @@ dataPath = os.path.dirname(scriptPath) + "/../../data/"
 
 def test_run():
 
-	g = get_switches.GetSwitches(dataPath + 'annotation.pkl')
+	g = get_switches.GetSwitches(dataPath + 'annotation.pklz')
 
 	g.run(dataPath + "switches")
 
-	assert os.stat('annotation.pkl').st_size > 0
-	os.remove('annotation.pkl')
+	assert [ x for x in g._genes.switches(g._txs) ]

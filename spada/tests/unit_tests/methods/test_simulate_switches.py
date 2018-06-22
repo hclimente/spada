@@ -9,7 +9,7 @@ import pytest
 scriptPath = os.path.realpath(__file__)
 dataPath = os.path.dirname(scriptPath) + "/../../data/"
 
-sim = simulate_switches.SimulateSwitches(dataPath + 'annotation.pkl')
+sim = simulate_switches.SimulateSwitches(dataPath + 'annotation.pklz')
 										 
 
 def test_run():

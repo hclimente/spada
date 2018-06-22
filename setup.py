@@ -7,7 +7,7 @@ setup(
 	name = 'spada',
 	packages = find_packages(),
 	package_dir = {'spada': 'spada'},
-	package_data = {'spada': ['data/*.pkl']},
+	package_data = {'spada': ['data/*.pklz']},
 	version = '1.23.0',
 	description = 'Find splicing-led, functional changes of the proteome.',
 	long_description=readme,

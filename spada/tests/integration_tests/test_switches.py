@@ -8,7 +8,7 @@ def test_init():
 	scriptPath = os.path.realpath(__file__)
 	dataPath = os.path.dirname(scriptPath) + "/../data/"
 
-	g = get_switches.GetSwitches(dataPath + 'annotation.pkl')
+	g = get_switches.GetSwitches(dataPath + 'annotation.pklz')
 
 	g._genes.flushSwitches()
 	g.run(dataPath + "switches")

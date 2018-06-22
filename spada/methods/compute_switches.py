@@ -4,7 +4,7 @@ from spada.methods import method
 
 class ComputeSwitches(method.Method):
 
-	def __init__(self, annotation = 'annotation.pkl'):
+	def __init__(self, annotation = 'annotation.pklz'):
 
 		method.Method.__init__(self, __name__, annotation)
 
@@ -14,7 +14,6 @@ class ComputeSwitches(method.Method):
 
 		self.findSwitches(ctrlFile, caseFile, minExpression)
 		io.printSwitches(self._genes, self._txs)
-		self.saveNetworks()
 
 	def findSwitches(self, ctrlFile, caseFile, minExpression):
 

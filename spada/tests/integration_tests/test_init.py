@@ -90,3 +90,6 @@ def test_init():
 	assert len(c._txs.nodes()["ENST20.1"]["Pfam"]) == 1
 	assert c._txs.nodes()["ENST08.1"]["IDR"]["I1"] == {(4,13)}
 	assert c._txs.nodes()["ENST18.3"]["Prosite"]["P1"] == {(23,123)}
+
+	assert os.stat('annotation.pklz').st_size > 0
+	os.remove('annotation.pklz')
