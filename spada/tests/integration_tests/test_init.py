@@ -10,9 +10,6 @@ def test_init():
 
 	c = create_network.CreateNetwork("test", "gencode")
 	c.run(dataPath + "gtf",
-		  dataPath + "expression",
-		  dataPath + "expression",
-		  -3.3,
 		  dataPath + "fasta",
 		  dataPath + "mitab",
 		  dataPath + "ddis",
