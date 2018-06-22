@@ -56,11 +56,8 @@ def test_createNetworks():
 	assert "test.1" in c._txs.nodes()
 	assert c._txs.nodes()["test.1"]["CDS"] == None
 
-	assert os.stat('annotation.pkl').st_size > 0
-	os.remove('annotation.pkl')
-
 	with pytest.raises(SpadaError):
-		c = create_network.CreateNetwork("test", dataPath + 'annotation.pkl', new = False)
+		c = create_network.CreateNetwork("test", dataPath + 'annotation.pklz', new = False)
 		c.createNetworks(dataPath + "gtf")
 
 def test_getInteractions():

@@ -6,7 +6,7 @@ import numpy as np
 from operator import itemgetter
 
 class Summary(method.Method):
-	def __init__(self, annotation = 'annotation.pkl'):
+	def __init__(self, annotation = 'annotation.pklz'):
 		method.Method.__init__(self, __name__, annotation)
 
 		self.proteinStats = []

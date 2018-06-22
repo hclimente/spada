@@ -9,12 +9,12 @@ dataPath = os.path.dirname(scriptPath) + "/../../data/"
 
 def test_init():
 
-	s = summary.Summary(dataPath + 'annotation.pkl')
+	s = summary.Summary(dataPath + 'annotation.pklz')
 						
 
 def test_run():
 
-	s = summary.Summary(dataPath + 'annotation.pkl')
+	s = summary.Summary(dataPath + 'annotation.pklz')
 						
 	s.run(dataPath + "expression", dataPath + "expression_case")
 
@@ -27,7 +27,7 @@ def test_run():
 
 def test_proteomeStatistics():
 
-	s = summary.Summary(dataPath + 'annotation.pkl')
+	s = summary.Summary(dataPath + 'annotation.pklz')
 						
 	s.proteomeStatistics(dataPath + "expression", dataPath + "expression_case")
 	proteome = [ x for x in io.readTable("proteome_features.tsv") ]

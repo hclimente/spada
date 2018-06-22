@@ -10,7 +10,7 @@ dataPath = os.path.dirname(scriptPath) + "/../../data/"
 
 def test_printSwitches():
 
-	g = get_switches.GetSwitches(dataPath + 'annotation.pkl')
+	g = get_switches.GetSwitches(dataPath + 'annotation.pklz')
 	g.run(dataPath + 'switches')
 
 	io.printSwitches(g._genes, g._txs)
@@ -23,7 +23,7 @@ def test_printSwitches():
 
 def test_getGene2Tx():
 
-	m = method.Method('test_getGene2Tx', dataPath + 'annotation.pkl')
+	m = method.Method('test_getGene2Tx', dataPath + 'annotation.pklz')
 	gene2tx = io.getGene2Tx(m._txs)
 
 	assert len(m._genes.nodes()) == len(gene2tx)

@@ -14,7 +14,7 @@ import numpy as np
 import pkg_resources
 
 class CreateNetwork(method.Method):
-	def __init__(self, name, annotation = 'annotation.pkl', new = True):
+	def __init__(self, name, annotation = 'annotation.pklz', new = True):
 
 		if new:
 			method.Method.__init__(self, __name__, None)

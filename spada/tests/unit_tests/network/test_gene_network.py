@@ -8,7 +8,7 @@ import pytest
 scriptPath = os.path.realpath(__file__)
 dataPath = os.path.dirname(scriptPath) + "/../../data/"
 
-g = get_switches.GetSwitches(dataPath + 'annotation.pkl')
+g = get_switches.GetSwitches(dataPath + 'annotation.pklz')
 g.run(dataPath + 'switches')
 
 gn = g._genes
