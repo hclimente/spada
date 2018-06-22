@@ -77,8 +77,8 @@ subparser_init.set_defaults(func=createNetwork)
 ###   COMPUTE SWITCHES                      ####
 ################################################
 def computeSwitches(o):
-	c = compute_switches.ComputeSwitches(o.annotation, o.controlExpression, o.caseExpression)
-	c.run(o.minExpression)
+	c = compute_switches.ComputeSwitches(o.annotation)
+	c.run(o.controlExpression, o.caseExpression, o.minExpression)
 
 subparser_switches = subparsers.add_parser('switches', help='Detect switches.',
 										   parents=[expression_parser, network_parser])

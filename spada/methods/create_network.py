@@ -34,7 +34,7 @@ class CreateNetwork(method.Method):
 
 		self._new = new
 
-	def run(self, gtf, controlExpression, caseExpression, minExpression, sequences, ppi, ddi, features, aberrant):
+	def run(self, gtf, sequences, ppi, ddi, features, aberrant):
 
 		# read annotation
 		self.createNetworks(gtf)
