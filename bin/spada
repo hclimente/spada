@@ -28,7 +28,7 @@ expression_parser.add_argument('-m', '--minimum-expression', dest='minExpression
 					 		   help='Minimum expression value, in TPM, to consider a transcript expressed.')
 
 network_parser = argparse.ArgumentParser(add_help=False)
-network_parser.add_argument('-a', '--annotation', dest='annotation', action='store', default='annotation.pkl',
+network_parser.add_argument('-a', '--annotation', dest='annotation', action='store', default='annotation.pklz',
 							help='Used annotation. Either the path to a spada annotation file (find already available at  \
 							https://github.com/hclimente/spada/wiki/Annotation-files); or an accepted annotation \
 							(either "gencode" or "ucsc") when generating your own via the init sub-command.')
@@ -94,7 +94,7 @@ def functionalAnalysis(o):
 	s = structural_analysis.StructuralAnalysis((g._genes, g._txs))
 	s.run()
 
-subparser_functional = subparsers.add_parser('function', help='Functional analysis of the switches.', parents = [switch_parser])
+subparser_functional = subparsers.add_parser('function', help='Functional analysis of the switches.', parents = [network_parser, switch_parser])
 
 subparser_functional.set_defaults(task="Functional analysis")
 subparser_functional.set_defaults(func=functionalAnalysis)
