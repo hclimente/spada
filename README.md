@@ -14,12 +14,15 @@ pip install spada
 
 This package has two main functionalities:
 
-```
-# calculate switches from case-control transcript expression data
-spada switches --expression-control expression_ctrl.tsv --expression-case expression_case.tsv --minimum-expression 0.1
-# predict effects of splicing on the protein structure and the interactome of a set of switches
-spada function --switches switches.tsv
-```
+- Calculating isoform switches from case-control transcript expression data:
+  ```
+  spada switches --expression-control expression_ctrl.tsv \
+    --expression-case expression_case.tsv --minimum-expression 0.1
+  ```
+- Predicting the effects of splicing on the protein structure and the interactome of a set of switches:
+  ```
+  spada function --switches switches.tsv
+  ```
 
 For detailed information on how to use spada, please visit the [wiki](https://github.com/hclimente/spada/wiki).
 
