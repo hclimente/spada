@@ -120,7 +120,7 @@ def printSwitches(genes, txs, filename = "switches_spada.tsv"):
 			OUT.write("{}\t{}\t".format( thisSwitch.ctrl, thisSwitch.case ))
 			OUT.write("%i\t%i\t" % ( bool(thisSwitch.nTranscript.cds), bool(thisSwitch.tTranscript.cds) ))
 			OUT.write("%i\t%i\t" % ( cdsChange, utrChange))
-			OUT.write("{}\n".format( ",".join(thisSwitch.samples) ))
+			OUT.write("{}\n".format( ",".join(sorted(thisSwitch.samples)) ))
 
 def parseExpression(ctrlFile, caseFile, genes, txs):
 
