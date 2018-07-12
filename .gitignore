@@ -9,3 +9,5 @@ __pycache__
 .tox/
 build/
 dist/
+work
+*nextflow*
