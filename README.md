@@ -32,7 +32,7 @@ For detailed information on how to use spada, please visit the [wiki](https://gi
 
 If you use spada in a scientific publication, we would appreciate citations:
 
-Climente-González, H., Porta-Pardo, E., Godzik, A., and Eyras, E. (2017). [The Functional Impact of Alternative Splicing in Cancer.]((http://www.cell.com/cell-reports/abstract/S2211-1247(17)31104-X)) Cell Rep. 20, 2215–2226.
+> Climente-González, H., Porta-Pardo, E., Godzik, A., and Eyras, E. (2017). [The Functional Impact of Alternative Splicing in Cancer.](http://www.cell.com/cell-reports/abstract/S2211-1247(17)31104-X) *Cell Reports 20*, 2215–2226.
 
 #### Related projects
 
