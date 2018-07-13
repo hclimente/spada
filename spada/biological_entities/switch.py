@@ -227,9 +227,9 @@ class IsoformSwitch:
 
 				what = "Nothing"
 				if nDict["macro"] > 0 and tDict == emptyDict:
-					what = "Lost_in_case"
+					what = "Lost_in_cases"
 				elif tDict["macro"] > 0 and nDict == emptyDict:
-					what = "Gained_in_case"
+					what = "Gained_in_cases"
 
 				f = { "feature": feature, "index": i, "what": what, \
 					  "nStart": nDict["start"], "nEnd": nDict["end"], \
@@ -256,7 +256,7 @@ class IsoformSwitch:
 				[ features.add(x) for x in isoform._idr ]
 
 		for feature in features:
-			for protein,what in zip([self.ctrlIsoform,self.caseIsoform], ["Lost_in_case","Gained_in_case"]):
+			for protein,what in zip([self.ctrlIsoform,self.caseIsoform], ["Lost_in_cases","Gained_in_cases"]):
 				if not protein:
 					continue
 

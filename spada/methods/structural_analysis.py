@@ -80,9 +80,9 @@ class StructuralAnalysis(method.Method):
 				if DDIchanges[p]["nDDIs"] or DDIchanges[p]["tDDIs"]:
 					DDIchanges[p]["what"] = "Affected"
 			elif DDIchanges[p]["nDDIs"] and not DDIchanges[p]["tDDIs"]:
-				DDIchanges[p]["what"] = "Lost_in_case"
+				DDIchanges[p]["what"] = "Lost_in_cases"
 			elif not DDIchanges[p]["nDDIs"] and DDIchanges[p]["tDDIs"]:
-				DDIchanges[p]["what"] = "Gained_in_case"
+				DDIchanges[p]["what"] = "Gained_in_cases"
 
 		return DDIchanges
 

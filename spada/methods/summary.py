@@ -51,6 +51,10 @@ class Summary(method.Method):
 					continue
 				txInfo = self._txs._net.node[tx]
 
+				OUT.write("{}\t{}\t".format(self._genes._name, txInfo['gene_id']))
+				OUT.write("{}\t{}\t".format(tx, tpm))
+				OUT.write("Transcript\t\t\t\t\t\n")
+
 				for featureType in ['Pfam','Prosite']:
 					for feature in txInfo[featureType]:
 						i = 1
