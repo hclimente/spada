@@ -10,8 +10,6 @@ class StructuralAnalysis(method.Method):
 		self.featureAnalysis()
 		self.ppiAnalysis()
 
-		self.proteomeStatistics()
-
 	def featureAnalysis(self):
 
 		self.logger.info("Feature analysis.")

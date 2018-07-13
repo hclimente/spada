@@ -19,23 +19,23 @@ class Summary(method.Method):
 
 		self.logger.info("Summarizing results.")
 		self.proteomeStatistics(ctrlFile, caseFile)
-		txDict = self._txs.nodes(data=True)
+		#txDict = self._txs.nodes(data=True)
 
 		io.printSwitches(self._genes, self._txs)
 
-		self.logger.info("Taking measures on switches.")
-		for gene,info,thisSwitch in self._genes.switches(self._txs):
-			self.logger.debug("Getting statistics for switch {} - {}.".format(thisSwitch.ctrl,thisSwitch.case))
+		#self.logger.info("Taking measures on switches.")
+		#for gene,info,thisSwitch in self._genes.switches(self._txs):
+		#	self.logger.debug("Getting statistics for switch {} - {}.".format(thisSwitch.ctrl,thisSwitch.case))
 
-			# general protein, switch and gene info
-			self.exonOverview(gene, info, thisSwitch)
-			self.proteinOverview(txDict, thisSwitch)
+		#	# general protein, switch and gene info
+		#	self.exonOverview(gene, info, thisSwitch)
+		#	self.proteinOverview(txDict, thisSwitch)
 
-			# structural info
-			self.changedStructuralFeatures(gene, info, thisSwitch)
+		#	# structural info
+		#	self.changedStructuralFeatures(gene, info, thisSwitch)
 
-		self.printSplicingInfo()
-		self.printStructutalInfo()
+		#self.printSplicingInfo()
+		#self.printStructutalInfo()
 
 	def proteomeStatistics(self, ctrlFile, caseFile):
 
@@ -47,6 +47,8 @@ class Summary(method.Method):
 			for gene, geneExpression in io.parseExpression(ctrlFile, caseFile, self._genes, self._txs):
 
 				tx,tpm = geneExpression._top_ctrl
+				if not tx:
+					continue
 				txInfo = self._txs._net.node[tx]
 
 				for featureType in ['Pfam','Prosite']:
