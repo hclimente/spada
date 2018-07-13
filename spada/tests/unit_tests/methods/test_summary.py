@@ -19,10 +19,10 @@ def test_run():
 	s.run(dataPath + "expression", dataPath + "expression_case")
 
 	os.remove('proteome_features.tsv')
-	os.remove('isoform_length.tsv')
-	os.remove('exons.tsv')
-	os.remove('exons_new.tsv')
-	os.remove('structural_features.tsv')
+	# os.remove('isoform_length.tsv')
+	# os.remove('exons.tsv')
+	# os.remove('exons_new.tsv')
+	# os.remove('structural_features.tsv')
 	os.remove("switches_spada.tsv")
 
 def test_proteomeStatistics():
