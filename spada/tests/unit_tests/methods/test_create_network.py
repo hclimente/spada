@@ -27,10 +27,11 @@ def test_init():
 def test_createNetworks():
 
 	c = create_network.CreateNetwork("test", "gencode")
+	c.createNetworks('/Users/hclimente/Downloads/gencode.v28.annotation.gtf')
 	c.createNetworks(dataPath + "gtf")
 
-	assert len(c._genes.nodes()) == 15
-	assert len(c._txs.nodes()) == 21
+	assert len(c._genes.nodes()) == 16
+	assert len(c._txs.nodes()) == 24
 	assert len(c._txs.nodes()["ENST02.2"]["exons"]) == 6
 	assert c._txs.nodes()["ENST02.2"]["strand"] == "+"
 	assert c._txs.nodes()["ENST02.2"]["chr"] == "chr1"
@@ -46,6 +47,11 @@ def test_createNetworks():
 	assert c._txs.nodes()["ENST12.3"]["CDS"] == [69978, 70004]
 	assert c._txs.nodes()["ENST12.3"]["main"]
 	assert len([ x for x,i in c._txs.nodes(data=True) if i['main'] ]) == 3
+	assert "ENSG999" in c._genes.nodes()
+	assert "ENSG999" in c._genes.nodes()
+	assert "ENST99.1" in c._txs.nodes()
+	assert "ENST99.2" in c._txs.nodes()
+	assert "ENST99.3" in c._txs.nodes()
 
 	# test rejected genes, transcript and CDS
 	assert "bad_status" not in c._genes.nodes()
@@ -55,6 +61,9 @@ def test_createNetworks():
 	assert "test" in c._genes.nodes()
 	assert "test.1" in c._txs.nodes()
 	assert c._txs.nodes()["test.1"]["CDS"] == None
+	assert "ENST99.4" not in c._txs.nodes()
+	assert "ENST99.5" not in c._txs.nodes()
+	assert "ENST99.NA" not in c._txs.nodes()
 
 	with pytest.raises(SpadaError):
 		c = create_network.CreateNetwork("test", dataPath + 'annotation.pklz', new = False)

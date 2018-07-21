@@ -8,7 +8,11 @@ class GENCODEGeneNetwork(GeneNetwork):
 		GeneNetwork.__init__(self, name)
 
 	def accept(self, line):
-		return line['gene_status'] in self._accepted_status
+
+		try:
+			return line['gene_status'] in self._accepted_status
+		except KeyError:
+			return True
 
 	def nameFilter(self, full_name="", gene_id="", gene_symbol=""):
 

@@ -11,8 +11,6 @@ from networkx import get_node_attributes
 import pickle
 import numpy as np
 
-import pkg_resources
-
 class CreateNetwork(method.Method):
 	def __init__(self, name, annotation = 'annotation.pklz', new = True):
 
