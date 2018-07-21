@@ -27,7 +27,6 @@ def test_init():
 def test_createNetworks():
 
 	c = create_network.CreateNetwork("test", "gencode")
-	c.createNetworks('/Users/hclimente/Downloads/gencode.v28.annotation.gtf')
 	c.createNetworks(dataPath + "gtf")
 
 	assert len(c._genes.nodes()) == 16

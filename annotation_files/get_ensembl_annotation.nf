@@ -91,7 +91,7 @@ if (params.v.toInteger() > 78) {
     from biomart import BiomartServer
 
     server = BiomartServer( "$url" )
-    tags = { 'pfam': 'Pfam', 'scanprosite': 'Prosite' }
+    tags = { 'pfam': 'Pfam', 'scanprosite': 'Prosite', 'prosite': 'Prosite' }
 
     ensembl = server.datasets['hsapiens_gene_ensembl']
 
