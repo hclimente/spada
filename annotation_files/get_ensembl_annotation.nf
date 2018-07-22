@@ -7,15 +7,15 @@ Usage:
   ./get_gencode_annotation.nf --v 28 [ --genome = GRCh38 ]
 
 PARAMETERS
-- v                    Version of GENCODE (from 12 to 28).
-- genome               (Optional.) Version of the genome (GRCh38 or GRCh37).
-                       By default, it uses GRCh38.
+- v                    Version of ENSEMBL (from 74 to 92).
+- genome               (Optional, default GRCh38) Version of the genome (GRCh38 or GRCh37).
+- out                  (Optional, default .) Output directory.
+- spada_dir            (Optional, default ..) Directory of spada.
 
 OUTPUT
-- gencode_vXX.pklz     spada annotation file.
+- gtf, transcripts.fa, *_features.tsv
 """
 
-// Show help when needed
 if (params.help || params.v == null){
     log.info helpMessage
     exit 0
@@ -25,16 +25,16 @@ params.out = '.'
 params.genome = 'GRCh38'
 tag = (params.genome == 'GRCh38')? params.genome : "${params.genome}.${params.v}"
 
-ensemblUrls = [ '92': 'http://apr2018.archive.ensembl.org/biomart', '91': 'http://dec2017.archive.ensembl.org/biomart',
-                '90': 'http://aug2017.archive.ensembl.org/biomart', '89': 'http://may2017.archive.ensembl.org/biomart',
-                '88': 'http://mar2017.archive.ensembl.org/biomart', '87': 'http://dec2016.archive.ensembl.org/biomart',
-                '86': 'http://oct2016.archive.ensembl.org/biomart', '85': 'http://jul2016.archive.ensembl.org/biomart',
-                '84': 'http://mar2016.archive.ensembl.org/biomart', '83': 'http://dec2015.archive.ensembl.org/biomart',
-                '82': 'http://sep2015.archive.ensembl.org/biomart', '81': 'http://jul2015.archive.ensembl.org/biomart',
-                '80': 'http://may2015.archive.ensembl.org/biomart', '79': 'http://mar2015.archive.ensembl.org/biomart',
-                '78': 'http://dec2014.archive.ensembl.org/biomart', '77': 'http://oct2014.archive.ensembl.org/biomart',
-                '76': 'http://aug2014.archive.ensembl.org/biomart', '75': 'http://feb2014.archive.ensembl.org/biomart',
-                '74': 'http://dec2013.archive.ensembl.org/biomart', '67': 'http://may2012.archive.ensembl.org/biomart' ]
+urls = [ '92': 'http://apr2018.archive.ensembl.org/biomart', '91': 'http://dec2017.archive.ensembl.org/biomart',
+         '90': 'http://aug2017.archive.ensembl.org/biomart', '89': 'http://may2017.archive.ensembl.org/biomart',
+         '88': 'http://mar2017.archive.ensembl.org/biomart', '87': 'http://dec2016.archive.ensembl.org/biomart',
+         '86': 'http://oct2016.archive.ensembl.org/biomart', '85': 'http://jul2016.archive.ensembl.org/biomart',
+         '84': 'http://mar2016.archive.ensembl.org/biomart', '83': 'http://dec2015.archive.ensembl.org/biomart',
+         '82': 'http://sep2015.archive.ensembl.org/biomart', '81': 'http://jul2015.archive.ensembl.org/biomart',
+         '80': 'http://may2015.archive.ensembl.org/biomart', '79': 'http://mar2015.archive.ensembl.org/biomart',
+         '78': 'http://dec2014.archive.ensembl.org/biomart', '77': 'http://oct2014.archive.ensembl.org/biomart',
+         '76': 'http://aug2014.archive.ensembl.org/biomart', '75': 'http://feb2014.archive.ensembl.org/biomart',
+         '74': 'http://dec2013.archive.ensembl.org/biomart' ]
 
 // DOWNLOAD GTF
 ////////////////////////////////////////
@@ -43,11 +43,11 @@ process get_gtf {
   publishDir "$params.out", overwrite: true, mode: "copy"
 
   output:
-    file "*gtf"
+    file 'gtf'
 
   """
   wget ftp://ftp.ensembl.org/pub/release-$params.v/gtf/homo_sapiens/Homo_sapiens.${params.genome}.${params.v}.gtf.gz
-  gunzip -c *gtf.gz
+  gunzip -c *gtf.gz >gtf
   """
 
 }
@@ -59,12 +59,11 @@ process get_fasta {
   publishDir "$params.out", overwrite: true, mode: "copy"
 
   output:
-    file "transcripts.fa" into fasta
+    file 'fasta' into fasta
 
   """
   wget ftp://ftp.ensembl.org/pub/release-$params.v/fasta/homo_sapiens/pep/Homo_sapiens.${tag}.pep.all.fa.gz
-  gunzip -c *fa.gz
-  sed -E 's/[^>|]+\\|//' *.fa | sed -E 's/\\|.+//' >transcripts.fa
+  gunzip -c *fa.gz | sed -E 's/^>.+transcript:/>/' raw_fasta | sed 's/ .\\+//' >fasta
   """
 
 }
@@ -72,6 +71,7 @@ process get_fasta {
 // GET ISOFORM FEATURES
 ////////////////////////////////////////
 if (params.v.toInteger() > 78) {
+  
   feature_dbs = (params.v.toInteger() > 88)? ['pfam','scanprosite'] : ['pfam','prosite']
 
   process download_features {
@@ -80,7 +80,7 @@ if (params.v.toInteger() > 78) {
 
     input:
       each db from feature_dbs
-      val url from ensemblUrls["$params.v"]
+      val url from urls["$params.v"]
 
     output:
       file "${db}_features.tsv"
@@ -108,9 +108,13 @@ if (params.v.toInteger() > 78) {
     """
 
   }
+
 } else {
 
   process compute_features {
+
+    cpus 4
+	  memory '15 GB'
 
     input:
       file fasta
@@ -121,6 +125,8 @@ if (params.v.toInteger() > 78) {
     """
     interproscan.sh -i $fasta -appl Pfam,ProSitePatterns,ProSiteProfiles  -f TSV -o tmp -dp
 	  cut -f1,4,5,7,8 tmp | sed 's/ProSiteProfiles/Prosite/' | sed 's/ProSitePatterns/Prosite/' >features.tsv
+    grep Pfam features.tsv >pfam_features.tsv
+    grep Prosite features.tsv >prosite_features.tsv
     """
 
   }

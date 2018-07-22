@@ -8,17 +8,17 @@ Usage:
 
 PARAMETERS
 - v                    Version of GENCODE (from 12 to 28).
-- genome               (Optional.) Version of the genome (GRCh38 or GRCh37).
-                       By default, it uses GRCh38.
+- genome               (Optional, default GRCh38) Version of the genome (GRCh38 or GRCh37).
+- out                  (Optional, default .) Output directory.
+- spada_dir            (Optional, default ..) Directory of spada.
 
 OUTPUT
-- gencode_vXX.pklz     spada annotation file.
+- gtf, transcripts.fa, *_features.tsv
 """
 
-// Show help when needed
 if (params.help || params.v == null){
-    log.info helpMessage
-    exit 0
+  log.info helpMessage
+  exit 0
 }
 
 params.out = '.'
@@ -49,7 +49,7 @@ process get_gtf {
 
   """
   wget ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_$v$tag1/gencode.v${v}${tag2}.annotation.gtf.gz
-  gunzip -c *gtf.gz
+  gunzip -c *gtf.gz >gtf
   """
 
 }
@@ -61,32 +61,31 @@ process get_fasta {
   publishDir "$params.out", overwrite: true, mode: "copy"
 
   output:
-    file "*.fa"
+    file 'fasta'
 
   """
   wget ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_$v$tag1/gencode.v${v}${tag2}.pc_translations.fa.gz
-  gunzip -c *fa.gz
-  sed -E 's/[^>|]+\\|//' gencode.v${v}${tag2}.pc_translations.fa | sed -E 's/\\|.+//' >transcripts.fa
+  gunzip -c *fa.gz | sed -E 's/[^>|]+\\|//' | sed -E 's/\\|.+//' >fasta
   """
 
 }
 
 // DOWNLOAD ENSEMBL FEATURES
 ////////////////////////////////////////
-ensemblDownload = file("$params.spada_dir/annotation_files/get_ensembl_annotation.nf")
+get_ensembl = file("$params.spada_dir/annotation_files/get_ensembl_annotation.nf")
 
 process get_features {
 
   publishDir "$params.out", overwrite: true, mode: "copy"
 
   input:
-   file ensemblDownload
+   file get_ensembl
 
   output:
     file "*_features.tsv"
 
   """
-  nextflow run $ensemblDownload --v $v_ens --genome $params.genome
+  nextflow run $get_ensembl --v $v_ens --genome $params.genome
   """
 
 }
