@@ -27,7 +27,7 @@ def test_getGene2Tx():
 	gene2tx = io.getGene2Tx(m._txs)
 
 	assert len(m._genes.nodes()) == len(gene2tx)
-	assert len(m._txs.nodes()) == len([ t for g,T in gene2tx.items() for t in T ])
+	assert len([ t for t,i in m._txs.nodes(data=True) if i['canonical'] ]) == len([ t for g,T in gene2tx.items() for t in T ])
 
 def test_readSamples():
 

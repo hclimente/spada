@@ -21,6 +21,7 @@ class TranscriptNetwork(Network):
 		start_codon(int,None)		First residue of the start codon.
 		stop_codon(int,None)		First residue of the stop codon.
 		proteinSequence(str,None)	Protein sequence.
+		canonical(bool,True)		Is the transcript canonical i.e. not aberrant?
 
 	Edge information:
 		Id1(str)					Transcript id of interactor 1.
@@ -69,7 +70,8 @@ class TranscriptNetwork(Network):
 							proteinSequence	= None,
 							Pfam			= {},
 							Prosite			= {},
-							IDR				= {})
+							IDR				= {},
+							canonical 		= True)
 
 		return True
 

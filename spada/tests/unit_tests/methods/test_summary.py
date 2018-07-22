@@ -32,15 +32,15 @@ def test_proteomeStatistics():
 	s.proteomeStatistics(dataPath + "expression", dataPath + "expression_case")
 	proteome = [ x for x in io.readTable("proteome_features.tsv") ]
 
-	assert len(proteome) == 16
+	assert len(proteome) == 20
 	txs = [ x['Transcript'] for x in proteome if x['Feature_type'] == 'Transcript' ]
 	assert len(txs) == len(set(txs))
 
-	# ENSG00.5 is not complete, as we don't have info for JKLM-.3 and DE_FG_HI.2
-	assert not [ x for x in proteome if x['GeneId'] == 'ENSG00.5' ]
+	# ENSG00.5 is complete, as it only lacks information of its two aberrant transcripts
+	assert [ x for x in proteome if x['GeneId'] == 'ENSG00.5' ]
 
 	assert len([ x for x in proteome if x['Feature_type'] == 'Prosite' ]) == 3
-	assert len([ x for x in proteome if x['Feature_type'] == 'Pfam' ]) == 1
+	assert len([ x for x in proteome if x['Feature_type'] == 'Pfam' ]) == 3
 
 	# ENST08.1 goes first in the file, and both have same median
 	assert len([ x for x in proteome if x['Transcript'] == 'ENST08.1' and x['Feature_type'] != 'Transcript' ]) == 2

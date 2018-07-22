@@ -171,6 +171,7 @@ class CreateNetwork(method.Method):
 
 			for line in io.readTable(aberrant, keys = ['gene','tx']):
 				self._txs.add_node(line['tx'], line['gene'])
+				self._txs.update_node(line["tx"], "canonical", False )
 
 	def check(self):
 

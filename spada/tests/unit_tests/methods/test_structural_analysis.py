@@ -1,4 +1,4 @@
-from spada.methods import structural_analysis
+from spada.methods import get_switches, structural_analysis
 from spada.io import io
 
 import os
@@ -6,11 +6,13 @@ import pytest
 
 scriptPath = os.path.realpath(__file__)
 dataPath = os.path.dirname(scriptPath) + "/../../data/"
+g = get_switches.GetSwitches(dataPath + 'annotation.pklz')
+g._genes.flushSwitches()
+g.run(dataPath + "switches")
 
 def test_featureAnalysis():
 
-	s = structural_analysis.StructuralAnalysis(dataPath + 'annotation.pklz')
-								 			   
+	s = structural_analysis.StructuralAnalysis((g._genes, g._txs))
 	s.featureAnalysis()
 
 	# pfams
@@ -45,7 +47,7 @@ def test_featureAnalysis():
 
 def test_ppiAnalysis():
 
-	s = structural_analysis.StructuralAnalysis(dataPath + 'annotation.pklz')
+	s = structural_analysis.StructuralAnalysis((g._genes, g._txs))
 								 			   
 	s.ppiAnalysis()
 
@@ -60,8 +62,7 @@ def test_ppiAnalysis():
 
 def test_analyzeDDIs():
 
-	s = structural_analysis.StructuralAnalysis(dataPath + 'annotation.pklz')
-								 			   
+	s = structural_analysis.StructuralAnalysis((g._genes, g._txs))								 			   
 
 	thisSwitch = s._genes.nodes()["ENSG00.5"]["switches"][0]
 	ddiChanges = s.analyzeDDIs(thisSwitch)

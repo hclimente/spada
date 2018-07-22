@@ -179,7 +179,7 @@ def getGene2Tx(txs):
 
 	gene2tx = {}
 
-	pairs = [ (t,i["gene_id"]) for t,i in txs.nodes(data=True) ]
+	pairs = [ (t,i["gene_id"]) for t,i in txs.nodes(data=True) if i['canonical'] ]
 
 	for tx,gene in pairs:
 		gene2tx.setdefault(gene, set())
