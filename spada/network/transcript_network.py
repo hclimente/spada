@@ -42,6 +42,10 @@ class TranscriptNetwork(Network):
 		raise NotImplementedError()
 
 	@abc.abstractmethod
+	def txFilter(self, **kwds):
+		raise NotImplementedError()
+
+	@abc.abstractmethod
 	def isMain(self, **kwds):
 		raise NotImplementedError()
 
@@ -78,6 +82,7 @@ class TranscriptNetwork(Network):
 	def update_node(self, tx_name, key, value, secondKey = ""):
 
 		override = False
+		tx_name = self.txFilter(tx_name)
 
 		# CDS
 		if key == 'CDS' and self.nodes(data=True)[tx_name][key]:
