@@ -58,12 +58,31 @@ process get_fasta {
 
   publishDir "$params.out", overwrite: true, mode: "copy"
 
+  input:
+    val url from urls["$params.v"]
+    
   output:
     file 'fasta' into fasta
 
   """
-  wget ftp://ftp.ensembl.org/pub/release-$params.v/fasta/homo_sapiens/pep/Homo_sapiens.${tag}.pep.all.fa.gz
-  gunzip -c *fa.gz | sed -E 's/^>.+transcript:/>/' raw_fasta | sed 's/ .\\+//' >fasta
+  #!/usr/bin/env python
+
+  from biomart import BiomartServer
+
+  server = BiomartServer( "$url" )
+
+  ensembl = server.datasets['hsapiens_gene_ensembl']
+
+  response = ensembl.search({
+    'attributes': [ 'ensembl_transcript_id', 'transcript_version', 'peptide' ]
+  })
+
+  with open('fasta', 'w') as OUT:
+    for line in response.iter_lines():
+      line = line.decode('utf-8')
+      t,v,p = line.split("\\t")
+      if p:
+        OUT.write('>{}.{}\\n{}\\n'. format(t, v, p))
   """
 
 }
