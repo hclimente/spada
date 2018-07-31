@@ -31,7 +31,7 @@ network_parser = argparse.ArgumentParser(add_help=False)
 network_parser.add_argument('-a', '--annotation', dest='annotation', action='store', default='annotation.pklz',
 							help='Used annotation. Either the path to a spada annotation file (find already available at  \
 							https://github.com/hclimente/spada/wiki/Annotation-files); or an accepted annotation \
-							(either "gencode" or "ucsc") when generating your own via the init sub-command.')
+							when generating your own via the init sub-command.', choices=['ucsc', 'gencode', 'ensembl'])
 
 switch_parser = argparse.ArgumentParser(add_help=False)
 switch_parser.add_argument('-s', '--switches', dest='switchesFile', action='store',

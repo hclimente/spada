@@ -1,9 +1,9 @@
-from spada.network.transcript_network import TranscriptNetwork
+from spada.network.ensembl_transcript_network import ENSEMBLTranscriptNetwork
 
-class GENCODETranscriptNetwork(TranscriptNetwork):
+class GENCODETranscriptNetwork(ENSEMBLTranscriptNetwork):
 	def __init__(self, name):
 
-		TranscriptNetwork.__init__(self, name)
+		ENSEMBLTranscriptNetwork.__init__(self, name)
 
 		self._main_tx = ['appris_principal_1', 'appris_principal_2']
 		self._accepted_status = ['KNOWN','NOVEL','PUTATIVE','KNOWN_BY_PROJECTION']
@@ -30,19 +30,3 @@ class GENCODETranscriptNetwork(TranscriptNetwork):
 
 	def isMain(self, line):
 		return bool([ x for x in line['tags'] if x in self._main_tx ])
-
-	def genenameFilter(self, full_name="", gene_id="", gene_symbol=""):
-		geneSymbol 	= None
-		geneID 		= None
-
-		if full_name:
-			geneID 	= full_name
-
-		return (geneID, geneSymbol)
-
-	def txFilter(self, name):
-
-		ids = dict([ (y[0], '.'.join(y)) for y in map(lambda x: x.split('.'), self.nodes()) ])
-		transcript = name if name in self.nodes() else ids.get(name)
-
-		return transcript

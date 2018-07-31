@@ -4,6 +4,7 @@ from spada.io import io
 from spada.methods import method
 from spada.network import ucsc_gene_network, ucsc_transcript_network
 from spada.network import gencode_gene_network, gencode_transcript_network
+from spada.network import ensembl_gene_network, ensembl_transcript_network
 from spada.io.error import SpadaError
 
 from itertools import product
@@ -23,6 +24,9 @@ class CreateNetwork(method.Method):
 			elif annotation == "gencode":
 				self._genes = gencode_gene_network.GENCODEGeneNetwork(name)
 				self._txs = gencode_transcript_network.GENCODETranscriptNetwork(name)
+			elif annotation == "ensembl":
+				self._genes = ensembl_gene_network.ENSEMBLGeneNetwork(name)
+				self._txs = ensembl_transcript_network.ENSEMBLTranscriptNetwork(name)
 			else:
 				raise SpadaError("Unrecognized annotation: {}.".format(annotation))
 		else:
