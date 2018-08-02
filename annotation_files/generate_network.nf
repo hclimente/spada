@@ -33,10 +33,16 @@ gencode2ensembl = [ 28: 92, 27: 91, 26: 89, 25: 87, 24: 84,
                     13: 68, 12: 67 ]
 
 if ( params.db == 'gencode' | params.db == 'ensembl' ) {
-  if ( params.db == 'gencode' ) ENSEMBL_VERSION = gencode2ensembl[params.v]
-  else if ( params.db == 'ensembl' ) ENSEMBL_VERSION = params.v
+  if ( params.db == 'gencode' ) {
+    ENSEMBL_VERSION = gencode2ensembl[params.v]
+    GENCODE_VERSION = params.v
+    TAG1 = (params.genome == 'GRCh37') ? '/GRCh37_mapping' : ''
+    TAG2 = (params.genome == 'GRCh37') ? 'lift37' : ''
+
+  } else if ( params.db == 'ensembl' ) ENSEMBL_VERSION = params.v
 
   feature_dbs = (ENSEMBL_VERSION > 88)? ['pfam','scanprosite'] : ['pfam','prosite']
+
 }
 
 GENOME_RELEASE = params.genome
