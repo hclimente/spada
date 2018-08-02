@@ -24,7 +24,7 @@ if (params.help || params.v == null){
 
 params.out = '.'
 params.spada_dir = file('..')
-params.domine = "$params.spada_dir/INTERACTION.txt"
+params.domine = "$params.spada_dir/annotation_files/INTERACTION.txt"
 params.genome = 'GRCh38'
 
 gencode2ensembl = [ 28: 92, 27: 91, 26: 89, 25: 87, 24: 84,
