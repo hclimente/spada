@@ -37,11 +37,10 @@ switch_parser = argparse.ArgumentParser(add_help=False)
 switch_parser.add_argument('-s', '--switches', dest='switchesFile', action='store',
 						   default=None, type=str, help='File containing switches as TSV.')
 
-
 ################################################
 ###   INITIALIZE THE NETWORKS               ####
 ################################################
-def createNetwork(o):
+def init(o):
 	c = create_network.CreateNetwork(o.case, o.annotation, o.new)
 	c.run(o.gtf, o.seq, o.ppi, o.ddi, o.features, o.aberrant)
 
@@ -70,25 +69,23 @@ subparser_init.add_argument('-x', '--aberrant', dest='aberrant', action='store',
 							exon structure or CDS. They can, however, present other features (protein sequence, \
 							expression, etc.).')
 
-subparser_init.set_defaults(task="Create network")
-subparser_init.set_defaults(func=createNetwork)
+subparser_init.set_defaults(func=init)
 
 ################################################
 ###   COMPUTE SWITCHES                      ####
 ################################################
-def computeSwitches(o):
+def switches(o):
 	c = compute_switches.ComputeSwitches(o.annotation)
 	c.run(o.controlExpression, o.caseExpression, o.minExpression)
 
 subparser_switches = subparsers.add_parser('switches', help='Detect switches.',
 										   parents=[expression_parser, network_parser])
-subparser_switches.set_defaults(task="Compute switches")
-subparser_switches.set_defaults(func=computeSwitches)
+subparser_switches.set_defaults(func=switches)
 
 ################################################
 ###   STRUCTURAL ANALYSIS                   ####
 ################################################
-def functionalAnalysis(o):
+def function(o):
 	g = get_switches.GetSwitches(o.annotation)
 	g.run(o.switchesFile)
 	s = structural_analysis.StructuralAnalysis((g._genes, g._txs))
@@ -96,13 +93,12 @@ def functionalAnalysis(o):
 
 subparser_functional = subparsers.add_parser('function', help='Functional analysis of the switches.', parents = [network_parser, switch_parser])
 
-subparser_functional.set_defaults(task="Functional analysis")
-subparser_functional.set_defaults(func=functionalAnalysis)
+subparser_functional.set_defaults(func=function)
 
 ################################################
 ###   GET RANDOM SWITCHES                   ####
 ################################################
-def simulateSwitches(o):
+def simulate(o):
 	r = simulate_switches.SimulateSwitches(o.annotation)
 	r.run(o.controlExpression, o.caseExpression, o.rand, o.minExpression)
 
@@ -113,13 +109,12 @@ subparser_sim.add_argument('-r', '--rand', dest='rand', action='store',
 						   help='How to generate the random switches. With \'random\', any pair of isoforms is possible. \
 						   With \'fix_expressed\', the control isoform will be the median most expressed transcript in \
 						   control cases, and the case isoform will be randomly picked amond the rest.')
-subparser_sim.set_defaults(task="Simulate switches")
-subparser_sim.set_defaults(func=simulateSwitches)
+subparser_sim.set_defaults(func=simulate)
 
 ################################################
 ###   SWITCH SUMMARY	                    ####
 ################################################
-def summarize(o):
+def summary(o):
 	g = get_switches.GetSwitches(o.annotation)
 	g.run(o.switchesFile)
 	s = summary.Summary((g._genes, g._txs))
@@ -127,22 +122,21 @@ def summarize(o):
 
 subparser_summary = subparsers.add_parser('summary', help='Summary statistics of the switches.',
 										  parents=[expression_parser, network_parser, switch_parser])
-subparser_summary.set_defaults(task="Summarize results")
-subparser_summary.set_defaults(func=summarize)
+subparser_summary.set_defaults(func=summary)
 
 ################################################
 ###   MAIN                                  ####
 ################################################
 params = parser.parse_args()
 
-if "task" not in params:
+if 'func' not in params:
 	print("No sub-command selected.")
 	parser.print_help()
 	exit()
 
 logging.basicConfig(level 	 = logging.DEBUG,
 					format 	 = '%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-				   	filename = 'spada_{}.log'.format(params.task), filemode='w')
+				   	filename = 'spada_{}.log'.format(params.func.__name__), filemode='w')
 
 console = logging.StreamHandler()
 console.setLevel(logging.INFO)
@@ -153,6 +147,6 @@ console.setFormatter(formatter)
 logging.getLogger().addHandler(console)
 
 logger = logging.getLogger()
-logger.info("SPADA " + params.task)
+logger.info("SPADA " + params.func.__name__)
 params.func(params)
 logger.info("All operations completed.")
