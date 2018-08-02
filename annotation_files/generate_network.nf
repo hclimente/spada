@@ -27,30 +27,58 @@ params.spada_dir = file('..')
 params.domine = "$params.spada_dir/INTERACTION.txt"
 params.genome = 'GRCh38'
 
-// DOWNLOAD DB FILES
-////////////////////////////////////////
-if (params.db == 'gencode') {
-    get_annotation = file("$params.spada_dir/annotation_files/get_gencode_annotation.nf")
-    ensembl_complete = ''
-} else if (params.db == 'ensembl') {
-    get_annotation = file("$params.spada_dir/annotation_files/get_ensembl_annotation.nf")
-    ensembl_complete = '--complete'
+gencode2ensembl = [ 28: 92, 27: 91, 26: 89, 25: 87, 24: 84,
+                    23: 82, 22: 80, 21: 78, 20: 76, 19: 75,
+                    18: 73, 17: 72, 16: 71, 15: 70, 14: 69,
+                    13: 68, 12: 67 ]
+
+if ( params.db == 'gencode' | params.db == 'ensembl' ) {
+  if ( params.db == 'gencode' ) ENSEMBL_VERSION = gencode2ensembl[params.v]
+  else if ( params.db == 'ensembl' ) ENSEMBL_VERSION = params.v
+
+  feature_dbs = (ENSEMBL_VERSION > 88)? ['pfam','scanprosite'] : ['pfam','prosite']
 }
 
-process get_annotation_files {
+GENOME_RELEASE = params.genome
 
-    input:
-        file get_annotation
+// DOWNLOAD DB FILES
+////////////////////////////////////////
+process get_gtf {
 
-    output:
-        file 'gtf' into gtf
-        file 'fasta' into fasta_idr, fasta
-        file '*_features.tsv' into structured_features
+  output:
+    file 'gtf' into gtf
 
-    """
-    nextflow run $get_annotation --v $params.v --genome $params.genome --spada_dir $params.spada_dir $ensembl_complete -profile cluster
-    """
+  script:
+  if (params.db == 'gencode') template 'gencode/download_gtf.sh'
+  else if (params.db == 'ensembl') template 'ensembl/download_gtf.sh'
 
+}
+
+process get_fasta {
+
+  output:
+    file 'fasta' into fasta, fasta_features, fasta_idr
+
+  script:
+  if (params.db == 'gencode') template 'gencode/download_fasta.sh'
+  else if (params.db == 'ensembl') template 'ensembl/download_fasta.py'
+
+}
+
+process get_features {
+
+  input:
+    val FASTA from fasta_features
+    each DB from feature_dbs
+
+  output:
+    file '*_features.tsv' into structured_features
+
+  script:
+  if (params.db == 'gencode' | params.db == 'ensembl' ) {
+    if (ENSEMBL_VERSION > 78) template 'ensembl/download_features.py'
+    else template 'computation/interpro.sh'
+  }
 }
 
 process get_ppi {
@@ -70,25 +98,25 @@ domine = file(params.domine)
 
 process get_ddi {
 
-	input:
-		file domine
+  input:
+    file domine
 
-	output:
-		file "ddi.tsv" into ddi
+  output:
+    file "ddi.tsv" into ddi
 
-	"""
-	# 3did
-	wget https://3did.irbbarcelona.org/download/current/3did_flat.gz
-	gunzip -c 3did_flat.gz >3did_flat
+  """
+  # 3did
+  wget https://3did.irbbarcelona.org/download/current/3did_flat.gz
+  gunzip -c 3did_flat.gz >3did_flat
 
-	grep ID 3did_flat | sed -E 's/^[^(]+//' | sed 's/[()]//g' | sed 's/@Pfam//g' | sed -E 's/\\.[0-9]+//g' >>ddi.tmp
+  grep ID 3did_flat | sed -E 's/^[^(]+//' | sed 's/[()]//g' | sed 's/@Pfam//g' | sed -E 's/\\.[0-9]+//g' >>ddi.tmp
 
-	# DOMINE
-	sed -E 's/\\|/\t/g' $domine | cut -f1,2 >>ddi.tmp
+  # DOMINE
+  sed -E 's/\\|/\t/g' $domine | cut -f1,2 >>ddi.tmp
 
-	echo -e "domain1\tdomain2" >ddi.tsv
-	sort ddi.tmp | uniq >>ddi.tsv
-	"""
+  echo -e "domain1\tdomain2" >ddi.tsv
+  sort ddi.tmp | uniq >>ddi.tsv
+  """
 
 }
 
@@ -96,47 +124,14 @@ process get_ddi {
 ////////////////////////////////////////
 process run_iupred {
 
-  // executor 'local'
-  errorStrategy 'retry'
-  maxRetries 3
-
   input:
-    file "protein.fa" from fasta_idr.splitFasta(file: true)
+    file(FASTA) from fasta_idr.splitFasta(file: true, by: 100)
 
   output:
-    file "idr.tsv" into iupred
+    file "*.tsv" into iupred
 
-  """
-  iupred2a.py protein.fa long | grep -v '#' | awk '\$3 > 0.5' | sed 's/\\t/ /g' >iupred.out
-  tx=`head -n1 protein.fa | sed 's/>//'`
-
-  touch idr.tsv
-  start=""
-  end=""
-  seq=""
-  while read p; do
-    pos=`echo \$p | cut -f1 -d' '`
-    res=`echo \$p | cut -f2 -d' '`
-
-    if [ "\$start" == "" ]; then
-      start="\$pos"
-    elif [ "\$pos" -ne "\$((end + 1))" ]; then
-      if [ 5 -lt "\$((end - start))" ]; then
-        echo -e "\$tx\tIDR\t\$seq\t\$start\t\$end" >>idr.tsv
-      fi
-      seq="\$res"
-      start="\$pos"
-      end="\$pos"
-    else
-      end="\$pos"
-      seq="\$seq\$res"
-    fi
-  done <iupred.out
-
-  if [ 5 -lt "\$((end - start))" ]; then
-    echo -e "\$tx\tIDR\t\$seq\t\$start\t\$end" >>idr.tsv
-  fi
-  """
+  script:
+  template 'computation/iupred.sh'
 
 }
 
@@ -177,23 +172,22 @@ process get_features {
 process create_spada_annotation {
 
   publishDir "$params.out", overwrite: true, mode: "copy"
+  time '4d'
 
-        time '4d'
+  input:
+    file gtf
+    file mitab
+    file ddi
+    file fasta
+    file features
 
-	input:
-		file gtf
-		file mitab
-		file ddi
-		file fasta
-		file features
+  output:
+    file "${params.db}_v${params.v}.pklz"
 
-	output:
-		file "${params.db}_v${params.v}.pklz"
-
-	"""
-        spada init --name ${params.db}_v${params.v} --new --gtf $gtf --annotation ${params.db} \
+  """
+  spada init --name ${params.db}_v${params.v} --new --gtf $gtf --annotation ${params.db} \
 --ppi $mitab --ddi $ddi --seq $fasta --features $features
-	mv annotation.pklz ${params.db}_v${params.v}.pklz
-	"""
+  mv annotation.pklz ${params.db}_v${params.v}.pklz
+  """
 
 }
