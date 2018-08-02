@@ -31,8 +31,10 @@ params.genome = 'GRCh38'
 ////////////////////////////////////////
 if (params.db == 'gencode') {
     get_annotation = file("$params.spada_dir/annotation_files/get_gencode_annotation.nf")
+    ensembl_complete = ''
 } else if (params.db == 'ensembl') {
     get_annotation = file("$params.spada_dir/annotation_files/get_ensembl_annotation.nf")
+    ensembl_complete = '--complete'
 }
 
 process get_annotation_files {
@@ -41,13 +43,13 @@ process get_annotation_files {
         file get_annotation
 
     output:
-        file '*gtf' into gtf
-        file '*.fa' into fasta_idr, fasta
+        file 'gtf' into gtf
+        file 'fasta' into fasta_idr, fasta
         file '*_features.tsv' into structured_features
 
     """
-    nextflow run $get_annotation --v $params.v --genome $params.genome --spada_dir $params.spada_dir
-    """    
+    nextflow run $get_annotation --v $params.v --genome $params.genome --spada_dir $params.spada_dir $ensembl_complete -profile cluster
+    """
 
 }
 
@@ -76,8 +78,8 @@ process get_ddi {
 
 	"""
 	# 3did
-  wget https://3did.irbbarcelona.org/download/current/3did_flat.gz
-  gunzip -c 3did_flat.gz >3did_flat
+	wget https://3did.irbbarcelona.org/download/current/3did_flat.gz
+	gunzip -c 3did_flat.gz >3did_flat
 
 	grep ID 3did_flat | sed -E 's/^[^(]+//' | sed 's/[()]//g' | sed 's/@Pfam//g' | sed -E 's/\\.[0-9]+//g' >>ddi.tmp
 
@@ -94,7 +96,7 @@ process get_ddi {
 ////////////////////////////////////////
 process run_iupred {
 
-  executor 'local'
+  // executor 'local'
   errorStrategy 'retry'
   maxRetries 3
 
@@ -140,6 +142,8 @@ process run_iupred {
 
 process collect_iupred {
 
+  executor 'local'
+
   input:
     file "idr*.tsv" from iupred.collect()
 
@@ -174,6 +178,8 @@ process create_spada_annotation {
 
   publishDir "$params.out", overwrite: true, mode: "copy"
 
+        time '4d'
+
 	input:
 		file gtf
 		file mitab
@@ -182,12 +188,12 @@ process create_spada_annotation {
 		file features
 
 	output:
-		file "${db}_v${$v}.pklz"
+		file "${params.db}_v${params.v}.pklz"
 
 	"""
-  spada init --name ${db}_v${v} --new --gtf $gtf --annotation ${db} \
+        spada init --name ${params.db}_v${params.v} --new --gtf $gtf --annotation ${params.db} \
 --ppi $mitab --ddi $ddi --seq $fasta --features $features
-	mv annotation.pklz ${db}_v${$v}.pklz
+	mv annotation.pklz ${params.db}_v${params.v}.pklz
 	"""
 
 }

@@ -36,6 +36,7 @@ urls = [ '92': 'http://apr2018.archive.ensembl.org/biomart', '91': 'http://dec20
          '76': 'http://aug2014.archive.ensembl.org/biomart', '75': 'http://feb2014.archive.ensembl.org/biomart',
          '74': 'http://dec2013.archive.ensembl.org/biomart' ]
 
+if (params.complete) {
 // DOWNLOAD GTF
 ////////////////////////////////////////
 process get_gtf {
@@ -74,17 +75,18 @@ process get_fasta {
   ensembl = server.datasets['hsapiens_gene_ensembl']
 
   response = ensembl.search({
-    'attributes': [ 'ensembl_transcript_id', 'transcript_version', 'peptide' ]
+    'attributes': [ 'ensembl_transcript_id', 'peptide' ]
   })
 
   with open('fasta', 'w') as OUT:
     for line in response.iter_lines():
       line = line.decode('utf-8')
-      t,v,p = line.split("\\t")
-      if p:
-        OUT.write('>{}.{}\\n{}\\n'. format(t, v, p))
+      p,t = line.split("\\t")
+      if p and p != 'Sequence unavailable':
+        OUT.write('>{}\\n{}\\n'. format(t, p.replace('*', '')))
   """
 
+}
 }
 
 // GET ISOFORM FEATURES
@@ -121,7 +123,7 @@ if (params.v.toInteger() > 78) {
     with open('${db}_features.tsv', 'w') as OUT:
       for line in response.iter_lines():
         line = line.decode('utf-8')
-        t,v,f,s,e = line.split("\\t")
+        t,f,v,s,e = line.split("\\t")
         if f:
           OUT.write('{}.{}\\t{}\\t{}\\t{}\\t{}\\n'. format(t, tags['$db'], v, f, s, e))
     """
@@ -133,17 +135,34 @@ if (params.v.toInteger() > 78) {
   process compute_features {
 
     cpus 4
-	  memory '15 GB'
+    memory '15 GB'
 
     input:
-      file fasta
+      file 'proteins.fa' from fasta.splitFasta( file: true, by: 20 )
 
     output:
-      file "features.tsv"
+      file 'features' into features
 
     """
-    interproscan.sh -i $fasta -appl Pfam,ProSitePatterns,ProSiteProfiles  -f TSV -o tmp -dp
-	  cut -f1,4,5,7,8 tmp | sed 's/ProSiteProfiles/Prosite/' | sed 's/ProSitePatterns/Prosite/' >features.tsv
+    interproscan.sh -i proteins.fa -appl Pfam,ProSitePatterns,ProSiteProfiles  -f TSV -o features -dp
+    """
+
+  }
+
+  process join_features {
+
+    publishDir "$params.out", overwrite: true, mode: "copy"
+
+    input:
+      file 'features*' from features.collect()
+
+    output:
+      file 'pfam_features.tsv'
+      file 'prosite_features.tsv'
+
+    """
+    cat features* >tmp
+    cut -f1,4,5,7,8 tmp | sed 's/ProSiteProfiles/Prosite/' | sed 's/ProSitePatterns/Prosite/' >features.tsv
     grep Pfam features.tsv >pfam_features.tsv
     grep Prosite features.tsv >prosite_features.tsv
     """
