@@ -51,11 +51,6 @@ class Network:
 		return True
 
 	def _add_edge(self, node1, node2, **kwds):
-
-		if [ (x,y) for (x,y) in self.edges() if (node1,node2) == (x,y) or (node1,node2) == (y,x) ]:
-			self.logger.debug("Tried to add edge {} - {}, but it exists.".format(node1, node2))
-			return False
-
 		self._net.add_edge(node1, node2, **kwds)
 
 		return True
