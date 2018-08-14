@@ -82,7 +82,8 @@ if ((params.db == 'gencode' | params.db == 'ensembl') & ENSEMBL_VERSION > 78 ) {
       file '*_features.tsv' into structured_features
 
     script:
-    template 'ensembl/download_features.py'
+    if ( params.db == 'ensembl' ) template 'ensembl/download_features.py'
+    else if ( params.db == 'gencode' ) template 'ensembl/download_features_versioned.py'
 
   }
 } else {
