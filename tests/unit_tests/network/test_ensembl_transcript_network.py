@@ -8,6 +8,7 @@ scriptPath = os.path.realpath(__file__)
 dataPath = os.path.dirname(scriptPath) + "/../../data/"
 
 txs = ensembl_transcript_network.ENSEMBLTranscriptNetwork('aName')
+txs.skip_filter = False
 
 def test_init():
 

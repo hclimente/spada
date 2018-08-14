@@ -173,9 +173,14 @@ class CreateNetwork(method.Method):
 
 			self.logger.info("Import aberrant isoforms absent in GTF.")
 
+			prev = self._txs.skip_filter
+			self._txs.skip_filter = False
+
 			for line in io.readTable(aberrant, keys = ['gene','tx']):
 				self._txs.add_node(line['tx'], line['gene'])
 				self._txs.update_node(line["tx"], "canonical", False )
+
+			self._txs.skip_filter = prev
 
 	def check(self):
 

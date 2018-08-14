@@ -6,6 +6,7 @@ class ENSEMBLTranscriptNetwork(TranscriptNetwork):
 		TranscriptNetwork.__init__(self, name)
 
 		self.usedIds = {}
+		self.skip_filter = True
 
 	def accept(self, line):
 		return True
@@ -27,6 +28,8 @@ class ENSEMBLTranscriptNetwork(TranscriptNetwork):
 
 	def txFilter(self, name):
 
+		if self.skip_filter:
+			return name
 		if '.' in name:
 			transcript, version = name.split('.')
 			if transcript not in self.usedIds.keys():

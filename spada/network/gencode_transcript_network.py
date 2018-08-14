@@ -11,6 +11,8 @@ class GENCODETranscriptNetwork(ENSEMBLTranscriptNetwork):
 		self._accepted = ['basic', 'CCDS']
 		self._rejected = ['cds_end_NF', 'cds_start_NF']
 
+		self.skip_filter = False
+
 	def accept(self, line):
 		accept = bool([ t for t in line['tags'] if t in self._accepted ])
 		reject = bool([ t for t in line['tags'] if t in self._rejected ])
