@@ -71,19 +71,34 @@ process get_fasta {
 
 }
 
-process get_features {
+if ((params.db == 'gencode' | params.db == 'ensembl') & ENSEMBL_VERSION > 78 ) {
 
-  input:
-    val FASTA from fasta_features
-    each DB from feature_dbs
+  process get_structured_features {
 
-  output:
-    file '*_features.tsv' into structured_features
+    input:
+      each DB from feature_dbs
 
-  script:
-  if (params.db == 'gencode' | params.db == 'ensembl' ) {
-    if (ENSEMBL_VERSION > 78) template 'ensembl/download_features.py'
-    else template 'computation/interpro.sh'
+    output:
+      file '*_features.tsv' into structured_features
+
+    script:
+    template 'ensembl/download_features.py'
+
+  }
+} else {
+
+  process run_interpro {
+
+    input:
+      each DB from feature_dbs
+      file(FASTA) from fasta_features.splitFasta(file: true, by: 100)
+
+    output:
+      file 'interpro_features.tsv' into structured_features
+
+    script:
+    template 'computation/interpro.sh'
+
   }
 }
 
@@ -160,7 +175,7 @@ process collect_iupred {
 process get_features {
 
   input:
-    file '*tsv' from structured_features
+    file '*tsv' from structured_features .collect()
     file idr
 
   output:
@@ -178,7 +193,6 @@ process get_features {
 process create_spada_annotation {
 
   publishDir "$params.out", overwrite: true, mode: "copy"
-  time '4d'
 
   input:
     file gtf
