@@ -27,12 +27,12 @@ tags = { 'pfam': 'Pfam', 'scanprosite': 'Prosite', 'prosite': 'Prosite' }
 ensembl = server.datasets['hsapiens_gene_ensembl']
 
 response = ensembl.search({
-    'attributes': [ 'ensembl_transcript_id', '${DB}', '${DB}_start', '${DB}_end' ]
+    'attributes': [ 'ensembl_transcript_id', 'transcript_version', '${DB}', '${DB}_start', '${DB}_end' ]
 })
 
 with open('${DB}_features.tsv', 'w') as OUT:
     for line in response.iter_lines():
         line = line.decode('utf-8')
-        t,f,s,e = line.split("\\t")
+        t,f,v,s,e = line.split("\\t")
         if f:
-            OUT.write('{}\\t{}\\t{}\\t{}\\t{}\\n'. format(t, tags['${DB}'], f, s, e))
+            OUT.write('{}.{}\\t{}\\t{}\\t{}\\t{}\\n'. format(t, tags['${DB}'], v, f, s, e))
