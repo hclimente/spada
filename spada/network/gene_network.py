@@ -27,6 +27,9 @@ class GeneNetwork(Network):
 	def __init__(self, name):
 		Network.__init__(self, name)
 
+	def __getitem__(self, gene_name):
+		return self._net.node[gene_name]
+
 	@abc.abstractmethod
 	def nameFilter(self, **kwds):
 		"""Receive a gene identifier and convert it to the consensus identifier for the network."""
@@ -97,7 +100,7 @@ class GeneNetwork(Network):
 
 		# removing isoform switches
 		for gene,info in self.genes():
-			self._net.node[gene]["switches"] = []
+			self[gene]["switches"] = []
 
 	def readSwitches(self, switchesFile, tx_network):
 		"""Import a set of genes with an isoform switch from candidateList.tsv.
@@ -138,11 +141,11 @@ class GeneNetwork(Network):
 		Iterate genes that have alternative splicing and more than one transcript expressed.
 		'''
 
-		geneAndPatients = [ (g,sum([ len(s.samples) for s in self._net.node[g]["switches"] ])) for g in self.nodes() ]
+		geneAndPatients = [ (g,sum([ len(s.samples) for s in self[g]["switches"] ])) for g in self.nodes() ]
 		genes = [ g for g,n in sorted(geneAndPatients, key=operator.itemgetter(1), reverse=True) ]
 
 		for gene in genes:
-			yield gene,self._net.node[gene]
+			yield gene,self[gene]
 
 	def switches(self, txs):
 		"""Iterate through the isoform switches of a gene network, and
@@ -171,8 +174,8 @@ class GeneNetwork(Network):
 				objects are not created.
 		"""
 		thisSwitch = IsoformSwitch(switch.ctrl, switch.case, switch.samples)
-		nInfo = tx_network._net.node[thisSwitch.ctrl]
-		tInfo = tx_network._net.node[thisSwitch.case]
+		nInfo = tx_network[thisSwitch.ctrl]
+		tInfo = tx_network[thisSwitch.case]
 		thisSwitch.addTxInfo(nInfo,tInfo)
 
 		return thisSwitch
@@ -183,7 +186,7 @@ class GeneNetwork(Network):
 		genes = random.sample(genesWithSwitches,numIterations)
 
 		for gene in genes:
-			info = self._net.node[gene]
+			info = self[gene]
 			switchDict = random.choice(info["switches"])
 			thisSwitch = self.__createSwitch(switchDict, tx_network)
 

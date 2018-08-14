@@ -1,4 +1,5 @@
 from spada.biological_entities.aminoacid import Aminoacid
+from spada.io.error import SpadaError
 
 class Protein:
 	def __init__(self, tx, txInfo):
@@ -64,11 +65,11 @@ class Protein:
 			if txInfo['start_codon'] and txInfo['stop_codon']:
 				if txInfo['stop_codon']:
 					if len(self._sequence) != len(cds):
-						raise Exception('Transcript {}: lengths of protein sequence and CDS do not match ({} vs. {}).'.format(self._tx, len(self._structure), len(cds)))
+						raise SpadaError('Transcript {}: lengths of protein sequence and CDS do not match ({} vs. {}).'.format(self._tx, len(self._structure), len(cds)))
 
 					mrna = [ x for x in self.expandExons(txInfo) ]
 					if mrna.index(cds[-1]) + 3 != mrna.index(txInfo['stop_codon']):
-						raise Exception('Transcript {}: number of nucleotides in the CDS must be multiple of 3.'.format(self._tx))
+						raise SpadaError('Transcript {}: number of nucleotides in the CDS must be multiple of 3.'.format(self._tx))
 
 				for aa,pos in zip(self._structure, cds):
 					aa.setGenomicPosition(pos)

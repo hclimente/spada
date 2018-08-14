@@ -17,6 +17,10 @@ class Network:
 	def accept(self, **kwds):
 		raise NotImplementedError()
 
+	@abc.abstractmethod
+	def __getitem__(self, *args):
+		raise NotImplementedError()
+
 	## Getters ##
 	def n(self): 		return self._net
 
@@ -30,19 +34,19 @@ class Network:
 			self.logger.debug("Tried to update node {}, but does not exist.".format(node))
 			return False
 
-		if not override and isinstance(self._net.node[node][key], list):
-			self._net.node[node][key].append( value )
-		elif not override and isinstance(self._net.node[node][key], set):
-			self._net.node[node][key].add( value )
-		elif not override and isinstance(self._net.node[node][key], dict):
-			if secondKey not in self._net.node[node][key]:
-				self._net.node[node][key].setdefault(secondKey,set())
-			self._net.node[node][key][secondKey].add(value)
+		if not override and isinstance(self[node][key], list):
+			self[node][key].append( value )
+		elif not override and isinstance(self[node][key], set):
+			self[node][key].add( value )
+		elif not override and isinstance(self[node][key], dict):
+			if secondKey not in self[node][key]:
+				self[node][key].setdefault(secondKey,set())
+			self[node][key][secondKey].add(value)
 		else:
-			if self._net.node[node] is not None and self._net.node[node] != value:
+			if self[node] is not None and self[node] != value:
 				self.logger.debug("Node {}, {} had a value of {}. Updated to {}.".format(
-									node, key, self._net.node[node][key], value) )
-			self._net.node[node][key] = value
+									node, key, self[node][key], value) )
+			self[node][key] = value
 
 		return True
 

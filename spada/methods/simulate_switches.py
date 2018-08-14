@@ -31,7 +31,7 @@ class SimulateSwitches(method.Method):
 				switches = self.sampleTranscripts_fixControl(tx, txs.remove(tx))
 			elif method == 'fix_main':
 				# random: most expressed isoform is control
-				tx = [ t for t in txs if self._txs._net.node[t]["main"] ]
+				tx = [ t for t in txs if self._txs[t]["main"] ]
 				if tx:
 					tx = tx[0]
 				else:

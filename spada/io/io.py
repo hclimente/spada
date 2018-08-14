@@ -140,7 +140,7 @@ def parseExpression(ctrlFile, caseFile, genes, txs):
 				raise SpadaError("Case and control expresion files mismatch: {} vs. {}.".format(tx, tx2))
 
 			try:
-				gene = txs._net.node[tx]["gene_id"]
+				gene = txs[tx]["gene_id"]
 			except KeyError:
 				continue
 

@@ -49,7 +49,7 @@ class Summary(method.Method):
 				tx,tpm = geneExpression._top_ctrl
 				if not tx:
 					continue
-				txInfo = self._txs._net.node[tx]
+				txInfo = self._txs[tx]
 
 				OUT.write("{}\t{}\t".format(self._genes._name, txInfo['gene_id']))
 				OUT.write("{}\t{}\t".format(tx, tpm))

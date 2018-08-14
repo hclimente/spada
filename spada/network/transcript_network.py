@@ -33,6 +33,10 @@ class TranscriptNetwork(Network):
 	def __init__(self, name):
 		Network.__init__(self, name)
 
+	def __getitem__(self, tx_name):
+		tx = self.txFilter(tx_name)
+		return self._net.node[tx]
+
 	@abc.abstractmethod
 	def acceptCDS(self, **kwds):
 		raise NotImplementedError()
@@ -86,14 +90,14 @@ class TranscriptNetwork(Network):
 		tx = self.txFilter(tx_name)
 
 		# CDS
-		if key == 'CDS' and self.nodes(data=True)[tx][key]:
+		if key == 'CDS' and self[tx][key]:
 			override = True
-			i = self._net.node[tx]['strand'] == '-'
-			value[i] = self._net.node[tx][key][i]
-		elif key in ['start_codon','stop_codon'] and self.nodes(data=True)[tx][key]:
+			i = self[tx]['strand'] == '-'
+			value[i] = self[tx][key][i]
+		elif key in ['start_codon','stop_codon'] and self[tx][key]:
 			override = True
-			old = self._net.node[tx][key]
-			value = min(old, value) if self._net.node[tx]['strand'] == '+' else max(old, value)
+			old = self[tx][key]
+			value = min(old, value) if self[tx]['strand'] == '+' else max(old, value)
 
 		return self._update_node(tx, key, value, secondKey, override)
 

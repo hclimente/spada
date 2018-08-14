@@ -1,5 +1,6 @@
-from spada.io import io
 from spada.biological_entities import protein, transcript
+from spada.io import io
+from spada.io.error import SpadaError
 
 from collections import namedtuple
 from itertools import zip_longest
@@ -178,7 +179,7 @@ class IsoformSwitch:
 		features = set()
 
 		if not featureType in ["Pfam", "Prosite"]:
-			raise Exception(featureType + ' not recognized. Use Pfam or Prosite.')
+			raise SpadaError(featureType + ' not recognized. Use Pfam or Prosite.')
 
 		for isoform in [self.ctrlIsoform,self.caseIsoform]:
 			if isoform:

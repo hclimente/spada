@@ -55,8 +55,8 @@ class StructuralAnalysis(method.Method):
 			for tx1, tx2, eDict in ppis:
 				pairs = [ (next(iter(x)), next(iter(x))) for x in eDict['ddi'] if len(x) == 1 ] # case for homodomain interactions
 				pairs.extend([ tuple(p) for p in eDict['ddi'] if len(p) > 1 ])					# case for heterodomain interactions
-				domainsTx1 = self._txs._net.node[tx1]['Pfam'].keys()
-				domainsTx2 = self._txs._net.node[tx2]['Pfam'].keys()
+				domainsTx1 = self._txs[tx1]['Pfam'].keys()
+				domainsTx2 = self._txs[tx2]['Pfam'].keys()
 
 				PPIs[tx1][tx2] = set()
 				for dA, dB in pairs:
@@ -121,11 +121,11 @@ class StructuralAnalysis(method.Method):
 	def writePPI(self, OUT, gene, thisSwitch, DDIchanges):
 		for tx, ddis in DDIchanges.items():
 
-			other_gene = self._txs._net.node[tx]["gene_id"]
+			other_gene = self._txs[tx]["gene_id"]
 
 			OUT.write("{}\t{}\t".format( self._genes._name, gene ))
 			OUT.write("{}\t{}\t".format( thisSwitch.ctrl, thisSwitch.case ))
-			OUT.write("{}\t{}\t".format( other_gene, self._genes._net.node[other_gene]["symbol"] ))
+			OUT.write("{}\t{}\t".format( other_gene, self._genes[other_gene]["symbol"] ))
 			OUT.write("{}\t{}\t".format( tx, ddis["what"] ))
 			OUT.write("{}\t{}\t".format( len(ddis["nDDIs"]), len(ddis["tDDIs"]) ))
 			OUT.write("{}\t{}\t".format( len(ddis["bothDDIs"]), ";".join(ddis["nDDIs"]) ))
