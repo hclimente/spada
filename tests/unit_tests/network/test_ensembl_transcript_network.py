@@ -22,7 +22,7 @@ def test_genenameFilter():
 def test_txFilter():
 
     assert txs.txFilter('made_up_tx') == None
-    assert txs.txFilter('ENST16.2') == None
+    assert txs.txFilter('ENST16.2') == 'ENST16.2'
     txs.add_node('ENST16.2', 'test')
     txs.add_node('ENST17.1', 'test')
     assert txs.txFilter('ENST16.2') == 'ENST16.2'

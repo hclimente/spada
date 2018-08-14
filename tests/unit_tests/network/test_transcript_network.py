@@ -13,9 +13,9 @@ txs.createLogger()
 def test_add_node():
 
 	assert 'kk' not in txs.nodes()
-	assert txs.add_node('kk', 'PEO')
-	assert txs.nodes()['kk']['gene_id'] == 'PEO'
-	assert txs.add_node('kk', 'PEO')
+	assert not txs.add_node('kk', 'PEO')
+	assert txs.add_node('kk.1', 'PEO')
+	assert txs.nodes()['kk.1']['gene_id'] == 'PEO'
 
 def test_transcripts():
 

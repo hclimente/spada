@@ -56,12 +56,13 @@ class TranscriptNetwork(Network):
 			return True
 
 		gene = self.genenameFilter(full_name = gene_full_name)[0]
+		tx = self.txFilter(tx_name)
 
-		if not gene:
+		if not gene or not tx:
 			self.logger.debug("No gene could be extracted for transcript {}, gene {}.".format(tx_name,  gene_full_name))
 			return False
 
-		self._net.add_node( tx_name,
+		self._net.add_node( tx,
 							gene_id			= gene,
 							exons			= [],
 							txCoords		= None,
@@ -82,19 +83,19 @@ class TranscriptNetwork(Network):
 	def update_node(self, tx_name, key, value, secondKey = ""):
 
 		override = False
-		tx_name = self.txFilter(tx_name)
+		tx = self.txFilter(tx_name)
 
 		# CDS
-		if key == 'CDS' and self.nodes(data=True)[tx_name][key]:
+		if key == 'CDS' and self.nodes(data=True)[tx][key]:
 			override = True
-			i = self._net.node[tx_name]['strand'] == '-'
-			value[i] = self._net.node[tx_name][key][i]
-		elif key in ['start_codon','stop_codon'] and self.nodes(data=True)[tx_name][key]:
+			i = self._net.node[tx]['strand'] == '-'
+			value[i] = self._net.node[tx][key][i]
+		elif key in ['start_codon','stop_codon'] and self.nodes(data=True)[tx][key]:
 			override = True
-			old = self._net.node[tx_name][key]
-			value = min(old, value) if self._net.node[tx_name]['strand'] == '+' else max(old, value)
+			old = self._net.node[tx][key]
+			value = min(old, value) if self._net.node[tx]['strand'] == '+' else max(old, value)
 
-		return self._update_node(tx_name, key, value, secondKey, override)
+		return self._update_node(tx, key, value, secondKey, override)
 
 	def add_edge(self, tx1, tx2, **kwargs):
 		self._net.add_edge(tx1, tx2, **kwargs)
