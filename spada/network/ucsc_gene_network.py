@@ -25,9 +25,7 @@ class UCSCGeneNetwork(gene_network.GeneNetwork):
 				geneSymbol 	= gene_symbol
 
 		if not geneID:
-			assumedGeneId = [ x for x,y in self.nodes(data=True) if y["symbol"]==geneSymbol ]
-
-			if assumedGeneId:
-				geneID = assumedGeneId[0]
+			self.update_idx()
+			geneID = self.symbol2id.get(gene_symbol)
 
 		return (geneID, geneSymbol)

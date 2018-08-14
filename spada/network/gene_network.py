@@ -27,9 +27,17 @@ class GeneNetwork(Network):
 	def __init__(self, name):
 		Network.__init__(self, name)
 
+		self.symbol2id = {}
+		self.n = 0
+
 	def __getitem__(self, gene_name):
 		return self._net.node[gene_name]
 
+	def update_idx(self):
+		if len(self.nodes()) > self.n:
+			self.symbol2id = dict([ (info["symbol"],gn) for gn,info in self.nodes(data=True) ])
+			self.n = len(self.nodes())
+		
 	@abc.abstractmethod
 	def nameFilter(self, **kwds):
 		"""Receive a gene identifier and convert it to the consensus identifier for the network."""

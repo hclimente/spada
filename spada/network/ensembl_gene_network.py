@@ -18,10 +18,8 @@ class ENSEMBLGeneNetwork(GeneNetwork):
 		if full_name:
 			geneID 	= full_name
 		if not gene_id and gene_symbol:
-			assumedGeneId = [ x for x,y in self.nodes(data=True) if y["symbol"] == gene_symbol ]
-
-			if assumedGeneId:
-				geneID = assumedGeneId[0]
+			self.update_idx()
+			geneID = self.symbol2id.get(gene_symbol)
 		else:
 			if gene_id:
 				geneID 		= gene_id
