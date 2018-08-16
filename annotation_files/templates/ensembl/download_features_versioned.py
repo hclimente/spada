@@ -33,6 +33,6 @@ response = ensembl.search({
 with open('${DB}_features.tsv', 'w') as OUT:
     for line in response.iter_lines():
         line = line.decode('utf-8')
-        t,f,v,s,e = line.split("\\t")
+        t,v,f,s,e = line.split("\\t")
         if f:
-            OUT.write('{}.{}\\t{}\\t{}\\t{}\\t{}\\n'. format(t, tags['${DB}'], v, f, s, e))
+            OUT.write('{}.{}\\t{}\\t{}\\t{}\\t{}\\n'. format(t, v, tags['${DB}'], f, s, e))

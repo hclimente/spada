@@ -31,4 +31,4 @@ with open('fasta', 'w') as OUT:
         line = line.decode('utf-8')
         p,t = line.split("\\t")
         if p and p != 'Sequence unavailable':
-            OUT.write('>{}\\n{}\\n'. format(t, p.replace('*', '')))
+            OUT.write('>{}\\n{}\\n'. format(t, p.split('*')[0]))

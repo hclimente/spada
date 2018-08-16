@@ -175,6 +175,8 @@ process collect_iupred {
 
 process get_features {
 
+  executor 'local'
+
   input:
     file '*tsv' from structured_features .collect()
     file idr
