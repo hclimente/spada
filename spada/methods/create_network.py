@@ -43,8 +43,8 @@ class CreateNetwork(method.Method):
 		self.addAberrant(aberrant)
 
 		# isoform data
-		self.gecaseIsoformSequences(sequences)
-		self.gecaseIsoformFeatures(features)
+		self.getIsoformSequences(sequences)
+		self.getIsoformFeatures(features)
 		self.getInteractions(ppi)
 		self.getDomainInteractions(ddi)
 
@@ -102,13 +102,20 @@ class CreateNetwork(method.Method):
 				continue
 
 			symbolA = [ x["id"] for x in line["symbolA"] if x["type"] == 'entrez gene/locuslink' ]
-			symbolA.extend([ x["id"] for x in line["aliasA"] if x.get("extra", None) in ["gene name", "gene name synonym"] and x["id"] in symbols ])
 			symbolB = [ x["id"] for x in line["symbolB"] if x["type"] == 'entrez gene/locuslink' ]
-			symbolB.extend([ x["id"] for x in line["aliasB"] if x.get("extra", None) in ["gene name", "gene name synonym"] and x["id"] in symbols ])
 
-			for A in symbolA:
-				for B in symbolB:
-					self._genes.add_edge(symbol1 = A, symbol2 = B)
+			added = False
+			for _ in range(2):
+				for A,B in product(symbolA, symbolB):
+					if self._genes.add_edge(symbol1 = A, symbol2 = B):
+						added = True
+						break
+
+				if added:
+					break
+				
+				symbolA.extend([ x["id"] for x in line["aliasA"] if x.get("extra", None) in ["gene name", "gene name synonym"] and x["id"] in symbols ])
+				symbolB.extend([ x["id"] for x in line["aliasB"] if x.get("extra", None) in ["gene name", "gene name synonym"] and x["id"] in symbols ])
 
 	def getDomainInteractions(self, ddi):
 
@@ -120,20 +127,18 @@ class CreateNetwork(method.Method):
 
 		self.logger.info("Building isoform-isoform interaction network.")
 		allDDIs = { frozenset([x['Pfam1'],x['Pfam2']]) for x in io.readTable(ddi, keys = ['Pfam1','Pfam2']) }
+		gene2tx = io.getGene2Tx(self._txs)
 
 		for gene1, gene2 in self._genes._net.edges():
-			txs1 = [ (t,i["Pfam"]) for t,i in self._txs.nodes(data=True) if i["gene_id"] == gene1 and i["Pfam"] ]
-			txs2 = [ (t,i["Pfam"]) for t,i in self._txs.nodes(data=True) if i["gene_id"] == gene2 and i["Pfam"] ]
+			for tx1,tx2 in product(gene2tx.get(gene1, set()), gene2tx.get(gene2, set())):
 
-			for tx1,d1 in txs1:
-				for tx2,d2 in txs2:
-					possibleDDIs = { frozenset(x) for x in product(d1, d2) }
-					matches = possibleDDIs & allDDIs
+				possibleDDIs = { frozenset(x) for x in product(self._txs[tx1]["Pfam"], self._txs[tx2]["Pfam"]) }
+				matches = possibleDDIs & allDDIs
 
-					if matches:
-						self._txs.add_edge(tx1, tx2, ddi = matches)
+				if matches:
+					self._txs.add_edge(tx1, tx2, ddi = matches)
 
-	def gecaseIsoformSequences(self, proteins):
+	def getIsoformSequences(self, proteins):
 
 		if self._new and not proteins:
 			raise SpadaError("A FASTA file with protein sequences file must be provided.")
@@ -146,7 +151,7 @@ class CreateNetwork(method.Method):
 		for tx, sequence in io.readFasta(proteins):
 			self._txs.update_node(tx, "proteinSequence", sequence)
 
-	def gecaseIsoformFeatures(self, features):
+	def getIsoformFeatures(self, features):
 
 		if self._new and not features:
 			raise SpadaError("A file with the protein features must be provided.")
@@ -192,18 +197,6 @@ class CreateNetwork(method.Method):
 				Protein(tx, info)
 
 		self.saveNetworks()
-
-	def symbol2ids(self, symbols):
-
-		ids = {}
-
-		for symbol, value in symbols.items():
-			gene_id = [ g for g,i in self._genes.nodes(data=True) if i["symbol"] == symbol ]
-
-			if gene_id:
-				ids[gene_id[0]] = value
-
-		return(ids)
 
 if __name__ == '__main__':
 	pass

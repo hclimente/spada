@@ -127,7 +127,7 @@ def test_getDomainInteractions():
 		c = create_network.CreateNetwork("test", "gencode")
 		c.getDomainInteractions(None)
 
-def test_gecaseIsoformSequences():
+def test_getIsoformSequences():
 
 	c = create_network.CreateNetwork("test", "gencode")
 	c._txs.add_node("ENST12.3", "1")
@@ -148,7 +148,7 @@ def test_gecaseIsoformSequences():
 	assert not c._txs.nodes()["ENST09.1"]["proteinSequence"]
 	assert not c._txs.nodes()["ENST13.5"]["proteinSequence"]
 
-	c.gecaseIsoformSequences(dataPath + "fasta")
+	c.getIsoformSequences(dataPath + "fasta")
 
 	assert c._txs.nodes()["ENST12.3"]["proteinSequence"] == "ASDFAFAFA"
 	assert c._txs.nodes()["ENST08.1"]["proteinSequence"] == "ASDASDASD"
@@ -161,9 +161,9 @@ def test_gecaseIsoformSequences():
 
 	with pytest.raises(SpadaError):
 		c = create_network.CreateNetwork("test", "gencode")
-		c.gecaseIsoformSequences(None)
+		c.getIsoformSequences(None)
 
-def test_gecaseIsoformFeatures():
+def test_getIsoformFeatures():
 
 	c = create_network.CreateNetwork("test", "gencode")
 	c._txs.add_node("ENST01.2", "1")
@@ -176,7 +176,7 @@ def test_gecaseIsoformFeatures():
 	assert not c._txs.nodes()["ENST08.1"]["IDR"]
 	assert not c._txs.nodes()["ENST18.3"]["Prosite"]
 
-	c.gecaseIsoformFeatures(dataPath + "features")
+	c.getIsoformFeatures(dataPath + "features")
 
 	assert c._txs.nodes()["ENST01.2"]["Pfam"]["D1"] == {(1,2), (3,4)}
 	assert len(c._txs.nodes()["ENST01.2"]["Pfam"]) == 1
@@ -191,7 +191,7 @@ def test_gecaseIsoformFeatures():
 
 	with pytest.raises(SpadaError):
 		c = create_network.CreateNetwork("test", "gencode")
-		c.gecaseIsoformFeatures(None)
+		c.getIsoformFeatures(None)
 
 def test_addAberrant():
 

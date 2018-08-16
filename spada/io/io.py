@@ -175,11 +175,11 @@ def readSamples(FILE):
 
 	return ids
 
-def getGene2Tx(txs):
+def getGene2Tx(txs, with_aberrant = False):
 
 	gene2tx = {}
 
-	pairs = [ (t,i["gene_id"]) for t,i in txs.nodes(data=True) if i['canonical'] ]
+	pairs = [ (t,i["gene_id"]) for t,i in txs.nodes(data=True) if (with_aberrant or i['canonical']) ]
 
 	for tx,gene in pairs:
 		gene2tx.setdefault(gene, set())
