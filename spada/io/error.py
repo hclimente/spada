@@ -6,5 +6,4 @@ class SpadaError(Exception):
 		self.value = value
 		self.logger.exception(value) 
 	def __str__(self):
-		self.logger.exception(value)
 		return repr(self.value)

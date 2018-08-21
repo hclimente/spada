@@ -30,5 +30,5 @@ with open('fasta', 'w') as OUT:
     for line in response.iter_lines():
         line = line.decode('utf-8')
         p,t = line.split("\\t")
-        if p and p != 'Sequence unavailable':
-            OUT.write('>{}\\n{}\\n'. format(t, p.split('*')[0]))
+        if p and p != 'Sequence unavailable' and p.count('*') < 2:
+            OUT.write('>{}\\n{}\\n'. format(t, p.replace('*', '')))
