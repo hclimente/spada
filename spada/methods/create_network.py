@@ -161,14 +161,14 @@ class CreateNetwork(method.Method):
 
 		self.logger.info("Reading isoform features.")
 
-		featureFields = ['tx','featureType', 'feature', 'start', 'end']
+		featureFields = ['Transcript','Feature_type', 'Feature', 'Start', 'End']
 		for line in io.readTable(features, keys = featureFields):
 
-			tx = line['tx']
-			featureType = line['featureType']
-			feature = line['feature']
-			start = int(line['start'])
-			end = int(line['end'])
+			tx = line['Transcript']
+			featureType = line['Feature_type']
+			feature = line['Feature']
+			start = int(line['Start'])
+			end = int(line['End'])
 
 			self._txs.update_node(tx, featureType, (start,end), feature)
 
@@ -181,9 +181,9 @@ class CreateNetwork(method.Method):
 			prev = self._txs.skip_filter
 			self._txs.skip_filter = False
 
-			for line in io.readTable(aberrant, keys = ['gene','tx']):
-				self._txs.add_node(line['tx'], line['gene'])
-				self._txs.update_node(line["tx"], "canonical", False )
+			for line in io.readTable(aberrant, keys = ['GeneId','Transcript']):
+				self._txs.add_node(line['Transcript'], line['GeneId'])
+				self._txs.update_node(line["Transcript"], "canonical", False )
 
 			self._txs.skip_filter = prev
 

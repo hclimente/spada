@@ -56,18 +56,19 @@ subparser_init.add_argument('-p', '--ppi', dest='ppi', action='store', default=N
 							help='File with protein-protein interactions, in PSI-MI TAB format >= 2.5. Required \
 							for newly generated networks.')
 subparser_init.add_argument('-d', '--ddi', dest='ddi', action='store', default=None,
-							help='Pairs of interacting domains, in TSV format. Required for newly generated networks.')
+							help='Pairs of interacting domains, in TSV format with columns named Pfam1 and Pfam2. \
+							Required for newly generated networks.')
 subparser_init.add_argument('-s', '--seq', dest='seq', action='store', default=None,
 							help='Fasta file with the protein sequences of each transcript. Required for newly \
 							generated networks.')
 subparser_init.add_argument('-f', '--features', dest='features', action='store', default=None,
 							help='Tab-separated table with transcript-level features. Required for newly \
-							generated networks.')
+							generated networks. Columns must be named Transcript, Feature_type, Feature, Start and End.')
 subparser_init.add_argument('-x', '--aberrant', dest='aberrant', action='store', default=None,
-							help='Tab-separated table containing gene-aberrant transcript pairs. The genes must be in the \
-							annotation, but not the transcripts. Hence, they do not have known genomic coordinates, \
-							exon structure or CDS. They can, however, present other features (protein sequence, \
-							expression, etc.).')
+							help='Tab-separated table containing gene-aberrant transcript pairs, in columns named GeneId \
+							and Transcript. The genes must be in the annotation, but not the transcripts. Hence, they \
+							do not have known genomic coordinates, exon structure or CDS. They can, however, present \
+							other features (protein sequence, expression, etc.).')
 
 subparser_init.set_defaults(func=init)
 

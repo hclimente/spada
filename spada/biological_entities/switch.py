@@ -123,11 +123,11 @@ class IsoformSwitch:
 
 		for res in self._ctrl_protein._structure:
 			if res.genomicPosition not in [ y.genomicPosition for y in self._case_protein._structure ]:
-				res.secaseIsoformSpecific(True)
+				res.setIsoformSpecific(True)
 
 		for res in self._case_protein._structure:
 			if res.genomicPosition not in [ y.genomicPosition for y in self._ctrl_protein._structure ]:
-				res.secaseIsoformSpecific(True)
+				res.setIsoformSpecific(True)
 
 	def analyzeSplicing(self):
 

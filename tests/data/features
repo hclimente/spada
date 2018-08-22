@@ -1,4 +1,4 @@
-transcript	featureType	feature_id	start	end
+Transcript	Feature_type	Feature	Start	End
 ENST01.2	Pfam	D1	1	2
 ENST01.2	Pfam	D1	3	4
 ENST02.2	Pfam	D1	1	2

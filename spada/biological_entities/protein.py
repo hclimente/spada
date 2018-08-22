@@ -28,9 +28,8 @@ class Protein:
 
 	@property
 	def structure(self):
-		if len(self._structure) > 1:
-			for res in sorted(self._structure,key=lambda x: x.num):
-				yield res
+		for res in self._structure:
+			yield res
 
 	def expandExons(self, txInfo):
 
