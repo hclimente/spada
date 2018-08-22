@@ -173,6 +173,13 @@ class GeneNetwork(Network):
 			for switch in switches:
 
 				thisSwitch = self.__createSwitch(switch, txs)
+
+				# cases were a warning was thrown
+				if thisSwitch._ctrl_protein and not thisSwitch._ctrl_protein._structure:
+					continue
+				if thisSwitch._case_protein and not thisSwitch._case_protein._structure:
+					continue
+
 				yield gene, info, thisSwitch
 
 	def __createSwitch(self, switch, tx_network):

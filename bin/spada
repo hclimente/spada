@@ -44,7 +44,7 @@ def init(o):
 	c = create_network.CreateNetwork(o.case, o.annotation, o.new)
 	c.run(o.gtf, o.seq, o.ppi, o.ddi, o.features, o.aberrant)
 
-subparser_init = subparsers.add_parser('init', help='Create network.', parents=[expression_parser, network_parser])
+subparser_init = subparsers.add_parser('init', help='Create network.', parents=[network_parser])
 
 subparser_init.add_argument('-N', '--name', dest='case', action='store',
 							help='Identifier of the analysis e.g. the case type.')
