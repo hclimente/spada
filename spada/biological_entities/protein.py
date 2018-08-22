@@ -1,5 +1,5 @@
 from spada.biological_entities.aminoacid import Aminoacid
-from spada.io.error import SpadaError
+from spada.io.error import SpadaError, SpadaWarning
 
 class Protein:
 	def __init__(self, tx, txInfo):
@@ -15,7 +15,7 @@ class Protein:
 
 		if self._sequence is not None:
 			cds = self.expandCDS(txInfo)
-			self.mapCDStoProtein(cds, txInfo)
+			self._structure = self.mapCDStoProtein(cds, txInfo)
 
 			self.annotateFeaturesToResidues("Pfam", self._pfam)
 			self.annotateFeaturesToResidues("Prosite", self._prosite)
@@ -50,33 +50,46 @@ class Protein:
 		cds = []
 
 		if txInfo["CDS"]:
-			cdsStart,cdsEnd = txInfo["CDS"]
-			cds = [ x for x in self.expandExons(txInfo) if x >= cdsStart and x <= cdsEnd ][::3]
+			if txInfo['strand'] == '+':
+				cdsStart = txInfo["CDS"][0] if not txInfo['start_codon'] else txInfo['start_codon']
+				cdsEnd = min(txInfo["CDS"][1], txInfo['stop_codon'] - 1) if txInfo['stop_codon'] else txInfo["CDS"][1]
+				cds = [ x for x in self.expandExons(txInfo) if x >= cdsStart and x <= cdsEnd ][::3]
+			
+			elif txInfo['strand'] == '-':
+				cdsStart = max(txInfo["CDS"][0], txInfo['stop_codon'] + 1) if txInfo['stop_codon'] else txInfo["CDS"][0]
+				cdsEnd = txInfo["CDS"][1] if not txInfo['start_codon'] else txInfo['start_codon']
+				cds = [ x for x in self.expandExons(txInfo) if x >= cdsStart and x <= cdsEnd ][::3]
 
 		return(cds)
 
 	def mapCDStoProtein(self, cds, txInfo):
 
+		structure = []
+
 		for i in range(0, len(self._sequence)):
 			aa = Aminoacid(i+1, self._sequence[i])
-			self._structure.append(aa)
+			structure.append(aa)
 
 		if cds:
 			if txInfo['start_codon'] and txInfo['stop_codon']:
 				if txInfo['stop_codon']:
 					if len(self._sequence) != len(cds):
-						raise SpadaError('Transcript {}: lengths of protein sequence and CDS do not match ({} vs. {}).'.format(self._tx, len(self._structure), len(cds)))
+						SpadaWarning('Transcript {}: lengths of protein sequence ({}) and CDS ({}) do not match.'.format(self._tx, len(structure), len(cds)))
+						return []
 
 					mrna = [ x for x in self.expandExons(txInfo) ]
 					if mrna.index(cds[-1]) + 3 != mrna.index(txInfo['stop_codon']):
-						raise SpadaError('Transcript {}: number of nucleotides in the CDS must be multiple of 3.'.format(self._tx))
+						SpadaWarning('Transcript {}: number of nucleotides in the CDS is not a multiple of 3.'.format(self._tx))
+						return []
 
-				for aa,pos in zip(self._structure, cds):
+				for aa,pos in zip(structure, cds):
 					aa.setGenomicPosition(pos)
 
 			elif txInfo['stop_codon']:
-				for aa,pos in zip(reversed(self._structure), reversed(cds)):
+				for aa,pos in zip(reversed(structure), reversed(cds)):
 					aa.setGenomicPosition(pos)
+
+		return structure
 
 	def annotateFeaturesToResidues(self, featureType, features):
 		for feature,region in features.items():

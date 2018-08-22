@@ -189,14 +189,15 @@ class CreateNetwork(method.Method):
 
 	def check(self):
 
-		self.logger.info("Quality checks and save networks.")
+		self.logger.info("Performing consistency checks.")
 		for tx, info in self._txs.transcripts():
 			Transcript(tx, info)
 
 			if info['CDS']:
 				Protein(tx, info)
 
-		self.saveNetworks()
+		self.logger.info("Save annotation into annotation.pklz.")
+		self.saveNetworks(filename = 'annotation.pklz')
 
 if __name__ == '__main__':
 	pass

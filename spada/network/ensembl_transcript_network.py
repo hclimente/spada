@@ -8,8 +8,13 @@ class ENSEMBLTranscriptNetwork(TranscriptNetwork):
 		self.usedIds = {}
 		self.skip_filter = True
 
+		self._rejected = ['cds_end_NF', 'cds_start_NF']
+
 	def accept(self, line):
-		return True
+		
+		reject = bool([ t for t in line['tags'] if t in self._rejected ])
+
+		return not reject
 
 	def acceptCDS(self, line):
 		return True

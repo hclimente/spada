@@ -19,7 +19,7 @@ class Summary(method.Method):
 
 		self.logger.info("Summarizing results.")
 		self.proteomeStatistics(ctrlFile, caseFile)
-		#txDict = self._txs.nodes(data=True)
+		#txDict = dict(self._txs.transcripts())
 
 		io.printSwitches(self._genes, self._txs)
 
