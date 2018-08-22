@@ -136,7 +136,7 @@ process get_ddi {
   # DOMINE
   sed -E 's/\\|/\t/g' $domine | cut -f1,2 >>ddi.tmp
 
-  echo -e "domain1\tdomain2" >ddi.tsv
+  echo -e "Pfam1\tPfam2" >ddi.tsv
   sort ddi.tmp | uniq >>ddi.tsv
   """
 
