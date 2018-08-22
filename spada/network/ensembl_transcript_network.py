@@ -33,7 +33,7 @@ class ENSEMBLTranscriptNetwork(TranscriptNetwork):
 
 	def txFilter(self, name):
 
-		if self.skip_filter:
+		if self.skip_filter or name in self.nodes():
 			return name
 		if '.' in name:
 			transcript, version = name.split('.')
