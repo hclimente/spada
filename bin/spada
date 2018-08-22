@@ -115,7 +115,7 @@ subparser_sim.set_defaults(func=simulate)
 ################################################
 ###   SWITCH SUMMARY	                    ####
 ################################################
-def summary(o):
+def summarize(o):
 	g = get_switches.GetSwitches(o.annotation)
 	g.run(o.switchesFile)
 	s = summary.Summary((g._genes, g._txs))
@@ -123,7 +123,7 @@ def summary(o):
 
 subparser_summary = subparsers.add_parser('summary', help='Summary statistics of the switches.',
 										  parents=[expression_parser, network_parser, switch_parser])
-subparser_summary.set_defaults(func=summary)
+subparser_summary.set_defaults(func=summarize)
 
 ################################################
 ###   MAIN                                  ####
