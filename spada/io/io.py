@@ -118,7 +118,7 @@ def printSwitches(genes, txs, filename = "switches_spada.tsv"):
 
 			OUT.write("{}\t{}\t{}\t".format( genes._name, gene, info["symbol"] ))
 			OUT.write("{}\t{}\t".format( thisSwitch.ctrl, thisSwitch.case ))
-			OUT.write("%i\t%i\t" % ( bool(thisSwitch.nTranscript.cds), bool(thisSwitch.tTranscript.cds) ))
+			OUT.write("%i\t%i\t" % ( bool(thisSwitch.ctrlTranscript.cds), bool(thisSwitch.caseTranscript.cds) ))
 			OUT.write("%i\t%i\t" % ( cdsChange, utrChange))
 			OUT.write("{}\n".format( ",".join(sorted(thisSwitch.samples)) ))
 

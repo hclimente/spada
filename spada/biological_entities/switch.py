@@ -51,9 +51,9 @@ class IsoformSwitch:
 	@property
 	def caseIsoform(self): return self._case_protein
 	@property
-	def nTranscript(self): return self._ctrl_transcript
+	def ctrlTranscript(self): return self._ctrl_transcript
 	@property
-	def tTranscript(self): return self._case_transcript
+	def caseTranscript(self): return self._case_transcript
 
 	@property
 	def cds_diff(self):
@@ -135,8 +135,8 @@ class IsoformSwitch:
 		if not self.ctrlIsoform or not self.caseIsoform:
 			return []
 
-		allN = sorted(self.nTranscript.getSegments("isoform-specific") + self.nTranscript.getSegments("non-isoform-specific"),key=operator.itemgetter(0))
-		allT = sorted(self.tTranscript.getSegments("isoform-specific") + self.tTranscript.getSegments("non-isoform-specific"),key=operator.itemgetter(0))
+		allN = sorted(self.ctrlTranscript.getSegments("isoform-specific") + self.ctrlTranscript.getSegments("non-isoform-specific"),key=operator.itemgetter(0))
+		allT = sorted(self.caseTranscript.getSegments("isoform-specific") + self.caseTranscript.getSegments("non-isoform-specific"),key=operator.itemgetter(0))
 
 		correspondence = []
 		c = []
@@ -169,7 +169,7 @@ class IsoformSwitch:
 				if thisCorrespondence not in correspondence:
 					correspondence.append(thisCorrespondence)
 
-		correspondence = sorted(correspondence,key=lambda x: x[0][0] if x[0] else x[1][0],reverse=True if self.nTranscript._strand=='-' else False )
+		correspondence = sorted(correspondence,key=lambda x: x[0][0] if x[0] else x[1][0],reverse=True if self.ctrlTranscript._strand=='-' else False )
 
 		return correspondence
 
