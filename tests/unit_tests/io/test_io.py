@@ -1,3 +1,4 @@
+from spada.biological_entities import protein
 from spada.io import io
 from spada.methods import get_switches, method
 
@@ -44,3 +45,25 @@ def test_printSwitchesToGtf():
 	switches = set([ s for g,i,s in g._genes.switches(g._txs)])
 
 	io.printSwitchesToGtf(g._genes, g._txs, switches)
+
+	for line in io.readGTF('switches_spada.gtf'):
+
+		if line['feature'] == 'transcript':
+			assert line['transcript_id'] in g._txs.nodes()
+			assert line['strand'] == g._txs[line['transcript_id']]['strand']
+		elif line['feature'] == 'exon':
+			assert [int(line['start']), int(line['end'])] in g._txs[line['transcript_id']]['exons']
+			assert line['strand'] == g._txs[line['transcript_id']]['strand']
+		else:
+			assert line['strand'] == g._txs[line['transcript_id']]['strand']
+			p = protein.Protein(line['transcript_id'], g._txs[line['transcript_id']])
+			regions = p.getFeature(line['feature'], line['{}_id'.format(line['feature'])])
+			gpos = map(lambda x: [ y.genomicPosition for y in x ], regions)
+			bounds = [ (min(x), max(x)) for x in gpos ]
+
+			if line['strand'] == '+':
+				assert (int(line['start']), int(line['end'])) in bounds
+			else:
+				assert (int(line['end']), int(line['start'])) in bounds
+
+	os.remove('switches_spada.gtf')

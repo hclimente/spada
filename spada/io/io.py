@@ -135,11 +135,11 @@ def printSwitchesToGtf(genes, txs, switches, filename = "switches_spada.gtf"):
 				chromosome = txs[name]['chr']
 				OUT.write(gtfLine(chromosome, 'transcript', 
 								  tx._tx_coordinates[0], tx._tx_coordinates[1], 
-								  tx._strand, 0, 'transcript_id={}'.format(name)))
+								  tx._strand, 0, 'transcript_id "{}"'.format(name)))
 
 				for start,end in tx._exons:
 					OUT.write(gtfLine(chromosome, 'exon', start, end, tx._strand, 
-									  0, 'transcript_id={}'.format(tx._name)))
+									  0, 'transcript_id "{}"'.format(tx._name)))
 
 			for isoform in [thisSwitch.ctrlIsoform, thisSwitch.caseIsoform]:
 
@@ -147,12 +147,16 @@ def printSwitchesToGtf(genes, txs, switches, filename = "switches_spada.gtf"):
 					continue
 
 				name = isoform.tx
-				for pfam, ranges in isoform._pfam.items():
-					for s,e in ranges:
-						start = isoform.structure[s - 1].genomicPosition
-						end = isoform.structure[e - 1].genomicPosition
-						OUT.write(gtfLine(txs[name]['chr'], 'Pfam', start, end, txs[name]['strand'], 0, 
-										'transcript_id={}; pfam_id={}'.format(name, pfam) ))
+				featureTypes = { 'Pfam': isoform._pfam, 
+								 'Prosite': isoform._prosite, 
+								 'IDR': isoform._idr }
+				for db, features in featureTypes.items():
+					for pfam, ranges in features.items():
+						for s,e in ranges:
+							start = isoform.structure[s - 1].genomicPosition
+							end = isoform.structure[e - 1].genomicPosition
+							OUT.write(gtfLine(txs[name]['chr'], db, start, end, txs[name]['strand'], 0, 
+											  'transcript_id "{}"; {}_id "{}"'.format(name, db, pfam) ))
 
 			# prosites, idrs, and isoform specific
 
