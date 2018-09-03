@@ -151,7 +151,7 @@ def test_getIsoformSequences():
 	c.getIsoformSequences(dataPath + "fasta")
 
 	assert c._txs.nodes()["ENST12.3"]["proteinSequence"] == "ASDFAFAFA"
-	assert c._txs.nodes()["ENST08.1"]["proteinSequence"] == "ASDASDASD"
+	assert c._txs.nodes()["ENST08.1"]["proteinSequence"] == "ASDASDASDASDA"
 	assert c._txs.nodes()["ENST18.3"]["proteinSequence"] == "ASFASFASF"
 	assert c._txs.nodes()["ENST02.2"]["proteinSequence"] == "ASFASFAS"
 	assert c._txs.nodes()["ENST16.2"]["proteinSequence"] == "ABCDEFGHI"
@@ -182,7 +182,7 @@ def test_getIsoformFeatures():
 	assert len(c._txs.nodes()["ENST01.2"]["Pfam"]) == 1
 	assert c._txs.nodes()["ENST02.2"]["Pfam"]["D1"] == {(1,2)}
 	assert c._txs.nodes()["ENST02.2"]["Pfam"]["D2"] == {(3,4)}
-	assert c._txs.nodes()["ENST02.2"]["Pfam"]["D4"] == {(5,9)}
+	assert c._txs.nodes()["ENST02.2"]["Pfam"]["D4"] == {(5,8)}
 	assert len(c._txs.nodes()["ENST02.2"]["Pfam"]) == 3
 	assert c._txs.nodes()["ENST20.1"]["Pfam"]["D2"] == {(3,6)}
 	assert len(c._txs.nodes()["ENST20.1"]["Pfam"]) == 1

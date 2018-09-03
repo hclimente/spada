@@ -122,6 +122,50 @@ def printSwitches(genes, txs, filename = "switches_spada.tsv"):
 			OUT.write("%i\t%i\t" % ( cdsChange, utrChange))
 			OUT.write("{}\n".format( ",".join(sorted(thisSwitch.samples)) ))
 
+def printSwitchesToGtf(genes, txs, switches, filename = "switches_spada.gtf"):
+
+	fields = ["chromosome","source","feature","start",
+			  "end", "score", "strand", "phase", "tags"]
+
+	with open(filename, "w") as OUT:
+		for thisSwitch in switches:
+
+			for tx in [thisSwitch.ctrlTranscript, thisSwitch.caseTranscript]:
+				name = tx._name
+				chromosome = txs[name]['chr']
+				OUT.write(gtfLine(chromosome, 'transcript', 
+								  tx._tx_coordinates[0], tx._tx_coordinates[1], 
+								  tx._strand, 0, 'transcript_id={}'.format(name)))
+
+				for start,end in tx._exons:
+					OUT.write(gtfLine(chromosome, 'exon', start, end, tx._strand, 
+									  0, 'transcript_id={}'.format(tx._name)))
+
+			for isoform in [thisSwitch.ctrlIsoform, thisSwitch.caseIsoform]:
+
+				if not isoform:
+					continue
+
+				name = isoform.tx
+				for pfam, ranges in isoform._pfam.items():
+					for s,e in ranges:
+						start = isoform.structure[s - 1].genomicPosition
+						end = isoform.structure[e - 1].genomicPosition
+						OUT.write(gtfLine(txs[name]['chr'], 'Pfam', start, end, txs[name]['strand'], 0, 
+										'transcript_id={}; pfam_id={}'.format(name, pfam) ))
+
+			# prosites, idrs, and isoform specific
+
+def gtfLine(chromosome, feature, start, end, strand, phase, tags):
+
+	line  = '{}\tspada\t'.format(chromosome)
+	line += '{}\t{}\t'.format(feature, start)
+	line += '{}\tNA\t'.format(end)
+	line += '{}\t{}\t'.format(strand, phase)
+	line += '{}\n'.format(tags)
+
+	return line
+
 def parseExpression(ctrlFile, caseFile, genes, txs):
 
 	gene2tx = getGene2Tx(txs)

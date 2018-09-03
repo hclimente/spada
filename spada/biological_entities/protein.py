@@ -27,9 +27,7 @@ class Protein:
 	def seq(self): return self._sequence
 
 	@property
-	def structure(self):
-		for res in self._structure:
-			yield res
+	def structure(self): return self._structure
 
 	def expandExons(self, txInfo):
 
@@ -93,9 +91,8 @@ class Protein:
 	def annotateFeaturesToResidues(self, featureType, features):
 		for feature,region in features.items():
 			for start,end in region:
-				for aa in self.structure:
-					if aa.num >= start and aa.num <= end:
-						aa._features.add(feature)
+				for i in range(start - 1, end):
+					self.structure[i]._features.add(feature)
 
 	def getSegments(self, segmentType, minLength = 1):
 		segments = []
@@ -129,6 +126,6 @@ class Protein:
 
 		if f in regions:
 			for start, end in regions[f]:
-				feature.append([ x for x in self.structure ][(start - 1):end])
+				feature.append(self.structure[(start - 1):end])
 
 		return feature

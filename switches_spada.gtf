@@ -1,0 +1,82 @@
+chr1	spada	transcript	34554	36081	NA	-	0	transcript_id=ENST08.1
+chr1	spada	exon	35721	36081	NA	-	0	transcript_id=ENST08.1
+chr1	spada	exon	35277	35481	NA	-	0	transcript_id=ENST08.1
+chr1	spada	exon	35011	35174	NA	-	0	transcript_id=ENST08.1
+chr1	spada	exon	34554	35010	NA	-	0	transcript_id=ENST08.1
+chr1	spada	transcript	35245	36073	NA	-	0	transcript_id=ENST09.1
+chr1	spada	exon	35721	36073	NA	-	0	transcript_id=ENST09.1
+chr1	spada	exon	35245	35481	NA	-	0	transcript_id=ENST09.1
+chr1	spada	transcript	129081	133566	NA	-	0	transcript_id=ENST16.2
+chr1	spada	exon	133374	133566	NA	-	0	transcript_id=ENST16.2
+chr1	spada	exon	129081	129223	NA	-	0	transcript_id=ENST16.2
+chr1	spada	transcript	89295	120932	NA	-	0	transcript_id=ENST13.5
+chr1	spada	exon	120775	120932	NA	-	0	transcript_id=ENST13.5
+chr1	spada	exon	112700	112804	NA	-	0	transcript_id=ENST13.5
+chr1	spada	exon	92091	92240	NA	-	0	transcript_id=ENST13.5
+chr1	spada	exon	89295	91629	NA	-	0	transcript_id=ENST13.5
+chr1	spada	transcript	30267	31109	NA	+	0	transcript_id=ENST06.1
+chr1	spada	exon	30267	30667	NA	+	0	transcript_id=ENST06.1
+chr1	spada	exon	30976	31109	NA	+	0	transcript_id=ENST06.1
+chr1	spada	transcript	29554	31097	NA	+	0	transcript_id=ENST05.1
+chr1	spada	exon	29554	30039	NA	+	0	transcript_id=ENST05.1
+chr1	spada	exon	30564	30667	NA	+	0	transcript_id=ENST05.1
+chr1	spada	exon	30976	31097	NA	+	0	transcript_id=ENST05.1
+chr1	spada	transcript	11869	14409	NA	+	0	transcript_id=ENST01.2
+chr1	spada	exon	11869	12007	NA	+	0	transcript_id=ENST01.2
+chr1	spada	exon	12008	12227	NA	+	0	transcript_id=ENST01.2
+chr1	spada	exon	12613	12721	NA	+	0	transcript_id=ENST01.2
+chr1	spada	exon	13221	14409	NA	+	0	transcript_id=ENST01.2
+chr1	spada	transcript	12010	13670	NA	+	0	transcript_id=ENST02.2
+chr1	spada	exon	12010	12057	NA	+	0	transcript_id=ENST02.2
+chr1	spada	exon	12179	12227	NA	+	0	transcript_id=ENST02.2
+chr1	spada	exon	12613	12697	NA	+	0	transcript_id=ENST02.2
+chr1	spada	exon	12975	13052	NA	+	0	transcript_id=ENST02.2
+chr1	spada	exon	13221	13374	NA	+	0	transcript_id=ENST02.2
+chr1	spada	exon	13453	13670	NA	+	0	transcript_id=ENST02.2
+chr1	spada	Pfam	12000	12003	NA	+	0	transcript_id=ENST01.2; pfam_id=D1
+chr1	spada	Pfam	12006	12009	NA	+	0	transcript_id=ENST01.2; pfam_id=D1
+chr1	spada	Pfam	13000	13003	NA	+	0	transcript_id=ENST02.2; pfam_id=D1
+chr1	spada	Pfam	13006	13009	NA	+	0	transcript_id=ENST02.2; pfam_id=D2
+chr1	spada	Pfam	13012	13021	NA	+	0	transcript_id=ENST02.2; pfam_id=D4
+chr1	spada	transcript	29554	31097	NA	+	0	transcript_id=ENST05.1
+chr1	spada	exon	29554	30039	NA	+	0	transcript_id=ENST05.1
+chr1	spada	exon	30564	30667	NA	+	0	transcript_id=ENST05.1
+chr1	spada	exon	30976	31097	NA	+	0	transcript_id=ENST05.1
+chr1	spada	transcript	30267	31109	NA	+	0	transcript_id=ENST06.1
+chr1	spada	exon	30267	30667	NA	+	0	transcript_id=ENST06.1
+chr1	spada	exon	30976	31109	NA	+	0	transcript_id=ENST06.1
+chr1	spada	transcript	120725	133723	NA	-	0	transcript_id=ENST15.1
+chr1	spada	exon	133374	133723	NA	-	0	transcript_id=ENST15.1
+chr1	spada	exon	129055	129223	NA	-	0	transcript_id=ENST15.1
+chr1	spada	exon	120874	120932	NA	-	0	transcript_id=ENST15.1
+chr1	spada	exon	120725	120869	NA	-	0	transcript_id=ENST15.1
+chr1	spada	transcript	89295	120932	NA	-	0	transcript_id=ENST13.5
+chr1	spada	exon	120775	120932	NA	-	0	transcript_id=ENST13.5
+chr1	spada	exon	112700	112804	NA	-	0	transcript_id=ENST13.5
+chr1	spada	exon	92091	92240	NA	-	0	transcript_id=ENST13.5
+chr1	spada	exon	89295	91629	NA	-	0	transcript_id=ENST13.5
+chr1	spada	transcript	12010	13670	NA	+	0	transcript_id=ENST02.2
+chr1	spada	exon	12010	12057	NA	+	0	transcript_id=ENST02.2
+chr1	spada	exon	12179	12227	NA	+	0	transcript_id=ENST02.2
+chr1	spada	exon	12613	12697	NA	+	0	transcript_id=ENST02.2
+chr1	spada	exon	12975	13052	NA	+	0	transcript_id=ENST02.2
+chr1	spada	exon	13221	13374	NA	+	0	transcript_id=ENST02.2
+chr1	spada	exon	13453	13670	NA	+	0	transcript_id=ENST02.2
+chr1	spada	transcript	11869	14409	NA	+	0	transcript_id=ENST01.2
+chr1	spada	exon	11869	12007	NA	+	0	transcript_id=ENST01.2
+chr1	spada	exon	12008	12227	NA	+	0	transcript_id=ENST01.2
+chr1	spada	exon	12613	12721	NA	+	0	transcript_id=ENST01.2
+chr1	spada	exon	13221	14409	NA	+	0	transcript_id=ENST01.2
+chr1	spada	Pfam	13000	13003	NA	+	0	transcript_id=ENST02.2; pfam_id=D1
+chr1	spada	Pfam	13006	13009	NA	+	0	transcript_id=ENST02.2; pfam_id=D2
+chr1	spada	Pfam	13012	13021	NA	+	0	transcript_id=ENST02.2; pfam_id=D4
+chr1	spada	Pfam	12000	12003	NA	+	0	transcript_id=ENST01.2; pfam_id=D1
+chr1	spada	Pfam	12006	12009	NA	+	0	transcript_id=ENST01.2; pfam_id=D1
+chr1	spada	transcript	129081	133566	NA	-	0	transcript_id=ENST16.2
+chr1	spada	exon	133374	133566	NA	-	0	transcript_id=ENST16.2
+chr1	spada	exon	129081	129223	NA	-	0	transcript_id=ENST16.2
+chr1	spada	transcript	92230	129217	NA	-	0	transcript_id=ENST14.5
+chr1	spada	exon	129055	129217	NA	-	0	transcript_id=ENST14.5
+chr1	spada	exon	120721	120932	NA	-	0	transcript_id=ENST14.5
+chr1	spada	exon	112700	112804	NA	-	0	transcript_id=ENST14.5
+chr1	spada	exon	92230	92240	NA	-	0	transcript_id=ENST14.5

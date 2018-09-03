@@ -35,3 +35,12 @@ def test_readSamples():
 	ids = io.readSamples(EXPR)
 
 	assert ids == ['1','2','3']
+
+def test_printSwitchesToGtf():
+	
+	g = get_switches.GetSwitches(dataPath + 'annotation.pklz')
+	g.run(dataPath + 'switches')
+
+	switches = set([ s for g,i,s in g._genes.switches(g._txs)])
+
+	io.printSwitchesToGtf(g._genes, g._txs, switches)
