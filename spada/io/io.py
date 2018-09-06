@@ -124,43 +124,46 @@ def printSwitches(genes, txs, filename = "switches_spada.tsv"):
 
 def printSwitchesToGtf(genes, txs, switches, filename = "switches_spada.gtf"):
 
-	fields = ["chromosome","source","feature","start",
-			  "end", "score", "strand", "phase", "tags"]
-
-	with open(filename, "w") as OUT:
+	with open(filename, "w") as GTF:
 		for thisSwitch in switches:
-
-			for tx in [thisSwitch.ctrlTranscript, thisSwitch.caseTranscript]:
+			for tx,isoform in [(thisSwitch.ctrlTranscript, thisSwitch.ctrlIsoform),
+							   (thisSwitch.caseTranscript, thisSwitch.caseIsoform)]:
 				name = tx._name
 				chromosome = txs[name]['chr']
-				OUT.write(gtfLine(chromosome, 'transcript', 
-								  tx._tx_coordinates[0], tx._tx_coordinates[1], 
-								  tx._strand, 0, 'transcript_id "{}"'.format(name)))
+				geneId = txs[name]['gene_id']
+				symbol = genes[geneId]['symbol']
 
-				for start,end in tx._exons:
-					OUT.write(gtfLine(chromosome, 'exon', start, end, tx._strand, 
-									  0, 'transcript_id "{}"'.format(tx._name)))
+				tags = 'transcript_id "{}"; gene_id "{}"; gene_name "{}"'.format(name, geneId, symbol)
 
-			for isoform in [thisSwitch.ctrlIsoform, thisSwitch.caseIsoform]:
+				gtfLine(GTF, chromosome, 'transcript', 
+						tx._tx_coordinates[0], tx._tx_coordinates[1], 
+						tx._strand, 0, tags)
+
+				exons = tx._exons if tx._strand == '+' else reversed(tx._exons)
+				for start,end in exons:
+					gtfLine(GTF, chromosome, 'exon', start, end, tx._strand, 
+							0, tags)
 
 				if not isoform:
 					continue
 
-				name = isoform.tx
+				gtfLine(GTF, chromosome, 'CDS', tx._cds_coordinates[0], 
+						tx._cds_coordinates[1], tx._strand, 0, tags)
+
 				featureTypes = { 'Pfam': isoform._pfam, 
 								 'Prosite': isoform._prosite, 
 								 'IDR': isoform._idr }
 				for db, features in featureTypes.items():
-					for pfam, ranges in features.items():
+					for feature_id, ranges in features.items():
 						for s,e in ranges:
 							start = isoform.structure[s - 1].genomicPosition
 							end = isoform.structure[e - 1].genomicPosition
-							OUT.write(gtfLine(txs[name]['chr'], db, start, end, txs[name]['strand'], 0, 
-											  'transcript_id "{}"; {}_id "{}"'.format(name, db, pfam) ))
+							gtfLine(GTF, txs[name]['chr'], db, start, end, txs[name]['strand'], 0, 
+									tags + '; {}_id "{}"'.format(db, feature_id) )
 
 			# prosites, idrs, and isoform specific
 
-def gtfLine(chromosome, feature, start, end, strand, phase, tags):
+def gtfLine(GTF, chromosome, feature, start, end, strand, phase, tags):
 
 	line  = '{}\tspada\t'.format(chromosome)
 	line += '{}\t{}\t'.format(feature, start)
@@ -168,7 +171,7 @@ def gtfLine(chromosome, feature, start, end, strand, phase, tags):
 	line += '{}\t{}\t'.format(strand, phase)
 	line += '{}\n'.format(tags)
 
-	return line
+	GTF.write(line)
 
 def parseExpression(ctrlFile, caseFile, genes, txs):
 

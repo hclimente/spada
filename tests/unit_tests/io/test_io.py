@@ -51,11 +51,23 @@ def test_printSwitchesToGtf():
 		if line['feature'] == 'transcript':
 			assert line['transcript_id'] in g._txs.nodes()
 			assert line['strand'] == g._txs[line['transcript_id']]['strand']
+			assert line['gene_id'] == g._txs[line['transcript_id']]['gene_id']
+			assert g._genes[line['gene_id']]['symbol'] == line['gene_name']
 		elif line['feature'] == 'exon':
 			assert [int(line['start']), int(line['end'])] in g._txs[line['transcript_id']]['exons']
 			assert line['strand'] == g._txs[line['transcript_id']]['strand']
+			assert line['gene_id'] == g._txs[line['transcript_id']]['gene_id']
+			assert g._genes[line['gene_id']]['symbol'] == line['gene_name']
+		elif line['feature'] == 'CDS':
+			assert (int(line['start']), int(line['end'])) == (g._txs[line['transcript_id']]['CDS'][0], 
+															  g._txs[line['transcript_id']]['CDS'][1])
+			assert line['strand'] == g._txs[line['transcript_id']]['strand']
+			assert line['gene_id'] == g._txs[line['transcript_id']]['gene_id']
+			assert g._genes[line['gene_id']]['symbol'] == line['gene_name']
 		else:
 			assert line['strand'] == g._txs[line['transcript_id']]['strand']
+			assert line['gene_id'] == g._txs[line['transcript_id']]['gene_id']
+			assert g._genes[line['gene_id']]['symbol'] == line['gene_name']
 			p = protein.Protein(line['transcript_id'], g._txs[line['transcript_id']])
 			regions = p.getFeature(line['feature'], line['{}_id'.format(line['feature'])])
 			gpos = map(lambda x: [ y.genomicPosition for y in x ], regions)

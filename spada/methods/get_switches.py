@@ -7,6 +7,7 @@ class GetSwitches(method.Method):
 
 	def run(self, switchesFile):
 
+		self.logger.info("Reading switches.")
 		self._genes.readSwitches(switchesFile, self._txs)
 
 if __name__ == '__main__':

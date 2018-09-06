@@ -126,6 +126,22 @@ subparser_summary = subparsers.add_parser('summary', help='Summary statistics of
 subparser_summary.set_defaults(func=summarize)
 
 ################################################
+###   SWITCH GTF	                    ####
+################################################
+def make_gtf(o):
+	g = get_switches.GetSwitches(o.annotation)
+	g.run(o.switchesFile)
+
+	switches = [ s for g,i,s in g._genes.switches(g._txs) ]
+
+	logger.info('Writing GTF to switches_spada.gtf')
+	io.printSwitchesToGtf(g._genes, g._txs, switches)
+
+subparser_gtf = subparsers.add_parser('gtf', help='Print the selected switches in to a GTF file.',
+									  parents=[network_parser, switch_parser])
+subparser_gtf.set_defaults(func=make_gtf)
+
+################################################
 ###   MAIN                                  ####
 ################################################
 params = parser.parse_args()
