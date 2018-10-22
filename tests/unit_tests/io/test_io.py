@@ -37,14 +37,14 @@ def test_readSamples():
 
 	assert ids == ['1','2','3']
 
-def test_printSwitchesToGtf():
+def test_printSwitchesToGff():
 	
 	g = get_switches.GetSwitches(dataPath + 'annotation.pklz')
 	g.run(dataPath + 'switches')
 
 	switches = set([ s for g,i,s in g._genes.switches(g._txs)])
 
-	io.printSwitchesToGtf(g._genes, g._txs, switches)
+	io.printSwitchesToGff(g._genes, g._txs, switches)
 
 	for line in io.readGTF('switches_spada.gtf'):
 
@@ -82,4 +82,4 @@ def test_printSwitchesToGtf():
 
 			assert (line['start'], line['end']) in bounds
 
-	os.remove('switches_spada.gtf')
+	os.remove('switches_spada.gff')

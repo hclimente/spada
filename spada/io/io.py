@@ -125,7 +125,7 @@ def printSwitches(genes, txs, filename = "switches_spada.tsv"):
 			OUT.write("%i\t%i\t" % ( cdsChange, utrChange))
 			OUT.write("{}\n".format( ",".join(sorted(thisSwitch.samples)) ))
 
-def printSwitchesToGtf(genes, txs, switches, filename = "switches_spada.gtf"):
+def printSwitchesToGff(genes, txs, switches, filename = "switches_spada.gff"):
 
 	with open(filename, "w") as GTF:
 		for thisSwitch in switches:

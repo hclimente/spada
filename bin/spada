@@ -135,7 +135,7 @@ def make_gtf(o):
 	switches = [ s for g,i,s in g._genes.switches(g._txs) ]
 
 	logger.info('Writing GTF to switches_spada.gtf')
-	io.printSwitchesToGtf(g._genes, g._txs, switches)
+	io.printSwitchesToGff(g._genes, g._txs, switches)
 
 subparser_gtf = subparsers.add_parser('gtf', help='Print the selected switches in to a GTF file.',
 									  parents=[network_parser, switch_parser])
