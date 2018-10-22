@@ -96,4 +96,4 @@ def test_init():
 	assert c._txs.nodes()["ENST18.3"]["Prosite"]["P1"] == {(23,123)}
 
 	assert os.stat('annotation.pklz').st_size > 0
-	os.remove('annotation.pklz')
+	#os.remove('annotation.pklz')

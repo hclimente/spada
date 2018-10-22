@@ -8,7 +8,6 @@ class Protein:
 		self._gene				= txInfo["gene_id"]
 		self._sequence			= txInfo["proteinSequence"]
 		self._structure			= []
-		self._residueCorresp	= {}
 		self._pfam				= txInfo["Pfam"]
 		self._prosite			= txInfo["Prosite"]
 		self._idr				= txInfo["IDR"]
@@ -31,14 +30,10 @@ class Protein:
 
 	def expandExons(self, txInfo):
 
-		plus = txInfo["strand"] == "+"
-		sign = 1 if plus else -1
+		exons = sorted(txInfo["exons"])
 
-		for exon in txInfo["exons"]:
-			exonStart = exon[not plus]
-			exonEnd = exon[plus]
-
-			for i in range(exonStart, exonEnd + sign, sign):
+		for exonStart,exonEnd  in exons:
+			for i in range(exonStart, exonEnd + 1):
 				yield i
 
 	def expandCDS(self, txInfo):
@@ -53,9 +48,9 @@ class Protein:
 				cds = [ x for x in self.expandExons(txInfo) if x >= cdsStart and x <= cdsEnd ][::3]
 			
 			elif txInfo['strand'] == '-':
-				cdsStart = max(txInfo["CDS"][0], txInfo['stop_codon'] + 1) if txInfo['stop_codon'] else txInfo["CDS"][0]
-				cdsEnd = txInfo["CDS"][1] if not txInfo['start_codon'] else txInfo['start_codon']
-				cds = [ x for x in self.expandExons(txInfo) if x >= cdsStart and x <= cdsEnd ][::3]
+				cdsStart = txInfo["CDS"][1] if not txInfo['start_codon'] else txInfo['start_codon']
+				cdsEnd = min(txInfo["CDS"][0], txInfo['stop_codon'] + 1) if txInfo['stop_codon'] else txInfo["CDS"][0]
+				cds = [ x for x in self.expandExons(txInfo) if x <= cdsStart and x >= cdsEnd ][::-3]
 
 		return(cds)
 
@@ -75,7 +70,8 @@ class Protein:
 						return []
 
 					mrna = [ x for x in self.expandExons(txInfo) ]
-					if mrna.index(cds[-1]) + 3 != mrna.index(txInfo['stop_codon']):
+					sign = 1 if txInfo['strand'] == '+' else -1
+					if mrna.index(cds[-1]) + (sign * 3) != mrna.index(txInfo['stop_codon']):
 						SpadaWarning('Transcript {}: number of nucleotides in the CDS is not a multiple of 3.'.format(self._tx))
 						return []
 

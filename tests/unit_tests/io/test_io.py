@@ -54,13 +54,20 @@ def test_printSwitchesToGtf():
 			assert line['gene_id'] == g._txs[line['transcript_id']]['gene_id']
 			assert g._genes[line['gene_id']]['symbol'] == line['gene_name']
 		elif line['feature'] == 'exon':
-			assert [int(line['start']), int(line['end'])] in g._txs[line['transcript_id']]['exons']
+			assert [line['start'], line['end']] in g._txs[line['transcript_id']]['exons']
 			assert line['strand'] == g._txs[line['transcript_id']]['strand']
 			assert line['gene_id'] == g._txs[line['transcript_id']]['gene_id']
 			assert g._genes[line['gene_id']]['symbol'] == line['gene_name']
 		elif line['feature'] == 'CDS':
-			assert (int(line['start']), int(line['end'])) == (g._txs[line['transcript_id']]['CDS'][0], 
-															  g._txs[line['transcript_id']]['CDS'][1])
+			assert (line['start'], line['end']) == tuple(g._txs[line['transcript_id']]['CDS'])
+			assert line['strand'] == g._txs[line['transcript_id']]['strand']
+			assert line['gene_id'] == g._txs[line['transcript_id']]['gene_id']
+			assert g._genes[line['gene_id']]['symbol'] == line['gene_name']
+		elif line['feature'] == 'start_codon':
+			if line['strand'] == '+':
+				assert line['start'] ==  g._txs[line['transcript_id']]['start_codon']
+			elif line['strand'] == '-':
+				assert line['end'] ==  g._txs[line['transcript_id']]['start_codon']
 			assert line['strand'] == g._txs[line['transcript_id']]['strand']
 			assert line['gene_id'] == g._txs[line['transcript_id']]['gene_id']
 			assert g._genes[line['gene_id']]['symbol'] == line['gene_name']
@@ -73,9 +80,6 @@ def test_printSwitchesToGtf():
 			gpos = map(lambda x: [ y.genomicPosition for y in x ], regions)
 			bounds = [ (min(x), max(x)) for x in gpos ]
 
-			if line['strand'] == '+':
-				assert (int(line['start']), int(line['end'])) in bounds
-			else:
-				assert (int(line['end']), int(line['start'])) in bounds
+			assert (line['start'], line['end']) in bounds
 
 	os.remove('switches_spada.gtf')

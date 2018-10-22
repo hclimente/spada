@@ -1,5 +1,6 @@
 from spada.io import io
 
+from collections import OrderedDict
 import logging
 import os
 
@@ -14,9 +15,9 @@ class Transcript:
 
 		# dictionaries clasifying every the nucleotide as either CDS or UTR
 		# key: genomic positon; value: is it isoform specific in the switch?
-		self._cds = {}
-		self._utr = {}
-		self._exon = {}
+		self._cds = OrderedDict()
+		self._utr = OrderedDict()
+		self._exon = OrderedDict()
 
 		if self._strand == "+":
 			if self._cds_coordinates is None:
@@ -50,7 +51,7 @@ class Transcript:
 
 			# iterate in reverse genomic order, still 5'->3' in the - strand
 			exon = 1
-			for exonEnd,exonStart in reversed(self._exons):
+			for exonEnd,exonStart in reversed(sorted(self._exons)):
 				for gPos in range(exonStart, exonEnd - 1, -1):
 					if self._cds_coordinates:
 						if gPos <= cdsStart and gPos >= cdsEnd:

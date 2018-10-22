@@ -36,6 +36,9 @@ def readGTF(gtf):
 			  "end", "score", "strand", "phase", "tags"]
 	for line in readTable(gtf, header = False, keys = fields):
 
+		line['start'] = int(line['start'])
+		line['end'] = int(line['end'])
+
 		# read additional fields
 		tags = set()
 		for field in line['tags'].strip().split(";"):
@@ -133,37 +136,48 @@ def printSwitchesToGtf(genes, txs, switches, filename = "switches_spada.gtf"):
 				geneId = txs[name]['gene_id']
 				symbol = genes[geneId]['symbol']
 
-				tags = 'transcript_id "{}"; gene_id "{}"; gene_name "{}"'.format(name, geneId, symbol)
+				tags = 'gene_id "{}"; transcript_id "{}"; gene_name "{}"'.format(geneId, name, symbol)
 
 				gtfLine(GTF, chromosome, 'transcript', 
 						tx._tx_coordinates[0], tx._tx_coordinates[1], 
 						tx._strand, 0, tags)
 
-				exons = tx._exons if tx._strand == '+' else reversed(tx._exons)
-				for start,end in exons:
-					gtfLine(GTF, chromosome, 'exon', start, end, tx._strand, 
-							0, tags)
+				for start,end in tx._exons:
+					gtfLine(GTF, chromosome, 'exon', start, end, tx._strand, 0, tags)
 
-				if not isoform:
-					continue
+				if isoform:
 
-				gtfLine(GTF, chromosome, 'CDS', tx._cds_coordinates[0], 
-						tx._cds_coordinates[1], tx._strand, 0, tags)
+					cds = list(tx.cds.keys())
 
-				featureTypes = { 'Pfam': isoform._pfam, 
-								 'Prosite': isoform._prosite, 
-								 'IDR': isoform._idr }
-				for db, features in featureTypes.items():
-					for feature_id, ranges in features.items():
-						for s,e in ranges:
-							start = isoform.structure[s - 1].genomicPosition
-							end = isoform.structure[e - 1].genomicPosition
-							gtfLine(GTF, txs[name]['chr'], db, start, end, txs[name]['strand'], 0, 
-									tags + '; {}_id "{}"'.format(db, feature_id) )
+					if tx._strand == '+':
+						gtfLine(GTF, chromosome, 'CDS', cds[0], cds[-1], tx._strand, 0, tags)
+						gtfLine(GTF, chromosome, 'start_codon', cds[0], cds[2], tx._strand, 0, tags)
+					elif tx._strand == '-':
+						gtfLine(GTF, chromosome, 'CDS', cds[-1], cds[0], tx._strand, 0, tags)
+						gtfLine(GTF, chromosome, 'start_codon', cds[2], cds[0], tx._strand, 0, tags)
+
+					featureTypes = {'Pfam': isoform._pfam, 
+									'Prosite': isoform._prosite, 
+									'IDR': isoform._idr }
+					for db, features in featureTypes.items():
+						for feature_id, ranges in features.items():
+							for s,e in ranges:
+								start = isoform.structure[s - 1].genomicPosition
+								end = isoform.structure[e - 1].genomicPosition
+								gtfLine(GTF, txs[name]['chr'], db, min(start,end), max(start,end), 
+										txs[name]['strand'], 0, tags + '; {}_id "{}"'.format(db, feature_id) )
 
 			# prosites, idrs, and isoform specific
 
 def gtfLine(GTF, chromosome, feature, start, end, strand, phase, tags):
+
+	try:
+		if start & (start > end):
+			start2 = end
+			end = start
+			start = start2
+	except:
+		import pdb; pdb.set_trace()
 
 	line  = '{}\tspada\t'.format(chromosome)
 	line += '{}\t{}\t'.format(feature, start)
