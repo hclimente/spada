@@ -1,4 +1,4 @@
-from spada.biological_entities import protein, transcript
+from spada.bio import protein, transcript
 from spada.io import io
 from spada.io.error import SpadaError
 
@@ -78,10 +78,10 @@ class IsoformSwitch:
 		self.computeCdsDiff()
 		self.computeUtrDiff()
 
-		if nInfo["proteinSequence"]:
+		if nInfo["proteinSequence"] and nInfo["CDS"]:
 			self._ctrl_protein = protein.Protein( self._ctrl_transcript_name, nInfo)
 
-		if tInfo["proteinSequence"]:
+		if tInfo["proteinSequence"] and tInfo["CDS"]:
 			self._case_protein  = protein.Protein( self._case_transcript_name, tInfo)
 
 		if self._ctrl_protein and self._case_protein:

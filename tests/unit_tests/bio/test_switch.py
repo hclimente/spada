@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from spada.biological_entities import switch
+from spada.bio import switch
 
 import math
 import pytest

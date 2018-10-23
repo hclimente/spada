@@ -1,5 +1,5 @@
-from spada.biological_entities.transcript import Transcript
-from spada.biological_entities.protein import Protein
+from spada.bio.transcript import Transcript
+from spada.bio.protein import Protein
 from spada.io import io
 from spada.methods import method
 from spada.network import ucsc_gene_network, ucsc_transcript_network

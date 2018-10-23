@@ -1,4 +1,4 @@
-from spada.biological_entities.switch import IsoformSwitch, LiteSwitch
+from spada.bio.switch import IsoformSwitch, LiteSwitch
 from spada.io import io
 from spada.network.network import Network
 

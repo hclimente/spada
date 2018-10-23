@@ -1,4 +1,4 @@
-from spada.biological_entities import protein
+from spada.bio import protein
 from spada.io import io
 from spada.methods import get_switches, method
 
@@ -42,11 +42,9 @@ def test_printSwitchesToGff():
 	g = get_switches.GetSwitches(dataPath + 'annotation.pklz')
 	g.run(dataPath + 'switches')
 
-	switches = set([ s for g,i,s in g._genes.switches(g._txs)])
+	io.printSwitchesToGff(g._genes, g._txs)
 
-	io.printSwitchesToGff(g._genes, g._txs, switches)
-
-	for line in io.readGTF('switches_spada.gtf'):
+	for line in io.readGTF('switches_spada.gff'):
 
 		if line['feature'] == 'transcript':
 			assert line['transcript_id'] in g._txs.nodes()

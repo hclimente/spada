@@ -1,5 +1,5 @@
 from spada.io.error import SpadaError
-from spada.biological_entities.gene_expression import GeneExpression
+from spada.bio.gene_expression import GeneExpression
 
 import logging
 import numpy as np
@@ -125,13 +125,21 @@ def printSwitches(genes, txs, filename = "switches_spada.tsv"):
 			OUT.write("%i\t%i\t" % ( cdsChange, utrChange))
 			OUT.write("{}\n".format( ",".join(sorted(thisSwitch.samples)) ))
 
-def printSwitchesToGff(genes, txs, switches, filename = "switches_spada.gff"):
+def printSwitchesToGff(genes, txs, filename = "switches_spada.gff"):
+
+	printed_txs = set()
 
 	with open(filename, "w") as GTF:
-		for thisSwitch in switches:
+		for _,_, thisSwitch in genes.switches(txs):
 			for tx,isoform in [(thisSwitch.ctrlTranscript, thisSwitch.ctrlIsoform),
 							   (thisSwitch.caseTranscript, thisSwitch.caseIsoform)]:
 				name = tx._name
+
+				if name in printed_txs:
+					continue
+				
+				printed_txs.add(name)
+				
 				chromosome = txs[name]['chr']
 				geneId = txs[name]['gene_id']
 				symbol = genes[geneId]['symbol']

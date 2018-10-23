@@ -1,4 +1,4 @@
-from spada.biological_entities.aminoacid import Aminoacid
+from spada.bio.aminoacid import Aminoacid
 from spada.io.error import SpadaError, SpadaWarning
 
 class Protein:
@@ -63,7 +63,7 @@ class Protein:
 			structure.append(aa)
 
 		if cds:
-			if txInfo['start_codon'] and txInfo['stop_codon']:
+			if txInfo['start_codon']:
 				if txInfo['stop_codon']:
 					if len(self._sequence) != len(cds):
 						SpadaWarning('Transcript {}: lengths of protein sequence ({}) and CDS ({}) do not match.'.format(self._tx, len(structure), len(cds)))
@@ -80,6 +80,10 @@ class Protein:
 
 			elif txInfo['stop_codon']:
 				for aa,pos in zip(reversed(structure), reversed(cds)):
+					aa.setGenomicPosition(pos)
+
+			elif len(self._sequence) == len(cds):
+				for aa,pos in zip(structure, cds):
 					aa.setGenomicPosition(pos)
 
 		return structure

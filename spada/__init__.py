@@ -1,4 +1,4 @@
-from . import biological_entities
+from . import bio
 from . import methods
 from . import network
 from . import io

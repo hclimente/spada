@@ -1,4 +1,4 @@
-from spada.biological_entities.switch import LiteSwitch
+from spada.bio.switch import LiteSwitch
 from spada.io import io
 from spada.methods import method
 

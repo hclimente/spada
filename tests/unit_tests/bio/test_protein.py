@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from spada.biological_entities import protein
+from spada.bio import protein
 
 import pytest
 
