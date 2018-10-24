@@ -10,6 +10,9 @@ class Aminoacid:
 		self._disordered 		= False
 		self._features			= set()
 
+	def __str__(self):
+		return self.res
+
 	@property
 	def res(self): return self._res
 	@property

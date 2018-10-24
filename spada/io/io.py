@@ -31,7 +31,7 @@ def readTable(path, sep = "\t", header = True, skipCommented = True, keys = []):
 			else:
 				yield values
 
-def readGTF(gtf):
+def readGTF(gtf, tag_sep = ' '):
 	fields = ["chromosome","source","feature","start",
 			  "end", "score", "strand", "phase", "tags"]
 	for line in readTable(gtf, header = False, keys = fields):
@@ -43,7 +43,7 @@ def readGTF(gtf):
 		tags = set()
 		for field in line['tags'].strip().split(";"):
 			if len(field):
-				k,v = field.strip().split(" ")
+				k,v = field.strip().split(tag_sep)
 				v = v.strip('"')
 				if k == 'tag':
 					tags.add(v)
@@ -111,25 +111,29 @@ def printSwitches(genes, txs, filename = "switches_spada.tsv"):
 
 	with open(filename, "w") as OUT:
 		OUT.write("Experiment\tGeneId\tSymbol\tControl_transcript\t")
-		OUT.write("Case_transcript\t")
-		OUT.write("CDS_control\tCDS_case\tCDS_change\tUTR_change\tSamples\n")
+		OUT.write("Case_transcript\tCDS_control\tCDS_case\tCDS_change\t")
+		OUT.write("5_UTR_change\t3_UTR_change\tSamples\n")
 
 		for gene,info,thisSwitch in genes.switches(txs):
 
 			cdsChange = bool(thisSwitch.cds_diff)
-			utrChange = bool(thisSwitch.utr_diff)
+			utr5Change = bool(thisSwitch.utr_diff("5'"))
+			utr3Change = bool(thisSwitch.utr_diff("3'"))
 
 			OUT.write("{}\t{}\t{}\t".format( genes._name, gene, info["symbol"] ))
 			OUT.write("{}\t{}\t".format( thisSwitch.ctrl, thisSwitch.case ))
 			OUT.write("%i\t%i\t" % ( bool(thisSwitch.ctrlTranscript.cds), bool(thisSwitch.caseTranscript.cds) ))
-			OUT.write("%i\t%i\t" % ( cdsChange, utrChange))
-			OUT.write("{}\n".format( ",".join(sorted(thisSwitch.samples)) ))
+			OUT.write("%i\t%i\t" % ( cdsChange, utr5Change))
+			OUT.write("%i\t%s\n" % ( utr3Change, ",".join(sorted(thisSwitch.samples)) ))
 
 def printSwitchesToGff(genes, txs, filename = "switches_spada.gff"):
 
 	printed_txs = set()
 
 	with open(filename, "w") as GTF:
+
+		GTF.write('##gff-version 3\n')
+
 		for _,_, thisSwitch in genes.switches(txs):
 			for tx,isoform in [(thisSwitch.ctrlTranscript, thisSwitch.ctrlIsoform),
 							   (thisSwitch.caseTranscript, thisSwitch.caseIsoform)]:
@@ -139,30 +143,47 @@ def printSwitchesToGff(genes, txs, filename = "switches_spada.gff"):
 					continue
 				
 				printed_txs.add(name)
-				
+
 				chromosome = txs[name]['chr']
 				geneId = txs[name]['gene_id']
 				symbol = genes[geneId]['symbol']
 
-				tags = 'gene_id "{}"; transcript_id "{}"; gene_name "{}"'.format(geneId, name, symbol)
-
-				gtfLine(GTF, chromosome, 'transcript', 
+				gtfLine(GTF, chromosome, 'mRNA', 
 						tx._tx_coordinates[0], tx._tx_coordinates[1], 
-						tx._strand, 0, tags)
+						tx._strand, 'ID={};Alias={}'.format(name, symbol))
+				tags = 'Parent={}'.format(name)
 
 				for start,end in tx._exons:
-					gtfLine(GTF, chromosome, 'exon', start, end, tx._strand, 0, tags)
+					gtfLine(GTF, chromosome, 'exon', start, end, tx._strand, tags)
+
+				utr5 = list(tx.utr5.keys())
+				utr3 = list(tx.utr3.keys())
+
+				if utr5:
+					if tx._strand == '+':
+						gtfLine(GTF, chromosome, 'five_prime_UTR', utr5[0], utr5[-1], tx._strand, tags)
+					elif tx._strand == '-':
+						gtfLine(GTF, chromosome, 'five_prime_UTR', utr5[-1], utr5[0], tx._strand, tags)
+
+
+				if utr3:
+					if tx._strand == '+':
+						gtfLine(GTF, chromosome, 'three_prime_UTR', utr3[0], utr3[-1], tx._strand, tags)
+					elif tx._strand == '-':
+						gtfLine(GTF, chromosome, 'three_prime_UTR', utr3[-1], utr3[0], tx._strand, tags)
 
 				if isoform:
 
 					cds = list(tx.cds.keys())
 
 					if tx._strand == '+':
-						gtfLine(GTF, chromosome, 'CDS', cds[0], cds[-1], tx._strand, 0, tags)
-						gtfLine(GTF, chromosome, 'start_codon', cds[0], cds[2], tx._strand, 0, tags)
+						gtfLine(GTF, chromosome, 'CDS', cds[0], cds[-1], tx._strand, tags)
+						gtfLine(GTF, chromosome, 'start_codon', cds[0], cds[2], tx._strand, 
+								'{};ID=cds_{}'.format(tags, name))
 					elif tx._strand == '-':
-						gtfLine(GTF, chromosome, 'CDS', cds[-1], cds[0], tx._strand, 0, tags)
-						gtfLine(GTF, chromosome, 'start_codon', cds[2], cds[0], tx._strand, 0, tags)
+						gtfLine(GTF, chromosome, 'CDS', cds[-1], cds[0], tx._strand, tags)
+						gtfLine(GTF, chromosome, 'start_codon', cds[2], cds[0], tx._strand, 
+								'{};ID=cds_{}'.format(tags, name))
 
 					featureTypes = {'Pfam': isoform._pfam, 
 									'Prosite': isoform._prosite, 
@@ -172,25 +193,22 @@ def printSwitchesToGff(genes, txs, filename = "switches_spada.gff"):
 							for s,e in ranges:
 								start = isoform.structure[s - 1].genomicPosition
 								end = isoform.structure[e - 1].genomicPosition
-								gtfLine(GTF, txs[name]['chr'], db, min(start,end), max(start,end), 
-										txs[name]['strand'], 0, tags + '; {}_id "{}"'.format(db, feature_id) )
+								gtfLine(GTF, txs[name]['chr'], 'translated_nucleotide_match', min(start,end), max(start,end), 
+										txs[name]['strand'], 'CDS_matches=cds_{};Alias={};Note={};Target={} {} {}'.format(name, feature_id, db, txs[name]['chr'], s, e) )
 
-			# prosites, idrs, and isoform specific
+			# isoform specific
 
-def gtfLine(GTF, chromosome, feature, start, end, strand, phase, tags):
+def gtfLine(GTF, chromosome, feature, start, end, strand, tags):
 
-	try:
-		if start & (start > end):
-			start2 = end
-			end = start
-			start = start2
-	except:
-		import pdb; pdb.set_trace()
+	if start & (start > end):
+		start2 = end
+		end = start
+		start = start2
 
 	line  = '{}\tspada\t'.format(chromosome)
 	line += '{}\t{}\t'.format(feature, start)
-	line += '{}\tNA\t'.format(end)
-	line += '{}\t{}\t'.format(strand, phase)
+	line += '{}\t.\t'.format(end)
+	line += '{}\t.\t'.format(strand)
 	line += '{}\n'.format(tags)
 
 	GTF.write(line)

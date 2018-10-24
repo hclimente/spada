@@ -1,4 +1,5 @@
 from spada.bio.aminoacid import Aminoacid
+from spada.bio.polypeptide import Polypeptide
 from spada.io.error import SpadaError, SpadaWarning
 
 class Protein:
@@ -19,6 +20,17 @@ class Protein:
 			self.annotateFeaturesToResidues("Pfam", self._pfam)
 			self.annotateFeaturesToResidues("Prosite", self._prosite)
 			self.annotateFeaturesToResidues("IDR", self._idr)
+
+	def __repr__(self):
+		return """Protein from {}.
+\t- CDS: {} residues.
+\t- Pfam domains: {}.
+\t- ProSite features: {}.
+\t+ {} IDRs.""".format(self.tx, len(self), list(self._pfam.keys()), 
+					   list(self._prosite.keys()), len(self._idr.keys()) )
+
+	def __len__(self):
+		return len(self._structure)
 
 	@property
 	def tx(self): return self._tx
@@ -109,11 +121,11 @@ class Protein:
 				segment.append(aa)
 			elif segment:
 				if len(segment) >= minLength:
-					segments.append(segment)
+					segments.append(Polypeptide(segment))
 				segment = []
 
 		if len(segment) >= minLength:
-			segments.append(segment)
+			segments.append(Polypeptide(segment))
 
 		return segments
 
@@ -122,10 +134,10 @@ class Protein:
 		if featureType == "Pfam": 		regions = self._pfam
 		elif featureType == "Prosite": 	regions = self._prosite
 		elif featureType == "IDR": 		regions = self._idr
-		feature = []
+		segments = []
 
 		if f in regions:
 			for start, end in regions[f]:
-				feature.append(self.structure[(start - 1):end])
+				segments.append(Polypeptide(self.structure[(start - 1):end]))
 
-		return feature
+		return segments

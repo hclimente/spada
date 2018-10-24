@@ -1,4 +1,4 @@
-from spada.bio import protein
+from spada.bio import protein, transcript
 from spada.io import io
 from spada.methods import get_switches, method
 
@@ -44,37 +44,30 @@ def test_printSwitchesToGff():
 
 	io.printSwitchesToGff(g._genes, g._txs)
 
-	for line in io.readGTF('switches_spada.gff'):
+	for line in io.readGTF('switches_spada.gff', tag_sep = '='):
 
-		if line['feature'] == 'transcript':
-			assert line['transcript_id'] in g._txs.nodes()
-			assert line['strand'] == g._txs[line['transcript_id']]['strand']
-			assert line['gene_id'] == g._txs[line['transcript_id']]['gene_id']
-			assert g._genes[line['gene_id']]['symbol'] == line['gene_name']
+		if line['feature'] == 'mRNA':
+			assert line['ID'] in g._txs.nodes()
+			assert line['strand'] == g._txs[line['ID']]['strand']
 		elif line['feature'] == 'exon':
-			assert [line['start'], line['end']] in g._txs[line['transcript_id']]['exons']
-			assert line['strand'] == g._txs[line['transcript_id']]['strand']
-			assert line['gene_id'] == g._txs[line['transcript_id']]['gene_id']
-			assert g._genes[line['gene_id']]['symbol'] == line['gene_name']
+			assert [line['start'], line['end']] in g._txs[line['Parent']]['exons']
+			assert line['strand'] == g._txs[line['Parent']]['strand']
 		elif line['feature'] == 'CDS':
-			assert (line['start'], line['end']) == tuple(g._txs[line['transcript_id']]['CDS'])
-			assert line['strand'] == g._txs[line['transcript_id']]['strand']
-			assert line['gene_id'] == g._txs[line['transcript_id']]['gene_id']
-			assert g._genes[line['gene_id']]['symbol'] == line['gene_name']
+			assert (line['start'], line['end']) == tuple(g._txs[line['Parent']]['CDS'])
+			assert line['strand'] == g._txs[line['Parent']]['strand']
 		elif line['feature'] == 'start_codon':
 			if line['strand'] == '+':
-				assert line['start'] ==  g._txs[line['transcript_id']]['start_codon']
+				assert line['start'] ==  g._txs[line['Parent']]['start_codon']
 			elif line['strand'] == '-':
-				assert line['end'] ==  g._txs[line['transcript_id']]['start_codon']
-			assert line['strand'] == g._txs[line['transcript_id']]['strand']
-			assert line['gene_id'] == g._txs[line['transcript_id']]['gene_id']
-			assert g._genes[line['gene_id']]['symbol'] == line['gene_name']
-		else:
-			assert line['strand'] == g._txs[line['transcript_id']]['strand']
-			assert line['gene_id'] == g._txs[line['transcript_id']]['gene_id']
-			assert g._genes[line['gene_id']]['symbol'] == line['gene_name']
-			p = protein.Protein(line['transcript_id'], g._txs[line['transcript_id']])
-			regions = p.getFeature(line['feature'], line['{}_id'.format(line['feature'])])
+				assert line['end'] ==  g._txs[line['Parent']]['start_codon']
+			assert line['strand'] == g._txs[line['Parent']]['strand']
+		elif line['feature'] in ('five_prime_UTR', 'three_prime_UTR'):
+			pass
+		elif line['feature'] == 'translated_nucleotide_match':
+			parent = line['CDS_matches'].replace('cds_', '')
+			assert line['strand'] == g._txs[parent]['strand']
+			p = protein.Protein(parent, g._txs[parent])
+			regions = p.getFeature(line['Note'], line['Alias'])
 			gpos = map(lambda x: [ y.genomicPosition for y in x ], regions)
 			bounds = [ (min(x), max(x)) for x in gpos ]
 

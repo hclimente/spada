@@ -16,7 +16,8 @@ class Transcript:
 		# dictionaries clasifying every the nucleotide as either CDS or UTR
 		# key: genomic positon; value: is it isoform specific in the switch?
 		self._cds = OrderedDict()
-		self._utr = OrderedDict()
+		self._5utr = OrderedDict()
+		self._3utr = OrderedDict()
 		self._exon = OrderedDict()
 
 		if self._strand == "+":
@@ -33,10 +34,12 @@ class Transcript:
 					if self._cds_coordinates:
 						if gPos >= cdsStart and gPos <= cdsEnd:
 							self._cds.setdefault(gPos, None)
-						else:
-							self._utr.setdefault(gPos, None)
+						elif gPos <= cdsStart:
+							self._5utr.setdefault(gPos, None)
+						elif gPos >= cdsEnd:
+							self._3utr.setdefault(gPos, None)
 					else:
-						self._utr.setdefault(gPos, None)
+						self._5utr.setdefault(gPos, None)
 
 					self._exon[gPos] = exon
 				exon += 1
@@ -56,17 +59,21 @@ class Transcript:
 					if self._cds_coordinates:
 						if gPos <= cdsStart and gPos >= cdsEnd:
 							self._cds.setdefault(gPos, None)
-						else:
-							self._utr.setdefault(gPos, None)
+						elif gPos >= cdsStart:
+							self._5utr.setdefault(gPos, None)
+						elif gPos <= cdsEnd:
+							self._3utr.setdefault(gPos, None)
 					else:
-						self._utr.setdefault(gPos, None)
+						self._5utr.setdefault(gPos, None)
 				self._exon[gPos] = exon
 				exon += 1
 
 	@property
 	def name(self): return self._name
 	@property
-	def utr(self): return self._utr
+	def utr5(self): return self._5utr
+	@property
+	def utr3(self): return self._3utr
 	@property
 	def cds(self):
 		if len(self._cds) == 1:
