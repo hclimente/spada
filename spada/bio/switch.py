@@ -219,10 +219,11 @@ class IsoformSwitch:
 
 				for region in featureRegions:
 
-					thisIsosp = []
+					thisIsosp = polypeptide.Polypeptide([])
 					if None not in [self.ctrlIsoform,self.caseIsoform]:
-						overlap = [ y for x in specificRegions for y in x if y in region ]
-						thisIsosp = polypeptide.Polypeptide(overlap)
+						for x in specificRegions:
+							if len(x & region):
+								thisIsosp = thisIsosp | x
 					else:
 						thisIsosp = region
 					intersection = float(len(region & thisIsosp))
@@ -289,10 +290,11 @@ class IsoformSwitch:
 
 					whatsHappening = what
 
-					overlappingIsoSpecific = None
+					overlappingIsoSpecific = polypeptide.Polypeptide([])
 					if None not in [self.ctrlIsoform,self.caseIsoform]:
-						overlap = [ y for x in specificRegions for y in x if y in idr ]
-						overlappingIsoSpecific = polypeptide.Polypeptide(overlap)
+						for x in specificRegions:
+							if len(x & idr):
+								overlappingIsoSpecific = overlappingIsoSpecific | x
 					else:
 						overlappingIsoSpecific = idr
 
