@@ -221,7 +221,7 @@ class IsoformSwitch:
 
 					thisIsosp = []
 					if None not in [self.ctrlIsoform,self.caseIsoform]:
-						overlap = [ y for x in specificRegions for y in x if y in region._structure ]
+						overlap = [ y for x in specificRegions for y in x if y in region ]
 						thisIsosp = polypeptide.Polypeptide(overlap)
 					else:
 						thisIsosp = region
@@ -291,7 +291,7 @@ class IsoformSwitch:
 
 					overlappingIsoSpecific = None
 					if None not in [self.ctrlIsoform,self.caseIsoform]:
-						overlap = [ y for x in specificRegions for y in x if y in idr._structure ]
+						overlap = [ y for x in specificRegions for y in x if y in idr ]
 						overlappingIsoSpecific = polypeptide.Polypeptide(overlap)
 					else:
 						overlappingIsoSpecific = idr

@@ -4,7 +4,7 @@ class Polypeptide:
 		self._structure	= segment
 
 	def __repr__(self):
-		return 'Segment of {} residues: {}'.format(len(self), ''.join([ x.res for x in self._structure ]) )
+		return '{}-residue polypeptide: {}'.format(len(self), ''.join([ x.res for x in self._structure ]) )
 
 	def __len__(self):
 		return len(self._structure)
@@ -18,3 +18,6 @@ class Polypeptide:
 	def __iter__(self):
 		for residue in self._structure:
 			yield residue
+
+	def __getitem__(self, i):
+		return self._structure[i]
