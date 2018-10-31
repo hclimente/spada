@@ -111,13 +111,13 @@ class GeneExpression:
 
 		return cutoff
 
-	def detectSwitches(self, minExpression = 0.1):
+	def detectSwitches(self, minExpression = 0.1, pSplicing = 95, pDE = 95):
 
 		switches = {}
 
 		if self.isComplete:
 
-			bigChange = abs(self._dPSI) > self.cutoff(self._wtdPSI, 95)
+			bigChange = abs(self._dPSI) > self.cutoff(self._wtdPSI, pSplicing)
 			notDE = abs(self._dExp) < self.cutoff(np.expand_dims(self._wtdExp, 0), 95)
 			ctrlExpression = (self._matchedExpressionCtrl >= minExpression) & (self._dPSI < 0)
 			caseExpression = (self._expressionCase >= minExpression) & (self._dPSI > 0)

@@ -77,10 +77,19 @@ subparser_init.set_defaults(func=init)
 ################################################
 def switches(o):
 	c = compute_switches.ComputeSwitches(o.annotation)
-	c.run(o.controlExpression, o.caseExpression, o.minExpression)
+	c.run(o.controlExpression, o.caseExpression, o.minExpression, 
+		  (1 - o.pSplicing) * 100, (1 - o.pDE) * 100)
 
 subparser_switches = subparsers.add_parser('switches', help='Detect switches.',
 										   parents=[expression_parser, network_parser])
+subparser_switches.add_argument('-s', '--p-splicing', dest='pSplicing',
+							   action='store', default=.05, type=float,
+					 		   help='Maximum p-value to call a significantly spliced transcript.')
+subparser_switches.add_argument('-d', '--p-de', dest='pDE',
+							   action='store', default=.05, type=float,
+					 		   help='Maximum p-value to call a significantlly differentially \
+									 expressed gene.')
+
 subparser_switches.set_defaults(func=switches)
 
 ################################################
