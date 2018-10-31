@@ -85,9 +85,6 @@ class CreateNetwork(method.Method):
 				elif line["feature"] == "CDS" and self._txs.acceptCDS(line):
 					self._txs.update_node(line["transcript_id"], "CDS", [int(line["start"]), int(line["end"]) ])
 
-		
-		import pdb; pdb.set_trace()
-
 	def getInteractions(self, ppi):
 
 		if self._new and not ppi:
