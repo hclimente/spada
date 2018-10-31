@@ -18,7 +18,7 @@ def test_init():
 
 	# gtf
 	assert len(c._genes.nodes()) == 16
-	assert len(c._txs.nodes()) == 27 # 21 txs + 3 aberrant
+	assert len(c._txs.nodes()) == 28 # 22 txs + 3 aberrant
 	assert len(c._txs.nodes()["ENST02.2"]["exons"]) == 6
 	assert c._txs.nodes()["ENST02.2"]["strand"] == "+"
 	assert c._txs.nodes()["ENST02.2"]["chr"] == "chr1"

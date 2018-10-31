@@ -30,7 +30,7 @@ def test_createNetworks():
 	c.createNetworks(dataPath + "gtf")
 
 	assert len(c._genes.nodes()) == 16
-	assert len(c._txs.nodes()) == 24
+	assert len(c._txs.nodes()) == 25
 	assert len(c._txs.nodes()["ENST02.2"]["exons"]) == 6
 	assert c._txs.nodes()["ENST02.2"]["strand"] == "+"
 	assert c._txs.nodes()["ENST02.2"]["chr"] == "chr1"
