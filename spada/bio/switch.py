@@ -90,10 +90,10 @@ class IsoformSwitch:
 		self.computeUtrDiff("3'")
 		self.computeUtrDiff("5'")
 
-		if nInfo["proteinSequence"] and nInfo["CDS"]:
+		if nInfo["proteinSequence"] and ( nInfo["CDS"] or not nInfo['canonical'] ):
 			self._ctrl_protein = protein.Protein( self._ctrl_transcript_name, nInfo)
 
-		if tInfo["proteinSequence"] and tInfo["CDS"]:
+		if tInfo["proteinSequence"] and ( tInfo["CDS"] or not tInfo['canonical'] ):
 			self._case_protein  = protein.Protein( self._case_transcript_name, tInfo)
 
 		if self._ctrl_protein and self._case_protein:
