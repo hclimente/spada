@@ -98,10 +98,16 @@ subparser_switches.set_defaults(func=switches)
 def function(o):
 	g = get_switches.GetSwitches(o.annotation)
 	g.run(o.switchesFile)
-	s = structural_analysis.StructuralAnalysis((g._genes, g._txs))
+	s = structural_analysis.StructuralAnalysis((g._genes, g._txs), o.pfam, o.prosite, o.idr)
 	s.run()
 
 subparser_functional = subparsers.add_parser('function', help='Functional analysis of the switches.', parents = [network_parser, switch_parser])
+subparser_functional.add_argument('-P', '--pfam', dest='pfam', action='store_true',
+								  help='Search exclusively changes in Pfam domains.', default=False)
+subparser_functional.add_argument('-S', '--prosite', dest='prosite', action='store_true',
+								  help='Search exclusively changes in ProSite patterns.', default=False)
+subparser_functional.add_argument('-I', '--idr', dest='idr', action='store_true',
+								  help='Search exclusively changes in IDRs.', default=False)
 
 subparser_functional.set_defaults(func=function)
 
