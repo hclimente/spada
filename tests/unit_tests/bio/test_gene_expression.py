@@ -1,4 +1,4 @@
-from spada.biological_entities.gene_expression import GeneExpression
+from spada.bio.gene_expression import GeneExpression
 
 import numpy as np
 import pytest

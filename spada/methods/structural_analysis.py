@@ -1,34 +1,46 @@
 from spada.methods import method
 
 class StructuralAnalysis(method.Method):
-	def __init__(self, annotation = 'annotation.pklz'):
+	def __init__(self, annotation = 'annotation.pklz', search_pfam = True, 
+				 search_prosite = True, search_idr = True):
 
 		method.Method.__init__(self, __name__, annotation)
+		self.search_pfam 	= search_pfam
+		self.search_prosite = search_prosite
+		self.search_idr 	= search_idr
 
 	def run(self):
 
 		self.featureAnalysis()
-		self.ppiAnalysis()
+
+		if self.search_pfam:
+			self.ppiAnalysis()
 
 	def featureAnalysis(self):
 
 		self.logger.info("Feature analysis.")
 
-		with open("pfam_analysis.tsv", "w") as PFAM, \
-			 open("prosite_analysis.tsv", "w") as PROSITE, \
-			 open("idr_analysis.tsv", "w") as IDR:
-
+		if self.search_pfam:
+			PFAM = open("pfam_analysis.tsv", "w")
 			self.writeDomainsHeader(PFAM)
+		if self.search_prosite:
+			PROSITE = open("prosite_analysis.tsv", "w")
 			self.writeDomainsHeader(PROSITE)
+		if self.search_idr:
+			IDR = open("idr_analysis.tsv", "w")
 			self.writeIDRHeader(IDR)
 
-			for gene,info,thisSwitch in self._genes.switches(self._txs):
-				pfam_change		= thisSwitch.analyzeDomains("Pfam")
-				prosite_change	= thisSwitch.analyzeDomains("Prosite")
-				idr_change   	= thisSwitch.analyzeIDR(0.2)
-
+		for gene,_,thisSwitch in self._genes.switches(self._txs):
+			if self.search_pfam:
+				pfam_change	= thisSwitch.analyzeDomains("Pfam")
 				self.writeDomains(PFAM, 'Pfam', gene, thisSwitch, pfam_change)
+
+			if self.search_prosite:
+				prosite_change = thisSwitch.analyzeDomains("Prosite")
 				self.writeDomains(PROSITE, 'Prosite', gene, thisSwitch, prosite_change)
+			
+			if self.search_idr:
+				idr_change = thisSwitch.analyzeIDR(0.2)
 				self.writeIDR(IDR, gene, thisSwitch, idr_change)
 
 	def ppiAnalysis(self):

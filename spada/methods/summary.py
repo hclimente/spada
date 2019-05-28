@@ -93,8 +93,8 @@ class Summary(method.Method):
 		self.proteinStats.append((switch,nIsoLength,tIsoLength,nIsoSpecificLength,tIsoSpecificLength))
 
 	def exonOverview(self, gene, info, thisSwitch):
-		ctrl = thisSwitch.nTranscript
-		case = thisSwitch.tTranscript
+		ctrl = thisSwitch.ctrlTranscript
+		case = thisSwitch.caseTranscript
 
 		nSpecificCds = set([ x for x in ctrl.cds if x not in case.cds ])
 		nSpecificUtr = set([ x for x in ctrl.utr if x not in case.utr ])
@@ -158,8 +158,8 @@ class Summary(method.Method):
 
 			exon["gene"] = gene
 			exon["symbol"] = info["symbol"]
-			exon["nTranscript"] = thisSwitch.ctrl
-			exon["tTranscript"] = thisSwitch.case
+			exon["ctrlTranscript"] = thisSwitch.ctrl
+			exon["caseTranscript"] = thisSwitch.case
 			exon["nVersion"] = 0 if nVersion is None else len(nVersion)
 			exon["tVersion"] = 0 if tVersion is None else len(tVersion)
 			exon["tag"] = tag
@@ -200,7 +200,7 @@ class Summary(method.Method):
 			for exon in self.alternativeSplicingStats:
 				F.write("{}\t".format(self._genes._name))
 				F.write("{}\t{}\t".format(exon["gene"],exon["symbol"]))
-				F.write("{}\t{}\t".format(exon["nTranscript"],exon["tTranscript"]))
+				F.write("{}\t{}\t".format(exon["ctrlTranscript"],exon["caseTranscript"]))
 				F.write("{}\t{}\t".format(exon["tag"],exon["orfChange"]))
 				F.write("{}\t{}\n".format(exon["nVersion"],exon["tVersion"]))
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from spada.biological_entities import switch
+from spada.bio import switch
 
 import math
 import pytest
@@ -37,8 +37,8 @@ def test_init():
 	assert s.ctrl == "A"
 	assert s.case == "B"
 	assert s.samples == [1,2,3,4]
-	assert s.nTranscript == None
-	assert s.tTranscript == None
+	assert s.ctrlTranscript == None
+	assert s.caseTranscript == None
 	assert s.ctrlIsoform == None
 	assert s.caseIsoform == None
 
@@ -47,8 +47,8 @@ def test_init():
 	assert s.ctrl == "Y"
 	assert s.case == "Z"
 	assert s.samples == ["P1","P2","P3"]
-	assert s.nTranscript == None
-	assert s.tTranscript == None
+	assert s.ctrlTranscript == None
+	assert s.caseTranscript == None
 	assert s.ctrlIsoform == None
 	assert s.caseIsoform == None
 
@@ -58,17 +58,17 @@ def test_addTxInfo():
 	s.addTxInfo(a1Info, a2Info)
 
 	# properties of transcripts are kept
-	assert s.nTranscript != None
-	assert s.nTranscript.name == "A"
-	assert len(s.nTranscript.cds) == 3 * len(a1Info["proteinSequence"])
-	assert min(s.nTranscript.cds) == a1Info["CDS"][0]
-	assert max(s.nTranscript.cds) == a1Info["CDS"][1]
+	assert s.ctrlTranscript != None
+	assert s.ctrlTranscript.name == "A"
+	assert len(s.ctrlTranscript.cds) == 3 * len(a1Info["proteinSequence"])
+	assert min(s.ctrlTranscript.cds) == a1Info["CDS"][0]
+	assert max(s.ctrlTranscript.cds) == a1Info["CDS"][1]
 
-	assert s.tTranscript != None
-	assert s.tTranscript.name == "B"
-	assert len(s.tTranscript.cds) == 3 * len(a2Info["proteinSequence"])
-	assert min(s.tTranscript.cds) == a2Info["CDS"][0]
-	assert max(s.tTranscript.cds) == a2Info["CDS"][1]
+	assert s.caseTranscript != None
+	assert s.caseTranscript.name == "B"
+	assert len(s.caseTranscript.cds) == 3 * len(a2Info["proteinSequence"])
+	assert min(s.caseTranscript.cds) == a2Info["CDS"][0]
+	assert max(s.caseTranscript.cds) == a2Info["CDS"][1]
 
 	# properties of proteins are kept
 	assert s.ctrlIsoform != None

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from spada.biological_entities import protein
+from spada.bio import protein
 
 import pytest
 
@@ -30,7 +30,7 @@ def test_init():
 	assert p._idr == info["IDR"]
 
 	# explore structure
-	structure = [ x for x in p.structure ]
+	structure = p.structure
 	assert len(structure) == len(info["proteinSequence"])
 	assert structure[0].genomicPosition == 21
 	assert structure[24].genomicPosition == 170
@@ -46,7 +46,7 @@ def test_init():
 	pminus = protein.Protein("X", infominus)
 
 	# explore structure if strand is minus
-	structureminus = [ x for x in pminus.structure ]
+	structureminus = pminus.structure
 	assert len(structureminus) == len(info["proteinSequence"])
 	assert structureminus[0].genomicPosition == 172
 	assert structureminus[24].genomicPosition == 23

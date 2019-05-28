@@ -84,9 +84,8 @@ class TranscriptNetwork(Network):
 
 		return True
 
-	def update_node(self, tx_name, key, value, secondKey = ""):
+	def update_node(self, tx_name, key, value, secondKey = "", override = False):
 
-		override = False
 		tx = self.txFilter(tx_name)
 
 		# CDS

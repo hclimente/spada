@@ -1,5 +1,5 @@
-from spada.biological_entities.transcript import Transcript
-from spada.biological_entities.protein import Protein
+from spada.bio.transcript import Transcript
+from spada.bio.protein import Protein
 from spada.io import io
 from spada.methods import method
 from spada.network import ucsc_gene_network, ucsc_transcript_network
@@ -78,10 +78,10 @@ class CreateNetwork(method.Method):
 					self._txs.update_node(line["transcript_id"], "exons", [int(line["start"]), int(line["end"]) ])
 				elif line["feature"] == "start_codon":
 					pos = line["start"] if line['strand'] == '+' else line['end']
-					self._txs.update_node(line["transcript_id"], "start_codon", int(pos))
+					self._txs.update_node(line["transcript_id"], "start_codon", pos)
 				elif line["feature"] == "stop_codon":
 					pos = line["start"] if line['strand'] == '+' else line['end']
-					self._txs.update_node(line["transcript_id"], "stop_codon", int(pos))
+					self._txs.update_node(line["transcript_id"], "stop_codon", pos)
 				elif line["feature"] == "CDS" and self._txs.acceptCDS(line):
 					self._txs.update_node(line["transcript_id"], "CDS", [int(line["start"]), int(line["end"]) ])
 

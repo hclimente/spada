@@ -14,7 +14,7 @@ def test_run():
 	# switches are flushed
 	assert not [ x for x,i in c._genes.nodes(data=True) if i['switches'] ]
 
-	c.run(dataPath + 'expression', dataPath + 'expression_case', 0.1)
+	c.run(dataPath + 'expression', dataPath + 'expression_case', 0.1, 95, 95)
 
 	assert os.stat('switches_spada.tsv').st_size > 0
 	os.remove('switches_spada.tsv')

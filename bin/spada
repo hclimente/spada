@@ -51,7 +51,7 @@ subparser_init.add_argument('-N', '--name', dest='case', action='store',
 subparser_init.add_argument('-n', '--new', dest='new', action='store_true',
 							help='Use previous networks.', default=False)
 subparser_init.add_argument('-g', '--gtf', dest='gtf', action='store', default=None,
-							help='GTF with the gene, transcript, exon and CDS annotation.')
+							help='GFF with the gene, transcript, exon and CDS annotation.')
 subparser_init.add_argument('-p', '--ppi', dest='ppi', action='store', default=None,
 							help='File with protein-protein interactions, in PSI-MI TAB format >= 2.5. Required \
 							for newly generated networks.')
@@ -77,10 +77,19 @@ subparser_init.set_defaults(func=init)
 ################################################
 def switches(o):
 	c = compute_switches.ComputeSwitches(o.annotation)
-	c.run(o.controlExpression, o.caseExpression, o.minExpression)
+	c.run(o.controlExpression, o.caseExpression, o.minExpression, 
+		  (1 - o.pSplicing) * 100, (1 - o.pDE) * 100)
 
 subparser_switches = subparsers.add_parser('switches', help='Detect switches.',
 										   parents=[expression_parser, network_parser])
+subparser_switches.add_argument('-s', '--p-splicing', dest='pSplicing',
+							   action='store', default=.05, type=float,
+					 		   help='Maximum p-value to call a significantly spliced transcript.')
+subparser_switches.add_argument('-d', '--p-de', dest='pDE',
+							   action='store', default=.05, type=float,
+					 		   help='Maximum p-value to call a significantlly differentially \
+									 expressed gene.')
+
 subparser_switches.set_defaults(func=switches)
 
 ################################################
@@ -89,10 +98,16 @@ subparser_switches.set_defaults(func=switches)
 def function(o):
 	g = get_switches.GetSwitches(o.annotation)
 	g.run(o.switchesFile)
-	s = structural_analysis.StructuralAnalysis((g._genes, g._txs))
+	s = structural_analysis.StructuralAnalysis((g._genes, g._txs), o.pfam, o.prosite, o.idr)
 	s.run()
 
 subparser_functional = subparsers.add_parser('function', help='Functional analysis of the switches.', parents = [network_parser, switch_parser])
+subparser_functional.add_argument('-P', '--pfam', dest='pfam', action='store_true',
+								  help='Search exclusively changes in Pfam domains.', default=False)
+subparser_functional.add_argument('-S', '--prosite', dest='prosite', action='store_true',
+								  help='Search exclusively changes in ProSite patterns.', default=False)
+subparser_functional.add_argument('-I', '--idr', dest='idr', action='store_true',
+								  help='Search exclusively changes in IDRs.', default=False)
 
 subparser_functional.set_defaults(func=function)
 
@@ -124,6 +139,20 @@ def summarize(o):
 subparser_summary = subparsers.add_parser('summary', help='Summary statistics of the switches.',
 										  parents=[expression_parser, network_parser, switch_parser])
 subparser_summary.set_defaults(func=summarize)
+
+################################################
+###   SWITCH GFF	                    ####
+################################################
+def make_gff(o):
+	g = get_switches.GetSwitches(o.annotation)
+	g.run(o.switchesFile)
+
+	logger.info('Writing GFF to switches_spada.gff')
+	io.printSwitchesToGff(g._genes, g._txs)
+
+subparser_gff = subparsers.add_parser('gff', help='Print the selected switches in to a GFF file.',
+									  parents=[network_parser, switch_parser])
+subparser_gff.set_defaults(func=make_gff)
 
 ################################################
 ###   MAIN                                  ####

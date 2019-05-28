@@ -14,18 +14,18 @@ class GENCODETranscriptNetwork(ENSEMBLTranscriptNetwork):
 		self.skip_filter = False
 
 	def accept(self, line):
-		accept = bool([ t for t in line['tags'] if t in self._accepted ])
+		#accept = bool([ t for t in line['tags'] if t in self._accepted ])
 		reject = bool([ t for t in line['tags'] if t in self._rejected ])
 		
 		try:
-			status = line['transcript_status'] in self._accepted_status
+			valid_status = line['transcript_status'] in self._accepted_status
 		except KeyError:
 			try:
-				status = line['transcript_support_level'] in self._accepted_support_level
+				valid_status = line['transcript_support_level'] in self._accepted_support_level
 			except KeyError:
-				status = True
+				valid_status = True
 
-		return accept and status and not reject
+		return valid_status and not reject
 
 	def acceptCDS(self, line):
 		return line['transcript_type'] != "nonsense_mediated_decay"

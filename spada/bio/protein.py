@@ -1,4 +1,5 @@
-from spada.biological_entities.aminoacid import Aminoacid
+from spada.bio.aminoacid import Aminoacid
+from spada.bio.polypeptide import Polypeptide
 from spada.io.error import SpadaError, SpadaWarning
 
 class Protein:
@@ -8,7 +9,6 @@ class Protein:
 		self._gene				= txInfo["gene_id"]
 		self._sequence			= txInfo["proteinSequence"]
 		self._structure			= []
-		self._residueCorresp	= {}
 		self._pfam				= txInfo["Pfam"]
 		self._prosite			= txInfo["Prosite"]
 		self._idr				= txInfo["IDR"]
@@ -21,26 +21,31 @@ class Protein:
 			self.annotateFeaturesToResidues("Prosite", self._prosite)
 			self.annotateFeaturesToResidues("IDR", self._idr)
 
+	def __repr__(self):
+		return """Protein from {}.
+\t- CDS: {} residues.
+\t- Pfam domains: {}.
+\t- ProSite features: {}.
+\t+ {} IDRs.""".format(self.tx, len(self), list(self._pfam.keys()), 
+					   list(self._prosite.keys()), len(self._idr.keys()) )
+
+	def __len__(self):
+		return len(self._structure)
+
 	@property
 	def tx(self): return self._tx
 	@property
 	def seq(self): return self._sequence
 
 	@property
-	def structure(self):
-		for res in self._structure:
-			yield res
+	def structure(self): return self._structure
 
 	def expandExons(self, txInfo):
 
-		plus = txInfo["strand"] == "+"
-		sign = 1 if plus else -1
+		exons = sorted(txInfo["exons"])
 
-		for exon in txInfo["exons"]:
-			exonStart = exon[not plus]
-			exonEnd = exon[plus]
-
-			for i in range(exonStart, exonEnd + sign, sign):
+		for exonStart,exonEnd  in exons:
+			for i in range(exonStart, exonEnd + 1):
 				yield i
 
 	def expandCDS(self, txInfo):
@@ -55,9 +60,9 @@ class Protein:
 				cds = [ x for x in self.expandExons(txInfo) if x >= cdsStart and x <= cdsEnd ][::3]
 			
 			elif txInfo['strand'] == '-':
-				cdsStart = max(txInfo["CDS"][0], txInfo['stop_codon'] + 1) if txInfo['stop_codon'] else txInfo["CDS"][0]
-				cdsEnd = txInfo["CDS"][1] if not txInfo['start_codon'] else txInfo['start_codon']
-				cds = [ x for x in self.expandExons(txInfo) if x >= cdsStart and x <= cdsEnd ][::3]
+				cdsStart = txInfo["CDS"][1] if not txInfo['start_codon'] else txInfo['start_codon']
+				cdsEnd = min(txInfo["CDS"][0], txInfo['stop_codon'] + 1) if txInfo['stop_codon'] else txInfo["CDS"][0]
+				cds = [ x for x in self.expandExons(txInfo) if x <= cdsStart and x >= cdsEnd ][::-3]
 
 		return(cds)
 
@@ -70,14 +75,15 @@ class Protein:
 			structure.append(aa)
 
 		if cds:
-			if txInfo['start_codon'] and txInfo['stop_codon']:
+			if txInfo['start_codon']:
 				if txInfo['stop_codon']:
 					if len(self._sequence) != len(cds):
 						SpadaWarning('Transcript {}: lengths of protein sequence ({}) and CDS ({}) do not match.'.format(self._tx, len(structure), len(cds)))
 						return []
 
 					mrna = [ x for x in self.expandExons(txInfo) ]
-					if mrna.index(cds[-1]) + 3 != mrna.index(txInfo['stop_codon']):
+					sign = 1 if txInfo['strand'] == '+' else -1
+					if mrna.index(cds[-1]) + (sign * 3) != mrna.index(txInfo['stop_codon']):
 						SpadaWarning('Transcript {}: number of nucleotides in the CDS is not a multiple of 3.'.format(self._tx))
 						return []
 
@@ -88,14 +94,17 @@ class Protein:
 				for aa,pos in zip(reversed(structure), reversed(cds)):
 					aa.setGenomicPosition(pos)
 
+			elif len(self._sequence) == len(cds):
+				for aa,pos in zip(structure, cds):
+					aa.setGenomicPosition(pos)
+
 		return structure
 
 	def annotateFeaturesToResidues(self, featureType, features):
 		for feature,region in features.items():
 			for start,end in region:
-				for aa in self.structure:
-					if aa.num >= start and aa.num <= end:
-						aa._features.add(feature)
+				for i in range(start - 1, end):
+					self.structure[i]._features.add(feature)
 
 	def getSegments(self, segmentType, minLength = 1):
 		segments = []
@@ -112,11 +121,11 @@ class Protein:
 				segment.append(aa)
 			elif segment:
 				if len(segment) >= minLength:
-					segments.append(segment)
+					segments.append(Polypeptide(segment))
 				segment = []
 
 		if len(segment) >= minLength:
-			segments.append(segment)
+			segments.append(Polypeptide(segment))
 
 		return segments
 
@@ -125,10 +134,10 @@ class Protein:
 		if featureType == "Pfam": 		regions = self._pfam
 		elif featureType == "Prosite": 	regions = self._prosite
 		elif featureType == "IDR": 		regions = self._idr
-		feature = []
+		segments = []
 
 		if f in regions:
 			for start, end in regions[f]:
-				feature.append([ x for x in self.structure ][(start - 1):end])
+				segments.append(Polypeptide(self.structure[(start - 1):end]))
 
-		return feature
+		return segments

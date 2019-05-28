@@ -1,4 +1,4 @@
-from spada.biological_entities import protein, transcript
+from spada.bio import polypeptide, protein, transcript
 from spada.io import io
 from spada.io.error import SpadaError
 
@@ -12,19 +12,23 @@ LiteSwitch = namedtuple('LiteSwitch', ['ctrl', 'case', 'samples'])
 class IsoformSwitch:
 	def __init__(self, ctrl, case, samples):
 		self._ctrl_transcript_name = ctrl
-		self._case_transcript_name 	  = case
-		self._samples 				  = samples
+		self._case_transcript_name = case
+		self._samples              = samples
 
-		self._ctrl_transcript = None
-		self._case_transcript 	 = None
-		self._ctrl_protein 	 = None
-		self._case_protein 	     = None
+		self._ctrl_transcript      = None
+		self._case_transcript      = None
+		self._ctrl_protein 	       = None
+		self._case_protein 	       = None
 
-		self._functional		= None
+		self._functional		   = None
 
-		self._pfamChange		= None
-		self._prositeChange 	= None
-		self._idrChange			= None
+		self._pfamChange		   = None
+		self._prositeChange 	   = None
+		self._idrChange			   = None
+
+	def __repr__(self):
+		functional =  '' if self.isFunctional else 'non-'
+		return '{} - {} {}functional switch'.format(self.ctrl, self.case, functional)
 
 	@property
 	def ctrl(self): return self._ctrl_transcript_name
@@ -51,9 +55,9 @@ class IsoformSwitch:
 	@property
 	def caseIsoform(self): return self._case_protein
 	@property
-	def nTranscript(self): return self._ctrl_transcript
+	def ctrlTranscript(self): return self._ctrl_transcript
 	@property
-	def tTranscript(self): return self._case_transcript
+	def caseTranscript(self): return self._case_transcript
 
 	@property
 	def cds_diff(self):
@@ -62,11 +66,18 @@ class IsoformSwitch:
 		cdsDiff.extend( [ x for x in self._case_transcript.cds if x not in self._ctrl_transcript.cds ])
 		return cdsDiff
 
-	@property
-	def utr_diff(self):
+	def utr_diff(self, which):
 		"""Returns True if there is a difference between the transcripts utr sequences."""
-		utrDiff = [ x for x in self._ctrl_transcript.utr if x not in self._case_transcript.utr ]
-		utrDiff.extend( [ x for x in self._case_transcript.utr if x not in self._ctrl_transcript.utr ])
+
+		if which == "5'":
+			ctrl_utr = self._ctrl_transcript._5utr
+			case_utr = self._case_transcript._5utr
+		if which == "3'":
+			ctrl_utr = self._ctrl_transcript._3utr
+			case_utr = self._case_transcript._3utr
+
+		utrDiff = [ x for x in ctrl_utr if x not in case_utr ]
+		utrDiff.extend( [ x for x in case_utr if x not in ctrl_utr ])
 		return utrDiff
 
 	def addTxInfo(self,nInfo,tInfo):
@@ -76,12 +87,13 @@ class IsoformSwitch:
 		self._case_transcript 	= transcript.Transcript( self._case_transcript_name, tInfo )
 
 		self.computeCdsDiff()
-		self.computeUtrDiff()
+		self.computeUtrDiff("3'")
+		self.computeUtrDiff("5'")
 
-		if nInfo["proteinSequence"]:
+		if nInfo["proteinSequence"] and ( nInfo["CDS"] or not nInfo['canonical'] ):
 			self._ctrl_protein = protein.Protein( self._ctrl_transcript_name, nInfo)
 
-		if tInfo["proteinSequence"]:
+		if tInfo["proteinSequence"] and ( tInfo["CDS"] or not tInfo['canonical'] ):
 			self._case_protein  = protein.Protein( self._case_transcript_name, tInfo)
 
 		if self._ctrl_protein and self._case_protein:
@@ -102,20 +114,28 @@ class IsoformSwitch:
 			else:
 				self._case_transcript._cds[gPos] = False
 
-	def computeUtrDiff(self):
+	def computeUtrDiff(self, which):
 		"""Changes the values of the UTR dictionary of the transcripts to
 			a bool, indicating if they are transcript specific or not."""
-		for gPos in self._ctrl_transcript.utr:
-			if gPos not in self._case_transcript.utr:
-				self._ctrl_transcript._utr[gPos] = True
-			else:
-				self._ctrl_transcript._utr[gPos] = False
 
-		for gPos in self._case_transcript.utr:
-			if gPos not in self._ctrl_transcript.utr:
-				self._case_transcript._utr[gPos] = True
+		if which == "5'":
+			ctrl_utr = self._ctrl_transcript._5utr
+			case_utr = self._case_transcript._5utr
+		if which == "3'":
+			ctrl_utr = self._ctrl_transcript._3utr
+			case_utr = self._case_transcript._3utr
+
+		for gPos in ctrl_utr:
+			if gPos not in case_utr:
+				ctrl_utr[gPos] = True
 			else:
-				self._case_transcript._utr[gPos] = False
+				ctrl_utr[gPos] = False
+
+		for gPos in case_utr:
+			if gPos not in ctrl_utr:
+				case_utr[gPos] = True
+			else:
+				case_utr[gPos] = False
 
 	def getAlteredRegions(self):
 		"""Calculates the specific and non-specific residues of the isoforms
@@ -135,8 +155,8 @@ class IsoformSwitch:
 		if not self.ctrlIsoform or not self.caseIsoform:
 			return []
 
-		allN = sorted(self.nTranscript.getSegments("isoform-specific") + self.nTranscript.getSegments("non-isoform-specific"),key=operator.itemgetter(0))
-		allT = sorted(self.tTranscript.getSegments("isoform-specific") + self.tTranscript.getSegments("non-isoform-specific"),key=operator.itemgetter(0))
+		allN = sorted(self.ctrlTranscript.getSegments("isoform-specific") + self.ctrlTranscript.getSegments("non-isoform-specific"),key=operator.itemgetter(0))
+		allT = sorted(self.caseTranscript.getSegments("isoform-specific") + self.caseTranscript.getSegments("non-isoform-specific"),key=operator.itemgetter(0))
 
 		correspondence = []
 		c = []
@@ -169,7 +189,7 @@ class IsoformSwitch:
 				if thisCorrespondence not in correspondence:
 					correspondence.append(thisCorrespondence)
 
-		correspondence = sorted(correspondence,key=lambda x: x[0][0] if x[0] else x[1][0],reverse=True if self.nTranscript._strand=='-' else False )
+		correspondence = sorted(correspondence,key=lambda x: x[0][0] if x[0] else x[1][0],reverse=True if self.ctrlTranscript._strand=='-' else False )
 
 		return correspondence
 
@@ -199,18 +219,20 @@ class IsoformSwitch:
 
 				for region in featureRegions:
 
-					thisIsosp = []
+					thisIsosp = polypeptide.Polypeptide([])
 					if None not in [self.ctrlIsoform,self.caseIsoform]:
-						[ thisIsosp.extend(x) for x in specificRegions if set(x) & set(region) ]
+						for x in specificRegions:
+							if len(x & region):
+								thisIsosp = thisIsosp | x
 					else:
-						thisIsosp = set(region)
-					intersection = float(len(set(region) & set(thisIsosp)))
-					domainLenght = float(len(set(region)))
-					specificLength = float(len(set(thisIsosp)))
+						thisIsosp = region
+					intersection = float(len(region & thisIsosp))
+					domainLength = float(len(region))
+					specificLength = float(len(thisIsosp))
 
-					macroScore = intersection/domainLenght
+					macroScore = intersection/domainLength
 					microScore =  float("nan") if specificLength == 0 else intersection/specificLength
-					jaccard = intersection/len(set(region) | set(thisIsosp))
+					jaccard = intersection/len(region | thisIsosp)
 
 					start = min([ x.num for x in region ])
 					end = max([ x.num for x in region ])
@@ -262,20 +284,21 @@ class IsoformSwitch:
 					continue
 
 				idrs = protein.getFeature("IDR", feature)
-				isoform = protein.getSegments("isoform-specific")
+				specificRegions = protein.getSegments("isoform-specific")
 
 				for idr in idrs:
 
 					whatsHappening = what
-					idrSet = set(idr)
 
-					overlappingIsoSpecific = []
+					overlappingIsoSpecific = polypeptide.Polypeptide([])
 					if None not in [self.ctrlIsoform,self.caseIsoform]:
-						[ overlappingIsoSpecific.extend(x) for x in isoform if set(x) & idrSet]
+						for x in specificRegions:
+							if len(x & idr):
+								overlappingIsoSpecific = overlappingIsoSpecific | x
 					else:
-						overlappingIsoSpecific = idrSet
+						overlappingIsoSpecific = idr
 
-					if not overlappingIsoSpecific:
+					if not len(overlappingIsoSpecific):
 						jaccard = float("nan")
 						macroScore = float("nan")
 						microScore = float("nan")
@@ -283,14 +306,13 @@ class IsoformSwitch:
 						significant = 0
 
 					else:
-						overlappingIsoSpecificSet = set(overlappingIsoSpecific)
 
-						intersection = float(len(overlappingIsoSpecificSet & idrSet))
-						union = float(len(overlappingIsoSpecificSet | idrSet))
+						intersection = float(len(overlappingIsoSpecific & idr))
+						union = float(len(overlappingIsoSpecific | idr))
 
 						jaccard = intersection/union
-						microScore = intersection/len(overlappingIsoSpecificSet)
-						macroScore = intersection/len(idrSet)
+						microScore = intersection/len(overlappingIsoSpecific)
+						macroScore = intersection/len(idr)
 						significant = int(max(microScore,macroScore) > idr_threshold)
 
 					motifSequence = ""
