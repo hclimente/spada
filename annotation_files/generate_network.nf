@@ -92,7 +92,7 @@ if ((params.db == 'gencode' | params.db == 'ensembl') & ENSEMBL_VERSION > 78 ) {
 
     input:
       each DB from feature_dbs
-      file(FASTA) from fasta_features.splitFasta(file: true, by: 100)
+      file(FASTA) from fasta_features.splitFasta(file: true, by: 1000)
 
     output:
       file 'interpro_features.tsv' into structured_features
@@ -147,10 +147,10 @@ process get_ddi {
 process run_iupred {
 
   input:
-    file(FASTA) from fasta_idr.splitFasta(file: true, by: 100)
+    file(FASTA) from fasta_idr.splitFasta(file: true, by: 1000)
 
   output:
-    file "*.tsv" into iupred
+    file "idr.tsv" into iupred
 
   script:
   template 'computation/iupred.sh'
@@ -168,7 +168,7 @@ process collect_iupred {
     file "idr.tsv" into idr
 
   """
-  cat idr* >idr.tsv
+  find . -name 'idr*' -exec cat {} \\; >idr.tsv
   """
 
 }

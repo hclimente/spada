@@ -3,10 +3,14 @@
 # Output file:
 #    - *.tsv
 
-cat ${FASTA} | awk '{
-        if (substr(\$0, 1, 1)==">") {filename=(substr(\$0,2) ".fa")}
-        print \$0 > filename
-}'
+\$(python <<EOF
+with open('${FASTA}', 'r') as SEQS:
+     for line in SEQS:
+         if line[0] == '>':
+             with open('{}.fa'.format(line[1:-1]), 'w') as OUT:
+                 OUT.write(line)
+EOF
+)
 
 for f in `ls *.fa`
 do
@@ -40,3 +44,5 @@ do
     echo -e "\$tx\tIDR\t\$seq\t\$start\t\$end" >>\$f.tsv
     fi
 done
+
+cat *tsv >idr.tsv
